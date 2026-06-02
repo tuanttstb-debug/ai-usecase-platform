@@ -4,141 +4,104 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## P0 — [BLOCKING] Authorize GAS deployment mới (BUG-GAS-02)
+
+Mọi request write/read đều bị "không có quyền" vì GAS Web App mới chưa grant OAuth access to Google Sheet.
+
+**Fix (2 phút):**
+1. Vào GAS Editor của deployment mới
+2. Chọn bất kỳ function (VD: `getLookupData_`)
+3. Nhấn **Run** → popup hiện → **Review permissions → Allow**
+4. Test lại create: `GAS_URL?action=health` phải trả `{"success":true}`
+
+---
+
+## P0 — [BLOCKING] Sync CONFIG sheet ADMIN_EMAILS (BUG-GAS-03)
+
+`getAdminEmails_()` đọc CONFIG sheet trước khi fallback về `Config.gs`. Nếu sheet còn giá trị cũ, fix `Config.gs` bị vô hiệu.
+
+**Fix:**
+1. Mở Google Sheet → sheet tên **CONFIG**
+2. Tìm row `Key = ADMIN_EMAILS`
+3. Sửa cột `Value` thành: `admin,tuantt4,manager`
+4. Không cần re-deploy GAS — sheet được đọc runtime
+
+**Verify:** Gọi `GAS_URL?action=reject` với payload `{record_id: "...", reviewer_email: "tuantt4", comment: "test"}` → phải trả `success: true` (hoặc lỗi do record không tồn tại, không phải lỗi quyền)
+
+---
+
 ## P0 — [BLOCKING] Fix GAS data loading (BUG-GAS-01)
 
-`?action=health` OK nhưng `?action=lookup` / `?action=list` lỗi. Root cause chưa xác định.
+`?action=lookup` / `?action=list` lỗi. Phần lớn khả năng do BUG-GAS-02 (chưa authorize). Sau khi fix BUG-GAS-02, test lại ngay.
 
-**Diagnostic cần làm ngay:**
-- [ ] Mở trực tiếp trên browser: `GAS_URL?action=lookup` → paste response
-- [ ] Mở: `GAS_URL?action=list&limit=3` → paste response
-- [ ] GAS Editor → **Executions** → copy 2-3 dòng lỗi gần nhất
-- [ ] Paste **chính xác nội dung toast** (phần trong dấu ngoặc đơn) khi app báo lỗi
-
-**Nguyên nhân khả dĩ:**
-1. GAS script chưa được authorize để truy cập Google Sheet (chạy thủ công 1 lần để grant OAuth)
-2. Conflict hàm/biến trong GAS project thực tế (khác với local files)
-3. `Utils.gs` addHeader fix chưa được deploy
-
-**Fix nếu là authorization:**
-→ Trong GAS Editor: chạy thủ công hàm `getLookupData_()` → GAS sẽ hỏi cấp quyền → Approve
+**Nếu vẫn lỗi sau authorize:**
+- GAS Editor → **Executions** → copy error message cụ thể
+- Mở trực tiếp: `GAS_URL?action=lookup` → xem response raw
 
 ---
 
-## P0 — [PENDING] Push auth.js lên GitHub (BUG-FE-01)
-
-Fix URL duplicate (`ai-usecase-platform/ai-usecase-platform/register.html`) đã đúng trong local.
-
-```bash
-git add assets/js/auth.js
-git commit -m "fix: requireAuth uses basename to prevent URL duplication on subdirectory deploy"
-git push
-```
-
----
-
-## P0 — Deploy Utils.gs lên GAS
-
-Xóa `addHeader` calls trong `sendJson_()`. File đã sửa tại local, chưa deploy.
-
----
-
-## P0 — Test toàn bộ flow sau session 2026-05-29 (Part 3)
-
-Serve qua HTTP local: `python -m http.server 8080` hoặc `npx serve .`
+## P0 — Verify approve/reject end-to-end sau khi fix BUG-GAS-02 + BUG-GAS-03
 
 Checklist:
-- [ ] Login với username "tuantt4" → redirect về index.html (portal)
-- [ ] Login với username "admin" → portal + hiển thị Dashboard nav trong sidebar
-- [ ] index.html: sidebar đúng — Home active, Dashboard chỉ hiện với admin
-- [ ] register.html: sidebar đúng — Đăng ký active; Owner_Name/Owner_Email auto-fill + readonly
-- [ ] dashboard.html (admin): thấy 4 tabs, KPI row, refresh button
-- [ ] dashboard.html (user thường): chỉ thấy "Use Case của tôi" tab
-- [ ] dashboard.html?tab=my: auto-select tab My US
-- [ ] "Use Case của tôi" tab: load danh sách đúng user
-- [ ] Click row → US detail popup hiện ra đúng thông tin
-- [ ] Admin click Duyệt/Từ chối trong popup → confirmation area hiện, submit → toast success
-- [ ] Logout từ bất kỳ page nào → về login.html
+- [ ] Login admin → dashboard → tab "Chờ duyệt" → click "Xem chi tiết"
+- [ ] Modal hiện đúng 4 sections (Section 2-4 load sau ~1-2s khi GAS trả về)
+- [ ] Click "Duyệt" → nhập comment → xác nhận → toast "Đã duyệt thành công"
+- [ ] Click "Từ chối" → nhập lý do → xác nhận → toast "Đã từ chối"
+- [ ] Submit use case mới → không bị lỗi quyền
 
 ---
 
-## P0 (cũ) — Verify login + portal flow
+## P1 — Deploy GAS với local fixes chưa sync
 
-Cần serve qua HTTP local server (vì sessionStorage không hoạt động đúng với `file://`):
-```bash
-# Python:
-python -m http.server 8080
-# Node:
-npx serve .
-```
-
-Checklist:
-- [ ] `login.html`: nhập email ngẫu nhiên → redirect về `index.html`
-- [ ] `login.html`: nhập email admin (`admin@sptd.vn`) → redirect về `index.html` với card Dashboard hiển thị
-- [ ] `index.html` (portal): user chip hiển thị đúng tên
-- [ ] `index.html` (portal): section "Báo cáo & Phân tích" chỉ hiện khi admin
-- [ ] `register.html` không có session → redirect về `login.html`
-- [ ] `register.html` có session → form load bình thường
-- [ ] `dashboard.html` không có session → redirect về `login.html`
-- [ ] `dashboard.html` có session non-admin → redirect về `index.html`
-- [ ] Logout ở portal → về `login.html`, session bị xoá
-- [ ] Backward compat: truy cập `index.html?edit=AIUS-0001` → redirect về `register.html?edit=AIUS-0001`
-
----
-
-## P1 — Deploy GAS (bắt buộc để dashboard live)
-
-- [ ] Copy `assets/gas-backend/AdminService.gs` vào GAS project
-- [ ] Trong `Config.gs`: cập nhật `ADMIN_EMAILS` với email thật
-- [ ] Deploy lại GAS Web App (update existing deployment, không phải New)
-- [ ] Cập nhật `config/env.js::APP_CONFIG.ADMIN_EMAILS` với email thật
-- [ ] Test approve/reject flow từ dashboard
+Các file đã sửa local nhưng chưa copy vào GAS Editor:
+- [ ] `Config.gs` — `ADMIN_EMAILS = ['admin', 'tuantt4', 'manager']` (commit `0b8c7a0`)
+- [ ] `Utils.gs` — xóa `addHeader` calls (commit `357e22f`)
+- [ ] `LookupService.gs` — rewrite (commit `357e22f`)
 
 ---
 
 ## P2 — Nâng cấp auth (security)
 
-**Hiện tại (v3.1):** Username tự nhập, không verify, không có password. SEC-01 vẫn tồn tại.
+**Hiện tại (v3.2):** Username tự nhập, không verify, không có password. SEC-01 vẫn tồn tại.
 
-**Recommended next:**
+**Recommended:**
 
-Option A — Thêm whitelist username:
-- `AuthService.login()`: check username có trong whitelist (không phải chỉ admin)
-- Nếu username không trong whitelist → không cho đăng nhập
+Option A — Whitelist username cho mọi user (không chỉ admin):
+- `AuthService.login()`: check username có trong whitelist trước khi cho login
+- Nếu không trong whitelist → block
 
 Option B — Google Sign-In:
 - `google.accounts.oauth2.initTokenClient()` (GSI v2)
-- Verify token via GAS
+- Verify token via GAS endpoint
 
 **Clarify với PO:**
-- [ ] BUG-03: Status="Draft" khi tạo mới là design intent hay bug?
-- [ ] Có cần whitelist user (không phải chỉ admin) không?
-- [ ] Có cần nhiều roles hơn không? (approver, viewer, submitter)
+- [ ] BUG-03: Status="Draft" khi tạo mới — design intent hay bug?
+- [ ] Có cần whitelist toàn bộ user không?
+- [ ] Có cần thêm role (approver, viewer) không?
 
 ---
 
 ## P3 — Feature backlog
 
-- [ ] "Use case của tôi" — list submissions của logged-in user (filter by Owner_Email)
 - [ ] Pagination cho dashboard "Tất cả use case" (hiện giới hạn 200 records)
-- [ ] "Under Review" status transition cho dashboard workflow
+- [ ] "Under Review" status transition cho workflow
 - [ ] Export to CSV từ dashboard
+- [ ] Line chart (submission trend) — cần `trend_data` từ GAS API
 
 ---
 
-## P4 — Tech debt follow-up
+## P4 — Tech debt
 
 - [ ] Migrate JS từ global var sang ES Modules (MAINT-01)
-- [ ] Add script load order check vào dev docs (MAINT-02)
+- [ ] Add `Content-Security-Policy` header (SEC-02)
 - [ ] Fill `assets/docs/` với deployment guide thực tế (MAINT-07)
-- [ ] Add `Content-Security-Policy` header để giảm XSS risk (SEC-02 follow-up)
 
 ---
 
-## P5 — UI Polish (sau v3.0 refactor)
+## P5 — UI Polish
 
-- [x] **SVG icon library** — Heroicons 2.0 inline, thay toàn bộ emoji trong dashboard.html (done 2026-05-29)
-- [x] **Chart.js integration** — doughnut (status) + horizontal bar (team, category) — done 2026-05-29
-- [ ] **Line chart (submission trend)** — cần thêm `trend_data` field từ GAS API trước khi implement
-- [ ] **Sidebar cho register.html** — nếu PO muốn consistent enterprise layout toàn bộ app
-- [ ] **Dark mode** — tokens đã sẵn sàng, chỉ cần thêm `@media (prefers-color-scheme: dark)` block trong `variables.css`
-- [ ] **Logo SVG** — thay thế Heroicons sparkles trong sidebar brand bằng logo TPBank BIZ proper
+- [x] SVG icon library — Heroicons 2.0 (done 2026-05-29)
+- [x] Chart.js integration (done 2026-05-29)
+- [x] Full UC detail view modal — 4 sections (done 2026-06-02)
+- [ ] Dark mode — tokens sẵn sàng, thêm `@media (prefers-color-scheme: dark)` vào `variables.css`
+- [ ] Logo SVG thay sparkles trong sidebar brand

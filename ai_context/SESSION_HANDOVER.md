@@ -236,3 +236,38 @@
 - **[BUG-GAS-01] GAS data loading lỗi** — `?action=health` OK nhưng `?action=lookup` / `?action=list` không load được. Root cause chưa xác định. Cần: paste exact error message từ toast hoặc GAS Executions log
 - **[BUG-FE-01] auth.js chưa push GitHub** — fix URL duplicate đã đúng trong local nhưng GitHub Pages vẫn phục vụ code cũ
 - **Utils.gs** fix addHeader cần deploy lên GAS
+
+---
+
+## Session: 2026-06-02
+**Scope:** Full UC detail view before approval + GAS permission fix + full flow test
+**Commits:** `afd1933` (feat), `0b8c7a0` (fix) — merged vào `main`
+
+### Đã hoàn thành
+
+- **[BUG-FE-01] Verified closed** — auth.js URL fix đã có trên GitHub từ trước, handover cũ ghi sai trạng thái
+- **Full flow test (Playwright)** — 17/18 pass; 1 false positive (test dùng `tuantt4` là admin nhưng assume là user thường); UI role-based hoạt động đúng
+- **FEAT: Xem chi tiết UC trước khi duyệt** — rebuild modal thành 4 section theo wizard steps; progressive fetch: mở ngay với list data → background fetch `getUseCase` → re-render full data khi GAS trả về
+- **FIX: GAS `ADMIN_EMAILS` mismatch** — `Config.gs` cũ dùng email (`admin@sptd.vn`); auth đã chuyển sang username → fix thành `['admin', 'tuantt4', 'manager']`
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/js/dashboard.js` | +180 lines: `openDetail` gọi `_fetchFullDetail`; thêm `_fetchFullDetail`, `_normalizeFullData`; rewrite `_renderDetailBody` (4 sections); helpers `_dsection`, `_dsubsec`, `_dgrid`, `_dfield` |
+| `assets/css/dashboard.css` | +96 lines: detail section styles — step badges, 2-col grid, pre-wrap values, subsection, wide-modal padding reset |
+| `assets/gas-backend/Config.gs` | Line 111: `ADMIN_EMAILS = ['admin', 'tuantt4', 'manager']` (usernames, không phải emails) |
+
+### Decisions chốt
+1. **Modal progressive load** — hiện ngay với list data (12 fields), fetch full data từ GAS ngầm. Nếu GAS lỗi, partial view vẫn hữu ích; không show error toast để tránh nhiễu
+2. **Sections tự ẩn nếu empty** — Sections 2/3/4 không render khi không có data → clean với data cũ hoặc khi GAS chưa deploy
+3. **`_normalizeFullData`** — normalize PascalCase từ `getUseCase` response về snake_case dùng chung
+4. **ADMIN_EMAILS dùng username** — nhất quán với auth system, không dùng email format
+
+### Blockers hiện tại
+- **[BUG-GAS-02] NEW — GAS new deployment chưa authorize**: Khi deploy GAS Web App mới, cần chạy thủ công 1 hàm trong GAS Editor để grant OAuth → Sheets access. Chưa làm → create/submit bị "không có quyền"
+- **[BUG-GAS-03] NEW — CONFIG sheet override `Config.gs`**: `getAdminEmails_()` đọc CONFIG sheet row `ADMIN_EMAILS` trước khi fallback về `Config.gs`. Nếu sheet còn giá trị `admin@sptd.vn,manager@sptd.vn` thì fix `Config.gs` bị vô hiệu → phải update cell trong sheet thành `admin,tuantt4,manager`
+- **[BUG-GAS-01] vẫn open** — root cause lookup/list loading chưa xác định
+
+### Regression risks
+- `_renderDetailBody` rewrite hoàn toàn — field keys từ `listUseCases` (`uc.pain_point`, `uc.team`...) phải khớp với `_dgrid`/`_dfield` calls. Verify với GAS data thật sau khi authorize
+- `openDetail` gọi `Api.getUseCase(record_id)` mỗi lần mở modal — 1 JSONP request thêm/lần; acceptable nhưng cần monitor nếu GAS có rate limit

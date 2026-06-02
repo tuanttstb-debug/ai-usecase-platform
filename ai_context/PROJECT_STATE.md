@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-05-29 (Part 3)  
-**Version:** 3.1.0-ui
+**Last updated:** 2026-06-02  
+**Version:** 3.2.0
 
 ---
 
@@ -72,8 +72,8 @@ env.js → auth.js → [inline portal script]
 | Dashboard (admin) | ⚠️ | UI ✅; GAS approve/reject cần deploy |
 | Dashboard (user) | ✅ | Only "Use Case của tôi" tab visible |
 | My US feature | ✅ | Tab trong dashboard; case-insensitive filter, cross-compare owner_name/email vs displayName/username |
-| US Detail popup | ✅ | `.modal-card--wide`; approve/reject inline cho admin |
-| Approval flow | ⚠️ | UI ✅ (popup + confirm area); GAS endpoints chưa deploy |
+| US Detail popup | ✅ | 4-section view (full wizard steps); progressive load từ GAS; approve/reject inline |
+| Approval flow | ⚠️ | UI ✅; GAS deployed nhưng ADMIN_EMAILS chưa sync + chưa authorize OAuth |
 | TPBank sidebar UI | ✅ | Tất cả pages dùng sidebar — consistent layout |
 | Heroicons SVG | ✅ | Tất cả emoji → SVG inline (dashboard, register, index) |
 | Chart.js charts | ✅ | doughnut + horizontal bar; CSS fallback nếu CDN fail |
@@ -83,16 +83,16 @@ env.js → auth.js → [inline portal script]
 
 | Feature | Status | Notes |
 |---|---|---|
-| createUseCase | ✅ | Live |
-| getUseCase | ✅ | Live |
+| createUseCase | ⚠️ | Code OK; bị chặn do GAS new deployment chưa authorize OAuth (BUG-GAS-02) |
+| getUseCase | ✅ | Live — dùng bởi detail modal progressive fetch |
 | updateUseCase | ✅ | Live |
-| listUseCases | ⚠️ | Code OK; đang lỗi kết nối — chưa xác định root cause (BUG-GAS-01) |
-| approveUseCase | ⚠️ | Code ready, needs GAS deploy |
-| rejectUseCase | ⚠️ | Code ready, needs GAS deploy |
+| listUseCases | ⚠️ | Code OK; lỗi kết nối chưa xác định root cause (BUG-GAS-01) |
+| approveUseCase | ⚠️ | Deployed; bị chặn ADMIN_EMAILS mismatch (BUG-GAS-03) + OAuth (BUG-GAS-02) |
+| rejectUseCase | ⚠️ | Deployed; bị chặn ADMIN_EMAILS mismatch (BUG-GAS-03) + OAuth (BUG-GAS-02) |
 | duplicateCheck | ✅ | Live |
 | lookupData | ✅ | Live |
 | dashboard API | ✅ | Live |
-| Authentication | ❌ | Email-based only (SEC-01) |
+| Authentication | ❌ | Username-based FE only, no real auth (SEC-01) |
 
 ## Auth Architecture Notes (v3.1)
 - **Login:** Username-based (no email format required). VD: `tuantt4`, `admin`
