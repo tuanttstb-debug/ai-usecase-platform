@@ -271,3 +271,34 @@
 ### Regression risks
 - `_renderDetailBody` rewrite hoàn toàn — field keys từ `listUseCases` (`uc.pain_point`, `uc.team`...) phải khớp với `_dgrid`/`_dfield` calls. Verify với GAS data thật sau khi authorize
 - `openDetail` gọi `Api.getUseCase(record_id)` mỗi lần mở modal — 1 JSONP request thêm/lần; acceptable nhưng cần monitor nếu GAS có rate limit
+
+---
+
+## Session: 2026-06-02 (Part 2)
+**Scope:** Root cause diagnosis — data loading failure + URL fix
+**Commits:** `b265ebe` (fix URL + resolve merge conflict)
+
+### Đã hoàn thành
+
+- **[BUG-GAS-01] ROOT CAUSE XÁC ĐỊNH + CLOSED** — Phân tích toàn bộ git history `config/env.js` (7 URL khác nhau trong 35 phút). Root cause: commit `a76bd9f` nhập URL không tồn tại (`AKfycbx8b7h...`) khi cố revert — không khớp với bất kỳ deployment nào trong GAS.
+- **[BUG-GAS-02] CLOSED** — User đã authorize OAuth cho deployment hiện tại. Link đang hoạt động.
+- **`env.js` cố định tại URL working**: `AKfycbyaM1dQcCZYHNam3zb6UrwP5Qf8BnsJr1XzjPUuGqla-k2WCAI5llLllIhadU7mfBfP`
+- **Quy trình deploy chuẩn documented** trong `TODO_NEXT.md` — ngăn tái phát
+
+### Timeline sự cố hôm nay (để tham khảo)
+
+| Thời gian | Hành động | Kết quả |
+|---|---|---|
+| Trước 15:00 | URL gốc `AKfycbwe0eo3X3KW...` | ✅ Hoạt động |
+| 15:00 | Deploy mới → URL `AKfycbzaMcZAEPa...` | ❌ Chưa auth OAuth |
+| 15:13 | Deploy mới → URL `AKfycbz4TmB4Ds...` | ❌ Chưa auth OAuth |
+| 15:15 | "Revert" → URL `AKfycbx8b7hdBNc...` | ❌ URL không tồn tại |
+| 15:3x | Deploy mới → URL `AKfycbwVGwFLjq...` | ❌ Chưa auth OAuth |
+| 15:35 | Deploy mới → URL `AKfycbyaM1dQcC...` → **authorize** | ✅ **Hoạt động** |
+
+### Root cause pattern
+Khi tạo "New Deployment" trong GAS: URL thay đổi + cần authorize OAuth lại. Giải pháp lâu dài: luôn dùng "Edit deployment → New version" thay vì "New Deployment" để giữ URL cố định.
+
+### Blockers còn lại
+- **[BUG-GAS-03]** CONFIG sheet `ADMIN_EMAILS` cần update → ảnh hưởng approve/reject
+- **P0** GAS code sync: `Config.gs`, `Utils.gs`, `LookupService.gs` local fixes chưa vào GAS Editor

@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-02  
-**Version:** 3.2.0
+**Last updated:** 2026-06-02 (Part 2)  
+**Version:** 3.2.1
 
 ---
 
@@ -81,14 +81,17 @@ env.js → auth.js → [inline portal script]
 
 ## Backend (GAS) — ⚠️ Partial
 
+**Active deployment URL:** `AKfycbyaM1dQcCZYHNam3zb6UrwP5Qf8BnsJr1XzjPUuGqla-k2WCAI5llLllIhadU7mfBfP`
+**OAuth:** ✅ Authorized | **GAS code sync:** ⚠️ Local fixes chưa deploy (Config.gs, Utils.gs, LookupService.gs)
+
 | Feature | Status | Notes |
 |---|---|---|
-| createUseCase | ⚠️ | Code OK; bị chặn do GAS new deployment chưa authorize OAuth (BUG-GAS-02) |
-| getUseCase | ✅ | Live — dùng bởi detail modal progressive fetch |
+| createUseCase | ✅ | OAuth authorized — hoạt động |
+| getUseCase | ✅ | Live |
 | updateUseCase | ✅ | Live |
-| listUseCases | ⚠️ | Code OK; lỗi kết nối chưa xác định root cause (BUG-GAS-01) |
-| approveUseCase | ⚠️ | Deployed; bị chặn ADMIN_EMAILS mismatch (BUG-GAS-03) + OAuth (BUG-GAS-02) |
-| rejectUseCase | ⚠️ | Deployed; bị chặn ADMIN_EMAILS mismatch (BUG-GAS-03) + OAuth (BUG-GAS-02) |
+| listUseCases | ✅ | Hoạt động sau khi URL đúng |
+| approveUseCase | ⚠️ | Bị chặn BUG-GAS-03: CONFIG sheet ADMIN_EMAILS cần update |
+| rejectUseCase | ⚠️ | Bị chặn BUG-GAS-03: CONFIG sheet ADMIN_EMAILS cần update |
 | duplicateCheck | ✅ | Live |
 | lookupData | ✅ | Live |
 | dashboard API | ✅ | Live |
