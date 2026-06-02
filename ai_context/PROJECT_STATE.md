@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-02 (Part 2)  
-**Version:** 3.2.1
+**Last updated:** 2026-06-02 (Part 3)  
+**Version:** 3.3.0
 
 ---
 
@@ -69,11 +69,14 @@ env.js → auth.js → [inline portal script]
 | Backward compat `?edit=` | ✅ | `index.html` redirects `?edit=` → `register.html` |
 | Wizard 4-step | ✅ | `register.html` |
 | Auto-fill owner fields | ✅ | Owner_Name auto-fill (editable); Owner_Email hidden + silent inject khi submit |
-| Dashboard (admin) | ⚠️ | UI ✅; GAS approve/reject cần deploy |
-| Dashboard (user) | ✅ | Only "Use Case của tôi" tab visible |
-| My US feature | ✅ | Tab trong dashboard; case-insensitive filter, cross-compare owner_name/email vs displayName/username |
-| US Detail popup | ✅ | 4-section view (full wizard steps); progressive load từ GAS; approve/reject inline |
-| Approval flow | ⚠️ | UI ✅; GAS deployed nhưng ADMIN_EMAILS chưa sync + chưa authorize OAuth |
+| Dashboard (admin) | ✅ | Auto-load tất cả tabs khi login; approve/reject confirmed working |
+| Dashboard (user) | ✅ | My Cases + Khám phá tabs |
+| My US feature | ✅ | Tab trong dashboard; case-insensitive filter, cross-compare owner_name/email |
+| Explore (Khám phá) | ✅ | NEW v3.3 — All approved UCs from org; searchable; all users |
+| US Detail popup | ✅ | 4-section view; progressive load; approve/reject inline; Copy Prompt button |
+| Copy Prompt | ✅ | NEW v3.3 — 8 prompt fields → clipboard; hiện sau khi full data load |
+| Approval flow | ✅ | Confirmed working (from/reject thành công) |
+| Auto-load on startup | ✅ | NEW v3.3 — _loadStartupData() thay lazy tab-click loading |
 | TPBank sidebar UI | ✅ | Tất cả pages dùng sidebar — consistent layout |
 | Heroicons SVG | ✅ | Tất cả emoji → SVG inline (dashboard, register, index) |
 | Chart.js charts | ✅ | doughnut + horizontal bar; CSS fallback nếu CDN fail |
@@ -81,17 +84,17 @@ env.js → auth.js → [inline portal script]
 
 ## Backend (GAS) — ⚠️ Partial
 
-**Active deployment URL:** `AKfycbyaM1dQcCZYHNam3zb6UrwP5Qf8BnsJr1XzjPUuGqla-k2WCAI5llLllIhadU7mfBfP`
-**OAuth:** ✅ Authorized | **GAS code sync:** ⚠️ Local fixes chưa deploy (Config.gs, Utils.gs, LookupService.gs)
+**Active deployment URL:** `AKfycbwe0eo3X3KWxGdJ8ZWLjAgx3FVvcSOxTA5KVJGYVV3_Skbn0eXAVouzKaZOgDaDcUupew`
+**OAuth:** ✅ Authorized | **GAS code sync:** ⚠️ Local fixes chưa deploy — chưa tìm được đúng GAS project (GAS-MYSTERY-01)
 
 | Feature | Status | Notes |
 |---|---|---|
-| createUseCase | ✅ | OAuth authorized — hoạt động |
+| createUseCase | ✅ | Live |
 | getUseCase | ✅ | Live |
 | updateUseCase | ✅ | Live |
-| listUseCases | ✅ | Hoạt động sau khi URL đúng |
-| approveUseCase | ⚠️ | Bị chặn BUG-GAS-03: CONFIG sheet ADMIN_EMAILS cần update |
-| rejectUseCase | ⚠️ | Bị chặn BUG-GAS-03: CONFIG sheet ADMIN_EMAILS cần update |
+| listUseCases | ✅ | Live |
+| approveUseCase | ✅ | Confirmed working |
+| rejectUseCase | ✅ | Confirmed working |
 | duplicateCheck | ✅ | Live |
 | lookupData | ✅ | Live |
 | dashboard API | ✅ | Live |

@@ -302,3 +302,49 @@ Khi tạo "New Deployment" trong GAS: URL thay đổi + cần authorize OAuth l�
 ### Blockers còn lại
 - **[BUG-GAS-03]** CONFIG sheet `ADMIN_EMAILS` cần update → ảnh hưởng approve/reject
 - **P0** GAS code sync: `Config.gs`, `Utils.gs`, `LookupService.gs` local fixes chưa vào GAS Editor
+
+---
+
+## Session: 2026-06-02 (Part 3)
+**Scope:** Bug fixes (URL, CSS modal) + 3 new features (auto-load, explore tab, copy prompt)
+**Commits:** `93a2e58` (CSS fix), `b265ebe` (URL fix), `f1530ec` (features)
+**Version:** 3.3.0
+
+### Đã hoàn thành
+
+- **[BUG-GAS-01] CLOSED** — Root cause xác định: `env.js` trỏ URL không tồn tại (`AKfycbx8b7h...`). Đã restore URL working `AKfycbwe0eo3X3KW...`.
+- **[BUG-GAS-02] CLOSED** — OAuth đã authorize cho active deployment.
+- **Approve/Reject confirmed working** — User xác nhận "từ chối, duyệt thành công".
+- **[BUG-CSS-01] FIXED** — Modal footer bị đẩy xuống dưới viewport khi nội dung 4-section dài. Fix: `overflow:hidden` + `min-height:0` trên `.modal-card--wide`. File: `assets/css/components.css`.
+- **FEAT: Auto-load on startup** — Thay `_loadTabData(initTab)` bằng `_loadStartupData()`. Single `Promise.all([listUseCases, getDashboard])` populate tất cả tabs ngay khi `DOMContentLoaded`. Non-admin: 1 request; Admin: 2 requests.
+- **FEAT: Tab "Khám phá"** — Tab mới visible tất cả users. Hiển thị use cases có status=Approved từ toàn org. Searchable theo tên/team/lĩnh vực/người đăng ký.
+- **FEAT: Copy Prompt** — Nút `📋 Copy Prompt` trong footer detail modal. Hiện khi UC có data prompt (sau `_fetchFullDetail`). Ghép 8 trường thành text có `# heading`. `navigator.clipboard` với `execCommand` fallback.
+
+### Files changed
+
+| File | Delta |
+|---|---|
+| `assets/css/components.css` | +2 lines: `overflow:hidden` + `min-height:0` trên `.modal-card--wide` |
+| `assets/js/dashboard.js` | +152 lines: `_loadStartupData`, `renderExploreTable`, `_bindExploreSearch`, `_hasPromptData`, `_copyPrompt`, `_fallbackCopy`; update `_bindRefresh`, `_confirmDetailAction`, `openDetail`, `_fetchFullDetail`, `_bindDetailModal` |
+| `dashboard.html` | +20 lines: explore tab button + panel + copy prompt button |
+| `config/env.js` | URL restored (multiple commits) |
+| `ai_context/*.md` | Session docs updated |
+
+### Decisions chốt
+
+1. **`_loadStartupData` = single source of truth** — Cả refresh button và post-approve/reject đều gọi `_loadStartupData()`. `_pendingList` derive client-side từ `_allList` (filter Submitted/Under Review).
+2. **Explore chỉ show Approved** — Regular user chỉ thấy UC đã được duyệt → cleaner UX, tránh noise từ draft/pending của người khác.
+3. **Copy prompt = full text** — Ghép 8 trường với `# header` Markdown-style → paste được trực tiếp vào Claude/ChatGPT.
+4. **GAS URL mystery** — URL `AKfycbwe0eo3X3KW...` hoạt động nhưng không tìm thấy trong GAS deployment history của user → có thể thuộc GAS project khác. Cần identify project để quản lý.
+
+### Blockers còn lại
+
+- **[GAS-MYSTERY-01]** GAS URL active không tìm thấy trong deployment history → không quản lý được, không thể update code GAS
+- **[BUG-GAS-03]** STATUS UNCLEAR — approve/reject đang hoạt động nên CONFIG sheet của GAS project active có thể đã đúng. Cần verify bằng cách mở đúng GAS project và check CONFIG sheet
+- **GAS code sync** — Local fixes (`Config.gs`, `Utils.gs`, `LookupService.gs`) chưa vào GAS Editor vì chưa tìm được đúng project
+
+### Regression risks
+
+- **`_pendingList` derive client-side**: trước đây GAS filter `filter:'pending'` — giờ filter JS từ `_allList` limit 200. Nếu >200 records total, một số pending records ở cuối list có thể không hiển thị trong tab "Chờ duyệt".
+- **`_loadTabData('my')` gọi `_loadMyUseCases()`** — vẫn fetch API riêng khi user click tab My sau startup → double fetch. Harmless nhưng lãng phí 1 request.
+- **Explore tab empty nếu không có Approved UC** — Khi dùng lần đầu, nếu chưa có UC nào được duyệt, tab Khám phá sẽ trống. Đây là expected behavior nhưng có thể confuse user mới.

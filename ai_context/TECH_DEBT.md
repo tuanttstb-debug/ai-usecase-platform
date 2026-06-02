@@ -78,3 +78,23 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 **Mô tả:** `portal.css` có responsive rules cho `.portal-header` nhưng `index.html` đã chuyển sang `.app-layout` sidebar. Rules này harmless nhưng dead code.
 
 **Fix:** Xóa `.portal-header` rules khỏi `portal.css`.
+
+---
+
+## GAS-MYSTERY-01 — GAS URL active không tìm thấy trong deployment history
+
+**Mô tả:** URL `AKfycbwe0eo3X3KWxGdJ8ZWLjAgx3FVvcSOxTA5KVJGYVV3_Skbn0eXAVouzKaZOgDaDcUupew` đang hoạt động nhưng không xuất hiện trong GAS deployment history của user. Có thể thuộc GAS project khác (bị quên hoặc tạo từ lần deploy cũ).
+
+**Rủi ro:** Nếu project đó bị xóa hoặc Google account mất access → toàn bộ backend down không khôi phục được; không thể update GAS code vì không biết project nào.
+
+**Fix:** Duyệt tất cả GAS projects tại `script.google.com` → tìm deployment có URL trên → đổi tên + ghi chú. Xem TODO_NEXT P0.
+
+---
+
+## PERF-02 — `_loadTabData('my')` vẫn fetch API riêng sau startup
+
+**Mô tả:** Sau khi `_loadStartupData()` đã populate `_myList`, user click tab "My Cases" vẫn gọi `_loadMyUseCases()` (không có guard) → thêm 1 API request không cần thiết.
+
+**Hiện tại:** Harmless về functionality, chỉ lãng phí 1 request mỗi lần click.
+
+**Fix:** Thêm guard `if (_myList.length === 0)` vào `_loadTabData` case 'my'. File: `assets/js/dashboard.js` dòng `} else if (tab === 'my') {`.
