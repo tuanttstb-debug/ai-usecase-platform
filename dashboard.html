@@ -184,6 +184,9 @@
             <button class="dash-tab" data-tab="my" role="tab" aria-selected="true" id="tab-btn-my">
               Use Case của tôi
             </button>
+            <button class="dash-tab" data-tab="explore" role="tab" aria-selected="false" id="tab-btn-explore">
+              Khám phá
+            </button>
           </div>
 
           <!-- Tab: Tổng quan (admin only) -->
@@ -257,6 +260,22 @@
             </div>
           </div>
 
+          <!-- Tab: Khám phá (all users) — approved use cases from org -->
+          <div id="tab-explore" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-explore">
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <h3>Khám phá Use Case</h3>
+                <div class="search-box">
+                  <input type="search" id="exploreSearch" class="search-input" placeholder="Tìm theo tên, team, lĩnh vực..." aria-label="Tìm kiếm use case">
+                </div>
+              </div>
+              <table id="exploreTable" class="dash-table" aria-label="Danh sách use case đã được duyệt">
+                <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Team</th><th>Người đăng ký</th><th>Lĩnh vực</th><th></th></tr></thead>
+                <tbody><tr><td colspan="6" class="empty-cell">Đang tải...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
         </div><!-- /dashboardContent -->
 
       </div><!-- /app-content -->
@@ -308,6 +327,7 @@
       <div class="modal-footer" id="detailModalFooter">
         <a id="detailEditBtn" href="#" class="btn btn-outline" style="display:none">✏️ Chỉnh sửa</a>
         <div style="flex:1"></div>
+        <button class="btn btn-outline" id="detailCopyPromptBtn" style="display:none">📋 Copy Prompt</button>
         <button class="btn btn-outline" id="detailCloseBtn">Đóng</button>
         <button class="btn btn-danger" id="detailRejectBtn" style="display:none">✕ Từ chối</button>
         <button class="btn btn-success" id="detailApproveBtn" style="display:none">✓ Duyệt</button>

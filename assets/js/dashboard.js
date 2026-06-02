@@ -15,6 +15,7 @@
   var _pendingList = [];
   var _allList     = [];
   var _myList      = [];
+  var _exploreList = [];
   var _charts      = {};
   var _detailUc    = null;
   var _detailAction = null; // 'approve' | 'reject'
@@ -50,14 +51,15 @@
     _bindRefresh();
     _bindDetailModal();
     _bindApprovalModal();
+    _bindExploreSearch();
 
     // Determine initial tab from URL param
     var sp       = new URLSearchParams(window.location.search);
     var initTab  = sp.get('tab') || (_isAdmin ? 'overview' : 'my');
     _activateTab(initTab);
 
-    // Load data for initial tab
-    _loadTabData(initTab);
+    // Load all data on startup — no waiting for tab clicks
+    _loadStartupData();
   });
 
   // ── Layout setup (role-based visibility) ─────────────────────────
@@ -147,6 +149,55 @@
       if (_allList.length === 0) _loadAllUseCases();
     } else if (tab === 'my') {
       _loadMyUseCases();
+    } else if (tab === 'explore') {
+      if (!_exploreList.length) {
+        _exploreList = _allList.filter(function (uc) { return uc.status === 'Approved'; });
+        renderExploreTable(_exploreList);
+      }
+    }
+  }
+
+  // ── Startup: load all data at once (no lazy loading) ─────────────
+  async function _loadStartupData() {
+    showLoading(true);
+    try {
+      var results = await Promise.all([
+        Api.listUseCases({ limit: 200 }),
+        _isAdmin ? Api.getDashboard() : Promise.resolve(null)
+      ]);
+      _allList = results[0] || [];
+
+      var uName  = (_user ? (_user.displayName || _user.email || '') : '').toLowerCase().trim();
+      var uEmail = (_user ? (_user.email       || '')              : '').toLowerCase().trim();
+      _myList = _allList.filter(function (uc) {
+        var n = String(uc.owner_name  == null ? '' : uc.owner_name).toLowerCase().trim();
+        var e = String(uc.owner_email == null ? '' : uc.owner_email).toLowerCase().trim();
+        return n === uName || n === uEmail || e === uEmail || e === uName;
+      });
+      _exploreList = _allList.filter(function (uc) { return uc.status === 'Approved'; });
+
+      renderMyTable(_myList);
+      renderExploreTable(_exploreList);
+
+      if (_isAdmin) {
+        _dashData    = results[1] || {};
+        _pendingList = _allList.filter(function (uc) {
+          return uc.status === 'Submitted' || uc.status === 'Under Review';
+        });
+        renderAllTable(_allList);
+        renderPendingList(_pendingList);
+        updatePendingBadge(_pendingList.length);
+        renderKPI(_dashData);
+        renderStatusChart(_dashData.status_breakdown   || {});
+        renderBreakdownChart('teamChart',     _dashData.team_breakdown     || {});
+        renderBreakdownChart('categoryChart', _dashData.category_breakdown || {});
+        renderRecentTable(_dashData.recent_submissions || []);
+        if (_dashData.refreshed_at) updateRefreshedAt(_dashData.refreshed_at);
+      }
+    } catch (err) {
+      showToast('Lỗi tải dữ liệu: ' + err.message, 'error');
+    } finally {
+      showLoading(false);
     }
   }
 
@@ -440,6 +491,27 @@
     }).join('');
   }
 
+  // ── Explore Table ─────────────────────────────────────────────────
+  function renderExploreTable(items) {
+    var tbody = document.querySelector('#exploreTable tbody');
+    if (!tbody) return;
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Chưa có use case nào được duyệt</td></tr>';
+      return;
+    }
+    tbody.innerHTML = items.map(function (uc) {
+      var k = _cache(uc);
+      return '<tr style="cursor:pointer" onclick="Dashboard._byKey(\'' + esc(k) + '\')">' +
+        '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
+        '<td>' + esc(uc.name       || '') + '</td>' +
+        '<td>' + esc(uc.team       || '--') + '</td>' +
+        '<td>' + esc(uc.owner_name || '--') + '</td>' +
+        '<td>' + esc(uc.category   || '--') + '</td>' +
+        '<td>' + _btnDetail(uc, 'Xem') + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
   // ── US Detail Modal ───────────────────────────────────────────────
   function openDetail(uc) {
     _detailUc     = uc;
@@ -470,6 +542,10 @@
     document.getElementById('detailApproveBtn').style.display = canApprove ? '' : 'none';
     document.getElementById('detailRejectBtn').style.display  = canApprove ? '' : 'none';
 
+    // Copy prompt button: visible when prompt data exists
+    var copyBtn = document.getElementById('detailCopyPromptBtn');
+    if (copyBtn) copyBtn.style.display = _hasPromptData(uc) ? '' : 'none';
+
     // Reset action area
     document.getElementById('detailActionArea').style.display  = 'none';
     document.getElementById('detailModalFooter').style.display = '';
@@ -488,6 +564,8 @@
       if (_detailUc && _detailUc.record_id === recordId) {
         _detailUc = Object.assign({}, _detailUc, full);
         document.getElementById('detailView').innerHTML = _renderDetailBody(_detailUc, true);
+        var copyBtn = document.getElementById('detailCopyPromptBtn');
+        if (copyBtn) copyBtn.style.display = _hasPromptData(_detailUc) ? '' : 'none';
       }
     } catch (_) {
       // GAS may not be deployed — partial view already shown is sufficient
@@ -658,6 +736,45 @@
     '</div>';
   }
 
+  function _hasPromptData(uc) {
+    return !!(uc && (uc.prompt_role || uc.prompt_task || uc.prompt_goal || uc.prompt_context ||
+                     uc.prompt_input || uc.prompt_steps || uc.prompt_output_format || uc.prompt_evaluation));
+  }
+
+  function _copyPrompt() {
+    var uc = _detailUc;
+    if (!uc) return;
+    var parts = [];
+    if (uc.prompt_role)          parts.push('# Vai trò (Role)\n'                     + uc.prompt_role);
+    if (uc.prompt_task)          parts.push('# Nhiệm vụ (Task)\n'                    + uc.prompt_task);
+    if (uc.prompt_goal)          parts.push('# Mục tiêu (Goal)\n'                    + uc.prompt_goal);
+    if (uc.prompt_context)       parts.push('# Ngữ cảnh (Context)\n'                + uc.prompt_context);
+    if (uc.prompt_input)         parts.push('# Đầu vào (Input)\n'                    + uc.prompt_input);
+    if (uc.prompt_steps)         parts.push('# Các bước xử lý (Steps)\n'            + uc.prompt_steps);
+    if (uc.prompt_output_format) parts.push('# Định dạng đầu ra (Output Format)\n'  + uc.prompt_output_format);
+    if (uc.prompt_evaluation)    parts.push('# Tiêu chí đánh giá (Evaluation)\n'   + uc.prompt_evaluation);
+    if (!parts.length) { showToast('Use case này chưa có nội dung prompt', 'info'); return; }
+    var text = parts.join('\n\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(function () { showToast('Đã copy prompt vào clipboard', 'success'); })
+        .catch(function () { _fallbackCopy(text); });
+    } else {
+      _fallbackCopy(text);
+    }
+  }
+
+  function _fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0;width:1px;height:1px';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); showToast('Đã copy prompt vào clipboard', 'success'); }
+    catch (e) { showToast('Không thể copy tự động — hãy copy thủ công từ mục Prompt', 'error'); }
+    document.body.removeChild(ta);
+  }
+
   function _bindDetailModal() {
     document.getElementById('detailModalCloseBtn').addEventListener('click', _closeDetail);
     document.getElementById('detailCloseBtn').addEventListener('click', _closeDetail);
@@ -680,6 +797,8 @@
       document.getElementById('detailModalFooter').style.display = '';
     });
     document.getElementById('detailActionConfirmBtn').addEventListener('click', _confirmDetailAction);
+    var copyBtn = document.getElementById('detailCopyPromptBtn');
+    if (copyBtn) copyBtn.addEventListener('click', _copyPrompt);
   }
 
   function _showActionArea(action) {
@@ -721,13 +840,8 @@
         showToast('Đã từ chối use case', 'info');
       }
       _closeDetail();
-      // Reload pending + overview
-      _pendingList = [];
-      _dashData    = null;
-      await _loadAdminOverview();
-      if (document.getElementById('tab-pending') && !document.getElementById('tab-pending').classList.contains('hidden')) {
-        await _loadPending();
-      }
+      _allList = []; _pendingList = []; _dashData = null;
+      await _loadStartupData();
     } catch (err) {
       showToast('Lỗi: ' + err.message, 'error');
       confirmBtn.disabled = false;
@@ -805,6 +919,22 @@
     }
   }
 
+  // ── Search (Explore tab) ─────────────────────────────────────────
+  function _bindExploreSearch() {
+    var input = document.getElementById('exploreSearch');
+    if (!input) return;
+    input.addEventListener('input', debounce(function () {
+      var q = input.value.trim().toLowerCase();
+      if (!q) { renderExploreTable(_exploreList); return; }
+      renderExploreTable(_exploreList.filter(function (uc) {
+        return String(uc.name       == null ? '' : uc.name).toLowerCase().includes(q)
+            || String(uc.owner_name == null ? '' : uc.owner_name).toLowerCase().includes(q)
+            || (uc.team     || '').toLowerCase().includes(q)
+            || (uc.category || '').toLowerCase().includes(q);
+      }));
+    }, 300));
+  }
+
   // ── Search (All tab) ──────────────────────────────────────────────
   function _bindSearch() {
     var input = document.getElementById('searchInput');
@@ -826,8 +956,8 @@
     var btn = document.getElementById('refreshBtn');
     if (!btn) return;
     btn.addEventListener('click', function () {
-      _allList = []; _pendingList = []; _dashData = null;
-      _loadAdminOverview();
+      _allList = []; _pendingList = []; _dashData = null; _myList = []; _exploreList = [];
+      _loadStartupData();
     });
   }
 
