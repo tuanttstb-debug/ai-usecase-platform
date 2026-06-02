@@ -4,6 +4,19 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## P0 — [NEEDS DEPLOY] Sync GAS code v3.4 sau khi tìm được project
+
+Sau khi hoàn thành GAS-MYSTERY-01 bên dưới, paste 2 file mới vào GAS Editor:
+
+| File | Thay đổi quan trọng |
+|---|---|
+| `UseCaseService.gs` | `generateUseCaseId_()` rewrite v2 + 2 helpers + `peekNextUseCaseId_()` |
+| `Code.gs` | Route `?action=next-id` |
+
+Sau khi deploy (Edit deployment → New version), test: `GAS_URL?action=next-id` → phải trả `{"success":true,"data":{"next_id":"AIUS-XXXX"}}`
+
+---
+
 ## P0 — [BLOCKING] Tìm đúng GAS project (GAS-MYSTERY-01)
 
 GAS URL đang hoạt động (`AKfycbwe0eo3X3KW...`) không tìm thấy trong deployment history → không biết project nào đang serve, không thể update code GAS.
@@ -106,6 +119,7 @@ Option B — Google Sign-In (proper fix):
 - [x] Tab Khám phá (all approved UCs, searchable, all users)
 - [x] Copy Prompt (8 fields, clipboard API + fallback)
 - [x] Approve/Reject confirmed working end-to-end
+- [x] **Unique UseCase ID (v3.4)**: `generateUseCaseId_()` sync MASTER_DATA + collision loop + `?action=next-id` preview endpoint + badge trên wizard form
 
 ---
 

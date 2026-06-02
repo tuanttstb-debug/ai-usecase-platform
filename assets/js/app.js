@@ -15,7 +15,7 @@
       // Auto-fill và lock trường người đăng ký từ user đã đăng nhập
       _autoFillOwner();
 
-      // 2. Load lookup data từ GAS (background)
+      // 2. Load lookup data và next ID từ GAS (background, song song)
       loadLookupData(); // async, không block
 
       // 3. Edit mode hay new mode
@@ -36,6 +36,8 @@
       } else {
         const draft = Storage.load();
         if (draft) showDraftBanner(draft);
+        // Chỉ hiển thị next ID preview ở new mode (edit mode đã có ID riêng)
+        loadNextIdPreview();
       }
 
       // 4. Autosave
@@ -65,6 +67,27 @@
     FormMapper.populateData({
       Owner_Name: user.displayName || user.email
     });
+  }
+
+  /* ── Load and display next UseCase ID preview ── */
+  async function loadNextIdPreview() {
+    const badge = document.getElementById('nextIdBadge');
+    if (!badge) return;
+    badge.className = 'nextid-badge loading';
+    badge.textContent = 'Mã: …';
+    badge.style.display = '';
+    try {
+      const result = await Api.getNextId();
+      const nextId = (result && result.next_id) ? result.next_id : null;
+      if (nextId) {
+        badge.textContent = 'Mã dự kiến: ' + nextId;
+        badge.className = 'nextid-badge';
+      } else {
+        badge.style.display = 'none';
+      }
+    } catch (e) {
+      badge.style.display = 'none';
+    }
   }
 
   /* ── Load lookup data (không block form render) ── */

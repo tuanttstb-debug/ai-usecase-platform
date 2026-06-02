@@ -10,6 +10,7 @@ var API = {
   duplicateCheck: () => `${_gasBase}?action=duplicate-check`,
   dashboard:      () => `${_gasBase}?action=dashboard`,
   health:         () => `${_gasBase}?action=health`,
+  nextId:         () => `${_gasBase}?action=next-id`,
 
   // Dashboard: list use cases với optional filters
   list: (filters) => {

@@ -97,6 +97,10 @@ function route_(action, params, body) {
     return createResponse_(true, 'Lookup data', getLookupData_());
   }
 
+  if (action === 'next-id') {
+    return createResponse_(true, 'Next available UseCase ID', peekNextUseCaseId_());
+  }
+
   // Debug endpoint: xem raw LOOKUP sheet (dùng khi cần troubleshoot)
   if (action === 'lookup-debug') {
     var sheet = getOrCreateSheet_(SHEETS.LOOKUP);

@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-02 (Part 3)  
-**Version:** 3.3.0
+**Last updated:** 2026-06-02 (Part 4)  
+**Version:** 3.4.0
 
 ---
 
@@ -62,13 +62,14 @@ env.js → auth.js → [inline portal script]
 |---|---|---|
 | Login page | ✅ | Username-based (no email validation), `type="text"` |
 | Portal home | ✅ | Sidebar layout, SVG icons, same shell as dashboard |
-| Register/Wizard | ✅ | Sidebar layout; auto-fill Owner_Name (editable); Owner_Email ẩn — inject silent |
+| Register/Wizard | ✅ | Sidebar layout; auto-fill Owner_Name (editable); Owner_Email ẩn — inject silent; badge "Mã dự kiến: AIUS-XXXX" |
 | AuthService | ✅ | Username login; no regex; `ADMIN_EMAILS` = username list |
 | Auth guard | ✅ | All pages redirect to login if not authenticated |
 | Auth logout | ✅ | Sidebar logout button trên tất cả pages |
 | Backward compat `?edit=` | ✅ | `index.html` redirects `?edit=` → `register.html` |
 | Wizard 4-step | ✅ | `register.html` |
 | Auto-fill owner fields | ✅ | Owner_Name auto-fill (editable); Owner_Email hidden + silent inject khi submit |
+| Unique UseCase ID | ✅ | NEW v3.4 — `generateUseCaseId_()` sync với MASTER_DATA; collision loop; peek endpoint |
 | Dashboard (admin) | ✅ | Auto-load tất cả tabs khi login; approve/reject confirmed working |
 | Dashboard (user) | ✅ | My Cases + Khám phá tabs |
 | My US feature | ✅ | Tab trong dashboard; case-insensitive filter, cross-compare owner_name/email |

@@ -89,6 +89,7 @@ var Api = {
   getUseCase(id)      { return Api._request(API.getUseCase(id)); },
   getDashboard()      { return Api._request(API.dashboard()); },
   health()            { return Api._request(API.health()); },
+  getNextId()         { return Api._request(API.nextId()); },
 
   createUseCase(data) { return Api._request(API.create(), data); },
   updateUseCase(data) { return Api._request(API.update(), data); },

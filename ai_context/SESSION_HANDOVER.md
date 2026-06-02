@@ -348,3 +348,53 @@ Khi tạo "New Deployment" trong GAS: URL thay đổi + cần authorize OAuth l�
 - **`_pendingList` derive client-side**: trước đây GAS filter `filter:'pending'` — giờ filter JS từ `_allList` limit 200. Nếu >200 records total, một số pending records ở cuối list có thể không hiển thị trong tab "Chờ duyệt".
 - **`_loadTabData('my')` gọi `_loadMyUseCases()`** — vẫn fetch API riêng khi user click tab My sau startup → double fetch. Harmless nhưng lãng phí 1 request.
 - **Explore tab empty nếu không có Approved UC** — Khi dùng lần đầu, nếu chưa có UC nào được duyệt, tab Khám phá sẽ trống. Đây là expected behavior nhưng có thể confuse user mới.
+
+---
+
+## Session: 2026-06-02 (Part 4)
+**Scope:** Tự động sinh UseCase_ID chống trùng + hiển thị mã dự kiến trên form
+**Version:** 3.4.0
+
+### Vấn đề gốc (root cause)
+`generateUseCaseId_()` cũ chỉ dùng counter từ CONFIG sheet, không cross-check với MASTER_DATA. Nếu:
+- Sheet có ID cao hơn counter (import thủ công, rollback, migration)
+- Counter bị reset
+→ Có thể sinh ra ID đã tồn tại.
+
+Ngoài ra, có 1 bug tinh tế: code cũ dùng `data[j][0]` hardcoded thay vì `keyCol` index để tìm row NEXT_ID trong CONFIG sheet — hoạt động đúng trong thực tế vì cột 0 luôn là `Key`, nhưng không robust.
+
+### Đã hoàn thành
+
+- **[GAS] `_getAllUseCaseIds_()`** — NEW helper: đọc tất cả UseCase_ID từ MASTER_DATA
+- **[GAS] `_getMaxExistingIdNum_()`** — NEW helper: tìm số thứ tự cao nhất hiện có
+- **[GAS] `generateUseCaseId_()` rewrite v2** — sync `max(CONFIG.NEXT_ID, maxExisting + 1)` + collision loop + fix `configRowIndex` tracking (không còn dùng `data[j][0]` hardcoded)
+- **[GAS] `peekNextUseCaseId_()`** — NEW: xem trước ID tiếp theo, read-only, không tiêu thụ counter
+- **[GAS] `Code.gs`** — thêm endpoint `?action=next-id`
+- **[FE] `routes.js`** — thêm `API.nextId()`
+- **[FE] `api.js`** — thêm `Api.getNextId()`
+- **[FE] `register.html`** — thêm `#nextIdBadge` trong wizard-meta
+- **[FE] `app.js`** — `loadNextIdPreview()`: load + hiển thị badge "Mã dự kiến: AIUS-XXXX" ở new mode; ẩn ở edit mode
+- **[FE] `wizard.css`** — `.nextid-badge` styles (purple, subtle border)
+- **[TEST] `assets/tests/test-id-generation.js`** — 14 unit tests, 14/14 pass
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/gas-backend/UseCaseService.gs` | +72 lines: 3 new functions + rewrite `generateUseCaseId_()` |
+| `assets/gas-backend/Code.gs` | +4 lines: route `?action=next-id` |
+| `config/routes.js` | +1 line: `API.nextId()` |
+| `assets/js/api.js` | +1 line: `Api.getNextId()` |
+| `assets/js/app.js` | +22 lines: `loadNextIdPreview()` + call in new mode |
+| `register.html` | +1 line: `#nextIdBadge` span |
+| `assets/css/wizard.css` | +14 lines: `.nextid-badge` styles |
+| `assets/tests/test-id-generation.js` | NEW: 14 unit tests |
+
+### Decisions chốt
+1. **Sync strategy = max(CONFIG, maxExisting + 1)**: luôn dùng giá trị lớn hơn → không bao giờ tạo ID < maxExisting
+2. **Collision loop**: sau khi chọn candidate từ max(), loop skip qua bất kỳ ID nào đã tồn tại → handles edge cases như manually-inserted IDs ở giữa range
+3. **Peek = no lock, no write**: `peekNextUseCaseId_()` không dùng LockService → nhanh, không block concurrent creates; trade-off: preview có thể lệch nếu có create đồng thời (acceptable cho preview UX)
+4. **Badge ẩn ở edit mode**: ID đã được cấp và hiển thị trong `editModeBanner` → không cần preview
+5. **Badge ẩn khi GAS lỗi**: `loadNextIdPreview()` catch lỗi silently → không làm phiền user khi GAS offline
+
+### GAS deployment note
+Sau khi tìm được đúng GAS project (P0 blocker), paste `UseCaseService.gs` và `Code.gs` mới vào GAS Editor → "Edit deployment → New version → Deploy".
