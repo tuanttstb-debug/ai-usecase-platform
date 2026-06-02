@@ -454,8 +454,8 @@
     statusEl.textContent = cfg.label;
     statusEl.style.cssText = 'background:' + cfg.color + '20;color:' + cfg.color + ';border:1px solid ' + cfg.color + '40;flex-shrink:0';
 
-    // Body: render detail fields
-    document.getElementById('detailView').innerHTML = _renderDetailBody(uc);
+    // Body: render with partial list data first, then fetch full data
+    document.getElementById('detailView').innerHTML = _renderDetailBody(uc, false);
 
     // Edit button (own cases, not yet approved/rejected)
     var editBtn = document.getElementById('detailEditBtn');
@@ -476,35 +476,186 @@
     document.getElementById('detailActionComment').value = '';
 
     document.getElementById('usDetailModal').classList.remove('hidden');
+
+    // Fetch full data in background (requires GAS deployed)
+    if (uc.record_id) _fetchFullDetail(uc.record_id);
   }
 
-  function _renderDetailBody(uc) {
-    var fields = [
-      ['Mã Use Case',       uc.usecase_id],
-      ['Tên Use Case',      uc.name],
-      ['Người đăng ký',     uc.owner_name],
-      ['Mã người đăng ký',  uc.owner_email],
-      ['Team',              uc.team],
-      ['Lĩnh vực',          uc.category],
-      ['Trạng thái',        (STATUS_CFG[uc.status] || {}).label || uc.status],
-      ['Ngày nộp',          fmtDate(uc.submit_date || uc.submitted_at)],
-      ['Vấn đề / Pain point', uc.pain_point],
-      ['Giải pháp AI đề xuất', uc.solution],
-      ['Lợi ích kỳ vọng',  uc.expected_benefit],
-      ['Ước tính giờ tiết kiệm/tháng', uc.hours_saved],
-      ['Nhận xét duyệt',   uc.review_comment],
-      ['Người duyệt',      uc.reviewer_email],
-    ];
+  async function _fetchFullDetail(recordId) {
+    try {
+      var data = await Api.getUseCase(recordId);
+      var full = _normalizeFullData(data);
+      if (_detailUc && _detailUc.record_id === recordId) {
+        _detailUc = Object.assign({}, _detailUc, full);
+        document.getElementById('detailView').innerHTML = _renderDetailBody(_detailUc, true);
+      }
+    } catch (_) {
+      // GAS may not be deployed — partial view already shown is sufficient
+    }
+  }
 
-    var html = '<dl style="display:grid;grid-template-columns:160px 1fr;gap:var(--space-2) var(--space-4);margin:0">';
-    fields.forEach(function (f) {
-      if (!f[1] && f[1] !== 0) return;
-      var val = String(f[1]);
-      html += '<dt style="font-size:var(--text-sm);color:var(--color-text-secondary);font-weight:var(--font-weight-medium);padding:var(--space-2) 0;border-bottom:1px solid var(--color-border)">' + esc(f[0]) + '</dt>';
-      html += '<dd style="font-size:var(--text-sm);color:var(--color-text);padding:var(--space-2) 0;border-bottom:1px solid var(--color-border);white-space:pre-wrap;word-break:break-word;margin:0">' + esc(val) + '</dd>';
-    });
-    html += '</dl>';
-    return html;
+  function _normalizeFullData(d) {
+    if (!d) return {};
+    return {
+      record_id:            d.Record_ID              || '',
+      usecase_id:           d.UseCase_ID             || '',
+      name:                 d.UseCase_Name            || '',
+      owner_name:           d.Owner_Name              || '',
+      owner_email:          d.Owner_Email             || '',
+      team:                 d.Team                    || '',
+      category:             d.Business_Category       || '',
+      stage:                d.Current_Stage           || '',
+      status:               d.Status                  || '',
+      submit_date:          d.Submit_Date             || d.Created_At || '',
+      pain_point:           d.Pain_Point              || '',
+      current_process:      d.Current_Process         || '',
+      current_time_min:     d.Current_Time_Min        || '',
+      current_problem:      d.Current_Problem         || '',
+      user_type:            d.User_Type               || '',
+      expected_goals:       d.Expected_Goals          || '',
+      flow_description:     d.Flow_Description        || '',
+      input_types:          d.Input_Types             || '',
+      prompt_role:          d.Prompt_Role             || '',
+      prompt_task:          d.Prompt_Task             || '',
+      prompt_goal:          d.Prompt_Goal             || '',
+      prompt_context:       d.Prompt_Context          || '',
+      prompt_input:         d.Prompt_Input            || '',
+      prompt_steps:         d.Prompt_Steps            || '',
+      prompt_output_format: d.Prompt_Output_Format    || '',
+      prompt_evaluation:    d.Prompt_Evaluation       || '',
+      demo_status:          d.Demo_Status             || '',
+      demo_link:            d.Demo_Link               || '',
+      before_time_min:      d.Before_Time_Min         || '',
+      after_time_min:       d.After_Time_Min          || '',
+      quality_improvement:  d.Quality_Improvement     || '',
+      improvement_note:     d.Improvement_Note        || '',
+      reuse_level:          d.Reuse_Level             || '',
+      reuse_adjustment:     d.Reuse_Adjustment        || '',
+      when_to_use:          d.When_To_Use             || '',
+      usage_steps:          d.Usage_Steps             || '',
+      usage_notes:          d.Usage_Notes             || '',
+      review_comment:       d.Review_Comment          || '',
+      reviewer_email:       d.Reviewer                || d.reviewer_email || '',
+    };
+  }
+
+  function _renderDetailBody(uc, isFullData) {
+    var html = '';
+
+    // ── Section 1: Thông tin nghiệp vụ ──────────────────────────────
+    html += _dsection('1', 'Thông tin nghiệp vụ', [
+      _dgrid([
+        ['Người đăng ký', uc.owner_name],
+        ['Team',          uc.team],
+        ['Lĩnh vực',      uc.category],
+        ['Giai đoạn',     uc.stage],
+        ['Ngày nộp',      fmtDate(uc.submit_date || uc.submitted_at)],
+      ]),
+      _dfield('Điểm đau nghiệp vụ', uc.pain_point,      true),
+      _dfield('Quy trình hiện tại',  uc.current_process, true),
+      _dgrid([
+        ['Thời gian xử lý hiện tại', uc.current_time_min ? uc.current_time_min + ' phút' : ''],
+        ['Hệ quả / Rủi ro',          uc.current_problem],
+      ]),
+      _dfield('Đối tượng sử dụng', uc.user_type,      false),
+      _dfield('Mục tiêu kỳ vọng',  uc.expected_goals, false),
+    ]);
+
+    // ── Section 2: Luồng AI & Prompt ────────────────────────────────
+    var s2 = _dfield('Mô tả luồng xử lý AI', uc.flow_description, true) +
+             _dfield('Loại dữ liệu đầu vào',  uc.input_types,      false) +
+             _dsubsec('Thiết kế Prompt', [
+               _dfield('Vai trò AI (Role)',              uc.prompt_role,          true),
+               _dfield('Nhiệm vụ cụ thể (Task)',         uc.prompt_task,          true),
+               _dfield('Mục tiêu đầu ra (Goal)',         uc.prompt_goal,          true),
+               _dfield('Ngữ cảnh bổ sung (Context)',     uc.prompt_context,       true),
+               _dfield('Mô tả đầu vào (Input)',          uc.prompt_input,         true),
+               _dfield('Các bước xử lý (Steps)',         uc.prompt_steps,         true),
+               _dfield('Định dạng đầu ra (Output)',      uc.prompt_output_format, true),
+               _dfield('Tiêu chí đánh giá (Evaluation)', uc.prompt_evaluation,   true),
+             ]);
+    if (s2.trim()) html += _dsection('2', 'Luồng AI & Prompt', [s2]);
+
+    // ── Section 3: Demo & Tái sử dụng ───────────────────────────────
+    var timeSaved = '';
+    if (uc.before_time_min && uc.after_time_min) {
+      var before = parseFloat(uc.before_time_min), after = parseFloat(uc.after_time_min);
+      if (before > 0) timeSaved = ' (' + Math.round(((before - after) / before) * 100) + '% tiết kiệm)';
+    }
+    var s3 = _dgrid([
+               ['Trạng thái demo',           uc.demo_status],
+               ['Link demo / tài liệu',      uc.demo_link],
+               ['Thời gian trước khi có AI', uc.before_time_min ? uc.before_time_min + ' phút' : ''],
+               ['Thời gian sau khi có AI',   uc.after_time_min  ? uc.after_time_min  + ' phút' + timeSaved : ''],
+             ]) +
+             _dfield('Cải thiện chất lượng',                  uc.quality_improvement, true) +
+             _dfield('Ghi chú thêm về hiệu quả',              uc.improvement_note,    true) +
+             _dfield('Phạm vi tái sử dụng',                   uc.reuse_level,         false) +
+             _dfield('Hướng dẫn điều chỉnh khi tái sử dụng', uc.reuse_adjustment,    true);
+    if (s3.trim()) html += _dsection('3', 'Demo & Tái sử dụng', [s3]);
+
+    // ── Section 4: Hướng dẫn sử dụng ────────────────────────────────
+    var s4 = _dfield('Khi nào nên dùng use case này?', uc.when_to_use, true) +
+             _dfield('Hướng dẫn thực hiện từng bước',  uc.usage_steps, true) +
+             _dfield('Lưu ý & hạn chế',                uc.usage_notes, true);
+    if (s4.trim()) html += _dsection('4', 'Hướng dẫn sử dụng', [s4]);
+
+    // ── Section 5: Thông tin phê duyệt ──────────────────────────────
+    var s5 = _dgrid([['Người duyệt', uc.reviewer_email]]) +
+             _dfield('Nhận xét duyệt', uc.review_comment, true);
+    if (s5.trim()) html += _dsection('✓', 'Thông tin phê duyệt', [s5], 'detail-section--review');
+
+    // Loading hint while full data is being fetched
+    if (!isFullData && uc.record_id) {
+      html += '<div class="detail-loading-hint">Đang tải nội dung chi tiết từ server...</div>';
+    }
+
+    return html || '<p class="empty-state-text" style="padding:var(--space-6)">Không có dữ liệu</p>';
+  }
+
+  // ── Detail render helpers ─────────────────────────────────────────
+  function _dsection(step, title, parts, extra) {
+    var body = parts.join('');
+    if (!body.trim()) return '';
+    return '<div class="detail-section ' + (extra || '') + '">' +
+      '<div class="detail-section-title">' +
+        '<span class="detail-step-badge">' + step + '</span>' +
+        '<span>' + esc(title) + '</span>' +
+      '</div>' +
+      '<div class="detail-section-body">' + body + '</div>' +
+    '</div>';
+  }
+
+  function _dsubsec(title, parts) {
+    var body = parts.join('');
+    if (!body.trim()) return '';
+    return '<div class="detail-subsection">' +
+      '<div class="detail-subsection-title">' + esc(title) + '</div>' +
+      '<div class="detail-section-body">' + body + '</div>' +
+    '</div>';
+  }
+
+  function _dgrid(pairs) {
+    var cells = pairs.filter(function (p) { return p[1] && String(p[1]).trim(); });
+    if (!cells.length) return '';
+    return '<div class="detail-grid-2col">' +
+      cells.map(function (p) {
+        return '<div class="detail-field">' +
+          '<div class="detail-label">' + esc(p[0]) + '</div>' +
+          '<div class="detail-value">'  + esc(String(p[1])) + '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  }
+
+  function _dfield(label, value, pre) {
+    if (!value && value !== 0) return '';
+    var val = String(value).trim();
+    if (!val) return '';
+    return '<div class="detail-field detail-field--full">' +
+      '<div class="detail-label">' + esc(label) + '</div>' +
+      '<div class="detail-value' + (pre ? ' detail-value--pre' : '') + '">' + esc(val) + '</div>' +
+    '</div>';
   }
 
   function _bindDetailModal() {
