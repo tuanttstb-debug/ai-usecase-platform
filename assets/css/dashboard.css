@@ -592,6 +592,36 @@
   white-space: nowrap;
 }
 
+/* ── List Popup Modal ── */
+.modal-card--list {
+  max-width: 860px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-card--list .modal-header {
+  flex-shrink: 0;
+  gap: var(--space-3);
+}
+.modal-card--list .modal-body {
+  overflow-y: auto;
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── KPI Clickable ── */
+.kpi-card--clickable {
+  cursor: pointer;
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast);
+}
+.kpi-card--clickable:hover {
+  box-shadow: 0 4px 20px rgba(123, 44, 191, 0.14);
+  transform: translateY(-2px);
+  border-color: var(--color-primary-light);
+}
+
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .kpi-row     { grid-template-columns: repeat(2, 1fr); }

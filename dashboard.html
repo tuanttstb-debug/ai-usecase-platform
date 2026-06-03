@@ -217,8 +217,8 @@
                 <span id="refreshedAt" class="dash-card-meta"></span>
               </div>
               <table id="recentTable" class="dash-table" aria-label="Danh sách use case nộp gần đây">
-                <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Team</th><th>Ngày nộp</th></tr></thead>
-                <tbody><tr><td colspan="4" class="empty-cell">Đang tải...</td></tr></tbody>
+                <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Team</th><th>Ngày nộp</th><th></th></tr></thead>
+                <tbody><tr><td colspan="5" class="empty-cell">Đang tải...</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -290,6 +290,22 @@
 
   <!-- Toast Container -->
   <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- ── List Popup Modal ── -->
+  <div id="listModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="listModalTitle">
+    <div class="modal-card modal-card--list">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:var(--space-3);flex:1;min-width:0">
+          <h3 id="listModalTitle" style="margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Danh sách Use Case</h3>
+          <span id="listModalCount" class="id-badge" style="flex-shrink:0"></span>
+        </div>
+        <button class="modal-close" id="listModalCloseBtn" aria-label="Đóng">×</button>
+      </div>
+      <div class="modal-body" id="listModalBody">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
 
   <!-- ── US Detail Modal ── -->
   <div id="usDetailModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle">

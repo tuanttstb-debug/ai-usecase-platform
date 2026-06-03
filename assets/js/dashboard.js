@@ -52,6 +52,8 @@
     _bindDetailModal();
     _bindApprovalModal();
     _bindExploreSearch();
+    _bindListModal();
+    _bindKPIClicks();
 
     // Determine initial tab from URL param
     var sp       = new URLSearchParams(window.location.search);
@@ -304,18 +306,19 @@
     if (typeof Chart === 'undefined') { _renderStatusChartCSS(container, breakdown, total); return; }
 
     var order = ['Approved', 'Under Review', 'Submitted', 'Draft', 'Rejected', 'Archived'];
-    var labels = [], data = [], colors = [];
+    var labels = [], data = [], colors = [], statusKeys = [];
     order.forEach(function (status) {
       var count = breakdown[status] || 0;
       if (!count) return;
       var cfg = STATUS_CFG[status] || { label: status, color: '#dadce0' };
-      labels.push(cfg.label); data.push(count); colors.push(cfg.color);
+      labels.push(cfg.label); data.push(count); colors.push(cfg.color); statusKeys.push(status);
     });
 
     var canvas = container.querySelector('canvas');
     if (!canvas) { container.innerHTML = '<canvas></canvas>'; canvas = container.querySelector('canvas'); }
     if (_charts.status) _charts.status.destroy();
 
+    var capturedStatusKeys = statusKeys.slice();
     _charts.status = new Chart(canvas.getContext('2d'), {
       type: 'doughnut',
       data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }] },
@@ -324,6 +327,15 @@
         plugins: {
           legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 }, usePointStyle: true, pointStyleWidth: 10 } },
           tooltip: { callbacks: { label: function (ctx) { var pct = ((ctx.parsed / total) * 100).toFixed(1); return ' ' + ctx.label + ': ' + ctx.parsed + ' (' + pct + '%)'; } } }
+        },
+        onHover: function (event, elements) { event.native.target.style.cursor = elements.length ? 'pointer' : 'default'; },
+        onClick: function (event, elements) {
+          if (!elements.length) return;
+          var status = capturedStatusKeys[elements[0].index];
+          if (!status) return;
+          var cfg   = STATUS_CFG[status] || { label: status };
+          var items = _allList.filter(function (uc) { return uc.status === status; });
+          openListModal('Trạng thái: ' + cfg.label, items);
         }
       }
     });
@@ -336,7 +348,8 @@
       if (!count) return '';
       var cfg = STATUS_CFG[status] || { label: status, color: '#dadce0' };
       var pct = ((count / total) * 100).toFixed(1);
-      return _chartRow(cfg.label, pct + '%', cfg.color, count + ' (' + pct + '%)');
+      return _chartRow(cfg.label, pct + '%', cfg.color, count + ' (' + pct + '%)', null, false,
+        'Dashboard._openListByStatus(\'' + status + '\')');
     }).join('');
   }
 
@@ -350,7 +363,10 @@
 
     if (entries.length === 0) { container.innerHTML = emptyChart(); return; }
 
-    if (typeof Chart === 'undefined') { _renderBreakdownChartCSS(container, entries); return; }
+    var fieldKey    = containerId === 'teamChart' ? 'team' : 'category';
+    var titlePrefix = containerId === 'teamChart' ? 'Team: '   : 'Lĩnh vực: ';
+
+    if (typeof Chart === 'undefined') { _renderBreakdownChartCSS(container, entries, fieldKey, titlePrefix); return; }
 
     var top    = entries.slice(0, 8);
     var labels = top.map(function (e) { return e[0]; });
@@ -361,28 +377,47 @@
     if (!canvas) { container.innerHTML = '<canvas></canvas>'; canvas = container.querySelector('canvas'); }
     if (_charts[containerId]) _charts[containerId].destroy();
 
+    var capturedLabels      = labels.slice();
+    var capturedFieldKey    = fieldKey;
+    var capturedTitlePrefix = titlePrefix;
+
     _charts[containerId] = new Chart(canvas.getContext('2d'), {
       type: 'bar',
       data: { labels: labels, datasets: [{ data: data, backgroundColor: 'rgba(123,44,191,0.72)', borderWidth: 0, borderRadius: 4 }] },
       options: {
         indexAxis: 'y', responsive: true, maintainAspectRatio: true, aspectRatio: ratio,
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (ctx) { return ' ' + ctx.parsed.x + ' use case'; } } } },
-        scales: { x: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.04)' } }, y: { ticks: { font: { size: 12 } }, grid: { display: false } } }
+        scales: { x: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.04)' } }, y: { ticks: { font: { size: 12 } }, grid: { display: false } } },
+        onHover: function (event, elements) { event.native.target.style.cursor = elements.length ? 'pointer' : 'default'; },
+        onClick: function (event, elements) {
+          if (!elements.length) return;
+          var label = capturedLabels[elements[0].index];
+          if (!label) return;
+          var items = _allList.filter(function (uc) {
+            return String(uc[capturedFieldKey] == null ? '' : uc[capturedFieldKey]).trim() === String(label).trim();
+          });
+          openListModal(capturedTitlePrefix + label, items);
+        }
       }
     });
   }
 
-  function _renderBreakdownChartCSS(container, entries) {
+  function _renderBreakdownChartCSS(container, entries, fieldKey, titlePrefix) {
     var maxVal = entries[0][1] || 1;
     container.innerHTML = entries.slice(0, 8).map(function (e) {
-      return _chartRow(e[0], ((e[1] / maxVal) * 100).toFixed(0) + '%', 'var(--color-primary)', String(e[1]), 'var(--color-primary-light)', true);
+      var label = e[0];
+      var fn = fieldKey === 'team'
+        ? 'Dashboard._openListByTeam(\'' + esc(label) + '\')'
+        : 'Dashboard._openListByCategory(\'' + esc(label) + '\')';
+      return _chartRow(label, ((e[1] / maxVal) * 100).toFixed(0) + '%', 'var(--color-primary)', String(e[1]), 'var(--color-primary-light)', true, fn);
     }).join('');
   }
 
-  function _chartRow(label, widthPct, barColor, countText, bgColor, bordered) {
+  function _chartRow(label, widthPct, barColor, countText, bgColor, bordered, onclickStr) {
     var barStyle = 'width:' + widthPct + ';background:' + (bgColor || barColor);
     if (bordered) barStyle += ';border-left:3px solid ' + barColor;
-    return '<div class="chart-row"><span class="chart-row-label" title="' + esc(label) + '">' + esc(label) + '</span><div class="chart-bar-wrap"><div class="chart-bar" style="' + barStyle + '"></div></div><span class="chart-row-count">' + esc(countText) + '</span></div>';
+    var rowAttrs = onclickStr ? ' style="cursor:pointer" onclick="' + onclickStr + '"' : '';
+    return '<div class="chart-row"' + rowAttrs + '><span class="chart-row-label" title="' + esc(label) + '">' + esc(label) + '</span><div class="chart-bar-wrap"><div class="chart-bar" style="' + barStyle + '"></div></div><span class="chart-row-count">' + esc(countText) + '</span></div>';
   }
 
   function emptyChart() { return '<p class="empty-state-text">Chưa có dữ liệu</p>'; }
@@ -407,7 +442,7 @@
   function renderRecentTable(items) {
     var tbody = document.querySelector('#recentTable tbody');
     if (!tbody) return;
-    if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty-cell">Chưa có use case nào được nộp gần đây</td></tr>'; return; }
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">Chưa có use case nào được nộp gần đây</td></tr>'; return; }
     tbody.innerHTML = items.map(function (uc) {
       var k = _cache(uc);
       return '<tr style="cursor:pointer" onclick="Dashboard._byKey(\'' + esc(k) + '\')">' +
@@ -415,6 +450,7 @@
         '<td>' + esc(uc.name || '') + '</td>' +
         '<td>' + esc(uc.team || '--') + '</td>' +
         '<td>' + fmtDate(uc.submitted_at) + '</td>' +
+        '<td>' + _btnDetail(uc, 'Chi tiết') + '</td>' +
       '</tr>';
     }).join('');
   }
@@ -510,6 +546,96 @@
         '<td>' + _btnDetail(uc, 'Xem') + '</td>' +
       '</tr>';
     }).join('');
+  }
+
+  // ── List Popup Modal ──────────────────────────────────────────────
+  function openListModal(title, items) {
+    var titleEl = document.getElementById('listModalTitle');
+    var countEl = document.getElementById('listModalCount');
+    var body    = document.getElementById('listModalBody');
+    if (!titleEl || !body) return;
+
+    titleEl.textContent = title;
+    if (countEl) countEl.textContent = (items ? items.length : 0) + ' use case';
+
+    if (!items || !items.length) {
+      body.innerHTML = '<p style="padding:var(--space-8);text-align:center;color:var(--color-text-muted);font-size:var(--text-sm)">Không có use case nào</p>';
+    } else {
+      var rows = items.map(function (uc) {
+        var cfg = STATUS_CFG[uc.status] || { label: uc.status || '--', color: '#5f6368' };
+        var k   = _cache(uc);
+        return '<tr style="cursor:pointer" onclick="Dashboard._byKey(\'' + esc(k) + '\')">' +
+          '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
+          '<td>' + esc(uc.name || '') + '</td>' +
+          '<td>' + esc(uc.owner_name || '--') + '</td>' +
+          '<td>' + esc(uc.team || '--') + '</td>' +
+          '<td><span class="status-badge" style="background:' + cfg.color + '20;color:' + cfg.color + '">' + cfg.label + '</span></td>' +
+          '<td>' + _btnDetail(uc, 'Chi tiết') + '</td>' +
+        '</tr>';
+      }).join('');
+      body.innerHTML =
+        '<table class="dash-table" style="margin:0">' +
+          '<thead><tr><th>Mã</th><th>Tên Use Case</th><th>Người đăng ký</th><th>Team</th><th>Trạng thái</th><th></th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table>';
+    }
+
+    document.getElementById('listModal').classList.remove('hidden');
+  }
+
+  function _closeListModal() {
+    var modal = document.getElementById('listModal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  function _bindListModal() {
+    var closeBtn = document.getElementById('listModalCloseBtn');
+    if (closeBtn) closeBtn.addEventListener('click', _closeListModal);
+
+    var modal = document.getElementById('listModal');
+    if (modal) modal.addEventListener('click', function (e) {
+      if (e.target === this) _closeListModal();
+    });
+
+    // Escape: only close list modal when detail modal is not open
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      var listModal = document.getElementById('listModal');
+      if (!listModal || listModal.classList.contains('hidden')) return;
+      var detailModal = document.getElementById('usDetailModal');
+      if (detailModal && !detailModal.classList.contains('hidden')) return;
+      _closeListModal();
+    });
+  }
+
+  // ── KPI Drill-down ────────────────────────────────────────────────
+  function _bindKPIClicks() {
+    if (!_isAdmin) return;
+
+    function makeClickable(id, getTitleAndItems) {
+      var card = document.getElementById(id);
+      if (!card) return;
+      card.classList.add('kpi-card--clickable');
+      card.addEventListener('click', function () {
+        var result = getTitleAndItems();
+        openListModal(result[0], result[1]);
+      });
+    }
+
+    makeClickable('kpiTotal', function () {
+      return ['Tất cả Use Case', _allList];
+    });
+    makeClickable('kpiApproved', function () {
+      return ['Đã duyệt', _allList.filter(function (uc) { return uc.status === 'Approved'; })];
+    });
+    makeClickable('kpiPending', function () {
+      return ['Chờ duyệt', _allList.filter(function (uc) {
+        return uc.status === 'Submitted' || uc.status === 'Under Review';
+      })];
+    });
+    makeClickable('kpiHours', function () {
+      return ['Đã duyệt (Giờ tiết kiệm)', _allList.filter(function (uc) { return uc.status === 'Approved'; })];
+    });
   }
 
   // ── US Detail Modal ───────────────────────────────────────────────
@@ -1025,6 +1151,24 @@
     },
     _rejectByKey: function (key) {
       var uc = _ucCache[key]; if (uc) { openDetail(uc); _showActionArea('reject'); }
+    },
+    // List modal helpers (used by CSS fallback chart onclick)
+    _openListByStatus: function (status) {
+      var cfg   = STATUS_CFG[status] || { label: status };
+      var items = _allList.filter(function (uc) { return uc.status === status; });
+      openListModal('Trạng thái: ' + cfg.label, items);
+    },
+    _openListByTeam: function (team) {
+      var items = _allList.filter(function (uc) {
+        return String(uc.team == null ? '' : uc.team).trim() === String(team).trim();
+      });
+      openListModal('Team: ' + team, items);
+    },
+    _openListByCategory: function (cat) {
+      var items = _allList.filter(function (uc) {
+        return String(uc.category == null ? '' : uc.category).trim() === String(cat).trim();
+      });
+      openListModal('Lĩnh vực: ' + cat, items);
     },
     // Legacy compat
     _openDetail:        openDetail,
