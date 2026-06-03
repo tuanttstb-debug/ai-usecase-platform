@@ -537,6 +537,48 @@ Các bảng khác (allTable, myTable, pendingList, exploreTable, exploreTable) d
 
 ---
 
+---
+
+## Session: 2026-06-03 (Part 4)
+**Scope:** Fix URL duplicate "ai-usecase-platform" sau khi đăng nhập
+**Commit:** `2a5a2af`
+**Version:** 3.6.1
+
+### Root cause
+Khi user mở app qua trailing-slash URL (e.g. `https://…/ai-usecase-platform/`):
+- `window.location.pathname.split('/').filter(Boolean).pop()` → trả về `'ai-usecase-platform'` thay vì `'index.html'`
+- Chuỗi này được encode vào `?return=ai-usecase-platform`
+- Sau khi login: `window.location.replace('ai-usecase-platform')` chạy từ `login.html` tại `/ai-usecase-platform/login.html`
+- Browser resolve thành `…/ai-usecase-platform/ai-usecase-platform` → 404 / loop
+
+### Đã hoàn thành
+
+**Fix lớp 1 — `assets/js/auth.js` `requireAuth()`:**
+- Validate segment bằng regex `/\.html?$/i` trước khi dùng làm return URL
+- Nếu không có đuôi `.html` → fallback về `'index.html'`
+
+**Fix lớp 2 — `login.html` `safeReturnUrl()`:**
+- Tạo helper function dùng chung cho cả 2 chỗ redirect (already-logged-in check + form submit)
+- Regex mới `/^[a-zA-Z0-9_-]+\.html(\?[a-zA-Z0-9_.=&%-]*)?$/` — chỉ chấp nhận `*.html`, từ chối directory name
+- Xoá regex cũ `^[a-zA-Z0-9_\-./]+$` (quá rộng, không kiểm tra extension)
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/js/auth.js` | `requireAuth()`: thêm `.html` extension check, +2 lines comment |
+| `login.html` | `safeReturnUrl()` helper mới; 2 redirect dùng chung; -2 lines duplicate |
+
+### Test cases coverage
+| Scenario | Trước fix | Sau fix |
+|---|---|---|
+| Mở `…/ai-usecase-platform/` (trailing slash) | ❌ redirect → `…/ai-usecase-platform/ai-usecase-platform` | ✅ redirect → `…/ai-usecase-platform/index.html` |
+| Mở `…/ai-usecase-platform` (no slash) | ❌ redirect → `…/ai-usecase-platform/ai-usecase-platform` | ✅ redirect → `…/ai-usecase-platform/index.html` |
+| Mở `…/ai-usecase-platform/dashboard.html` | ✅ redirect → `…/ai-usecase-platform/login.html?return=dashboard.html` | ✅ không đổi |
+| `?return=` chứa directory name | ❌ dùng được vì regex cũ pass | ✅ reject → fallback `index.html` |
+| `?return=dashboard.html` | ✅ | ✅ không đổi |
+
+---
+
 ## Recommended next actions (session kế tiếp)
 
 **[P0] GAS deploy** (blocker cũ, vẫn còn):

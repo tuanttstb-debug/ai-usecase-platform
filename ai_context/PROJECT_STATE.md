@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-03 (Part 3)
-**Version:** 3.6.0
+**Last updated:** 2026-06-03 (Part 4)
+**Version:** 3.6.1
 
 ---
 
@@ -60,7 +60,7 @@ env.js → auth.js → [inline portal script]
 
 | Area | Status | Notes |
 |---|---|---|
-| Login page | ✅ | Username-based (no email validation), `type="text"` |
+| Login page | ✅ | Username-based (no email validation), `type="text"`; URL redirect fix v3.6.1 |
 | Portal home | ✅ | Sidebar layout, SVG icons, same shell as dashboard |
 | Register/Wizard | ✅ | Sidebar layout; auto-fill Owner_Name (editable); Owner_Email ẩn — inject silent; badge "Mã dự kiến: AIUS-XXXX" |
 | AuthService | ✅ | Username login; no regex; `ADMIN_EMAILS` = username list |
