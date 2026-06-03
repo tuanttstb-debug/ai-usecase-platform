@@ -211,6 +211,21 @@
                 <canvas aria-label="Biểu đồ phân bổ theo lĩnh vực" role="img"></canvas>
               </div>
             </div>
+            <!-- Rejected card — admin only, shown by JS when data exists -->
+            <div class="dash-card dash-card--rejected" id="rejectedCard" style="display:none">
+              <div class="dash-card-header">
+                <div style="display:flex;align-items:center;gap:var(--space-3)">
+                  <h3>Use Case bị từ chối</h3>
+                  <span id="rejectedCountBadge" class="tab-badge tab-badge--danger">0</span>
+                </div>
+                <button class="btn btn-sm btn-outline" id="viewAllRejectedBtn" style="display:none">Xem tất cả →</button>
+              </div>
+              <table id="rejectedTable" class="dash-table" aria-label="Danh sách use case bị từ chối">
+                <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Người đăng ký</th><th>Team</th><th>Ngày nộp</th><th></th></tr></thead>
+                <tbody><tr><td colspan="6" class="empty-cell">Đang tải...</td></tr></tbody>
+              </table>
+            </div>
+
             <div class="dash-card">
               <div class="dash-card-header">
                 <h3>Nộp gần đây</h3>
@@ -234,14 +249,27 @@
           <div id="tab-all" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-all">
             <div class="dash-card">
               <div class="dash-card-header">
-                <h3>Tất cả use case</h3>
+                <h3>Tất cả use case <span id="allTableCount" class="all-count-badge"></span></h3>
                 <div class="search-box">
                   <input type="search" id="searchInput" class="search-input" placeholder="Tìm theo tên, người đăng ký, team..." aria-label="Tìm kiếm use case">
                 </div>
               </div>
+              <!-- Filter bar -->
+              <div class="filter-bar" role="group" aria-label="Bộ lọc use case">
+                <div class="filter-bar-group">
+                  <span class="filter-bar-label">Trạng thái</span>
+                  <div class="filter-pills" id="statusFilterPills" role="group" aria-label="Lọc theo trạng thái"></div>
+                </div>
+                <div class="filter-bar-group">
+                  <label class="filter-bar-label" for="teamFilter">Team</label>
+                  <select id="teamFilter" class="filter-select" aria-label="Lọc theo team">
+                    <option value="">Tất cả</option>
+                  </select>
+                </div>
+              </div>
               <table id="allTable" class="dash-table" aria-label="Danh sách tất cả use case">
                 <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Người đăng ký</th><th>Team</th><th>Trạng thái</th><th></th></tr></thead>
-                <tbody><tr><td colspan="6" class="empty-cell">Chọn tab để tải dữ liệu</td></tr></tbody>
+                <tbody><tr><td colspan="6" class="empty-cell">Đang tải...</td></tr></tbody>
               </table>
             </div>
           </div>

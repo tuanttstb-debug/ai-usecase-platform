@@ -16,10 +16,12 @@
   var _allList     = [];
   var _myList      = [];
   var _exploreList = [];
-  var _charts      = {};
-  var _detailUc    = null;
+  var _charts       = {};
+  var _detailUc     = null;
   var _detailAction = null; // 'approve' | 'reject'
-  var _ucCache     = {}; // key → uc object (safe alternative to inline JSON)
+  var _ucCache      = {}; // key → uc object (safe alternative to inline JSON)
+  var _rejectedList = [];
+  var _filterAll    = { statuses: [], team: '' }; // multi-status + single-team filter for "all" tab
 
   // ── Status config ────────────────────────────────────────────────
   var STATUS_CFG = {
@@ -54,6 +56,7 @@
     _bindExploreSearch();
     _bindListModal();
     _bindKPIClicks();
+    _initAllFilters();
 
     // Determine initial tab from URL param
     var sp       = new URLSearchParams(window.location.search);
@@ -182,11 +185,14 @@
       renderExploreTable(_exploreList);
 
       if (_isAdmin) {
-        _dashData    = results[1] || {};
-        _pendingList = _allList.filter(function (uc) {
+        _dashData     = results[1] || {};
+        _pendingList  = _allList.filter(function (uc) {
           return uc.status === 'Submitted' || uc.status === 'Under Review';
         });
-        renderAllTable(_allList);
+        _rejectedList = _allList.filter(function (uc) { return uc.status === 'Rejected'; });
+
+        _populateTeamFilter();
+        _applyAllTableFilters();
         renderPendingList(_pendingList);
         updatePendingBadge(_pendingList.length);
         renderKPI(_dashData);
@@ -194,6 +200,7 @@
         renderBreakdownChart('teamChart',     _dashData.team_breakdown     || {});
         renderBreakdownChart('categoryChart', _dashData.category_breakdown || {});
         renderRecentTable(_dashData.recent_submissions || []);
+        renderRejectedCard(_rejectedList);
         if (_dashData.refreshed_at) updateRefreshedAt(_dashData.refreshed_at);
       }
     } catch (err) {
@@ -247,7 +254,8 @@
     showLoading(true);
     try {
       _allList = (await Api.listUseCases({ limit: 200 })) || [];
-      renderAllTable(_allList);
+      _populateTeamFilter();
+      _applyAllTableFilters();
     } catch (err) {
       showToast('Lỗi tải danh sách: ' + err.message, 'error');
     } finally {
@@ -617,6 +625,124 @@
       if (detailModal && !detailModal.classList.contains('hidden')) return;
       _closeListModal();
     });
+  }
+
+  // ── All-tab Filters ───────────────────────────────────────────────
+  function _initAllFilters() {
+    if (!_isAdmin) return;
+    var pillsContainer = document.getElementById('statusFilterPills');
+    if (!pillsContainer) return;
+
+    // Render static status pills (one per STATUS_CFG + "Tất cả" reset pill)
+    var order = ['Draft', 'Submitted', 'Under Review', 'Approved', 'Rejected', 'Archived'];
+    var allPillHtml = '<button class="filter-pill is-active" data-status="" style="--pill-color:var(--color-primary)">Tất cả</button>';
+    var statusPillsHtml = order.map(function (s) {
+      var cfg = STATUS_CFG[s] || { label: s, color: '#5f6368' };
+      return '<button class="filter-pill" data-status="' + s + '" style="--pill-color:' + cfg.color + '">' + esc(cfg.label) + '</button>';
+    }).join('');
+    pillsContainer.innerHTML = allPillHtml + statusPillsHtml;
+
+    pillsContainer.addEventListener('click', function (e) {
+      var pill = e.target.closest('.filter-pill');
+      if (!pill) return;
+      var status = pill.dataset.status;
+
+      if (status === '') {
+        // Reset: clear all status filters
+        _filterAll.statuses = [];
+        pillsContainer.querySelectorAll('.filter-pill').forEach(function (p) {
+          p.classList.toggle('is-active', p.dataset.status === '');
+        });
+      } else {
+        var idx = _filterAll.statuses.indexOf(status);
+        if (idx === -1) _filterAll.statuses.push(status);
+        else            _filterAll.statuses.splice(idx, 1);
+        pill.classList.toggle('is-active', idx === -1);
+        // "Tất cả" pill: active only when nothing selected
+        var allPill = pillsContainer.querySelector('[data-status=""]');
+        if (allPill) allPill.classList.toggle('is-active', _filterAll.statuses.length === 0);
+      }
+      _applyAllTableFilters();
+    });
+
+    // Team select
+    var teamSel = document.getElementById('teamFilter');
+    if (teamSel) teamSel.addEventListener('change', function () {
+      _filterAll.team = teamSel.value;
+      _applyAllTableFilters();
+    });
+  }
+
+  function _populateTeamFilter() {
+    var teamSel = document.getElementById('teamFilter');
+    if (!teamSel) return;
+    var current = _filterAll.team;
+    var teams   = [];
+    _allList.forEach(function (uc) {
+      if (uc.team && teams.indexOf(uc.team) === -1) teams.push(uc.team);
+    });
+    teams.sort();
+    teamSel.innerHTML = '<option value="">Tất cả</option>' +
+      teams.map(function (t) {
+        return '<option value="' + esc(t) + '"' + (current === t ? ' selected' : '') + '>' + esc(t) + '</option>';
+      }).join('');
+  }
+
+  function _applyAllTableFilters() {
+    var q   = String((document.getElementById('searchInput') || {}).value || '').trim().toLowerCase();
+    var result = _allList.filter(function (uc) {
+      if (_filterAll.statuses.length && _filterAll.statuses.indexOf(uc.status) === -1) return false;
+      if (_filterAll.team && String(uc.team == null ? '' : uc.team) !== _filterAll.team) return false;
+      if (q) {
+        return String(uc.name       == null ? '' : uc.name).toLowerCase().includes(q)
+            || String(uc.owner_name == null ? '' : uc.owner_name).toLowerCase().includes(q)
+            || (uc.team       || '').toLowerCase().includes(q)
+            || (uc.usecase_id || '').toLowerCase().includes(q);
+      }
+      return true;
+    });
+    // Update count badge
+    var countEl = document.getElementById('allTableCount');
+    if (countEl) countEl.textContent = result.length + ' / ' + _allList.length;
+    renderAllTable(result);
+  }
+
+  // ── Rejected Card (Overview tab) ──────────────────────────────────
+  var REJECTED_PREVIEW = 5;
+
+  function renderRejectedCard(items) {
+    var card = document.getElementById('rejectedCard');
+    if (!card) return;
+
+    card.style.display = items.length ? '' : 'none';
+
+    var badge = document.getElementById('rejectedCountBadge');
+    if (badge) badge.textContent = String(items.length);
+
+    var viewAllBtn = document.getElementById('viewAllRejectedBtn');
+    if (viewAllBtn) {
+      viewAllBtn.style.display = items.length > REJECTED_PREVIEW ? '' : 'none';
+      viewAllBtn.onclick = function () { openListModal('Đã từ chối', items); };
+    }
+
+    var tbody = document.querySelector('#rejectedTable tbody');
+    if (!tbody) return;
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Không có use case nào bị từ chối</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = items.slice(0, REJECTED_PREVIEW).map(function (uc) {
+      var k = _cache(uc);
+      return '<tr style="cursor:pointer" onclick="Dashboard._byKey(\'' + esc(k) + '\')">' +
+        '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
+        '<td>' + esc(uc.name || '') + '</td>' +
+        '<td>' + esc(uc.owner_name || '--') + '</td>' +
+        '<td>' + esc(uc.team || '--') + '</td>' +
+        '<td>' + fmtDate(uc.submit_date || uc.submitted_at) + '</td>' +
+        '<td>' + _btnDetail(uc, 'Chi tiết') + '</td>' +
+      '</tr>';
+    }).join('');
   }
 
   // ── KPI Drill-down ────────────────────────────────────────────────
@@ -1087,16 +1213,7 @@
   function _bindSearch() {
     var input = document.getElementById('searchInput');
     if (!input) return;
-    input.addEventListener('input', debounce(function () {
-      var q = input.value.trim().toLowerCase();
-      if (!q) { renderAllTable(_allList); return; }
-      renderAllTable(_allList.filter(function (uc) {
-        return String(uc.name       == null ? '' : uc.name).toLowerCase().includes(q)
-            || String(uc.owner_name == null ? '' : uc.owner_name).toLowerCase().includes(q)
-            || (uc.team       || '').toLowerCase().includes(q)
-            || (uc.usecase_id || '').toLowerCase().includes(q);
-      }));
-    }, 300));
+    input.addEventListener('input', debounce(_applyAllTableFilters, 300));
   }
 
   // ── Refresh ───────────────────────────────────────────────────────
