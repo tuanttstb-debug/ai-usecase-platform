@@ -91,6 +91,7 @@ env.js → auth.js → [inline portal script]
 
 **Active deployment URL:** `AKfycbwe0eo3X3KWxGdJ8ZWLjAgx3FVvcSOxTA5KVJGYVV3_Skbn0eXAVouzKaZOgDaDcUupew`
 **OAuth:** ✅ Authorized | **GAS code sync:** ⚠️ Local fixes chưa deploy — chưa tìm được đúng GAS project (GAS-MYSTERY-01)
+**Pending deploy (6 files):** `UseCaseService.gs` (v3.7.0) · `Utils.gs` (v3.7.0) · `Code.gs` · `Config.gs` · `LookupService.gs` · `DashboardService.gs`
 
 | Feature | Status | Notes |
 |---|---|---|

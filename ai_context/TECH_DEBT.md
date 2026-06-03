@@ -133,3 +133,29 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 **Hiện tại:** Harmless về functionality, chỉ lãng phí 1 request mỗi lần click.
 
 **Fix:** Thêm guard `if (_myList.length === 0)` vào `_loadTabData` case 'my'. File: `assets/js/dashboard.js` dòng `} else if (tab === 'my') {`.
+
+---
+
+## GAS-DEBT-05 — `Utils.gs` + `UseCaseService.gs` v3.7.0 chưa deploy (2026-06-03)
+
+**Mô tả:** 6 bug fixes ký tự đặc biệt (v3.7.0) đã merge vào `Utils.gs` và `UseCaseService.gs` nhưng chưa deploy lên GAS vì GAS-MYSTERY-01 chưa resolved.
+
+**Ảnh hưởng khi chưa deploy:**
+- Formula injection (SPECIAL-02): giá trị bắt đầu `=` có thể bị Sheets interpret làm formula → data corruption
+- Null byte (SPECIAL-03): nếu ai paste text có `\0` → `setValues` fail → save failure
+- JSON_Backup overflow (SPECIAL-05): form fill đầy nhiều field dài → `setValues` throw → save failure
+
+**Fix:** Paste `Utils.gs` và `UseCaseService.gs` (v3.7.0) vào GAS Editor sau khi resolve GAS-MYSTERY-01 → deploy new version.
+
+---
+
+## DATA-LIMIT-01 — `_allList` và `_pendingList` giới hạn 200 records
+
+**Mô tả:** `listUseCases` default limit=200. `_pendingList` được derive client-side từ `_allList`. Khi tổng số UC > 200:
+- Tab "Chờ duyệt" có thể thiếu UC pending nằm sau row 200
+- Tab "Khám phá" có thể thiếu UC Approved cuối list
+- Box "Từ chối" có thể thiếu rejected UC
+
+**Hiện tại:** Chấp nhận được với data volume hiện tại (< 200 UC).
+
+**Fix dài hạn:** Implement pagination hoặc tăng limit + infinite scroll.

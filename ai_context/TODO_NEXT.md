@@ -10,16 +10,17 @@ Sau khi hoàn thành GAS-MYSTERY-01 bên dưới, paste **tất cả** file dư�
 
 | File | Thay đổi quan trọng | Version |
 |---|---|---|
-| `UseCaseService.gs` | `_assignUseCaseId_()` + `_ensureCounterAhead_()` + `generateUseCaseId_()` v2 + `peekNextUseCaseId_()` | v3.6.3 |
+| `UseCaseService.gs` | `_assignUseCaseId_()` + `_ensureCounterAhead_()` + `generateUseCaseId_()` v2 + `peekNextUseCaseId_()`; **cap JSON_Backup 45,000 chars** | v3.7.0 |
+| `Utils.gs` | Xóa `addHeader`; **`sanitizeStr_` strip null/surrogate/CRLF; `toSheetValue_()` chống formula injection; apply trong appendRow/setValues** | v3.7.0 |
 | `Code.gs` | Route `?action=next-id` | v3.4 |
 | `Config.gs` | `ADMIN_EMAILS = ['admin','tuantt4','manager']` (usernames) | v2.x |
-| `Utils.gs` | Xóa `addHeader` | v2.x |
 | `LookupService.gs` | Rewrite hoàn toàn | v2.x |
 | `DashboardService.gs` | Push `record_id`, `status`, `owner_name` vào `recent_submissions` | v3.5.1 |
 
 Test sau deploy:
 - `GAS_URL?action=next-id` → `{"success":true,"data":{"next_id":"AIUS-XXXX"}}`
-- Submit 1 UC mới → kiểm tra ID trả về khớp với ID trong sheet
+- Submit 1 UC mới với ký tự đặc biệt trong Prompt_Context (VD: `"quotes"`, `=formula`, emoji 🎯) → kiểm tra lưu đúng trong sheet
+- Submit UC mới → kiểm tra ID trả về khớp với ID trong sheet
 
 ---
 
@@ -32,18 +33,6 @@ GAS URL đang hoạt động (`AKfycbwe0eo3X3KW...`) không tìm thấy trong de
 2. Với mỗi project → **Deploy → Manage deployments** → tìm URL chứa `AKfycbwe0eo3X3KW`
 3. Khi tìm được: đổi tên project thành `AI Use Case Platform` để không lạc lần sau
 4. Kiểm tra project đó có đúng code không (so với `assets/gas-backend/`)
-
----
-
-## P0 — Sync GAS code sau khi tìm được project
-
-Sau khi tìm được đúng GAS project (P0 trên), paste 3 file từ repo → GAS Editor → **Edit deployment → New version → Deploy** (URL không đổi):
-
-| File | Source |
-|---|---|
-| `Config.gs` | `assets/gas-backend/Config.gs` |
-| `Utils.gs` | `assets/gas-backend/Utils.gs` |
-| `LookupService.gs` | `assets/gas-backend/LookupService.gs` |
 
 ---
 
