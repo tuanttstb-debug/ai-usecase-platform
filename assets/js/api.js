@@ -69,15 +69,38 @@ var Api = {
   _request(url, data) {
     if (data) {
       try {
-        var json    = JSON.stringify(data);
+        // Strip lone surrogates trước khi encode:
+        // encodeURIComponent() throws URIError nếu gặp lone surrogate (U+D800–U+DFFF không ghép đôi).
+        // Regex: giữ surrogate pair hợp lệ (emoji, ký tự ngoài BMP), strip lone surrogate.
+        // ([\uD800-\uDBFF][\uDC00-\uDFFF]) = valid surrogate pair → giữ
+        // [\uD800-\uDFFF] còn lại = lone surrogate → strip
+        var safeData = JSON.parse(JSON.stringify(data, function(k, v) {
+          if (typeof v === 'string') {
+            return v.replace(/([\uD800-\uDBFF][\uDC00-\uDFFF])|[\uD800-\uDFFF]/g, function(m, pair) {
+              return pair || '';
+            });
+          }
+          return v;
+        }));
+        var json    = JSON.stringify(safeData);
         // encode UTF-8 (Vietnamese) an toàn: JSON → %xx → bytes → base64
         var b64     = btoa(unescape(encodeURIComponent(json)));
         // base64url: thay +/= để URL-safe, không cần encodeURIComponent thêm
         var payload = b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        // Cảnh báo nếu payload quá lớn (> 50,000 chars) — có thể vượt GAS param limit
+        if (payload.length > 50000) {
+          return Promise.reject(new Error(
+            'Nội dung biểu mẫu quá dài (' + payload.length + ' chars). ' +
+            'Vui lòng rút gọn các trường văn bản (đặc biệt phần Prompt).'
+          ));
+        }
         var sep     = url.indexOf('?') === -1 ? '?' : '&';
         url = url + sep + 'payload=' + payload;
       } catch (encErr) {
-        return Promise.reject(new Error('Lỗi encode data: ' + encErr.message));
+        return Promise.reject(new Error(
+          'Lỗi encode dữ liệu: ' + encErr.message +
+          '. Kiểm tra xem có ký tự đặc biệt không hợp lệ trong form không.'
+        ));
       }
     }
     return Api._jsonp(url);

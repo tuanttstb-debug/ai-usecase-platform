@@ -246,9 +246,12 @@ function createUseCase_(data) {
   }
 
   // ── 6. JSON_Backup (snapshot không bao gồm chính nó) ─────────
+  // Google Sheets giới hạn 50,000 chars/cell. JSON_Backup có thể vượt nếu
+  // nhiều textarea field được fill đầy. Truncate an toàn thay vì để setValues fail.
   var backupData = {};
   HEADERS.forEach(function(h) { if (h !== 'JSON_Backup') backupData[h] = obj[h]; });
-  obj.JSON_Backup = JSON.stringify(backupData);
+  var backupStr = JSON.stringify(backupData);
+  obj.JSON_Backup = backupStr.length <= 45000 ? backupStr : '';
 
   // ── 7. Ghi vào sheet ──────────────────────────────────────────
   appendRowFromObject_(SHEETS.MASTER, obj);
@@ -326,9 +329,11 @@ function updateUseCase_(recordId, data) {
   }
 
   // ── 7. Cập nhật JSON_Backup ───────────────────────────────────
+  // Cap tại 45,000 chars để tránh vượt giới hạn 50,000 chars/cell của Google Sheets
   var backupData = {};
   HEADERS.forEach(function(h) { if (h !== 'JSON_Backup') backupData[h] = merged[h]; });
-  merged.JSON_Backup = JSON.stringify(backupData);
+  var backupStr = JSON.stringify(backupData);
+  merged.JSON_Backup = backupStr.length <= 45000 ? backupStr : '';
 
   // ── 8. Ghi vào sheet ──────────────────────────────────────────
   updateRowByRecordId_(SHEETS.MASTER, recordId, merged);

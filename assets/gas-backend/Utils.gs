@@ -151,7 +151,9 @@ function appendRowFromObject_(sheetName, obj) {
 
   var headers = data[0].map(String);
   var row = headers.map(function(h) {
-    return obj[h] !== undefined && obj[h] !== null ? obj[h] : '';
+    var val = (obj[h] !== undefined && obj[h] !== null) ? obj[h] : '';
+    // toSheetValue_: prefix formula-starting strings với ' để tránh Sheets interpret làm formula
+    return toSheetValue_(val);
   });
   sheet.appendRow(row);
 }
@@ -172,7 +174,9 @@ function updateRowByRecordId_(sheetName, recordId, obj) {
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][recordCol]) === String(recordId)) {
       var row = headers.map(function(h, j) {
-        return (obj[h] !== undefined && obj[h] !== null) ? obj[h] : data[i][j];
+        var val = (obj[h] !== undefined && obj[h] !== null) ? obj[h] : data[i][j];
+        // toSheetValue_: prefix formula-starting strings với ' để tránh Sheets interpret làm formula
+        return toSheetValue_(val);
       });
       sheet.getRange(i + 1, 1, 1, headers.length).setValues([row]);
       return true;
@@ -281,13 +285,42 @@ function computeHoursSavedMonth_(beforeMin, afterMin) {
 }
 
 /**
- * Sanitize string đầu vào: trim, giới hạn độ dài.
+ * Sanitize string đầu vào: trim, giới hạn độ dài, strip ký tự không an toàn.
+ * - Strip null bytes (\0): Google Sheets setValues() có thể fail nếu có \0
+ * - Strip lone surrogates: chuỗi UTF-16 không hợp lệ có thể gây lỗi JSON
+ * - Strip \r: normalize về \n để tránh hiển thị không nhất quán trong Sheets
  */
 function sanitizeStr_(val, maxLen) {
   if (val === null || val === undefined) return '';
   var s = String(val).trim();
+  // Strip null bytes (Google Sheets không chấp nhận \0 trong cell values)
+  s = s.replace(/\0/g, '');
+  // Strip lone surrogates (UTF-16 không hợp lệ, gây lỗi JSON.stringify/parse).
+  // Regex giữ surrogate pair hợp lệ (emoji, ký tự BMP mở rộng), chỉ strip lone surrogate.
+  s = s.replace(/([\uD800-\uDBFF][\uDC00-\uDFFF])|[\uD800-\uDFFF]/g, function(m, pair) {
+    return pair || '';
+  });
+  // Normalize \r\n và lone \r → \n (Windows CRLF → Unix LF)
+  s = s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   if (maxLen && s.length > maxLen) s = s.substring(0, maxLen);
   return s;
+}
+
+/**
+ * Escape giá trị trước khi ghi vào Google Sheets cell để tránh formula injection.
+ * GAS appendRow()/setValues() interpret strings bắt đầu bằng =, +, -, @ như formulas.
+ * Google Sheets hiểu prefix ' là "force text mode" — khi đọc lại getValue() không có '.
+ *
+ * Chỉ dùng hàm này khi BUILD ROW ARRAY để ghi sheet, KHÔNG dùng trong JSON_Backup
+ * (vì JSON_Backup cần lưu giá trị gốc, không phải giá trị với prefix ').
+ *
+ * @param {*} val - Giá trị cell
+ * @returns {*} Giá trị an toàn để ghi vào Sheets
+ */
+function toSheetValue_(val) {
+  if (typeof val !== 'string') return val;
+  if (/^[=+\-@|]/.test(val)) return "'" + val;
+  return val;
 }
 
 /**
