@@ -10,8 +10,8 @@ Sau khi hoàn thành GAS-MYSTERY-01 bên dưới, paste **tất cả** file dư�
 
 | File | Thay đổi quan trọng | Version |
 |---|---|---|
-| `UseCaseService.gs` | `_assignUseCaseId_()` + `_ensureCounterAhead_()` + `generateUseCaseId_()` v2 + `peekNextUseCaseId_()`; **cap JSON_Backup 45,000 chars** | v3.7.0 |
-| `Utils.gs` | Xóa `addHeader`; **`sanitizeStr_` strip null/surrogate/CRLF; `toSheetValue_()` chống formula injection; apply trong appendRow/setValues** | v3.7.0 |
+| `UseCaseService.gs` | `_assignUseCaseId_()` + `_ensureCounterAhead_()` + `generateUseCaseId_()` v2 + `peekNextUseCaseId_()`; **cap JSON_Backup 45,000 chars**; **`updateUseCase_` single-read (v3.7.1)** | v3.7.1 |
+| `Utils.gs` | Xóa `addHeader`; **`sanitizeStr_` strip null/surrogate/CRLF; `toSheetValue_()` chống formula injection; apply trong appendRow/setValues**; **`findRowByField_()` (v3.7.1)** | v3.7.1 |
 | `Code.gs` | Route `?action=next-id` | v3.4 |
 | `Config.gs` | `ADMIN_EMAILS = ['admin','tuantt4','manager']` (usernames) | v2.x |
 | `LookupService.gs` | Rewrite hoàn toàn | v2.x |
@@ -110,6 +110,12 @@ Option B — Google Sign-In (proper fix):
 - [x] Full UC detail view modal — 4 sections (done 2026-06-02)
 - [ ] Dark mode — tokens sẵn sàng, thêm `@media (prefers-color-scheme: dark)` vào `variables.css`
 - [ ] Logo SVG thay sparkles trong sidebar brand
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 8)
+
+- [x] **FIX Timeout false-failure create/update (v3.7.1)**: Root cause: GAS đọc MASTER_DATA nhiều lần → execution >20s → FE timeout nhưng GAS vẫn ghi xong. Fix 3 lớp: (1) FE timeout tăng 20s→45s cho write ops; (2) smart recovery: update auto-verify bằng getUseCase, create hiện warning với hint ID; (3) GAS updateUseCase_ đọc MASTER 1 lần thay vì 2 bằng findRowByField_(). Commit `e83f16b`.
 
 ---
 

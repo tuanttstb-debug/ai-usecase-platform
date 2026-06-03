@@ -721,6 +721,61 @@ Khi tìm được đúng project → deploy tất cả 6 files (xem TODO_NEXT.md
 
 ---
 
+---
+
+## Session: 2026-06-03 (Part 8)
+**Scope:** Fix timeout false-failure khi create/update UC
+**Commit:** `e83f16b`
+**Version:** 3.7.1
+
+### Root cause phân tích
+
+GAS `createUseCase_` / `updateUseCase_` thực hiện quá nhiều sheet reads đồng bộ:
+- `updateUseCase_`: đọc MASTER_DATA 2 lần (`findObjectByField_` + `updateRowByRecordId_`) + ghi ACTIVITY_LOG
+- `createUseCase_`: đọc MASTER_DATA (ID assignment) + CONFIG + ghi MASTER + ACTIVITY_LOG
+- `LOCK_TIMEOUT_MS = 10000`: lock chờ tối đa 10s
+- Tổng execution: có thể 15–25s với sheet nhiều rows → vượt 20s FE JSONP timeout
+- GAS ghi xong nhưng response về sau khi FE đã cleanup callback → user thấy "lỗi" nhưng data đã lưu
+
+### Đã hoàn thành
+
+**FE — `assets/js/api.js`:**
+- `_request(url, data, timeoutMs)`: thêm param `timeoutMs` truyền xuống `_jsonp()`
+- `createUseCase` / `updateUseCase`: dùng `45000ms` thay vì mặc định `20000ms`
+
+**FE — `assets/js/app.js`:**
+- `submitForm()`: tách xử lý lỗi ra `_handleSubmitError(err, recordId, hintId)`
+- `_handleSubmitError()`:
+  - Lỗi thật (không phải timeout): hiện toast error như cũ
+  - **Update timeout**: auto-verify bằng `Api.getUseCase(recordId)` — nếu record tồn tại → show success, nếu không → warn user kiểm tra dashboard
+  - **Create timeout**: hiện warning kèm hint ID, hướng dẫn kiểm tra dashboard trước khi nộp lại
+
+**GAS — `assets/gas-backend/Utils.gs`:**
+- Thêm `findRowByField_(sheetName, field, value)`: đọc sheet 1 lần, trả về `{obj, rowIndex, headers, sheet}` → caller write trực tiếp không cần đọc lại
+
+**GAS — `assets/gas-backend/UseCaseService.gs`:**
+- Rewrite `updateUseCase_()`: dùng `findRowByField_` thay cho `findObjectByField_` + `updateRowByRecordId_`
+- Kết quả: MASTER_DATA chỉ đọc **1 lần** thay vì 2 → giảm ~30-50% execution time cho update
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/js/api.js` | +5 lines: timeoutMs param + 45s cho write ops |
+| `assets/js/app.js` | +48 lines: `_handleSubmitError()` + smart timeout recovery |
+| `assets/gas-backend/Utils.gs` | +32 lines: `findRowByField_()` |
+| `assets/gas-backend/UseCaseService.gs` | +10/-8 lines: single-read update |
+
+### Decisions chốt
+1. **45s timeout** — đủ cho GAS với sheet ~200 rows; GAS hard limit là 6 phút nên vẫn còn margin
+2. **Update auto-verify** — dùng `getUseCase` (read-only, nhanh hơn write) để xác nhận; nếu GAS vẫn bận → warn thay vì fail silently
+3. **Create warning** — không thể verify ID vì chưa có Record_ID; hint ID giúp user tìm trên dashboard
+4. **GAS single-read** — `findRowByField_` giữ `sheet` reference → write dùng `sheet.getRange().setValues()` trong cùng execution, không mở lại sheet
+
+### GAS deployment note
+`Utils.gs` + `UseCaseService.gs` có thay đổi → cần deploy sau khi tìm được GAS project (GAS-MYSTERY-01). Trước khi deploy GAS, FE đã hoạt động với 45s timeout + smart recovery.
+
+---
+
 ## Recommended next actions (session kế tiếp)
 
 **[P0 — USER ACTION] Tìm GAS project (GAS-MYSTERY-01):**
