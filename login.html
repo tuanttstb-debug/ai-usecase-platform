@@ -87,13 +87,20 @@
     (function () {
       'use strict';
 
+      // Accept only *.html filenames (optional simple query string).
+      // Rejects bare directory names like 'ai-usecase-platform' that cause
+      // double-segment URLs when the app is opened via a trailing-slash URL.
+      function safeReturnUrl(raw) {
+        var decoded = raw || 'index.html';
+        return /^[a-zA-Z0-9_-]+\.html(\?[a-zA-Z0-9_.=&%-]*)?$/.test(decoded)
+          ? decoded : 'index.html';
+      }
+
       // If already logged in → go to return URL or portal
       var existingUser = AuthService.getUser();
       if (existingUser) {
         var sp = new URLSearchParams(window.location.search);
-        var ret = sp.get('return') || 'index.html';
-        // Allow only safe relative paths (no protocol, no //, no JS)
-        window.location.replace(/^[a-zA-Z0-9_\-./]+$/.test(ret) ? ret : 'index.html');
+        window.location.replace(safeReturnUrl(sp.get('return')));
         return;
       }
 
@@ -136,9 +143,8 @@
         setLoading(true);
         // Brief delay for UX feedback; swap for real async auth call here
         setTimeout(function () {
-          var sp  = new URLSearchParams(window.location.search);
-          var ret = sp.get('return') || 'index.html';
-          window.location.replace(/^[a-zA-Z0-9_\-./]+$/.test(ret) ? ret : 'index.html');
+          var sp = new URLSearchParams(window.location.search);
+          window.location.replace(safeReturnUrl(sp.get('return')));
         }, 380);
       });
     })();
