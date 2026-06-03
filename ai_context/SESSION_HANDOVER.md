@@ -659,16 +659,22 @@ Nếu GAS v2 đã deploy (có `LockService`) thì ổn, nhưng vì GAS-MYSTERY-0
 
 ## Recommended next actions (session kế tiếp)
 
-**[P0] GAS deploy** (blocker cũ, vẫn còn):
-1. Tìm đúng GAS project (`script.google.com` → My Projects → URL `AKfycbwe0eo3X3KW...`)
-2. Sau khi tìm được: paste `UseCaseService.gs`, `Code.gs`, `Config.gs`, `Utils.gs`, `LookupService.gs`, `DashboardService.gs`
-3. "Edit deployment → New version → Deploy" (KHÔNG nhấn "New Deployment")
+**[P0 — USER ACTION] Tìm GAS project (GAS-MYSTERY-01):**
+1. Mở `script.google.com` → My Projects → từng project → Deploy → Manage deployments
+2. Tìm URL chứa `AKfycbwe0eo3X3KW` → đổi tên project → note lại
 
-**[P1] Fix regression risk** trong `_populateTeamFilter`:
-- Sau khi render options, đọc lại `teamSel.value` → update `_filterAll.team` để sync state
+**[P0 — sau khi tìm được GAS] Paste 6 file vào GAS Editor → New version → Deploy:**
+`UseCaseService.gs` · `Code.gs` · `Config.gs` · `Utils.gs` · `LookupService.gs` · `DashboardService.gs`
 
-**[P2] Pagination** — `_allList` giới hạn 200 records, cần "Xem thêm" hoặc server-side pagination
+**[P1] Fix `_populateTeamFilter` stale state:**
+- 1 dòng: `_filterAll.team = teamSel.value` sau khi render options. File: `assets/js/dashboard.js`
 
-**[P2] BUG-03 confirm với PO** — Status="Draft" khi tạo mới: bug hay intent?
+**[P1] Regression risks còn mở (không blocking):**
+- `_pendingList` derive client-side từ `_allList` limit 200 → UC pending sau row 200 không hiện tab Chờ duyệt
+- `rejectedCard` cũng limit 200 → admin list lớn có thể miss rejected UC cuối
 
-**[P3] Fix double-fetch** — `_loadTabData('my')` vẫn gọi `_loadMyUseCases()` mỗi khi click tab dù data đã có từ startup
+**[P2] Pagination** — `_allList` giới hạn 200 records
+
+**[P2] BUG-03** — Status="Draft" khi tạo mới: confirm với PO là bug hay intent
+
+**[P3] Fix double-fetch** — `_loadTabData('my')` vẫn gọi `_loadMyUseCases()` sau startup

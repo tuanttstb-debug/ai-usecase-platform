@@ -116,6 +116,16 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 
 ---
 
+## GAS-DEBT-04 — `UseCaseService.gs` v3.6.3 chưa deploy (2026-06-03)
+
+**Mô tả:** `_assignUseCaseId_(hint)` và `_ensureCounterAhead_()` — 2 hàm mới xử lý ID hint từ FE trong LockService scope — chỉ tồn tại local. GAS deployed hiện tại vẫn dùng `generateUseCaseId_()` trực tiếp trong `createUseCase_()`, bỏ qua hint.
+
+**Ảnh hưởng:** FE gửi `UseCase_ID` hint trong payload nhưng GAS cũ ignore → fallback về generate server-side (không tệ hơn trước, nhưng chưa đạt full fix race condition).
+
+**Fix:** Paste `UseCaseService.gs` vào GAS Editor sau khi resolve GAS-MYSTERY-01 → deploy new version.
+
+---
+
 ## PERF-02 — `_loadTabData('my')` vẫn fetch API riêng sau startup
 
 **Mô tả:** Sau khi `_loadStartupData()` đã populate `_myList`, user click tab "My Cases" vẫn gọi `_loadMyUseCases()` (không có guard) → thêm 1 API request không cần thiết.

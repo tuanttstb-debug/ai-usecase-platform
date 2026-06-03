@@ -62,14 +62,14 @@ env.js → auth.js → [inline portal script]
 |---|---|---|
 | Login page | ✅ | Username-based (no email validation), `type="text"`; URL redirect fix v3.6.1 |
 | Portal home | ✅ | Sidebar layout, SVG icons, same shell as dashboard |
-| Register/Wizard | ✅ | Sidebar layout; auto-fill Owner_Name (editable); Owner_Email ẩn — inject silent; badge "Mã dự kiến: AIUS-XXXX" |
+| Register/Wizard | ✅ | Sidebar layout; auto-fill Owner_Name (editable); Owner_Email ẩn — inject silent; UseCase_ID fetched fresh tại submit time (v3.6.3) |
 | AuthService | ✅ | Username login; no regex; `ADMIN_EMAILS` = username list |
 | Auth guard | ✅ | All pages redirect to login if not authenticated |
 | Auth logout | ✅ | Sidebar logout button trên tất cả pages |
 | Backward compat `?edit=` | ✅ | `index.html` redirects `?edit=` → `register.html` |
 | Wizard 4-step | ✅ | `register.html` |
 | Auto-fill owner fields | ✅ | Owner_Name auto-fill (editable); Owner_Email hidden + silent inject khi submit |
-| Unique UseCase ID | ✅ | NEW v3.4 — `generateUseCaseId_()` sync với MASTER_DATA; collision loop; peek endpoint |
+| Unique UseCase ID | ✅ | v3.6.3 — ID fetched fresh tại submit; GAS `_assignUseCaseId_()` validate trong lock; fallback generate nếu collision |
 | Dashboard (admin) | ✅ | Auto-load tất cả tabs khi login; approve/reject confirmed working |
 | Dashboard (user) | ✅ | My Cases + Khám phá tabs |
 | My US feature | ✅ | Tab trong dashboard; case-insensitive filter, cross-compare owner_name/email |
@@ -80,7 +80,7 @@ env.js → auth.js → [inline portal script]
 | Filter tab Tất cả | ✅ | NEW v3.6 — Multi-select status pills + team dropdown + search kết hợp + count badge |
 | Box Từ chối | ✅ | NEW v3.6 — Rejected card trong tab Tổng quan; preview 5 + Xem tất cả; Chi tiết đầy đủ |
 | Copy Prompt | ✅ | NEW v3.3 — 8 prompt fields → clipboard; hiện sau khi full data load |
-| Approval flow | ✅ | Confirmed working (from/reject thành công) |
+| Approval flow | ✅ | Confirmed working; confirm button re-enable fix v3.6.2 |
 | Auto-load on startup | ✅ | NEW v3.3 — _loadStartupData() thay lazy tab-click loading |
 | TPBank sidebar UI | ✅ | Tất cả pages dùng sidebar — consistent layout |
 | Heroicons SVG | ✅ | Tất cả emoji → SVG inline (dashboard, register, index) |

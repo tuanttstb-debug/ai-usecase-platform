@@ -4,16 +4,22 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
-## P0 — [NEEDS DEPLOY] Sync GAS code v3.4 sau khi tìm được project
+## P0 — [NEEDS DEPLOY] Sync GAS code sau khi tìm được project
 
-Sau khi hoàn thành GAS-MYSTERY-01 bên dưới, paste 2 file mới vào GAS Editor:
+Sau khi hoàn thành GAS-MYSTERY-01 bên dưới, paste **tất cả** file dưới vào GAS Editor → **Edit deployment → New version → Deploy**:
 
-| File | Thay đổi quan trọng |
-|---|---|
-| `UseCaseService.gs` | `generateUseCaseId_()` rewrite v2 + 2 helpers + `peekNextUseCaseId_()` |
-| `Code.gs` | Route `?action=next-id` |
+| File | Thay đổi quan trọng | Version |
+|---|---|---|
+| `UseCaseService.gs` | `_assignUseCaseId_()` + `_ensureCounterAhead_()` + `generateUseCaseId_()` v2 + `peekNextUseCaseId_()` | v3.6.3 |
+| `Code.gs` | Route `?action=next-id` | v3.4 |
+| `Config.gs` | `ADMIN_EMAILS = ['admin','tuantt4','manager']` (usernames) | v2.x |
+| `Utils.gs` | Xóa `addHeader` | v2.x |
+| `LookupService.gs` | Rewrite hoàn toàn | v2.x |
+| `DashboardService.gs` | Push `record_id`, `status`, `owner_name` vào `recent_submissions` | v3.5.1 |
 
-Sau khi deploy (Edit deployment → New version), test: `GAS_URL?action=next-id` → phải trả `{"success":true,"data":{"next_id":"AIUS-XXXX"}}`
+Test sau deploy:
+- `GAS_URL?action=next-id` → `{"success":true,"data":{"next_id":"AIUS-XXXX"}}`
+- Submit 1 UC mới → kiểm tra ID trả về khớp với ID trong sheet
 
 ---
 
@@ -81,9 +87,10 @@ Option B — Google Sign-In (proper fix):
 
 ---
 
-## P1 — Fix regression risk (v3.6)
+## P1 — Fix regression risk (v3.6) — còn pending
 
-- [ ] `_populateTeamFilter()`: sau khi render options, sync `_filterAll.team = teamSel.value` để tránh stale filter state khi team bị xóa khỏi data sau refresh
+- [ ] `_populateTeamFilter()` stale state: thêm `_filterAll.team = teamSel.value` sau khi render options. File `assets/js/dashboard.js` hàm `_populateTeamFilter`. Chi tiết xem TECH_DEBT `FILTER-01`.
+- [ ] `_loadTabData('my')` double-fetch: thêm guard `if (_myList.length === 0)`. Chi tiết xem TECH_DEBT `PERF-02`.
 
 ---
 
