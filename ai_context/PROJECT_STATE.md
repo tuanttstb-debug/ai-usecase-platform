@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-02 (Part 4)  
-**Version:** 3.4.0
+**Last updated:** 2026-06-03  
+**Version:** 3.5.0
 
 ---
 
@@ -75,6 +75,8 @@ env.js → auth.js → [inline portal script]
 | My US feature | ✅ | Tab trong dashboard; case-insensitive filter, cross-compare owner_name/email |
 | Explore (Khám phá) | ✅ | NEW v3.3 — All approved UCs from org; searchable; all users |
 | US Detail popup | ✅ | 4-section view; progressive load; approve/reject inline; Copy Prompt button |
+| Drill-down list popup | ✅ | NEW v3.5 — Click KPI cards / chart segments/bars → popup bảng lọc → Chi tiết |
+| recentTable Chi tiết | ✅ | NEW v3.5 — Nút Chi tiết đồng bộ với các bảng khác |
 | Copy Prompt | ✅ | NEW v3.3 — 8 prompt fields → clipboard; hiện sau khi full data load |
 | Approval flow | ✅ | Confirmed working (from/reject thành công) |
 | Auto-load on startup | ✅ | NEW v3.3 — _loadStartupData() thay lazy tab-click loading |

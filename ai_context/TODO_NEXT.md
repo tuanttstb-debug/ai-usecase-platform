@@ -110,6 +110,13 @@ Option B — Google Sign-In (proper fix):
 
 ---
 
+## ✅ Đã hoàn thành trong session 2026-06-03
+
+- [x] **Drill-down list popup (v3.5)**: Click KPI cards / chart segments / chart bars → popup bảng use case lọc theo ngữ cảnh, mỗi row có nút "Chi tiết" mở detail modal chồng lên
+- [x] **recentTable đồng bộ**: Thêm cột "Chi tiết" vào bảng "Nộp gần đây" (tab Tổng quan)
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-06-02
 
 - [x] BUG-GAS-01: URL sai → restore đúng URL

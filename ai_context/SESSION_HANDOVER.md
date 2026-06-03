@@ -398,3 +398,41 @@ Ngoài ra, có 1 bug tinh tế: code cũ dùng `data[j][0]` hardcoded thay vì `
 
 ### GAS deployment note
 Sau khi tìm được đúng GAS project (P0 blocker), paste `UseCaseService.gs` và `Code.gs` mới vào GAS Editor → "Edit deployment → New version → Deploy".
+
+---
+
+## Session: 2026-06-03
+**Scope:** Drill-down list popup + đồng bộ nút Chi tiết tại "Nộp gần đây"
+**Commit:** `7dde9d2`
+**Version:** 3.5.0
+
+### Đã hoàn thành
+
+- **FEAT: List popup modal** — Click vào các vùng tương tác trên dashboard mở popup bảng danh sách use case lọc theo ngữ cảnh
+  - KPI card "Tổng use case" → all list
+  - KPI card "Đã duyệt" → filter Approved
+  - KPI card "Chờ duyệt" → filter Submitted + Under Review
+  - KPI card "Giờ tiết kiệm" → filter Approved
+  - Chart.js doughnut segment (status) → filter by status
+  - Chart.js horizontal bar (team) → filter by team
+  - Chart.js horizontal bar (category) → filter by category
+  - CSS fallback charts → clickable qua `Dashboard._openListByStatus/Team/Category`
+- **FEAT: Chi tiết trong list popup** — Mỗi row có nút "Chi tiết" → mở `openDetail()` chồng lên list modal. Escape đóng detail trước, list modal vẫn còn. Escape lần 2 đóng list modal.
+- **FIX: recentTable đồng bộ** — Tab "Tổng quan" → "Nộp gần đây" thêm cột nút "Chi tiết" (colspan 4→5), dùng cùng `openDetail()` như các bảng khác.
+
+### Files changed
+| File | Delta |
+|---|---|
+| `dashboard.html` | +16 lines: `#listModal` HTML; `#recentTable` header thêm `<th></th>` |
+| `assets/js/dashboard.js` | +163 lines: `openListModal`, `_closeListModal`, `_bindListModal`, `_bindKPIClicks`; update `renderStatusChart`/`renderBreakdownChart` onClick+onHover; update `_chartRow` thêm onclickStr; update `_renderStatusChartCSS`, `_renderBreakdownChartCSS`; update `renderRecentTable`; update `window.Dashboard` public API |
+| `assets/css/dashboard.css` | +30 lines: `.modal-card--list`, `.kpi-card--clickable` |
+
+### Decisions chốt
+1. **List modal chồng lên detail modal** — z-index tự nhiên từ DOM order (`listModal` trước `usDetailModal`). Không cần thêm z-index.
+2. **Escape priority** — `_bindListModal` handler check nếu detail modal đang mở thì bỏ qua → Escape đóng detail trước, lần 2 đóng list.
+3. **KPI click = admin only** — `_bindKPIClicks()` guard `if (!_isAdmin) return` → regular user không thấy click cursor trên KPI.
+4. **CSS fallback charts** — `_chartRow` nhận thêm tham số `onclickStr`; CSS fallback truyền `Dashboard._openListByStatus/Team/Category(label)` inline.
+5. **`capturedLabels/capturedFieldKey`** — Closure capture trong Chart.js `onClick` để tránh stale reference khi chart bị destroy/recreate.
+
+### Open issues (không blocking)
+- GAS-MYSTERY-01, GAS code sync — vẫn còn từ session trước
