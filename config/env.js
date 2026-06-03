@@ -9,7 +9,7 @@ var APP_CONFIG = {
   // Danh sách username (không phải email) được cấp quyền admin
   // Thêm/xóa username ở đây để cấp/thu hồi quyền (không cần sửa logic)
   // Lưu ý: kiểm tra phía frontend (UI-level). Backend GAS có validation riêng.
-  ADMIN_EMAILS: ['admin', 'tuantt4', 'manager'],
+  ADMIN_EMAILS: ['cuongvm1', 'tuantt4', 'dunglq1'],
 
   // sessionStorage key — lưu email admin trong phiên làm việc (legacy, kept for backward compat)
   ADMIN_SESSION_KEY: 'ai_admin_email',
