@@ -444,12 +444,23 @@
     if (!tbody) return;
     if (!items.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">Chưa có use case nào được nộp gần đây</td></tr>'; return; }
     tbody.innerHTML = items.map(function (uc) {
+      // recent_submissions từ GAS chỉ có 4 trường, thiếu record_id/status.
+      // Enrich từ _allList để openDetail() có đủ data (record_id, status, v.v.).
+      var dateVal = uc.submitted_at || uc.submit_date; // preserve trước khi có thể bị ghi đè
+      if (!uc.record_id && uc.usecase_id) {
+        for (var i = 0; i < _allList.length; i++) {
+          if (_allList[i].usecase_id === uc.usecase_id) {
+            uc = Object.assign({}, _allList[i], { submitted_at: dateVal }); // giữ nguyên date gốc
+            break;
+          }
+        }
+      }
       var k = _cache(uc);
       return '<tr style="cursor:pointer" onclick="Dashboard._byKey(\'' + esc(k) + '\')">' +
         '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
         '<td>' + esc(uc.name || '') + '</td>' +
         '<td>' + esc(uc.team || '--') + '</td>' +
-        '<td>' + fmtDate(uc.submitted_at) + '</td>' +
+        '<td>' + fmtDate(uc.submitted_at || uc.submit_date) + '</td>' +
         '<td>' + _btnDetail(uc, 'Chi tiết') + '</td>' +
       '</tr>';
     }).join('');
@@ -640,6 +651,17 @@
 
   // ── US Detail Modal ───────────────────────────────────────────────
   function openDetail(uc) {
+    // Safety net: nếu UC thiếu record_id (vd: từ recent_submissions chưa enrich),
+    // tìm bản đầy đủ trong _allList theo usecase_id.
+    if (!uc.record_id && uc.usecase_id && _allList.length) {
+      for (var ri = 0; ri < _allList.length; ri++) {
+        if (_allList[ri].usecase_id === uc.usecase_id) {
+          uc = Object.assign({}, _allList[ri], { submitted_at: uc.submitted_at || uc.submit_date });
+          break;
+        }
+      }
+    }
+
     _detailUc     = uc;
     _detailAction = null;
 

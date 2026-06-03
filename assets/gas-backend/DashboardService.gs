@@ -82,10 +82,13 @@ function computeDashboardSummary_() {
     // ── Recent submissions (top 5 mới nhất theo Submit_Date) ──
     if (uc.Submit_Date && uc.Status === STATUS.SUBMITTED) {
       recentList.push({
-        usecase_id:    uc.UseCase_ID,
-        name:          uc.UseCase_Name,
-        team:          uc.Team,
-        submitted_at:  uc.Submit_Date
+        record_id:    uc.Record_ID,
+        usecase_id:   uc.UseCase_ID,
+        name:         uc.UseCase_Name,
+        team:         uc.Team,
+        owner_name:   uc.Owner_Name,
+        status:       uc.Status,
+        submitted_at: uc.Submit_Date
       });
     }
   });
