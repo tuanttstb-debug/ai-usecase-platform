@@ -824,6 +824,7 @@
     document.getElementById('detailActionArea').style.display  = 'none';
     document.getElementById('detailModalFooter').style.display = '';
     document.getElementById('detailActionComment').value = '';
+    document.getElementById('detailActionConfirmBtn').disabled = false;
 
     document.getElementById('usDetailModal').classList.remove('hidden');
 
@@ -1079,6 +1080,7 @@
     _detailAction = action;
     var noteEl = document.getElementById('detailActionNote');
     var confirmBtn = document.getElementById('detailActionConfirmBtn');
+    confirmBtn.disabled = false;
     var comment = document.getElementById('detailActionComment');
     comment.value = '';
     comment.placeholder = action === 'approve' ? 'Nhận xét (tùy chọn)...' : 'Lý do từ chối (bắt buộc)...';
