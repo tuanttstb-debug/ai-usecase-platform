@@ -88,11 +88,16 @@ var Api = {
         var b64     = btoa(unescape(encodeURIComponent(json)));
         // base64url: thay +/= để URL-safe, không cần encodeURIComponent thêm
         var payload = b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-        // Cảnh báo nếu payload quá lớn (> 50,000 chars) — có thể vượt GAS param limit
-        if (payload.length > 50000) {
+        // Check kích thước SAU khi encode (không phải trước) vì tiếng Việt expand 4× sau base64url.
+        // Ví dụ: 1500 ký tự Việt → ~6,000 chars base64url → URL ~6,200 chars.
+        // GAS GET URL limit ~8KB — ngưỡng 7,500 chars cho buffer an toàn.
+        if (payload.length > 7500) {
           return Promise.reject(new Error(
-            'Nội dung biểu mẫu quá dài (' + payload.length + ' chars). ' +
-            'Vui lòng rút gọn các trường văn bản (đặc biệt phần Prompt).'
+            'Nội dung biểu mẫu quá lớn để gửi (' + payload.length + ' / 7500 chars).\n' +
+            'Vui lòng rút ngắn nội dung các trường văn bản, đặc biệt:\n' +
+            '• Ngữ cảnh bổ sung (Context)\n' +
+            '• Các trường Prompt khác\n' +
+            'Tiếng Việt chiếm nhiều dung lượng hơn tiếng Anh (~4×).'
           ));
         }
         var sep     = url.indexOf('?') === -1 ? '?' : '&';

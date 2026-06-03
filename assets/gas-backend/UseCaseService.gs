@@ -348,12 +348,10 @@ function updateUseCase_(recordId, data) {
   logActivity_(merged.UseCase_ID, recordId, 'UPDATED', 'Cập nhật qua API',
                merged.Owner_Email, prevStatus, newStatus);
 
-  // Trả về merged object nhưng không bao gồm JSON_Backup (quá lớn)
-  var returnObj = {};
-  Object.keys(merged).forEach(function(k) {
-    if (k !== 'JSON_Backup') returnObj[k] = merged[k];
-  });
-  return returnObj;
+  // Trả về minimal response — FE không dùng merged object sau update.
+  // Trả full merged (7,000+ chars khi Prompt_Context đầy) làm JSONP body quá lớn →
+  // Google redirect URL vượt giới hạn → HTTP 400 dù data đã ghi thành công trong sheet.
+  return { record_id: recordId, usecase_id: merged.UseCase_ID, updated_at: now };
 }
 
 // ── Read ──────────────────────────────────────────────────────────

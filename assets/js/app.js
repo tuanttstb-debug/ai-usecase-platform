@@ -169,6 +169,12 @@
         showSuccessScreen('Đã cập nhật');
       } else {
         data.Status = 'Submitted';
+        // Strip empty fields để giảm kích thước payload GET URL.
+        // Mỗi ký tự tiếng Việt tốn 3 bytes UTF-8 → 4 chars base64url → URL dễ vượt giới hạn GAS (~8KB).
+        // GAS tự khởi tạo tất cả field về '' nên bỏ qua field rỗng ở create mode là an toàn.
+        Object.keys(data).forEach(function(k) {
+          if (data[k] === '' || data[k] === null || data[k] === undefined) delete data[k];
+        });
         // Fetch một ID fresh ngay trước khi gửi để GAS ưu tiên dùng nó.
         // Nếu GAS thấy ID đã bị dùng (race), GAS tự sinh ID mới trong lock.
         // Nếu GAS offline, bỏ qua — GAS vẫn tự sinh được.
