@@ -579,6 +579,39 @@ Khi user mở app qua trailing-slash URL (e.g. `https://…/ai-usecase-platform/
 
 ---
 
+---
+
+## Session: 2026-06-03 (Part 5)
+**Scope:** Fix confirm button bị frozen sau approve/reject đầu tiên
+**Commit:** `4bc33bc`
+**Version:** 3.6.2
+
+### Root cause
+`_confirmDetailAction()` set `confirmBtn.disabled = true` khi bắt đầu xử lý, nhưng **chỉ reset về `false` trong `catch` (error path)**. Success path không bao giờ reset. Kết quả: sau approve/reject thành công, button bị frozen disabled. Lần mở modal tiếp theo — `openDetail()` không reset `disabled` → button bị kẹt → user click không có tác dụng.
+
+### Đã hoàn thành
+
+**Fix lớp 1 — `openDetail()` reset block:**
+```js
+document.getElementById('detailActionConfirmBtn').disabled = false;
+```
+Thêm vào block "Reset action area" trong `openDetail()` → mỗi lần mở modal đều reset.
+
+**Fix lớp 2 — `_showActionArea()` (defense-in-depth):**
+```js
+confirmBtn.disabled = false;
+```
+Thêm ngay sau khi lấy `confirmBtn` element → đảm bảo reset kể cả khi user đến từ path không qua `openDetail`.
+
+### Test kết quả (Playwright, live GitHub Pages)
+| Case | Kết quả |
+|---|---|
+| Button initial state = enabled | ✅ |
+| Simulate stuck (disabled=true) → click Chi tiết → button reset | ✅ |
+| Source có ≥2 điểm reset (catch + openDetail + _showActionArea) = 3 điểm | ✅ |
+
+---
+
 ## Recommended next actions (session kế tiếp)
 
 **[P0] GAS deploy** (blocker cũ, vẫn còn):

@@ -117,6 +117,12 @@ Option B — Google Sign-In (proper fix):
 
 ---
 
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 5)
+
+- [x] **BUG-CONFIRM-BTN (v3.6.2)**: Fix confirm button frozen sau approve/reject đầu tiên. Root cause: `disabled=true` chỉ reset trong `catch`, không reset trong success path. Fix 2 lớp: `openDetail()` + `_showActionArea()`. Commit `4bc33bc`.
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-06-03 (Part 4)
 
 - [x] **BUG-AUTH-URL (v3.6.1)**: Fix URL duplicate `ai-usecase-platform` sau khi login khi truy cập trailing-slash URL. Fix 2 lớp: `auth.js` validate `.html` extension + `login.html` `safeReturnUrl()` helper. Commit `2a5a2af`.
