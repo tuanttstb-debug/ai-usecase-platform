@@ -113,6 +113,12 @@ Option B — Google Sign-In (proper fix):
 
 ---
 
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 9)
+
+- [x] **FIX HTTP 400 Prompt_Context (v3.7.2)**: Root cause: tiếng Việt expand 4× sau base64url → GET URL vượt GAS ~8KB limit (CREATE); updateUseCase_ trả full merged object ~7000+ chars → JSONP redirect URL quá lớn (UPDATE). Fix: strip empty fields cho create payload, minimal update response ({record_id, usecase_id, updated_at}), đổi payload limit check sang post-encode 7500 chars. Commit `006bae5`.
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-06-03 (Part 8)
 
 - [x] **FIX Timeout false-failure create/update (v3.7.1)**: Root cause: GAS đọc MASTER_DATA nhiều lần → execution >20s → FE timeout nhưng GAS vẫn ghi xong. Fix 3 lớp: (1) FE timeout tăng 20s→45s cho write ops; (2) smart recovery: update auto-verify bằng getUseCase, create hiện warning với hint ID; (3) GAS updateUseCase_ đọc MASTER 1 lần thay vì 2 bằng findRowByField_(). Commit `e83f16b`.

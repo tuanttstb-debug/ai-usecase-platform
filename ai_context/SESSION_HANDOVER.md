@@ -776,6 +776,62 @@ GAS `createUseCase_` / `updateUseCase_` thực hiện quá nhiều sheet reads �
 
 ---
 
+## Session: 2026-06-03 (Part 9)
+**Scope:** Fix HTTP 400 khi create/update với Prompt_Context có nội dung
+**Commit:** `006bae5`
+**Version:** 3.7.2
+
+### Root cause phân tích (2 scenario)
+
+**CREATE — data KHÔNG trong DB khi có 400:**
+- Tiếng Việt tốn 3 bytes UTF-8/ký tự → base64url expand 4× so với ASCII
+- 1,500 ký tự Việt trong Prompt_Context → ~6,000 chars base64url → full GET URL ~6,200 chars
+- GAS infrastructure giới hạn ~8KB URL → reject trước khi `doGet` chạy → HTTP 400
+- Không có data nào được ghi → User nhầm tưởng data có trong DB từ lần submit thành công trước đó
+
+**UPDATE — data CÓ trong DB nhưng vẫn 400:**
+- GAS chạy xong, ghi data thành công vào sheet
+- `updateUseCase_` trả về full merged object (~7,000+ chars khi Prompt_Context có nội dung)
+- `sendJsonP_` tạo JSONP body lớn → Google cần embed response vào redirect URL → URL quá dài → HTTP 400
+- Data đã ghi nhưng response delivery thất bại → user thấy 400 nhưng data vẫn có trong sheet
+
+### Đã hoàn thành
+
+**FE — `assets/js/api.js`:**
+- Đổi payload size check từ pre-encode JSON (50,000 chars, không hiệu quả) sang **post-encode base64url (7,500 chars)**
+- Tiếng Việt expand ~4×, pre-encode check không phản ánh URL thực tế
+- Error message mới nêu rõ field `Prompt_Context`, giải thích Vietnamese overhead
+
+**FE — `assets/js/app.js`:**
+- **Strip empty fields** khỏi CREATE payload trước khi encode
+- GAS tự khởi tạo tất cả field về '' → safe khi bỏ field rỗng
+- Giảm URL điển hình ~60% (form có ~35 fields, phần lớn rỗng)
+
+**GAS — `assets/gas-backend/UseCaseService.gs`:**
+- `updateUseCase_()` trả về **minimal response** `{record_id, usecase_id, updated_at}` thay vì full merged object
+- FE không sử dụng merged data sau update
+- Giảm JSONP response body từ ~7,000+ chars → ~100 chars → fix UPDATE 400
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/js/api.js` | +9/-4 lines: post-encode size check + detailed error message |
+| `assets/js/app.js` | +6 lines: strip empty fields cho create payload |
+| `assets/gas-backend/UseCaseService.gs` | +3/-7 lines: minimal update response |
+
+### Decisions chốt
+1. **7,500 chars base64url limit** — buffer ~500 chars cho URL overhead (base URL 130 chars + action + callback ~60 chars = 190 chars), tổng URL ~7,690 chars, an toàn dưới 8KB
+2. **Strip empty cho create chỉ** — update cần giữ empty values (để clear fields đã fill trước đó)
+3. **Minimal update response** — `{record_id, usecase_id, updated_at}` đủ cho FE verify (dùng trong `_handleSubmitError` auto-verify qua `getUseCase`)
+4. **Không thay đổi `toSheetValue_`** — `'` prefix được Sheets API xử lý như "text escape" (consumed), không gây 400 Sheets API error
+
+### GAS deployment note
+`UseCaseService.gs` có thay đổi → cần deploy khi tìm được GAS project (GAS-MYSTERY-01).
+Trước khi deploy GAS: FE đã có strip-empty + post-encode size check → CREATE sẽ tốt hơn.
+Sau khi deploy GAS: UPDATE 400 cũng được fix (minimal response).
+
+---
+
 ## Recommended next actions (session kế tiếp)
 
 **[P0 — USER ACTION] Tìm GAS project (GAS-MYSTERY-01):**
