@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-03 (Part 6)
-**Version:** 3.6.3
+**Last updated:** 2026-06-03 (Part 7)
+**Version:** 3.7.0
 
 ---
 
@@ -62,7 +62,7 @@ env.js → auth.js → [inline portal script]
 |---|---|---|
 | Login page | ✅ | Username-based (no email validation), `type="text"`; URL redirect fix v3.6.1 |
 | Portal home | ✅ | Sidebar layout, SVG icons, same shell as dashboard |
-| Register/Wizard | ✅ | Sidebar layout; auto-fill Owner_Name (editable); Owner_Email ẩn — inject silent; UseCase_ID fetched fresh tại submit time (v3.6.3) |
+| Register/Wizard | ✅ | Sidebar layout; auto-fill Owner_Name (editable); Owner_Email ẩn — inject silent; UseCase_ID fetched fresh tại submit time (v3.6.3); special chars fully handled (v3.7.0) |
 | AuthService | ✅ | Username login; no regex; `ADMIN_EMAILS` = username list |
 | Auth guard | ✅ | All pages redirect to login if not authenticated |
 | Auth logout | ✅ | Sidebar logout button trên tất cả pages |

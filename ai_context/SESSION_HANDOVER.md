@@ -657,6 +657,70 @@ Nếu GAS v2 đã deploy (có `LockService`) thì ổn, nhưng vì GAS-MYSTERY-0
 
 ---
 
+---
+
+## Session: 2026-06-03 (Part 7)
+**Scope:** Fix toàn diện ký tự đặc biệt gây lỗi lưu vào GAS — v3.7.0
+**Commit:** `76b0242`
+**Version:** 3.7.0
+
+### Root cause phân tích
+
+6 bugs được phát hiện qua rà soát toàn bộ encoding pipeline FE → GAS → Google Sheets:
+
+| Bug | Mức độ | Mô tả |
+|---|---|---|
+| SPECIAL-01 | Minor | CRLF `\r\n` từ Windows clipboard tạo `\r` sót trong Sheets |
+| SPECIAL-02 | **High** | Formula injection: giá trị bắt đầu `=`,`+`,`-`,`@`,`\|` bị Sheets interpret làm formula → DATA CORRUPTION |
+| SPECIAL-03 | **Critical** | Null byte `\0` → `setValues` fail → SAVE FAILURE |
+| SPECIAL-04 | Minor | `\r` giữa chuỗi không bị `sanitizeStr_` strip |
+| SPECIAL-05 | **Critical** | `JSON_Backup` vượt 50,000 chars/cell limit → `setValues` throw → SAVE FAILURE |
+| SPECIAL-06 | **Critical** | Lone surrogate Unicode → `encodeURIComponent` throw URIError → SAVE FAILURE |
+
+### Đã hoàn thành
+
+**FE — `assets/js/form-mapper.js`:**
+- `collectData()`: normalize `\r\n` → `\n`, lone `\r` → `\n` cho textarea elements (SPECIAL-01)
+
+**FE — `assets/js/api.js`:**
+- `_request()`: strip lone surrogate trước khi encode (giữ surrogate pair = emoji hợp lệ) (SPECIAL-06)
+- Thêm payload size guard: nếu payload > 50,000 chars → reject với error message rõ ràng
+- Error message khi encode fail rõ hơn (có hint về ký tự đặc biệt)
+
+**GAS — `assets/gas-backend/Utils.gs`:**
+- `sanitizeStr_()`: strip null byte `\0`, strip lone surrogate, normalize `\r\n`/`\r` → `\n` (SPECIAL-03, 04, 06)
+- **NEW** `toSheetValue_(val)`: helper prefix `'` cho strings bắt đầu bằng formula chars → chống formula injection trong `appendRow`/`setValues` (SPECIAL-02)
+- `appendRowFromObject_()`: dùng `toSheetValue_()` khi build row array
+- `updateRowByRecordId_()`: dùng `toSheetValue_()` khi build row array
+
+**GAS — `assets/gas-backend/UseCaseService.gs`:**
+- `createUseCase_()`: cap `JSON_Backup` tại 45,000 chars (SPECIAL-05)
+- `updateUseCase_()`: cap `JSON_Backup` tại 45,000 chars (SPECIAL-05)
+
+**Test — `assets/tests/test-special-chars.js` (NEW):**
+- 62 test cases: A (encoding roundtrip), B (sanitizeStr_), C (toSheetValue_), D (JSON_Backup), E (CRLF), F (end-to-end Prompt_Context)
+- 62/62 PASS
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/js/form-mapper.js` | +5 lines: CRLF normalization trong collectData |
+| `assets/js/api.js` | +20 lines: lone surrogate strip + payload size guard + better error msg |
+| `assets/gas-backend/Utils.gs` | +34 lines: sanitizeStr_ improvements + new toSheetValue_() + apply in write helpers |
+| `assets/gas-backend/UseCaseService.gs` | +6 lines: JSON_Backup size cap trong create + update |
+| `assets/tests/test-special-chars.js` | NEW: 62 unit tests |
+
+### Lưu ý GAS deployment
+`Utils.gs` và `UseCaseService.gs` có thay đổi cần deploy. Do GAS-MYSTERY-01 vẫn chưa resolved, các fix GAS chưa active trên production.
+Khi tìm được đúng project → deploy tất cả 6 files (xem TODO_NEXT.md).
+
+### Quyết định kỹ thuật
+1. **`toSheetValue_` chỉ apply khi ghi sheet** — không apply trong `sanitizeStr_` để JSON_Backup lưu giá trị gốc (không có `'` prefix)
+2. **Lone surrogate regex**: `/([\uD800-\uDBFF][\uDC00-\uDFFF])|[\uD800-\uDFFF]/g` — surrogate pair match trước, lone surrogate còn lại bị strip
+3. **JSON_Backup = 45,000 chars** (không phải 50,000) — buffer 5,000 chars cho overhead
+
+---
+
 ## Recommended next actions (session kế tiếp)
 
 **[P0 — USER ACTION] Tìm GAS project (GAS-MYSTERY-01):**

@@ -124,6 +124,12 @@ Option B — Google Sign-In (proper fix):
 
 ---
 
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 7)
+
+- [x] **FIX Special chars toàn diện (v3.7.0)**: Tìm và fix 6 bugs trong encoding pipeline FE → GAS → Google Sheets. Bao gồm: formula injection (SPECIAL-02 HIGH), null byte save failure (SPECIAL-03 CRITICAL), JSON_Backup cell overflow (SPECIAL-05 CRITICAL), lone surrogate encode failure (SPECIAL-06 CRITICAL), CRLF normalization (SPECIAL-01/04 MINOR). Test: 62/62 pass. Commit `76b0242`.
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-06-03 (Part 6)
 
 - [x] **FIX Duplicate UseCase_ID (v3.6.3)**: Chuyển gen mã từ page-load sang submit-time. FE gắn fresh ID hint vào payload; GAS `_assignUseCaseId_()` validate trong lock, dùng nếu còn free, fallback generate nếu collision. 8/8 local tests pass. Commit `3780bf6`.
