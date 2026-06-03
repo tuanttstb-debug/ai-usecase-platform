@@ -612,6 +612,51 @@ Thêm ngay sau khi lấy `confirmBtn` element → đảm bảo reset kể cả k
 
 ---
 
+---
+
+## Session: 2026-06-03 (Part 6)
+**Scope:** Fix duplicate UseCase_ID khi submit đồng thời — gen ID xuống lúc Submit
+**Commit:** `3780bf6`
+**Version:** 3.6.3
+
+### Root cause
+`peekNextUseCaseId_()` không có lock — không atomic. Khi nhiều user submit cùng lúc:
+1. Cả 2 FE peek → cùng thấy `AIUS-0005`
+2. Cả 2 gọi `createUseCase()` → GAS (nếu chưa deploy v2) ghi 2 row với cùng `AIUS-0005`
+
+Nếu GAS v2 đã deploy (có `LockService`) thì ổn, nhưng vì GAS-MYSTERY-01 vẫn còn → không đảm bảo.
+
+### Fix 2 lớp
+
+**Lớp 1 — FE `app.js`:**
+- Xóa `loadNextIdPreview()` khỏi `init()` — không hiện badge sớm (stale, gây nhầm)
+- Trong `submitForm()`: gọi `Api.getNextId()` ngay trước `createUseCase()`, gắn kết quả vào `data.UseCase_ID` làm hint
+- Nếu GAS offline: try/catch bỏ qua, GAS tự sinh ID server-side
+
+**Lớp 2 — GAS `UseCaseService.gs`:**
+- Thêm `_assignUseCaseId_(hint)`: nhận hint từ FE, acquire `LockService`, check hint còn free không → dùng + sync counter qua `_ensureCounterAhead_()`; nếu hint đã dùng → fallback `generateUseCaseId_()`
+- Thêm `_ensureCounterAhead_()`: đảm bảo `CONFIG.NEXT_ID` không bao giờ re-issue số đã dùng
+- `createUseCase_()` dùng `_assignUseCaseId_(sanitizeStr_(data.UseCase_ID))` thay vì `generateUseCaseId_()` trực tiếp
+
+### Kết quả
+- Race window thu hẹp từ (mở form → submit) xuống còn ~1 JSONP RTT
+- 2 concurrent submit với cùng hint: chỉ 1 thắng lock + dùng hint; cái kia fallback generate mới → 0 duplicate
+
+### Test kết quả (Playwright, local server)
+| Test | Kết quả |
+|---|---|
+| next-id NOT called on page load | ✅ |
+| nextIdBadge hidden on load | ✅ |
+| getNextId() called at submit time | ✅ |
+| UseCase_ID hint trong createUseCase payload | ✅ |
+| getNextId() offline → createUseCase vẫn chạy (graceful) | ✅ |
+| lookup still loads normally (no regression) | ✅ |
+
+### Note về GAS deployment
+`_assignUseCaseId_()` và `_ensureCounterAhead_()` cần paste vào GAS Editor sau khi tìm được đúng project (GAS-MYSTERY-01). Khi chưa deploy: FE gửi hint nhưng GAS cũ bỏ qua (dùng `generateUseCaseId_()` cũ) → không tệ hơn trước, chỉ chưa đạt full fix.
+
+---
+
 ## Recommended next actions (session kế tiếp)
 
 **[P0] GAS deploy** (blocker cũ, vẫn còn):

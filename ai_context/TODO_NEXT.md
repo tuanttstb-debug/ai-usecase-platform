@@ -117,6 +117,12 @@ Option B — Google Sign-In (proper fix):
 
 ---
 
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 6)
+
+- [x] **FIX Duplicate UseCase_ID (v3.6.3)**: Chuyển gen mã từ page-load sang submit-time. FE gắn fresh ID hint vào payload; GAS `_assignUseCaseId_()` validate trong lock, dùng nếu còn free, fallback generate nếu collision. 8/8 local tests pass. Commit `3780bf6`.
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-06-03 (Part 5)
 
 - [x] **BUG-CONFIRM-BTN (v3.6.2)**: Fix confirm button frozen sau approve/reject đầu tiên. Root cause: `disabled=true` chỉ reset trong `catch`, không reset trong success path. Fix 2 lớp: `openDetail()` + `_showActionArea()`. Commit `4bc33bc`.
