@@ -36,8 +36,7 @@
       } else {
         const draft = Storage.load();
         if (draft) showDraftBanner(draft);
-        // Chỉ hiển thị next ID preview ở new mode (edit mode đã có ID riêng)
-        loadNextIdPreview();
+        // ID sẽ được fetch và gắn vào payload lúc submit (không hiện sớm để tránh stale)
       }
 
       // 4. Autosave
@@ -67,27 +66,6 @@
     FormMapper.populateData({
       Owner_Name: user.displayName || user.email
     });
-  }
-
-  /* ── Load and display next UseCase ID preview ── */
-  async function loadNextIdPreview() {
-    const badge = document.getElementById('nextIdBadge');
-    if (!badge) return;
-    badge.className = 'nextid-badge loading';
-    badge.textContent = 'Mã: …';
-    badge.style.display = '';
-    try {
-      const result = await Api.getNextId();
-      const nextId = (result && result.next_id) ? result.next_id : null;
-      if (nextId) {
-        badge.textContent = 'Mã dự kiến: ' + nextId;
-        badge.className = 'nextid-badge';
-      } else {
-        badge.style.display = 'none';
-      }
-    } catch (e) {
-      badge.style.display = 'none';
-    }
   }
 
   /* ── Load lookup data (không block form render) ── */
@@ -189,8 +167,18 @@
         Toast.show('Cập nhật thành công!', 'success');
         showSuccessScreen('Đã cập nhật');
       } else {
-        data.Status   = 'Submitted';
-        const result  = await Api.createUseCase(data);
+        data.Status = 'Submitted';
+        // Fetch một ID fresh ngay trước khi gửi để GAS ưu tiên dùng nó.
+        // Nếu GAS thấy ID đã bị dùng (race), GAS tự sinh ID mới trong lock.
+        // Nếu GAS offline, bỏ qua — GAS vẫn tự sinh được.
+        const badge = document.getElementById('nextIdBadge');
+        if (badge) { badge.textContent = 'Đang cấp mã…'; badge.className = 'nextid-badge loading'; badge.style.display = ''; }
+        try {
+          const idRes = await Api.getNextId();
+          if (idRes && idRes.next_id) data.UseCase_ID = idRes.next_id;
+        } catch (_) { /* GAS offline — GAS sẽ tự sinh ID */ }
+        if (badge) badge.style.display = 'none';
+        const result = await Api.createUseCase(data);
         Storage.clear();
         showSuccessScreen(result.usecase_id || 'AIUS-????');
       }

@@ -128,6 +128,63 @@ function generateUseCaseId_() {
   }
 }
 
+// ── ID Assignment ─────────────────────────────────────────────────
+
+/**
+ * Chọn UseCase_ID cho record mới.
+ * Nếu FE gửi kèm hint (vừa fetch từ peekNextUseCaseId_) và hint còn free
+ * → dùng hint trong scope của lock + cập nhật counter.
+ * Ngược lại → gọi generateUseCaseId_() (cũng có lock bên trong).
+ *
+ * Cơ chế này giảm window race condition xuống gần 0: FE fetch ID ngay trước
+ * khi submit, GAS validate trong lock — nếu 2 request cùng lúc gửi cùng hint,
+ * chỉ 1 cái thắng lock và được dùng hint đó, cái kia fallback generate mới.
+ *
+ * @param {string} hint - UseCase_ID từ FE (vd: 'AIUS-0005'), có thể rỗng/undefined
+ * @returns {string} UseCase_ID được cấp
+ */
+function _assignUseCaseId_(hint) {
+  var hintStr = hint ? String(hint).trim() : '';
+  var idPattern = new RegExp('^' + ID_PREFIX + '\\d{' + ID_PADDING + ',}$');
+  if (hintStr && idPattern.test(hintStr)) {
+    var lock = LockService.getScriptLock();
+    lock.waitLock(LOCK_TIMEOUT_MS);
+    try {
+      if (_getAllUseCaseIds_().indexOf(hintStr) === -1) {
+        _ensureCounterAhead_(hintStr);
+        return hintStr;
+      }
+    } finally {
+      lock.releaseLock();
+    }
+  }
+  return generateUseCaseId_();
+}
+
+/**
+ * Đảm bảo CONFIG.NEXT_ID > số trong useCaseId vừa được cấp.
+ * Phải gọi trong scope lock đang active.
+ * @param {string} useCaseId - VD: 'AIUS-0005'
+ */
+function _ensureCounterAhead_(useCaseId) {
+  var minNext = parseInt(useCaseId.slice(ID_PREFIX.length), 10) + 1;
+  var sheet   = getOrCreateSheet_(SHEETS.CONFIG);
+  var data    = sheet.getDataRange().getValues();
+  if (data.length < 2) { sheet.appendRow(['NEXT_ID', minNext, 'Auto-increment ID counter']); return; }
+  var keyCol  = data[0].map(String).indexOf('Key');
+  var valCol  = data[0].map(String).indexOf('Value');
+  if (keyCol === -1 || valCol === -1) return;
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][keyCol]).trim() === 'NEXT_ID') {
+      if (minNext > (parseInt(data[i][valCol], 10) || 1)) {
+        sheet.getRange(i + 1, valCol + 1).setValue(minNext);
+      }
+      return;
+    }
+  }
+  sheet.appendRow(['NEXT_ID', minNext, 'Auto-increment ID counter']);
+}
+
 // ── Create ────────────────────────────────────────────────────────
 
 /**
@@ -147,7 +204,9 @@ function createUseCase_(data) {
   // ── 2. Sinh IDs ───────────────────────────────────────────────
   var now       = new Date().toISOString();
   var recordId  = Utilities.getUuid();
-  var useCaseId = generateUseCaseId_();
+  // Dùng ID hint từ FE nếu còn free (kiểm tra trong lock), ngược lại generate mới.
+  // Fix: tránh duplicate khi nhiều user submit đồng thời.
+  var useCaseId = _assignUseCaseId_(sanitizeStr_(data.UseCase_ID));
 
   // ── 3. Build record object ─────────────────────────────────────
   var obj = {};
