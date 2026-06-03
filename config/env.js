@@ -1,7 +1,7 @@
 var APP_CONFIG = {
   // URL GAS Web App — KHÔNG có trailing slash
   // Cập nhật mỗi khi deploy lại GAS (mỗi lần "New Deployment" sẽ ra URL mới)
-  API_BASE_URL: 'https://script.google.com/macros/s/AKfycbzOv_GUkTcIrCxzXsO3H-xW4T3N1wCyekq_LFSXn5lTQKDHavpnC5502DhHbkx_hM_qMA/exec',
+  API_BASE_URL: 'https://script.google.com/macros/s/AKfycbxMM_sixPn1mif_2I8exKSvCcO3RghzYgZwViYUhPXqr9993XoSj5QtUQJOaY6uvALgug/exec',
   VERSION: '1.0.0',
   AUTO_SAVE_KEY:    'ai_usecase_draft',
   DUPLICATE_THRESHOLD: 0.8,
