@@ -113,6 +113,12 @@ Option B — Google Sign-In (proper fix):
 
 ---
 
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 10)
+
+- [x] **FIX HTTP 400 UPDATE workaround (v3.7.3)**: Root cause xác nhận qua URL thực tế: user_content_key trong googleusercontent redirect URL dài 10,000+ chars (GAS nhúng full merged object). FE fix: mở rộng _handleSubmitError để cả isScriptError ("script load thất bại") trigger auto-verify bằng getUseCase. Fix vĩnh viễn cần deploy GAS minimal response (UseCaseService.gs đã có trong repo). Commit `d52c756`.
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-06-03 (Part 9)
 
 - [x] **FIX HTTP 400 Prompt_Context (v3.7.2)**: Root cause: tiếng Việt expand 4× sau base64url → GET URL vượt GAS ~8KB limit (CREATE); updateUseCase_ trả full merged object ~7000+ chars → JSONP redirect URL quá lớn (UPDATE). Fix: strip empty fields cho create payload, minimal update response ({record_id, usecase_id, updated_at}), đổi payload limit check sang post-encode 7500 chars. Commit `006bae5`.

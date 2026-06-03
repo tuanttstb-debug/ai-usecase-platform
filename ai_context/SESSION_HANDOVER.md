@@ -832,6 +832,66 @@ Sau khi deploy GAS: UPDATE 400 cũng được fix (minimal response).
 
 ---
 
+## Session: 2026-06-03 (Part 10)
+**Scope:** Fix HTTP 400 UPDATE — xác nhận root cause qua URL thực tế + FE workaround
+**Commit:** `d52c756`
+**Version:** 3.7.3
+
+### Root cause xác nhận qua URL thực tế
+
+User cung cấp failing request URL:
+```
+https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhn...<10,000+ chars>...&lib=...
+```
+
+**Cơ chế:**
+1. GAS nhận request → `doGet` chạy → ghi data vào DB ✅
+2. GAS tạo JSONP response gồm full merged object (Prompt_Context ~5,000 chars tiếng Việt)
+3. GAS trả 302 redirect đến `googleusercontent.com/macros/echo?user_content_key=<ENCODED_RESPONSE>`
+4. `user_content_key` = base64url encode của toàn bộ JSONP response → ~10,000+ chars
+5. Browser theo redirect → URL quá giới hạn → **HTTP 400**
+6. `<script>` tag nhận 400 → `script.onerror` → error "GAS script load thất bại"
+
+### Vấn đề với fix trước
+
+`_handleSubmitError` v3.7.1 chỉ kiểm tra `isTimeout` (message chứa "Timeout"). `script.onerror` tạo ra error "GAS script load thất bại" → bypass logic auto-verify → user thấy "Lỗi gửi: GAS script load thất bại" dù data đã ghi xong.
+
+### Đã hoàn thành
+
+**FE — `assets/js/app.js`:**
+- `_handleSubmitError()`: thêm `isScriptError` = check "script load thất bại"
+- `isTransportErr = isTimeout || isScriptError` — cả hai đều trigger UPDATE auto-verify
+- Khi `isScriptError` cho UPDATE: gọi `getUseCase(recordId)` → nếu record tồn tại → show success
+- Error message cập nhật (không mention "45s" cho script.onerror case)
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/js/app.js` | +11/-10 lines: `isScriptError` + `isTransportErr` trong `_handleSubmitError` |
+
+### Luồng xử lý sau fix (UPDATE với Prompt_Context dài)
+
+```
+User click Update
+  → GAS runs → writes to DB → returns full merged response → 302 redirect
+  → googleusercontent returns 400 (URL quá dài)
+  → script.onerror → "GAS script load thất bại"
+  → _handleSubmitError: isScriptError=true, recordId exists
+  → showLoading("Đang xác nhận kết quả...")
+  → Api.getUseCase(recordId) → success (small response)
+  → Storage.clear() → Toast "Cập nhật thành công!" → showSuccessScreen
+```
+
+### Fix vĩnh viễn cần deploy GAS
+
+Deploy `UseCaseService.gs` (đã có trong repo, minimal response):
+```js
+return { record_id: recordId, usecase_id: merged.UseCase_ID, updated_at: now };
+```
+→ `user_content_key` chỉ ~100 chars → URL không bao giờ quá giới hạn
+
+---
+
 ## Recommended next actions (session kế tiếp)
 
 **[P0 — USER ACTION] Tìm GAS project (GAS-MYSTERY-01):**
