@@ -197,20 +197,31 @@
   }
 
   /* ── Submit Error Handler ── */
-  // Phân biệt timeout (GAS đã ghi xong nhưng response chưa về) vs lỗi thật.
-  // Timeout = 45s đã hết → GAS vẫn có thể đang xử lý hoặc đã xong.
+  // Phân biệt transport error (GAS đã ghi xong nhưng response không về) vs lỗi thật.
+  //
+  // Có 2 loại transport error cho UPDATE:
+  //   1. Timeout (45s) — GAS chậm, response chưa về
+  //   2. script.onerror ("script load thất bại") — GAS chạy xong, ghi data thành công,
+  //      nhưng response chứa full merged object (~7,000+ chars) → redirect URL
+  //      script.googleusercontent.com/macros/echo?user_content_key=<VERY_LONG> quá dài → 400
+  //      → browser nhận HTTP 400 → script.onerror fire
+  //
+  // Cả 2 đều có thể xảy ra SAU KHI data đã được ghi vào DB (với UPDATE).
   async function _handleSubmitError(err, recordId, hintId) {
-    var isTimeout = err.message && err.message.indexOf('Timeout') !== -1;
+    var isTimeout     = err.message && err.message.indexOf('Timeout') !== -1;
+    var isScriptError = err.message && err.message.indexOf('script load thất bại') !== -1;
+    var isTransportErr = isTimeout || isScriptError;
 
-    if (!isTimeout) {
+    if (!isTransportErr) {
       // Lỗi thật (validation, encode, GAS trả success:false) — hiện bình thường
       Toast.show('Lỗi gửi: ' + err.message, 'error');
       return;
     }
 
     if (recordId) {
-      // ── UPDATE timeout: auto-verify bằng getUseCase ──────────────
-      // Nếu record đã được cập nhật → GAS đã xong, chỉ response bị timeout
+      // ── UPDATE transport error: auto-verify bằng getUseCase ──────────────
+      // Với UPDATE: GAS luôn ghi TRƯỚC khi gửi response → data rất có thể đã trong DB.
+      // Gọi getUseCase (response nhỏ, không bị 400) để xác nhận.
       showLoading(true, 'Đang xác nhận kết quả...');
       try {
         var verified = await Api.getUseCase(recordId);
@@ -223,17 +234,17 @@
       } catch (_e) { /* GAS vẫn bận hoặc offline — fall through */ }
       showLoading(false);
       Toast.show(
-        'Kết nối timeout (45s) — không xác nhận được kết quả.\n' +
-        'Vui lòng kiểm tra dashboard xem use case đã được cập nhật chưa trước khi thử lại.',
+        'Không xác nhận được kết quả — vui lòng kiểm tra dashboard\n' +
+        'xem use case đã được cập nhật chưa trước khi thử lại.',
         'warning',
         10000
       );
     } else {
-      // ── CREATE timeout: cảnh báo tránh submit lại ─────────────────
+      // ── CREATE transport error: cảnh báo tránh submit lại ─────────────────
       // Không thể tự verify vì chưa có Record_ID. Dùng hint ID làm gợi ý.
       var hintMsg = hintId ? (' (mã dự kiến: ' + hintId + ')') : '';
       Toast.show(
-        'Kết nối timeout (45s)' + hintMsg + '.\n' +
+        'Lỗi kết nối' + hintMsg + '.\n' +
         'Dữ liệu CÓ THỂ đã được lưu — kiểm tra dashboard trước khi nộp lại để tránh trùng lặp.',
         'warning',
         12000
