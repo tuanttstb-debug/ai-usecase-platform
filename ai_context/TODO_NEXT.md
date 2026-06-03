@@ -110,6 +110,12 @@ Option B — Google Sign-In (proper fix):
 
 ---
 
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 2)
+
+- [x] **Fix đồng bộ recentTable chi tiết (v3.5.1)**: Enrich recent_submissions từ _allList trước khi cache; openDetail safety net; DashboardService.gs fix tại nguồn
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-06-03
 
 - [x] **Drill-down list popup (v3.5)**: Click KPI cards / chart segments / chart bars → popup bảng use case lọc theo ngữ cảnh, mỗi row có nút "Chi tiết" mở detail modal chồng lên

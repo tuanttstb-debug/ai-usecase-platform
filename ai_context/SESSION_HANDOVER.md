@@ -436,3 +436,49 @@ Sau khi tìm được đúng GAS project (P0 blocker), paste `UseCaseService.gs`
 
 ### Open issues (không blocking)
 - GAS-MYSTERY-01, GAS code sync — vẫn còn từ session trước
+
+---
+
+## Session: 2026-06-03 (Part 2)
+**Scope:** Fix đồng bộ xem chi tiết recentTable với các màn khác
+**Commit:** `7715389`
+
+### Root cause đã xác định
+
+`DashboardService.gs` — `computeDashboardSummary_()` chỉ push 4 trường vào `recent_submissions`:
+```
+{ usecase_id, name, team, submitted_at }
+```
+Thiếu `record_id` và `status` → `openDetail()` không gọi `_fetchFullDetail()` → modal chỉ thấy dữ liệu tối thiểu, không có approve/reject buttons, không load chi tiết đầy đủ.
+
+Các bảng khác (allTable, myTable, pendingList, exploreTable, exploreTable) dùng data từ `_allList` (endpoint `listUseCases`) đã có đủ trường → hoạt động đúng.
+
+### Đã hoàn thành
+
+**FE — `assets/js/dashboard.js`:**
+- `renderRecentTable()`: enrich từng item từ `_allList` theo `usecase_id` trước khi cache. Nếu tìm thấy → dùng object đầy đủ (có `record_id`, `status`, tất cả fields). Preserve `submitted_at` date gốc.
+- `openDetail()`: thêm safety net — nếu UC thiếu `record_id`, tìm bản đầy đủ trong `_allList` trước khi render. Áp dụng cho mọi nguồn, không chỉ recentTable.
+- Date field: dùng `submitted_at || submit_date` (hai nguồn data dùng key khác nhau)
+
+**GAS — `assets/gas-backend/DashboardService.gs`:**
+- `computeDashboardSummary_()`: push thêm `record_id`, `status`, `owner_name` vào mỗi item `recentList` — fix tại nguồn sau khi deploy GAS
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/js/dashboard.js` | +24 lines: enrichment logic trong `renderRecentTable` + safety net trong `openDetail` |
+| `assets/gas-backend/DashboardService.gs` | +3 fields: `record_id`, `status`, `owner_name` trong `recent_submissions` |
+
+### Decisions chốt
+1. **FE enrich = primary fix** — Hoạt động ngay với GAS hiện tại (không cần deploy GAS mới). `_allList` luôn load trước khi user có thể click recentTable (cùng `Promise.all` trong `_loadStartupData`).
+2. **`openDetail` safety net = defensive fix** — Bảo vệ mọi trường hợp UC thiếu `record_id` từ bất kỳ nguồn nào, không chỉ recentTable.
+3. **GAS fix = fix tại nguồn** — Sau khi deploy GAS mới, `recent_submissions` sẽ có đủ trường ngay, không cần enrich từ `_allList`.
+4. **Không thay đổi filter** — `recent_submissions` vẫn chỉ lọc `Status === SUBMITTED` (không mở rộng sang `Under Review`) vì chưa có PO confirmation.
+
+### Test checklist
+- [ ] Login admin → tab Tổng quan → bảng "Nộp gần đây" → click nút "Chi tiết" → modal mở đúng 4 section
+- [ ] Modal header hiện đúng status badge (Submitted/màu purple)
+- [ ] Approve/Reject buttons hiện (vì status = Submitted)
+- [ ] Section 2 (Luồng AI & Prompt) / Section 3 / Section 4 load sau khi GAS fetch xong
+- [ ] Copy Prompt button hiện sau khi full data load
+- [ ] Click "Chi tiết" trong list popup (từ KPI click) → detail modal hoạt động như nhau
