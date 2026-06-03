@@ -91,6 +91,31 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
+---
+
+## GAS-DEBT-03 — `DashboardService.gs` local fix chưa deploy (v3.6, 2026-06-03)
+
+**Mô tả:** `computeDashboardSummary_()` đã được update local để push thêm `record_id`, `status`, `owner_name` vào `recent_submissions`. Chưa deploy vào GAS (vì GAS-MYSTERY-01).
+
+**Ảnh hưởng:** `renderRecentTable` vẫn phải enrich từ `_allList` (FE workaround). Sau khi deploy GAS, FE workaround vẫn hoạt động bình thường (harmless double-key).
+
+**Fix:** Paste `DashboardService.gs` vào GAS Editor sau khi resolve GAS-MYSTERY-01.
+
+---
+
+## FILTER-01 — `_populateTeamFilter` stale state sau refresh (v3.6, 2026-06-03)
+
+**Mô tả:** Khi refresh data, `_populateTeamFilter()` re-render options nhưng không sync `_filterAll.team` với giá trị thực của `<select>`. Nếu team đang chọn bị xóa khỏi list mới (UC của team đó bị xóa/archive) → dropdown về option đầu nhưng `_filterAll.team` vẫn giữ giá trị cũ → filter sai.
+
+**Fix (1 dòng):** Thêm sau `teamSel.innerHTML = ...` trong `_populateTeamFilter()`:
+```js
+_filterAll.team = teamSel.value; // sync state với DOM value sau re-render
+```
+
+**File:** `assets/js/dashboard.js` — hàm `_populateTeamFilter`
+
+---
+
 ## PERF-02 — `_loadTabData('my')` vẫn fetch API riêng sau startup
 
 **Mô tả:** Sau khi `_loadStartupData()` đã populate `_myList`, user click tab "My Cases" vẫn gọi `_loadMyUseCases()` (không có guard) → thêm 1 API request không cần thiết.

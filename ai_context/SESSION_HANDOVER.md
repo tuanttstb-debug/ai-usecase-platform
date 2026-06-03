@@ -529,3 +529,26 @@ Các bảng khác (allTable, myTable, pendingList, exploreTable, exploreTable) d
 - [ ] Tab Tổng quan → box "Từ chối" hiện khi có rejected UC
 - [ ] Click "Chi tiết" trong rejected card → detail modal đầy đủ
 - [ ] Nút "Xem tất cả" → list popup "Đã từ chối" với toàn bộ danh sách
+
+### Regression risks (v3.6)
+- **`_applyAllTableFilters` thay thế `renderAllTable(_allList)` trực tiếp** — nếu `_allList` chưa load khi filter được gọi → render empty. Cần verify `_initAllFilters()` không trigger filter trước khi data load (hiện tại OK vì pills chỉ bắt sự kiện click, không tự gọi).
+- **`_populateTeamFilter()` preserve selection** — khi data reload (refresh button), giá trị `_filterAll.team` được đọc lại để re-select. Nếu team không còn trong list mới → dropdown về "Tất cả" nhưng `_filterAll.team` vẫn giữ giá trị cũ → filter lạ. Cần reset: `_filterAll.team = teamSel.value` trong `_populateTeamFilter` sau khi render.
+- **`rejectedCard` ẩn khi không có data** — nếu admin có Rejected UCs nhưng `_allList` limit 200 không bao gồm hết → card thiếu data. Acceptable hiện tại nhưng cần pagination dài hạn.
+
+---
+
+## Recommended next actions (session kế tiếp)
+
+**[P0] GAS deploy** (blocker cũ, vẫn còn):
+1. Tìm đúng GAS project (`script.google.com` → My Projects → URL `AKfycbwe0eo3X3KW...`)
+2. Sau khi tìm được: paste `UseCaseService.gs`, `Code.gs`, `Config.gs`, `Utils.gs`, `LookupService.gs`, `DashboardService.gs`
+3. "Edit deployment → New version → Deploy" (KHÔNG nhấn "New Deployment")
+
+**[P1] Fix regression risk** trong `_populateTeamFilter`:
+- Sau khi render options, đọc lại `teamSel.value` → update `_filterAll.team` để sync state
+
+**[P2] Pagination** — `_allList` giới hạn 200 records, cần "Xem thêm" hoặc server-side pagination
+
+**[P2] BUG-03 confirm với PO** — Status="Draft" khi tạo mới: bug hay intent?
+
+**[P3] Fix double-fetch** — `_loadTabData('my')` vẫn gọi `_loadMyUseCases()` mỗi khi click tab dù data đã có từ startup

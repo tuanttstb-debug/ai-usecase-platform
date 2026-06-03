@@ -81,14 +81,21 @@ Option B — Google Sign-In (proper fix):
 
 ---
 
+## P1 — Fix regression risk (v3.6)
+
+- [ ] `_populateTeamFilter()`: sau khi render options, sync `_filterAll.team = teamSel.value` để tránh stale filter state khi team bị xóa khỏi data sau refresh
+
+---
+
 ## P3 — Feature backlog
 
 - [ ] Explore tab: show empty state với CTA "Chưa có UC nào được duyệt — hãy là người đầu tiên!" thay vì text thuần
-- [ ] Pagination cho dashboard (giới hạn 200 records hiện tại)
+- [ ] Pagination cho dashboard (giới hạn 200 records hiện tại) — ảnh hưởng rejected card + filter
 - [ ] "Under Review" status transition cho workflow
-- [ ] Export to CSV từ dashboard
+- [ ] Export to CSV từ dashboard (tab Tất cả + filter state)
 - [ ] Line chart (submission trend) — cần `trend_data` từ GAS API
 - [ ] Fix double-fetch: `_loadTabData('my')` vẫn gọi `_loadMyUseCases()` sau startup
+- [ ] Filter tab Tất cả: thêm nút "Reset tất cả filter" (1 click reset status + team + search)
 
 ---
 
