@@ -482,3 +482,50 @@ Các bảng khác (allTable, myTable, pendingList, exploreTable, exploreTable) d
 - [ ] Section 2 (Luồng AI & Prompt) / Section 3 / Section 4 load sau khi GAS fetch xong
 - [ ] Copy Prompt button hiện sau khi full data load
 - [ ] Click "Chi tiết" trong list popup (từ KPI click) → detail modal hoạt động như nhau
+
+---
+
+## Session: 2026-06-03 (Part 3)
+**Scope:** Filter tab Tất cả + Box Từ chối
+**Commit:** `2eda85a`
+**Version:** 3.6.0
+
+### Đã hoàn thành
+
+**Feature 1 — Filter tab "Tất cả use case":**
+- Multi-select status pills: click toggle từng trạng thái, "Tất cả" reset về all
+- Team dropdown: danh sách build động từ `_allList` sau khi data load
+- Search kết hợp với filter (không thay thế)
+- Count badge "X / Tổng" cập nhật real-time theo filter hiện tại
+- Filter state `_filterAll` giữ nguyên khi data refresh
+
+**Feature 2 — Box "Từ chối" trong tab Tổng quan:**
+- `dash-card--rejected`: viền đỏ trái, ẩn khi không có rejected UC
+- Preview tối đa 5 UC, nút "Xem tất cả" mở list popup khi > 5
+- Mỗi row có nút "Chi tiết" → `openDetail()` đầy đủ 4 section (đồng bộ với các màn khác)
+- Tự ẩn khi không có UC nào bị từ chối (clean UX)
+
+### Files changed
+| File | Delta |
+|---|---|
+| `dashboard.html` | +30 lines: filter bar trong tab Tất cả; rejected card trong tab Tổng quan |
+| `assets/js/dashboard.js` | +143 lines: `_filterAll`/`_rejectedList` state; `_initAllFilters`, `_populateTeamFilter`, `_applyAllTableFilters`, `renderRejectedCard`; update `_loadStartupData`/`_loadAllUseCases`/`_bindSearch` |
+| `assets/css/dashboard.css` | +87 lines: `.filter-bar`, `.filter-pill`, `.filter-select`, `.all-count-badge`, `.dash-card--rejected`, `.tab-badge--danger` |
+
+### Decisions chốt
+1. **Multi-select status via pill toggle** — mỗi pill là toggle độc lập; "Tất cả" pill reset tất cả; "Tất cả" tự active khi không chọn gì
+2. **Team dropdown = dynamic** — `_populateTeamFilter()` gọi sau `_allList` load; preserve selection khi re-render
+3. **`_applyAllTableFilters()` = single source of truth** — search, status filter, team filter đều qua hàm này; `_bindSearch` đơn giản hóa thành `debounce(_applyAllTableFilters, 300)`
+4. **Rejected card ẩn khi không có data** — `card.style.display = items.length ? '' : 'none'` → không show empty box khi chưa có UC bị từ chối
+5. **REJECTED_PREVIEW = 5** — giống pattern của recentTable; "Xem tất cả" dùng lại `openListModal` hiện có
+
+### Test checklist
+- [ ] Login admin → tab Tất cả → click pill "Đã duyệt" → chỉ hiện Approved UCs
+- [ ] Click thêm pill "Từ chối" → hiện cả Approved + Rejected (multi-select)
+- [ ] Click "Tất cả" pill → reset về all
+- [ ] Chọn team trong dropdown → filter theo team
+- [ ] Search + filter kết hợp hoạt động
+- [ ] Count badge "X / Tổng" cập nhật đúng
+- [ ] Tab Tổng quan → box "Từ chối" hiện khi có rejected UC
+- [ ] Click "Chi tiết" trong rejected card → detail modal đầy đủ
+- [ ] Nút "Xem tất cả" → list popup "Đã từ chối" với toàn bộ danh sách

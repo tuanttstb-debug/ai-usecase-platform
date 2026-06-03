@@ -110,6 +110,13 @@ Option B — Google Sign-In (proper fix):
 
 ---
 
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 3)
+
+- [x] **Filter tab Tất cả (v3.6)**: Multi-select status pills + team dropdown + search kết hợp, count badge real-time
+- [x] **Box Từ chối (v3.6)**: Rejected card trong tab Tổng quan, preview 5 UC + Xem tất cả list popup, Chi tiết đầy đủ
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-06-03 (Part 2)
 
 - [x] **Fix đồng bộ recentTable chi tiết (v3.5.1)**: Enrich recent_submissions từ _allList trước khi cache; openDetail safety net; DashboardService.gs fix tại nguồn

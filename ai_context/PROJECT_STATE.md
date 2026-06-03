@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-03  
-**Version:** 3.5.0
+**Last updated:** 2026-06-03 (Part 3)
+**Version:** 3.6.0
 
 ---
 
@@ -77,6 +77,8 @@ env.js → auth.js → [inline portal script]
 | US Detail popup | ✅ | 4-section view; progressive load; approve/reject inline; Copy Prompt button |
 | Drill-down list popup | ✅ | NEW v3.5 — Click KPI cards / chart segments/bars → popup bảng lọc → Chi tiết |
 | recentTable Chi tiết | ✅ | NEW v3.5 — Nút Chi tiết đồng bộ với các bảng khác |
+| Filter tab Tất cả | ✅ | NEW v3.6 — Multi-select status pills + team dropdown + search kết hợp + count badge |
+| Box Từ chối | ✅ | NEW v3.6 — Rejected card trong tab Tổng quan; preview 5 + Xem tất cả; Chi tiết đầy đủ |
 | Copy Prompt | ✅ | NEW v3.3 — 8 prompt fields → clipboard; hiện sau khi full data load |
 | Approval flow | ✅ | Confirmed working (from/reject thành công) |
 | Auto-load on startup | ✅ | NEW v3.3 — _loadStartupData() thay lazy tab-click loading |
