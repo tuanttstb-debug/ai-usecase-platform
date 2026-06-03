@@ -66,7 +66,8 @@ var Api = {
 
   // ── Request với optional payload (GET + JSONP cho mọi loại) ─────
   // data sẽ được base64url-encode rồi gắn vào URL param "payload"
-  _request(url, data) {
+  // timeoutMs: override mặc định 20s — dùng 45s cho write operations (create/update)
+  _request(url, data, timeoutMs) {
     if (data) {
       try {
         // Strip lone surrogates trước khi encode:
@@ -103,7 +104,7 @@ var Api = {
         ));
       }
     }
-    return Api._jsonp(url);
+    return Api._jsonp(url, timeoutMs);
   },
 
   // ── Public API ──────────────────────────────────────────────────
@@ -114,8 +115,10 @@ var Api = {
   health()            { return Api._request(API.health()); },
   getNextId()         { return Api._request(API.nextId()); },
 
-  createUseCase(data) { return Api._request(API.create(), data); },
-  updateUseCase(data) { return Api._request(API.update(), data); },
+  // Write operations dùng 45s timeout vì GAS phải acquire LockService + đọc/ghi nhiều sheet.
+  // 20s mặc định thường không đủ khi sheet lớn → GAS ghi xong nhưng response chưa về → FE báo lỗi sai.
+  createUseCase(data) { return Api._request(API.create(), data, 45000); },
+  updateUseCase(data) { return Api._request(API.update(), data, 45000); },
 
   duplicateCheck(name, pain) {
     return Api._request(API.duplicateCheck(), { UseCase_Name: name, Pain_Point: pain });

@@ -282,9 +282,13 @@ function updateUseCase_(recordId, data) {
   var errors = validateUpdate_(data); // FIX: thực sự gọi validateUpdate_
   if (errors.length) throw new Error(errors.join(' | '));
 
-  // ── 2. Lấy record hiện tại ────────────────────────────────────
-  var existing = findObjectByField_(SHEETS.MASTER, 'Record_ID', recordId);
-  if (!existing) throw new Error('Không tìm thấy use case với Record_ID: ' + recordId);
+  // ── 2. Lấy record hiện tại (single read — trả về sheet ref để write sau) ─
+  // findRowByField_ đọc MASTER_DATA một lần duy nhất và giữ sheet reference.
+  // Ghi đè sau đó dùng found.sheet + found.rowIndex → không cần đọc lại lần 2.
+  // (So với findObjectByField_ + updateRowByRecordId_ cũ: 2 full reads → 1 read)
+  var found = findRowByField_(SHEETS.MASTER, 'Record_ID', recordId);
+  if (!found) throw new Error('Không tìm thấy use case với Record_ID: ' + recordId);
+  var existing = found.obj;
 
   var now    = new Date().toISOString();
   var merged = {};
@@ -335,8 +339,12 @@ function updateUseCase_(recordId, data) {
   var backupStr = JSON.stringify(backupData);
   merged.JSON_Backup = backupStr.length <= 45000 ? backupStr : '';
 
-  // ── 8. Ghi vào sheet ──────────────────────────────────────────
-  updateRowByRecordId_(SHEETS.MASTER, recordId, merged);
+  // ── 8. Ghi vào sheet (dùng cached sheet ref — không đọc lại lần 2) ──────
+  var row = found.headers.map(function(h) {
+    var val = (merged[h] !== undefined && merged[h] !== null) ? merged[h] : '';
+    return toSheetValue_(val);
+  });
+  found.sheet.getRange(found.rowIndex, 1, 1, found.headers.length).setValues([row]);
   logActivity_(merged.UseCase_ID, recordId, 'UPDATED', 'Cập nhật qua API',
                merged.Owner_Email, prevStatus, newStatus);
 

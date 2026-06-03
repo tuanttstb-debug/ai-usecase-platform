@@ -197,6 +197,37 @@ function findObjectByField_(sheetName, field, value) {
   return null;
 }
 
+/**
+ * Tìm hàng trong sheet theo field = value — single sheet read.
+ * Trả về đủ thông tin để write sau đó mà KHÔNG cần đọc lại sheet.
+ *
+ * Dùng thay cho findObjectByField_ + updateRowByRecordId_ khi cần read+write
+ * trong một operation (tránh double read → giảm ~30-50% execution time).
+ *
+ * @param {string} sheetName
+ * @param {string} field  - Tên cột để tìm (vd: 'Record_ID')
+ * @param {string} value  - Giá trị cần khớp
+ * @returns {{ obj: Object, rowIndex: number, headers: string[], sheet: Sheet } | null}
+ */
+function findRowByField_(sheetName, field, value) {
+  var sheet   = getOrCreateSheet_(sheetName);
+  var data    = sheet.getDataRange().getValues();
+  if (data.length < 2) return null;
+  var headers  = data[0].map(String);
+  var fieldCol = headers.indexOf(field);
+  if (fieldCol === -1) return null;
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][fieldCol]) === String(value)) {
+      var obj = {};
+      headers.forEach(function(h, j) {
+        obj[h] = (data[i][j] !== undefined && data[i][j] !== null) ? data[i][j] : '';
+      });
+      return { obj: obj, rowIndex: i + 1, headers: headers, sheet: sheet };
+    }
+  }
+  return null;
+}
+
 // ── String & Math Utilities ───────────────────────────────────────
 
 /**

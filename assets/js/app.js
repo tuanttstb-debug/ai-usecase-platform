@@ -158,6 +158,7 @@
       return;
     }
     showLoading(true, 'Đang gửi...');
+    var submitHintId = null; // Lưu hint ID để dùng trong timeout recovery (create mode)
     try {
       if (currentRecordId) {
         data.Record_ID = currentRecordId;
@@ -175,7 +176,7 @@
         if (badge) { badge.textContent = 'Đang cấp mã…'; badge.className = 'nextid-badge loading'; badge.style.display = ''; }
         try {
           const idRes = await Api.getNextId();
-          if (idRes && idRes.next_id) data.UseCase_ID = idRes.next_id;
+          if (idRes && idRes.next_id) { data.UseCase_ID = idRes.next_id; submitHintId = idRes.next_id; }
         } catch (_) { /* GAS offline — GAS sẽ tự sinh ID */ }
         if (badge) badge.style.display = 'none';
         const result = await Api.createUseCase(data);
@@ -183,9 +184,54 @@
         showSuccessScreen(result.usecase_id || 'AIUS-????');
       }
     } catch (err) {
-      Toast.show('Lỗi gửi: ' + err.message, 'error');
+      await _handleSubmitError(err, currentRecordId, submitHintId);
     } finally {
       showLoading(false);
+    }
+  }
+
+  /* ── Submit Error Handler ── */
+  // Phân biệt timeout (GAS đã ghi xong nhưng response chưa về) vs lỗi thật.
+  // Timeout = 45s đã hết → GAS vẫn có thể đang xử lý hoặc đã xong.
+  async function _handleSubmitError(err, recordId, hintId) {
+    var isTimeout = err.message && err.message.indexOf('Timeout') !== -1;
+
+    if (!isTimeout) {
+      // Lỗi thật (validation, encode, GAS trả success:false) — hiện bình thường
+      Toast.show('Lỗi gửi: ' + err.message, 'error');
+      return;
+    }
+
+    if (recordId) {
+      // ── UPDATE timeout: auto-verify bằng getUseCase ──────────────
+      // Nếu record đã được cập nhật → GAS đã xong, chỉ response bị timeout
+      showLoading(true, 'Đang xác nhận kết quả...');
+      try {
+        var verified = await Api.getUseCase(recordId);
+        if (verified && verified.Record_ID) {
+          Storage.clear();
+          Toast.show('Cập nhật thành công!', 'success');
+          showSuccessScreen('Đã cập nhật');
+          return;
+        }
+      } catch (_e) { /* GAS vẫn bận hoặc offline — fall through */ }
+      showLoading(false);
+      Toast.show(
+        'Kết nối timeout (45s) — không xác nhận được kết quả.\n' +
+        'Vui lòng kiểm tra dashboard xem use case đã được cập nhật chưa trước khi thử lại.',
+        'warning',
+        10000
+      );
+    } else {
+      // ── CREATE timeout: cảnh báo tránh submit lại ─────────────────
+      // Không thể tự verify vì chưa có Record_ID. Dùng hint ID làm gợi ý.
+      var hintMsg = hintId ? (' (mã dự kiến: ' + hintId + ')') : '';
+      Toast.show(
+        'Kết nối timeout (45s)' + hintMsg + '.\n' +
+        'Dữ liệu CÓ THỂ đã được lưu — kiểm tra dashboard trước khi nộp lại để tránh trùng lặp.',
+        'warning',
+        12000
+      );
     }
   }
 
