@@ -149,6 +149,16 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 
 ---
 
+## DEAD-CODE-01 — `renderBreakdownChart` + `_renderBreakdownChartCSS` không còn được gọi (2026-06-05)
+
+**Mô tả:** Hai hàm này bị thay bởi `renderStackedChart` + `_renderStackedChartCSS` cho team/category charts (v3.8.0). Hàm cũ vẫn còn trong `dashboard.js` nhưng không có call site nào.
+
+**Rủi ro:** Dead code tăng kích thước file, gây nhầm lẫn khi đọc.
+
+**Fix:** Xóa `renderBreakdownChart` và `_renderBreakdownChartCSS` (khoảng 25 dòng). CSS fallback vẫn hoạt động qua `_renderStackedChartCSS` và các public API `Dashboard._openListByTeam/Category` không thay đổi.
+
+---
+
 ## DATA-LIMIT-01 — `_allList` và `_pendingList` giới hạn 200 records
 
 **Mô tả:** `listUseCases` default limit=200. `_pendingList` được derive client-side từ `_allList`. Khi tổng số UC > 200:
@@ -159,3 +169,5 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 **Hiện tại:** Chấp nhận được với data volume hiện tại (< 200 UC).
 
 **Fix dài hạn:** Implement pagination hoặc tăng limit + infinite scroll.
+
+**Note (2026-06-05):** KPI tab (`_buildKPIData`, `_computeStreak`, `_buildMonthlyKPI`) cũng iterate trên `_allList` → weekly stats, streak, ranking sẽ thiếu data của UC nằm ngoài top 200 khi total > 200.

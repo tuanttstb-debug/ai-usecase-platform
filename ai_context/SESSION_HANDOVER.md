@@ -892,6 +892,87 @@ return { record_id: recordId, usecase_id: merged.UseCase_ID, updated_at: now };
 
 ---
 
+---
+
+## Session: 2026-06-05
+**Scope:** Stacked breakdown charts + KPI & Tiến độ tab + local verification
+**Commits:** `9e15471` (stacked charts + guide) · `afcdf44` (KPI tab) · `91c4a00` (date fix) · `b0cff5f` / `0aa7c18` (context)
+**Version:** 3.9.0
+
+---
+
+### Tasks completed
+
+| # | Mô tả | Commit |
+|---|-------|--------|
+| 1 | **Stacked bar charts** — "Phân bổ theo Team" và "Phân bổ theo Lĩnh vực" đổi từ single-bar sang stacked bar phân màu theo 6 trạng thái. Click segment → list modal lọc group + status. CSS fallback hiện badge trạng thái dưới mỗi row. | `9e15471` |
+| 2 | **User guide** — `HUONG_DAN_NHAP_LIEU.txt`: hướng dẫn đầy đủ 32 trường cho 4 bước wizard. | `9e15471` |
+| 3 | **KPI & Tiến độ tab** — Tab mới visible tất cả users. 4 section: header tuần (% đạt), bảng tiến độ tuần, bar chart 6 tháng, ranking tổng + streak leaderboard. Tính client-side từ `_allList`. | `afcdf44` |
+| 4 | **Fix date format** — `_getWeekRange` dùng `toLocaleDateString('vi-VN')` trả về hyphens (`01-06`) thay vì slashes (`01/06`) trên một số Chromium/Windows. Đổi sang manual `padStart` formatter. | `91c4a00` |
+
+---
+
+### Files changed
+
+| File | Delta |
+|------|-------|
+| `assets/js/dashboard.js` | +`renderStackedChart` + `_renderStackedChartCSS` (replace `renderBreakdownChart` call sites); +`renderKPITab`, `_buildKPIData`, `_getWeekKey`, `_getWeekStart`, `_prevWeekKey`, `_getWeekRange`, `_computeStreak`, `_buildMonthlyKPI`, `_renderKPIMonthChart`; fix `_getWeekRange` manual formatter; update `_loadTabData` |
+| `dashboard.html` | +tab button `[data-tab="kpi"]`; +tab panel `#tab-kpi` |
+| `assets/css/dashboard.css` | +~170 lines: `.kpi-week-header`, `.kpi-badge`, `.kpi-me-tag`, `.kpi-row--me`, `.kpi-streak-*` |
+| `HUONG_DAN_NHAP_LIEU.txt` | NEW — hướng dẫn nhập liệu 32 trường |
+| `ai_context/PROJECT_STATE.md` | Version bump → 3.9.0; feature rows added |
+| `ai_context/TODO_NEXT.md` | Part 11 + 12 entries added |
+
+---
+
+### Decisions chốt
+
+1. **Stacked data = client-side từ `_allList`** — không cần endpoint GAS mới. Tính đơn giản, không cần deploy GAS để có tính năng.
+2. **KPI visible tất cả users** — không admin-only. Khuyến khích cạnh tranh lành mạnh trong toàn đội.
+3. **Định nghĩa đạt KPI** = UC có `status ≠ 'Draft'` (Submitted trở lên). Draft không tính.
+4. **Week key = ISO Monday date string** (e.g. `"2026-06-02"`) — tránh ISO week number arithmetic phức tạp tại year boundaries.
+5. **Strict streak** — không UC tuần đang chạy → streak = 0. Khuyến khích nộp sớm trong tuần.
+6. **Manual `DD/MM` formatter** — `toLocaleDateString('vi-VN')` unreliable trên headless Chromium (hyphens vs slashes theo OS locale). Dùng `padStart` thủ công để đảm bảo nhất quán mọi môi trường.
+7. **`renderBreakdownChart` vẫn giữ trong code** — không xóa để tránh break CSS fallback references; tuy nhiên không còn được gọi cho team/category charts.
+
+---
+
+### Verification (Playwright local)
+
+Test runner: Playwright + Chrome (`localhost:8787` Python HTTP server).
+
+| Check | Kết quả |
+|-------|---------|
+| KPI tab button & panel visible | ✅ |
+| teamChart canvas rendered (Chart.js stacked) | ✅ |
+| categoryChart canvas rendered | ✅ |
+| Click teamChart bar → listModal "Team: CV2 — Đã duyệt" | ✅ |
+| Click categoryChart bar → listModal "Lĩnh vực: Vận hành — Đã duyệt" | ✅ |
+| KPI tab renders week header + table + chart | ✅ |
+| Current user row highlighted (kpi-row--me) | ✅ |
+| KPI tab visible for regular user; overview hidden | ✅ |
+| Week range format `"01/06 – 07/06"` slashes | ✅ (after fix) |
+| JS errors | ✅ 0 |
+
+---
+
+### Regression risks
+
+- **`renderBreakdownChart` dead code** — hàm vẫn tồn tại nhưng không được gọi cho team/category charts nữa. CSS fallback references (`Dashboard._openListByTeam/Category`) vẫn hoạt động vì hàm `_renderBreakdownChartCSS` vẫn còn. Không có risk immediate.
+- **KPI stats subject to DATA-LIMIT-01** — `_buildKPIData()` iterate trên `_allList` (max 200 records). Nếu total UC > 200 thì `thisWeek` / `streak` / `ranking` sẽ thiếu data của user có UC ngoài top 200. Cùng limitation với các tab khác.
+- **Streak chỉ đúng khi user nộp đủ 1 UC/tuần** — với dữ liệu test hiện tại tất cả UCs được nộp trong 1 tuần (T6/2026) nên 100% đạt + streak = 1. Behavior sẽ rõ hơn sau vài tuần có real data.
+
+---
+
+### Blockers còn lại (không thay đổi từ session trước)
+
+- **GAS-MYSTERY-01** — URL GAS active không tìm được project nguồn → toàn bộ GAS code local chưa deploy. **Cần user action.**
+- **GAS pending deploy** — 6 files cần paste + deploy khi tìm được project (xem TODO_NEXT P0).
+- **FILTER-01** — `_populateTeamFilter` stale state: 1-dòng fix, vẫn pending.
+- **PERF-02** — `_loadTabData('my')` double-fetch: 1-dòng guard, vẫn pending.
+
+---
+
 ## Recommended next actions (session kế tiếp)
 
 **[P0 — USER ACTION] Tìm GAS project (GAS-MYSTERY-01):**
@@ -901,15 +982,19 @@ return { record_id: recordId, usecase_id: merged.UseCase_ID, updated_at: now };
 **[P0 — sau khi tìm được GAS] Paste 6 file vào GAS Editor → New version → Deploy:**
 `UseCaseService.gs` · `Code.gs` · `Config.gs` · `Utils.gs` · `LookupService.gs` · `DashboardService.gs`
 
-**[P1] Fix `_populateTeamFilter` stale state:**
+**[P1] Fix `_populateTeamFilter` stale state (FILTER-01):**
 - 1 dòng: `_filterAll.team = teamSel.value` sau khi render options. File: `assets/js/dashboard.js`
+
+**[P1] Fix `_loadTabData('my')` double-fetch (PERF-02):**
+- Thêm guard `if (_myList.length === 0)`. File: `assets/js/dashboard.js`
 
 **[P1] Regression risks còn mở (không blocking):**
 - `_pendingList` derive client-side từ `_allList` limit 200 → UC pending sau row 200 không hiện tab Chờ duyệt
 - `rejectedCard` cũng limit 200 → admin list lớn có thể miss rejected UC cuối
+- KPI stats subject to DATA-LIMIT-01 (cùng giới hạn 200 records)
 
 **[P2] Pagination** — `_allList` giới hạn 200 records
 
 **[P2] BUG-03** — Status="Draft" khi tạo mới: confirm với PO là bug hay intent
 
-**[P3] Fix double-fetch** — `_loadTabData('my')` vẫn gọi `_loadMyUseCases()` sau startup
+**[P3] Xóa dead code** — `renderBreakdownChart` và `_renderBreakdownChartCSS` không còn được gọi cho team/category charts (đã thay bằng `renderStackedChart`). Có thể xóa nếu muốn clean up.
