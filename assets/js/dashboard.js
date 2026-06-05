@@ -162,7 +162,15 @@
         renderExploreTable(_exploreList);
       }
     } else if (tab === 'kpi') {
-      renderKPITab();
+      if (!_usersList.length) {
+        // Try fetching USERS sheet from GAS; render regardless of outcome
+        Api.getUsers()
+          .then(function (list) { _usersList = list || []; })
+          .catch(function () { /* GAS users endpoint not deployed yet — fall back to _allList */ })
+          .then(function () { renderKPITab(); });
+      } else {
+        renderKPITab();
+      }
     } else if (tab === 'users' && _isAdmin) {
       _loadUsersTab();
     }
@@ -1448,22 +1456,91 @@
     return fmt(mon) + ' – ' + fmt(sun);
   }
 
-  /* Build per-user weekly submission counts from _allList (non-Draft only) */
+  /* Normalize: trim + lowercase for case-insensitive comparison (Tuantt4=TuanTT4=tuantt4) */
+  function _norm(s) { return String(s == null ? '' : s).trim().toLowerCase(); }
+
+  /* Build per-user weekly submission counts.
+     Primary source: _usersList (USERS sheet) — shows users with 0 UCs.
+     Fallback: derive users from _allList only (if _usersList not yet loaded).
+     UC ownership matched by: normalize(owner_email) === username (primary),
+                              or normalize(owner_name) matches username / display_name (secondary). */
   function _buildKPIData() {
-    var users = {};
+    // Step 1: aggregate UC stats keyed by normalized owner_email and owner_name
+    var byEmail = {}; // norm(owner_email) → {team, weeks, total, rawName}
+    var byName  = {}; // norm(owner_name)  → same (secondary index)
+
     _allList.forEach(function (uc) {
       if (!uc.status || uc.status === 'Draft') return;
-      var name = String(uc.owner_name == null ? '' : uc.owner_name).trim();
-      if (!name) return;
       var dateStr = uc.submit_date || uc.submitted_at;
       if (!dateStr) return;
       var weekKey = _getWeekKey(new Date(dateStr));
       if (!weekKey) return;
-      if (!users[name]) users[name] = { team: uc.team || '--', weeks: {}, total: 0 };
-      users[name].weeks[weekKey] = (users[name].weeks[weekKey] || 0) + 1;
-      users[name].total++;
+
+      var eKey = _norm(uc.owner_email);
+      var nKey = _norm(uc.owner_name);
+      var team = uc.team || '--';
+      var rawName = String(uc.owner_name == null ? '' : uc.owner_name).trim();
+
+      function addTo(map, key) {
+        if (!key) return;
+        if (!map[key]) map[key] = { team: team, weeks: {}, total: 0, rawName: rawName || key };
+        map[key].weeks[weekKey] = (map[key].weeks[weekKey] || 0) + 1;
+        map[key].total++;
+      }
+      if (eKey) addTo(byEmail, eKey);
+      if (nKey && nKey !== eKey) addTo(byName, nKey);
     });
-    return users;
+
+    var result  = {};
+    var claimed = {}; // track byEmail keys already linked to a USERS entry
+
+    if (_usersList && _usersList.length) {
+      // Step 2a: start from USERS sheet — includes users with 0 UCs
+      _usersList.forEach(function (u) {
+        if (u.active === false) return; // skip deactivated
+        var uKey  = _norm(u.username);
+        var dnKey = _norm(u.display_name);
+        if (!uKey) return;
+
+        // Match: username → owner_email, then owner_name; display_name → owner_name
+        var stats = byEmail[uKey] || byEmail[dnKey] || byName[uKey] || byName[dnKey] || null;
+        if (stats) claimed[uKey] = true;
+
+        result[uKey] = {
+          username: uKey,
+          name: u.display_name || u.username,
+          team: (stats && stats.team && stats.team !== '--') ? stats.team : (u.team || '--'),
+          weeks: stats ? stats.weeks : {},
+          total: stats ? stats.total : 0
+        };
+      });
+
+      // Step 2b: UC owners not found in USERS sheet (submitted before user management was added)
+      Object.keys(byEmail).forEach(function (eKey) {
+        if (claimed[eKey]) return;
+        var stats = byEmail[eKey];
+        result[eKey] = {
+          username: eKey,
+          name: stats.rawName || eKey,
+          team: stats.team,
+          weeks: stats.weeks,
+          total: stats.total
+        };
+      });
+    } else {
+      // Fallback: derive from _allList (old behavior — only users who have submitted UCs)
+      Object.keys(byEmail).forEach(function (key) {
+        var stats = byEmail[key];
+        result[key] = { username: key, name: stats.rawName || key, team: stats.team, weeks: stats.weeks, total: stats.total };
+      });
+      Object.keys(byName).forEach(function (key) {
+        if (result[key]) return;
+        var stats = byName[key];
+        result[key] = { username: key, name: stats.rawName || key, team: stats.team, weeks: stats.weeks, total: stats.total };
+      });
+    }
+
+    return result;
   }
 
   /* Strict streak: if no UC this week → 0; else count consecutive weeks backward */
@@ -1508,20 +1585,27 @@
     var userData       = _buildKPIData();
     var currentWeekKey = _getWeekKey(new Date());
     var weekRange      = _getWeekRange(currentWeekKey);
-    var userNames      = Object.keys(userData);
+    var userKeys       = Object.keys(userData);
 
-    // Enrich with streak
-    var enriched = userNames.map(function (name) {
-      var u = userData[name];
-      return { name: name, team: u.team, total: u.total, thisWeek: u.weeks[currentWeekKey] || 0, streak: _computeStreak(u, currentWeekKey) };
+    // Enrich with streak; carry username for case-insensitive "isMe" detection
+    var enriched = userKeys.map(function (key) {
+      var u = userData[key];
+      return {
+        username: u.username || key,
+        name:     u.name     || key,
+        team:     u.team,
+        total:    u.total,
+        thisWeek: u.weeks[currentWeekKey] || 0,
+        streak:   _computeStreak(u, currentWeekKey)
+      };
     });
 
     var achieved    = enriched.filter(function (u) { return u.thisWeek >= 1; });
-    var pctAchieved = userNames.length ? Math.round((achieved.length / userNames.length) * 100) : 0;
+    var pctAchieved = userKeys.length ? Math.round((achieved.length / userKeys.length) * 100) : 0;
     var pctColor    = pctAchieved >= 80 ? '#4CAF50' : pctAchieved >= 50 ? '#F6B100' : '#F44336';
 
-    var curUserRaw  = _user ? (_user.displayName || _user.email || '') : '';
-    var curUserKey  = curUserRaw.trim().toLowerCase();
+    // Match current user by username (= _user.email in this system) — case-insensitive
+    var curUserKey = (_user ? (_user.email || _user.displayName || '') : '').trim().toLowerCase();
 
     var weeklyList  = enriched.slice().sort(function (a, b) { return b.thisWeek - a.thisWeek || a.name.localeCompare(b.name); });
     var rankingList = enriched.slice().sort(function (a, b) { return b.total - a.total  || b.streak - a.streak; });
@@ -1536,7 +1620,7 @@
         '<span class="kpi-week-range">' + esc(weekRange) + '</span>' +
       '</div>' +
       '<div class="kpi-week-stats">' +
-        '<span class="kpi-week-achievement"><strong>' + achieved.length + ' / ' + userNames.length + '</strong> users đạt mục tiêu</span>' +
+        '<span class="kpi-week-achievement"><strong>' + achieved.length + ' / ' + userKeys.length + '</strong> users đạt mục tiêu</span>' +
         '<span class="kpi-week-pct" style="color:' + pctColor + '">' + pctAchieved + '%</span>' +
       '</div>' +
       '<div class="kpi-week-goal">Mục tiêu: 1 UC / người / tuần</div>' +
@@ -1553,7 +1637,7 @@
         '<thead><tr><th>Người đăng ký</th><th>Team</th><th>UC tuần này</th><th>Trạng thái</th></tr></thead>' +
         '<tbody>' +
         weeklyList.map(function (u) {
-          var isMe  = u.name.toLowerCase() === curUserKey;
+          var isMe  = u.username === curUserKey || u.name.toLowerCase() === curUserKey;
           var badge = u.thisWeek >= 1
             ? '<span class="kpi-badge kpi-badge--ok">✓ Đạt</span>'
             : '<span class="kpi-badge kpi-badge--no">⏳ Chưa</span>';
@@ -1585,7 +1669,7 @@
       '<thead><tr><th>#</th><th>Người đăng ký</th><th>Team</th><th>Tổng UC</th><th>Streak</th></tr></thead>' +
       '<tbody>' +
       rankingList.map(function (u, idx) {
-        var isMe   = u.name.toLowerCase() === curUserKey;
+        var isMe   = u.username === curUserKey || u.name.toLowerCase() === curUserKey;
         var rank   = idx < 3 ? medals[idx] : String(idx + 1);
         var streak = u.streak > 0
           ? '<span class="kpi-streak-badge">' + u.streak + ' 🔥</span>'
@@ -1609,7 +1693,7 @@
       html += '<p class="empty-state-text" style="padding:var(--space-6)">Chưa ai đạt chuỗi tuần liên tiếp</p>';
     } else {
       topStreakers.forEach(function (u) {
-        var isMe = u.name.toLowerCase() === curUserKey;
+        var isMe = u.username === curUserKey || u.name.toLowerCase() === curUserKey;
         html += '<div class="kpi-streak-item' + (isMe ? ' kpi-streak-item--me' : '') + '">' +
           '<div class="kpi-streak-avatar">' + esc(u.name.charAt(0).toUpperCase()) + '</div>' +
           '<div class="kpi-streak-info">' +
