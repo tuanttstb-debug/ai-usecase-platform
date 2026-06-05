@@ -95,7 +95,20 @@ env.js → auth.js → [inline portal script]
 
 **Active deployment URL:** `AKfycbwe0eo3X3KWxGdJ8ZWLjAgx3FVvcSOxTA5KVJGYVV3_Skbn0eXAVouzKaZOgDaDcUupew`
 **OAuth:** ✅ Authorized | **GAS code sync:** ⚠️ Local fixes chưa deploy — chưa tìm được đúng GAS project (GAS-MYSTERY-01)
-**Pending deploy (7 files):** `UserService.gs` (NEW v3.10) · `UseCaseService.gs` (v3.7.0) · `Utils.gs` (v3.7.0) · `Code.gs` · `Config.gs` · `LookupService.gs` · `DashboardService.gs`
+
+**Pending deploy (7 files):**
+
+| File | Thay đổi chính | Version |
+|---|---|---|
+| `UserService.gs` | **NEW** — USERS sheet, normalizeUser_(), validateUserLogin_(), syncUsersFromMasterData_() | v3.10.0 |
+| `Code.gs` | Routes next-id + 5 user endpoints | v3.10.0 |
+| `Config.gs` | SHEETS.USERS + USERS_HEADERS + usernames ADMIN_EMAILS | v3.10.0 |
+| `Utils.gs` | sanitizeStr_ + toSheetValue_() + findRowByField_() + USERS case | v3.10.0 |
+| `UseCaseService.gs` | _assignUseCaseId_() + single-read update + JSON_Backup cap | v3.7.1 |
+| `LookupService.gs` | Rewrite hoàn toàn | v2.x |
+| `DashboardService.gs` | record_id + status + owner_name trong recent_submissions | v3.5.1 |
+
+**Sau khi deploy:** Chạy `?action=user-init&admin_email=tuantt4` → Dashboard → tab Người dùng → Đồng bộ từ UC
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -108,15 +121,17 @@ env.js → auth.js → [inline portal script]
 | duplicateCheck | ✅ | Live |
 | lookupData | ✅ | Live |
 | dashboard API | ✅ | Live |
+| user-login / users / user-upsert / user-sync | ⏳ | Code ready locally, chưa deploy (GAS-MYSTERY-01) |
 | Authentication | ❌ | Username-based FE only, no real auth (SEC-01) |
 
-## Auth Architecture Notes (v3.1)
-- **Login:** Username-based (no email format required). VD: `tuantt4`, `admin`
-- **Role:** `user` (default) | `admin` (username in `APP_CONFIG.ADMIN_EMAILS`)
-- **Admin list:** `config/env.js` → `ADMIN_EMAILS: ['admin','tuantt4','manager']`
-- **Session:** sessionStorage `ai_user_session` = `{email: username, displayName, role, loginAt}`
-- **Dashboard access:** All logged-in users → dashboard.html; admin sees full tabs, user sees My US only
+## Auth Architecture Notes (v3.10)
+- **Login:** Async — gọi GAS `?action=user-login` lấy role từ USERS sheet; fallback về local nếu GAS offline
+- **Role resolution priority:** USERS sheet (Active=TRUE) → `APP_CONFIG.ADMIN_EMAILS` (local fallback khi offline)
+- **Admin list:** GAS USERS sheet (Role=admin) → `Config.gs` ADMIN_EMAILS → `config/env.js` ADMIN_EMAILS
+- **Session:** sessionStorage `ai_user_session` = `{email: username, displayName, role, team, loginAt}`
+- **Dashboard access:** All logged-in users → dashboard.html; admin sees full tabs + Users tab, user sees My/Explore/KPI
 - **Owner fields:** Auto-filled from session on register; readonly after fill
+- **CAVEAT:** Khi GAS offline, fallback local không check `Active=FALSE` → deactivated user vẫn login được (USER-OFFLINE-01 in TECH_DEBT)
 
 ## Data Layer — ✅ Unchanged
 Google Sheets structure unchanged. API contract (field names) unchanged. localStorage key unchanged.

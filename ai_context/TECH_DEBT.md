@@ -8,11 +8,11 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 **Mô tả:** Login bằng username tự nhập, không verify. Bất kỳ ai biết username admin đều có thể login với role admin.
 
-**Hiện trạng:** Username-based, session lưu trong sessionStorage. GAS backend validate `reviewer_email` trong `ADMIN_EMAILS` nhưng không verify identity.
+**Hiện trạng (v3.10):** Login nay gọi GAS `?action=user-login` → USERS sheet là nguồn truth cho role. Tuy nhiên không có password/token — ai biết username admin vẫn login được. USERS sheet chỉ giải quyết role management, không giải quyết identity verification.
 
-**Rủi ro:** Ai biết username "admin" hoặc "tuantt4" → vào được dashboard admin.
+**Rủi ro:** Ai biết username "tuantt4" → vào được dashboard admin.
 
-**Fix đề xuất:** Google Sign-In (`google.accounts.oauth2`) hoặc domain restriction. Pending PO decision.
+**Fix đề xuất:** Google Sign-In (`google.accounts.oauth2`) → xác thực Google account thật → so sánh email với USERS sheet. Pending PO decision.
 
 ---
 
@@ -42,16 +42,20 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
-## GAS-DEBT-01 — GAS local files chưa sync với deployed version
+## GAS-DEBT-01 — GAS local files chưa sync với deployed version (CRITICAL — 7 files pending)
 
-**Mô tả:** Một số file GAS backend đã sửa local nhưng chưa deploy lên GAS Editor:
-- `Config.gs`: ADMIN_EMAILS = usernames (commit `0b8c7a0`)
-- `Utils.gs`: xóa `addHeader` (commit `357e22f`)
-- `LookupService.gs`: rewrite (commit `357e22f`)
+**Mô tả:** 7 file GAS đã sửa/tạo local nhưng chưa deploy lên GAS Editor (blocked by GAS-MYSTERY-01):
+- `UserService.gs` (NEW v3.10.0) — toàn bộ user management
+- `Code.gs` (v3.10.0) — 5 user endpoints + next-id route
+- `Config.gs` (v3.10.0) — SHEETS.USERS + USERS_HEADERS
+- `Utils.gs` (v3.10.0) — sanitizeStr_ + toSheetValue_() + USERS support
+- `UseCaseService.gs` (v3.7.1) — ID collision fix + timeout optimization
+- `LookupService.gs` (v2.x) — rewrite
+- `DashboardService.gs` (v3.5.1) — recent_submissions full fields
 
-**Rủi ro:** Discrepancy giữa git và GAS deployed version → hard to debug.
+**Rủi ro:** Production GAS không có user management, không có formula injection protection, không có ID collision fix.
 
-**Fix:** Luôn copy file GAS local → GAS Editor → Deploy sau mỗi session. Xem xét dùng `clasp` để sync tự động.
+**Fix:** Resolve GAS-MYSTERY-01 trước. Sau đó paste 7 files → Edit deployment → New version → Deploy.
 
 ---
 
@@ -171,3 +175,25 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 **Fix dài hạn:** Implement pagination hoặc tăng limit + infinite scroll.
 
 **Note (2026-06-05):** KPI tab (`_buildKPIData`, `_computeStreak`, `_buildMonthlyKPI`) cũng iterate trên `_allList` → weekly stats, streak, ranking sẽ thiếu data của UC nằm ngoài top 200 khi total > 200.
+
+---
+
+## USER-OFFLINE-01 — Active=FALSE không được enforce khi GAS offline (v3.10.0, 2026-06-05)
+
+**Mô tả:** Khi GAS không available, `login.html` fallback về `AuthService.login()` (local). Local login chỉ check username trong `APP_CONFIG.ADMIN_EMAILS` để xác định role — không check `Active` trong USERS sheet. Người dùng bị deactivate (`Active=FALSE` trong USERS sheet) vẫn có thể login nếu GAS đang offline.
+
+**Rủi ro:** Thấp trong thực tế (GAS ít khi offline), nhưng là security gap tiềm ẩn.
+
+**Fix:** Sau khi login fallback local thành công, store một flag `via_fallback: true` trong session. Khi GAS online trở lại (next page load), re-validate và force logout nếu Active=FALSE. Hoặc đơn giản hơn: implement real auth (Google OAuth) thay local fallback.
+
+**File:** `assets/js/auth.js` — `login()` method và `login.html` catch handler.
+
+---
+
+## USERS-CACHE-01 — Tab Người dùng không tự refresh sau approve/reject (v3.10.0, 2026-06-05)
+
+**Mô tả:** Khi admin approve/reject UC trong detail modal, `_loadStartupData()` được gọi lại để refresh data. Tuy nhiên `_loadUsersTab()` không được gọi lại → nếu admin đang ở tab Người dùng trong một session khác và approve UC, `Last_Login` trong bảng Users sẽ không cập nhật ngay.
+
+**Rủi ro:** Cosmetic only — data vẫn đúng trong sheet, chỉ UI bị stale cho đến khi admin click lại tab.
+
+**Fix:** Thêm `if (currentTab === 'users') _loadUsersTab()` vào `_bindRefresh` handler. File: `assets/js/dashboard.js`.
