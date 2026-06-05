@@ -120,6 +120,12 @@ Option B — Google Sign-In (proper fix):
 
 ---
 
+## ✅ Đã hoàn thành trong session 2026-06-05 (Part 14)
+
+- [x] **KPI tab — users với 0 UC (v3.10.1)**: `_buildKPIData()` rewrite: primary source `_usersList` (USERS sheet). Users chưa nộp UC hiện với badge "⏳ Chưa". Case-insensitive via `_norm()` (Tuantt4=TuanTT4=tuantt4 → 1 entry). Lazy load `Api.getUsers()` khi click KPI tab nếu chưa có; fail-silently → fallback `_allList`. "isMe" dùng `u.username === curUserKey`. 20/20 tests pass. Commit `e3c2922`.
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-06-05 (Part 13)
 
 - [x] **USERS sheet + User management (v3.10.0)**: GAS `UserService.gs` (new) với `normalizeUser_()` case-insensitive (Tuantt4=tuantt4=TUANTT4), `upsertUser_`, `syncUsersFromMasterData_`, `validateUserLogin_`. Login async (GAS validates role → local fallback). Dashboard tab "Người dùng" (admin-only): bảng users, modal add/edit, nút Đồng bộ. 30/30 Playwright tests PASS. Commit `cc8420c`.

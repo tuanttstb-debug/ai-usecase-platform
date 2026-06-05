@@ -1016,6 +1016,53 @@ Test runner: Playwright + Chrome (`localhost:8787` Python HTTP server).
 
 ---
 
+---
+
+## Session: 2026-06-05 (Part 14)
+**Scope:** KPI & Tiến độ tab — load user list từ USERS sheet + case-insensitive matching
+**Commit:** `e3c2922`
+**Version:** 3.10.1
+
+---
+
+### Đã hoàn thành
+
+- **FEAT: KPI tab hiển thị users với 0 UC** — `_buildKPIData()` rewrite hoàn toàn. Primary source là `_usersList` (USERS sheet). Users chưa nộp UC vẫn xuất hiện với `thisWeek=0` + badge "⏳ Chưa". Inactive users (`active=false`) excluded.
+- **FIX: Case-insensitive matching** — `_norm()` helper: `.trim().toLowerCase()` áp dụng cho tất cả key so sánh. Tuantt4=TuanTT4=tuantt4 merge thành 1 entry. Không còn duplicate row.
+- **FIX: "isMe" highlight** — `curUserKey` lấy từ `_user.email` (= username) thay vì `displayName`. `isMe` check: `u.username === curUserKey` (primary) → `u.name.toLowerCase()` (fallback).
+- **Lazy load users cho KPI tab** — `_loadTabData('kpi')`: nếu `_usersList` chưa có, tự gọi `Api.getUsers()` trước khi render; fail-silently nếu GAS endpoint chưa deploy → fallback `_allList` (backward compat hoàn toàn).
+- **Edge case: UC owners không có trong USERS sheet** — vẫn xuất hiện trong KPI (submitted trước khi có user management).
+- **Tests:** `test-kpi-data.js` — 20/20 pass (5 suites: users với 0 UC, case-insensitive, fallback, owner_email missing, isMe detection)
+
+### Files changed
+
+| File | Delta |
+|------|-------|
+| `assets/js/dashboard.js` | +69/-22 lines: `_norm()` helper; `_buildKPIData()` rewrite (byEmail+byName index, USERS sheet join); `_loadTabData('kpi')` lazy users load; `renderKPITab()` username-based isMe, userKeys |
+| `assets/tests/test-kpi-data.js` | NEW — 20 unit tests |
+| `assets/tests/test-kpi-playwright.js` | NEW — Playwright integration test template (requires local server) |
+
+### Decisions chốt
+
+1. **`_norm()` = single normalize function** — `trim().toLowerCase()` dùng ở mọi điểm so sánh trong `_buildKPIData`. Không inline lặp lại.
+2. **byEmail primary, byName secondary** — `owner_email` (username) là key chính vì reliable hơn `owner_name` (display name). Nếu `owner_email` rỗng → fallback `owner_name`.
+3. **Lazy load, không thêm vào `_loadStartupData`** — tránh thêm request có thể timeout (GAS-MYSTERY-01) vào startup critical path. KPI tab load users khi user click tab lần đầu.
+4. **Inactive users excluded** — `u.active === false` → skip. Consistent với logic USERS sheet.
+5. **pctAchieved denominator = tất cả active users** — mẫu số giờ bao gồm cả users 0 UC → % đạt KPI phản ánh đúng thực tế team hơn (có thể thấp hơn trước).
+
+### Regression risks
+
+- **pctAchieved thấp hơn** — Trước đây mẫu số chỉ là users có ≥1 UC (đều đạt). Nay mẫu số là tất cả active users → % thường thấp hơn. Đây là intentional/accurate nhưng có thể gây ngạc nhiên.
+- **Lazy `Api.getUsers()` on KPI tab click** — nếu GAS chậm, user thấy tab trống ~1-2 giây trước khi render. Acceptable; không có spinner riêng cho phase này.
+- **`_buildKPIData` fallback khi `_usersList = []`** — nếu GAS users endpoint fail, hành vi giống v3.9.0 (chỉ hiện users có UC). Không tệ hơn baseline.
+
+### Open issues (không thay đổi)
+
+- GAS-MYSTERY-01 — 7 file GAS chưa deploy → user-login validate qua GAS không có tác dụng
+- FILTER-01, PERF-02 — 1-line fixes vẫn pending
+
+---
+
 ## Recommended next actions (session kế tiếp)
 
 **[P0 — USER ACTION] Tìm GAS project (GAS-MYSTERY-01):**

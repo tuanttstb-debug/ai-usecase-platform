@@ -163,6 +163,26 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 
 ---
 
+## KPI-SPINNER-01 — KPI tab không có loading spinner khi lazy-fetch users (v3.10.1, 2026-06-05)
+
+**Mô tả:** Khi user click tab KPI lần đầu và `_usersList` chưa có, `_loadTabData('kpi')` gọi `Api.getUsers()` trước khi render. Trong thời gian GAS trả lời (~0.5–2s), tab KPI hiển thị nội dung cũ (hoặc trống). Không có spinner/loading state.
+
+**Rủi ro:** Cosmetic — user có thể nghĩ tab bị lỗi nếu GAS chậm.
+
+**Fix:** Thêm `container.innerHTML = '<div class="empty-state"><p>Đang tải...</p></div>'` ở đầu branch `if (!_usersList.length)` trong `_loadTabData('kpi')`. File: `assets/js/dashboard.js`.
+
+---
+
+## KPI-PCT-01 — pctAchieved denominator thay đổi sau v3.10.1 (2026-06-05)
+
+**Mô tả:** Trước v3.10.1, mẫu số pctAchieved = số users có UC (tất cả đều ≥1 UC nên % cao). Sau v3.10.1, mẫu số = tất cả active users trong USERS sheet (bao gồm users 0 UC) → % thấp hơn và chính xác hơn. Có thể gây "sốc" nếu team nhìn thấy % giảm đột ngột.
+
+**Rủi ro:** UX/communication. Không phải bug — là correct behavior.
+
+**Action nếu cần:** Thêm tooltip giải thích "X/Y users đã nộp ≥1 UC trong tuần này".
+
+---
+
 ## DATA-LIMIT-01 — `_allList` và `_pendingList` giới hạn 200 records
 
 **Mô tả:** `listUseCases` default limit=200. `_pendingList` được derive client-side từ `_allList`. Khi tổng số UC > 200:
