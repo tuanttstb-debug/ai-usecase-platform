@@ -113,6 +113,12 @@ Option B — Google Sign-In (proper fix):
 
 ---
 
+## ✅ Đã hoàn thành trong session 2026-06-05 (Part 12)
+
+- [x] **KPI & Tiến độ tab (v3.9.0)**: Tab mới hiển thị cho tất cả users. (1) Header bar tuần hiện tại + % đạt; (2) Bảng tiến độ tuần: mỗi user, highlight row của chính mình; (3) Bar chart KPI 6 tháng; (4) Bảng xếp hạng tổng; (5) Leaderboard streak chuỗi tuần. Logic: chỉ tính non-Draft UCs, tuần ISO Thứ 2→CN, strict streak (không UC tuần này = 0). Toàn bộ tính client-side từ _allList. Commit `afcdf44`.
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-06-05 (Part 11)
 
 - [x] **Stacked breakdown charts (v3.8.0)**: "Phân bổ theo Team" và "Phân bổ theo Lĩnh vực nghiệp vụ" nay hiển thị stacked bar phân màu theo 6 trạng thái (Approved/Under Review/Submitted/Draft/Rejected/Archived). Data tính client-side từ `_allList`. Click vào segment mở list popup lọc đúng team/category + status đó. CSS fallback hiện badge trạng thái dưới mỗi row. Commit `9e15471`.

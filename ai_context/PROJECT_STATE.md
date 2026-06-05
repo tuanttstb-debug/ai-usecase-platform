@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-05 (Part 11)
-**Version:** 3.8.0
+**Last updated:** 2026-06-05 (Part 12)
+**Version:** 3.9.0
 
 ---
 
@@ -86,6 +86,7 @@ env.js → auth.js → [inline portal script]
 | Heroicons SVG | ✅ | Tất cả emoji → SVG inline (dashboard, register, index) |
 | Chart.js charts | ✅ | doughnut + stacked horizontal bar (Team & Category); CSS fallback nếu CDN fail |
 | Stacked breakdown charts | ✅ | NEW v3.8.0 — Team & Category bars phân tách màu theo trạng thái UC; click segment → popup lọc đúng group + status |
+| KPI & Tiến độ tab | ✅ | NEW v3.9.0 — Tab cho tất cả users; weekly progress table, monthly bar chart (6 tháng), all-time ranking, streak leaderboard; client-side từ _allList |
 | Responsive | ✅ | Sidebar collapse 1024px áp dụng toàn bộ pages |
 
 ## Backend (GAS) — ⚠️ Partial
