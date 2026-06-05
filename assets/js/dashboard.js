@@ -1438,7 +1438,9 @@
   function _getWeekRange(weekKey) {
     var mon = new Date(weekKey);
     var sun = new Date(mon.getTime() + 6 * 24 * 3600 * 1000);
-    var fmt = function (dt) { return dt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }); };
+    var fmt = function (dt) {
+      return String(dt.getDate()).padStart(2, '0') + '/' + String(dt.getMonth() + 1).padStart(2, '0');
+    };
     return fmt(mon) + ' – ' + fmt(sun);
   }
 
