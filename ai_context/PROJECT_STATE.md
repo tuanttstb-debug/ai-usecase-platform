@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-03 (Part 10)
-**Version:** 3.7.3
+**Last updated:** 2026-06-05 (Part 11)
+**Version:** 3.8.0
 
 ---
 
@@ -84,7 +84,8 @@ env.js → auth.js → [inline portal script]
 | Auto-load on startup | ✅ | NEW v3.3 — _loadStartupData() thay lazy tab-click loading |
 | TPBank sidebar UI | ✅ | Tất cả pages dùng sidebar — consistent layout |
 | Heroicons SVG | ✅ | Tất cả emoji → SVG inline (dashboard, register, index) |
-| Chart.js charts | ✅ | doughnut + horizontal bar; CSS fallback nếu CDN fail |
+| Chart.js charts | ✅ | doughnut + stacked horizontal bar (Team & Category); CSS fallback nếu CDN fail |
+| Stacked breakdown charts | ✅ | NEW v3.8.0 — Team & Category bars phân tách màu theo trạng thái UC; click segment → popup lọc đúng group + status |
 | Responsive | ✅ | Sidebar collapse 1024px áp dụng toàn bộ pages |
 
 ## Backend (GAS) — ⚠️ Partial

@@ -113,6 +113,13 @@ Option B — Google Sign-In (proper fix):
 
 ---
 
+## ✅ Đã hoàn thành trong session 2026-06-05 (Part 11)
+
+- [x] **Stacked breakdown charts (v3.8.0)**: "Phân bổ theo Team" và "Phân bổ theo Lĩnh vực nghiệp vụ" nay hiển thị stacked bar phân màu theo 6 trạng thái (Approved/Under Review/Submitted/Draft/Rejected/Archived). Data tính client-side từ `_allList`. Click vào segment mở list popup lọc đúng team/category + status đó. CSS fallback hiện badge trạng thái dưới mỗi row. Commit `9e15471`.
+- [x] **Tài liệu nhập liệu**: `HUONG_DAN_NHAP_LIEU.txt` — hướng dẫn đầy đủ 32 trường + lưu ý chung cho người dùng. Commit `9e15471`.
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-06-03 (Part 10)
 
 - [x] **FIX HTTP 400 UPDATE workaround (v3.7.3)**: Root cause xác nhận qua URL thực tế: user_content_key trong googleusercontent redirect URL dài 10,000+ chars (GAS nhúng full merged object). FE fix: mở rộng _handleSubmitError để cả isScriptError ("script load thất bại") trigger auto-verify bằng getUseCase. Fix vĩnh viễn cần deploy GAS minimal response (UseCaseService.gs đã có trong repo). Commit `d52c756`.
