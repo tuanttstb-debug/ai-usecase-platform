@@ -1,0 +1,299 @@
+================================================================================
+         HƯỚNG DẪN NHẬP LIỆU — AI USE CASE PLATFORM
+         Dành cho người dùng khi đăng ký Use Case mới
+================================================================================
+
+Tổng quan
+----------
+Form đăng ký gồm 4 bước (wizard). Bạn cần hoàn thành lần lượt từng bước.
+Các trường có dấu (*) là BẮT BUỘC — hệ thống sẽ không cho chuyển bước tiếp
+nếu bỏ trống những trường này.
+
+Bước 1 và Bước 2 có trường bắt buộc.
+Bước 3 và Bước 4 hoàn toàn tự nguyện — có thể bổ sung sau.
+
+================================================================================
+BƯỚC 1 / 4 — THÔNG TIN NGHIỆP VỤ
+Mô tả bài toán cần giải quyết bằng AI
+================================================================================
+
+[ NHÓM: THÔNG TIN CƠ BẢN ]
+
+1. Tên Use Case (*)
+   - Nhập tên ngắn gọn, dễ nhớ, mô tả rõ bài toán AI.
+   - Nên đặt theo dạng: "[Hành động] + [Đối tượng] + bằng AI"
+   - Ví dụ: "Tóm tắt nội dung email khách hàng bằng AI"
+             "Soạn thảo phản hồi khiếu nại tự động"
+             "Phân loại hồ sơ tín dụng bằng AI"
+
+2. Người đăng ký (*)
+   - Nhập họ và tên đầy đủ của bạn.
+   - Ví dụ: "Nguyễn Văn An"
+
+3. Team (*)
+   - Chọn team của bạn từ danh sách thả xuống.
+   - Nếu team chưa có trong danh sách, liên hệ quản trị viên để bổ sung.
+
+4. Lĩnh vực nghiệp vụ (*)
+   - Chọn lĩnh vực phù hợp nhất với use case này từ danh sách.
+   - Ví dụ: Tín dụng, Dịch vụ khách hàng, Vận hành nội bộ, Kế toán...
+
+5. Giai đoạn (Stage)
+   - Tự đánh giá use case đang ở giai đoạn nào trong lộ trình AI.
+   - Không bắt buộc — có thể bỏ qua nếu chưa xác định được.
+   - Gợi ý các mức stage thường gặp:
+       S1 = Ý tưởng / khảo sát
+       S2 = Đang thử nghiệm (pilot)
+       S3 = Đã triển khai một phần
+       S4 = Triển khai chính thức / nhân rộng
+
+[ NHÓM: VẤN ĐỀ NGHIỆP VỤ ]
+
+6. Điểm đau nghiệp vụ (*)
+   - Mô tả cụ thể vấn đề bạn đang gặp phải trước khi dùng AI.
+   - Tập trung vào: tốn thời gian ở đâu, dễ sai sót như thế nào,
+     khó chuẩn hóa điều gì, hoặc thiếu nguồn lực ở bước nào.
+   - Ví dụ: "Mỗi ngày nhân viên mất 2 giờ đọc và phân loại hơn 50 email
+     khiếu nại thủ công. Tỷ lệ phân loại sai ~20%, dẫn đến xử lý chậm."
+
+7. Quy trình hiện tại (*)
+   - Mô tả các bước đang thực hiện thủ công TRƯỚC khi có AI.
+   - Viết theo dạng từng bước rõ ràng.
+   - Ví dụ:
+       Bước 1: Nhân viên mở hộp thư, đọc từng email
+       Bước 2: Gắn nhãn loại khiếu nại thủ công
+       Bước 3: Chuyển tiếp cho bộ phận phụ trách
+       Bước 4: Theo dõi phản hồi qua bảng Excel
+
+8. Thời gian xử lý hiện tại
+   - Nhập số phút trung bình để hoàn thành 1 lần xử lý (không có AI).
+   - Ví dụ: 60 (tức 60 phút / lần)
+   - Không bắt buộc — bỏ trống nếu chưa đo được.
+
+9. Hệ quả / Rủi ro
+   - Mô tả những hệ quả tiêu cực hoặc rủi ro khi quy trình hiện tại có sai sót.
+   - Ví dụ: "Khách hàng phải chờ phản hồi hơn 3 ngày. Sai sót phân loại
+     khiến một số khiếu nại quan trọng bị bỏ sót, ảnh hưởng NPS."
+   - Không bắt buộc.
+
+[ NHÓM: ĐỐI TƯỢNG & MỤC TIÊU ]
+
+10. Đối tượng sử dụng
+    - Tích chọn các nhóm người sẽ dùng use case này.
+    - Có thể chọn nhiều ô.
+    - Ví dụ: Nhân viên nghiệp vụ, Quản lý, Khách hàng...
+    - Không bắt buộc.
+
+11. Mục tiêu kỳ vọng
+    - Tích chọn các mục tiêu bạn muốn đạt được khi áp dụng AI.
+    - Có thể chọn nhiều ô.
+    - Ví dụ: Tiết kiệm thời gian, Giảm sai sót, Chuẩn hóa quy trình,
+             Tăng trải nghiệm khách hàng...
+    - Không bắt buộc.
+
+================================================================================
+BƯỚC 2 / 4 — LUỒNG AI & PROMPT
+Mô tả cách AI xử lý bài toán
+================================================================================
+
+[ NHÓM: LUỒNG XỬ LÝ ]
+
+12. Mô tả luồng xử lý AI (*)
+    - Mô tả end-to-end: từ đầu vào đến kết quả đầu ra của AI.
+    - Viết theo từng bước rõ ràng.
+    - Ví dụ:
+        Bước 1: Người dùng copy nội dung email, paste vào giao diện
+        Bước 2: AI đọc email, xác định chủ đề và yêu cầu chính
+        Bước 3: AI trả về tóm tắt dạng bullet + phân loại mức độ ưu tiên
+        Bước 4: Nhân viên review, xác nhận và gửi phản hồi
+
+13. Loại dữ liệu đầu vào
+    - Tích chọn loại dữ liệu mà AI sẽ nhận vào để xử lý.
+    - Có thể chọn nhiều ô.
+    - Ví dụ: Văn bản, Hình ảnh, File PDF, Bảng Excel, Dữ liệu có cấu trúc...
+    - Không bắt buộc.
+
+[ NHÓM: THIẾT KẾ PROMPT ]
+(Phần này có thể thu gọn — điền sau khi đã có prompt hoàn chỉnh)
+
+14. Vai trò AI — Role
+    - Định nghĩa "nhân vật" mà AI sẽ đóng vai trong ngữ cảnh này.
+    - Ví dụ: "Bạn là một chuyên viên phân tích tín dụng có 10 năm kinh nghiệm
+      tại ngân hàng thương mại, thành thạo đánh giá hồ sơ vay vốn cá nhân."
+    - Không bắt buộc.
+
+15. Nhiệm vụ cụ thể — Task
+    - Lệnh chính mà AI cần thực hiện, viết rõ ràng như ra lệnh trực tiếp.
+    - Ví dụ: "Hãy đọc và tóm tắt nội dung email sau đây thành dạng bullet,
+      xác định yêu cầu chính của khách hàng và mức độ khẩn cấp."
+    - Không bắt buộc.
+
+16. Mục tiêu đầu ra — Goal
+    - Tiêu chuẩn của một kết quả tốt là như thế nào.
+    - Ví dụ: "Tóm tắt ngắn gọn 3–5 bullet, nêu đủ ý chính, không bịa thêm
+      thông tin, tone ngôn ngữ chuyên nghiệp phù hợp môi trường ngân hàng."
+    - Không bắt buộc.
+
+17. Ngữ cảnh bổ sung — Context
+    - Thông tin bối cảnh giúp AI hiểu đúng tình huống.
+    - Ví dụ: "Đây là email từ khách hàng VIP cấp Platinum. Ngân hàng cam kết
+      phản hồi trong 24 giờ. Giọng điệu cần lịch sự, chuyên nghiệp."
+    - Không bắt buộc.
+
+18. Mô tả đầu vào — Input
+    - Mô tả format và đặc điểm của dữ liệu đầu vào mà AI sẽ nhận.
+    - Ví dụ: "Đầu vào là một đoạn email tiếng Việt, độ dài 200–500 từ,
+      có thể chứa thông tin tài khoản và giao dịch ngân hàng."
+    - Không bắt buộc.
+
+19. Các bước xử lý — Steps
+    - Hướng dẫn AI suy nghĩ từng bước (chain of thought).
+    - Ví dụ:
+        Bước 1: Đọc toàn bộ nội dung email
+        Bước 2: Xác định yêu cầu hoặc khiếu nại chính
+        Bước 3: Xác định mức độ khẩn cấp (Cao/Trung/Thấp)
+        Bước 4: Tóm tắt theo cấu trúc yêu cầu
+    - Không bắt buộc.
+
+20. Định dạng đầu ra — Output Format
+    - Định nghĩa cấu trúc output mong muốn (markdown, JSON, bullet...).
+    - Ví dụ:
+        **Tóm tắt:** [1–2 câu mô tả nội dung chính]
+        **Yêu cầu khách hàng:** [bullet list]
+        **Mức độ khẩn:** [Cao / Trung bình / Thấp]
+        **Bộ phận xử lý gợi ý:** [tên bộ phận]
+    - Không bắt buộc.
+
+21. Tiêu chí đánh giá — Evaluation
+    - Mô tả khi nào bạn biết AI đã làm tốt (hoặc không tốt).
+    - Ví dụ: "Kết quả tốt khi: (1) Tóm tắt đủ ý, không thừa không thiếu;
+      (2) Phân loại mức độ khẩn chính xác; (3) Không bịa thông tin."
+    - Không bắt buộc.
+
+================================================================================
+BƯỚC 3 / 4 — DEMO & TÁI SỬ DỤNG
+Đánh giá hiệu quả và khả năng nhân rộng
+(Tất cả các trường đều KHÔNG bắt buộc)
+================================================================================
+
+[ NHÓM: TRẠNG THÁI DEMO ]
+
+22. Trạng thái demo
+    - Chọn trạng thái hiện tại của use case:
+        "Chưa có"                  — Mới ở giai đoạn ý tưởng
+        "Đã có demo"               — Đã thử nghiệm, chưa đưa vào thực tế
+        "Đã triển khai thử"        — Đang chạy thí điểm
+        "Đã triển khai chính thức" — Đang vận hành thực tế
+
+23. Link demo / tài liệu
+    - Trường này CHỈ HIỂN THỊ khi bạn chọn trạng thái khác "Chưa có".
+    - Dán link video demo, slide thuyết trình, hoặc bản thử nghiệm.
+    - Phải là đường link hợp lệ bắt đầu bằng https://
+
+[ NHÓM: ĐÁNH GIÁ TÁC ĐỘNG ]
+
+24. Thời gian trước khi có AI
+    - Nhập số phút trung bình để hoàn thành 1 lần xử lý (không có AI).
+    - Ví dụ: 60
+
+25. Thời gian sau khi có AI
+    - Nhập số phút trung bình khi đã có AI hỗ trợ.
+    - Hệ thống sẽ tự tính phần trăm tiết kiệm thời gian.
+    - Ví dụ: 10
+
+26. Cải thiện chất lượng
+    - Mô tả các chỉ số chất lượng được cải thiện (nếu đo được).
+    - Ví dụ: "Tỷ lệ sai sót giảm từ 20% xuống còn 3%.
+      Output chuẩn hóa, đồng nhất hơn."
+
+27. Ghi chú thêm về hiệu quả
+    - Nhận xét định tính: phản hồi của người dùng, cảm nhận thực tế.
+    - Ví dụ: "Nhân viên phản hồi tích cực, cảm thấy giảm tải đáng kể.
+      Quản lý nhận xét chất lượng phân loại đã cải thiện rõ rệt."
+
+[ NHÓM: TÁI SỬ DỤNG ]
+
+28. Phạm vi tái sử dụng
+    - Tích chọn use case này có thể áp dụng ở đâu ngoài team bạn.
+    - Ví dụ: Cùng phòng ban, Team khác, Toàn tổ chức, Chi nhánh khác...
+
+29. Hướng dẫn điều chỉnh khi tái sử dụng
+    - Mô tả những phần cần thay đổi khi team khác muốn áp dụng.
+    - Ví dụ: "Khi áp dụng cho team Dịch vụ Doanh nghiệp, cần điều chỉnh
+      phần [Ngữ cảnh] trong prompt vì tone và chính sách ưu tiên khác.
+      Phần [Phân loại mức độ khẩn] có thể giữ nguyên."
+
+================================================================================
+BƯỚC 4 / 4 — HƯỚNG DẪN SỬ DỤNG
+Giúp đồng nghiệp tái sử dụng use case này
+(Tất cả các trường đều KHÔNG bắt buộc)
+================================================================================
+
+30. Khi nào nên dùng use case này?
+    - Mô tả điều kiện, tình huống phù hợp để áp dụng use case.
+    - Ví dụ: "Dùng khi cần xử lý nhanh >5 email khiếu nại trong ngày.
+      Đặc biệt hữu ích khi nhân viên phụ trách vắng hoặc có đột biến
+      email vào đầu tuần."
+
+31. Hướng dẫn thực hiện từng bước
+    - Viết hướng dẫn đủ chi tiết để đồng nghiệp tự làm được ngay,
+      kể cả khi họ chưa từng dùng AI.
+    - Ví dụ:
+        Bước 1: Mở email cần xử lý, bôi đen và copy toàn bộ nội dung
+        Bước 2: Truy cập Claude tại claude.ai hoặc ChatGPT tại chat.openai.com
+        Bước 3: Paste prompt mẫu (xem file đính kèm) vào ô chat
+        Bước 4: Dán nội dung email vào sau prompt, nhấn Enter
+        Bước 5: Đọc kết quả, chỉnh sửa nếu cần rồi lưu/gửi đi
+
+32. Lưu ý & hạn chế
+    - Liệt kê những điều cần tránh, giới hạn của use case, hoặc
+      những tình huống mà use case hoạt động không tốt.
+    - Ví dụ: "Không dùng cho email chứa thông tin mật hoặc dữ liệu
+      khách hàng nhạy cảm. Kết quả AI cần được nhân viên review trước
+      khi gửi. Độ chính xác giảm với email tiếng Anh lẫn tiếng Việt."
+
+================================================================================
+CÁC LƯU Ý CHUNG KHI NHẬP LIỆU
+================================================================================
+
+KIỂM TRA TRÙNG LẶP
+  Khi bạn nhập tên use case và rời khỏi ô (click ra ngoài), hệ thống sẽ
+  tự động kiểm tra xem đã có use case tương tự chưa. Nếu có cảnh báo,
+  hãy đọc kỹ trước khi tiếp tục — bạn vẫn có thể đăng ký nếu use case
+  của bạn khác biệt đủ.
+
+CHUYỂN BƯỚC
+  - Nhấn "Tiếp tục" để sang bước kế tiếp.
+  - Nhấn "Quay lại" để sửa dữ liệu bước trước.
+  - Nếu có lỗi bắt buộc, hệ thống sẽ hiển thị thông báo và đánh dấu
+    đỏ vào trường cần điền.
+
+LƯU VÀ GỬI
+  - Sau khi hoàn thành Bước 4, nhấn nút "Gửi" / "Lưu" để hoàn tất.
+  - Dữ liệu sẽ được lưu vào hệ thống và hiển thị trên dashboard.
+
+CHỈNH SỬA SAU KHI GỬI
+  - Bạn có thể chỉnh sửa use case đã đăng ký thông qua nút Edit
+    trên dashboard.
+
+================================================================================
+TỔNG KẾT CÁC TRƯỜNG BẮT BUỘC (*)
+================================================================================
+
+  Bước 1:
+    [*] Tên Use Case
+    [*] Người đăng ký
+    [*] Team
+    [*] Lĩnh vực nghiệp vụ
+    [*] Điểm đau nghiệp vụ
+    [*] Quy trình hiện tại
+
+  Bước 2:
+    [*] Mô tả luồng xử lý AI
+
+  Bước 3 & 4: Không có trường bắt buộc
+
+================================================================================
+Phiên bản tài liệu: 1.0 | Ngày: 2026-06-05
+Liên hệ hỗ trợ: tuantt.stb@gmail.com
+================================================================================

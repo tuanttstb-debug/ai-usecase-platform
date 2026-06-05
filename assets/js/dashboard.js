@@ -197,8 +197,8 @@
         updatePendingBadge(_pendingList.length);
         renderKPI(_dashData);
         renderStatusChart(_dashData.status_breakdown   || {});
-        renderBreakdownChart('teamChart',     _dashData.team_breakdown     || {});
-        renderBreakdownChart('categoryChart', _dashData.category_breakdown || {});
+        renderStackedChart('teamChart',     'team');
+        renderStackedChart('categoryChart', 'category');
         renderRecentTable(_dashData.recent_submissions || []);
         renderRejectedCard(_rejectedList);
         if (_dashData.refreshed_at) updateRefreshedAt(_dashData.refreshed_at);
@@ -223,8 +223,8 @@
 
       renderKPI(_dashData);
       renderStatusChart(_dashData.status_breakdown   || {});
-      renderBreakdownChart('teamChart',     _dashData.team_breakdown     || {});
-      renderBreakdownChart('categoryChart', _dashData.category_breakdown || {});
+      renderStackedChart('teamChart',     'team');
+      renderStackedChart('categoryChart', 'category');
       renderRecentTable(_dashData.recent_submissions || []);
       updatePendingBadge(_pendingList.length);
       updateRefreshedAt(_dashData.refreshed_at);
@@ -418,6 +418,130 @@
         ? 'Dashboard._openListByTeam(\'' + esc(label) + '\')'
         : 'Dashboard._openListByCategory(\'' + esc(label) + '\')';
       return _chartRow(label, ((e[1] / maxVal) * 100).toFixed(0) + '%', 'var(--color-primary)', String(e[1]), 'var(--color-primary-light)', true, fn);
+    }).join('');
+  }
+
+  // ── Stacked Breakdown Chart (Team / Category + Status) ───────────
+  function renderStackedChart(containerId, fieldKey) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Build stacked data from _allList
+    var totals  = {};
+    var stacked = {};
+    _allList.forEach(function (uc) {
+      var key = String(uc[fieldKey] == null ? '' : uc[fieldKey]).trim();
+      if (!key) return;
+      var status = uc.status || 'Draft';
+      if (!stacked[key]) { stacked[key] = {}; totals[key] = 0; }
+      stacked[key][status] = (stacked[key][status] || 0) + 1;
+      totals[key]++;
+    });
+
+    var keys = Object.keys(totals)
+      .sort(function (a, b) { return totals[b] - totals[a]; })
+      .slice(0, 8);
+
+    if (!keys.length) { container.innerHTML = emptyChart(); return; }
+
+    var titlePrefix = fieldKey === 'team' ? 'Team: ' : 'Lĩnh vực: ';
+
+    if (typeof Chart === 'undefined') {
+      _renderStackedChartCSS(container, keys, stacked, totals, fieldKey, titlePrefix);
+      return;
+    }
+
+    var statusOrder = ['Approved', 'Under Review', 'Submitted', 'Draft', 'Rejected', 'Archived'];
+    var datasets    = [];
+    statusOrder.forEach(function (status) {
+      var hasData = keys.some(function (k) { return (stacked[k][status] || 0) > 0; });
+      if (!hasData) return;
+      var cfg = STATUS_CFG[status] || { label: status, color: '#dadce0' };
+      datasets.push({
+        label:           cfg.label,
+        data:            keys.map(function (k) { return stacked[k][status] || 0; }),
+        backgroundColor: cfg.color,
+        borderWidth:     0,
+        borderRadius:    2,
+        _statusKey:      status
+      });
+    });
+
+    var ratio  = containerId === 'categoryChart' ? 3.5 : 2;
+    var canvas = container.querySelector('canvas');
+    if (!canvas) { container.innerHTML = '<canvas></canvas>'; canvas = container.querySelector('canvas'); }
+    if (_charts[containerId]) _charts[containerId].destroy();
+
+    var capturedKeys        = keys.slice();
+    var capturedDatasets    = datasets;
+    var capturedFieldKey    = fieldKey;
+    var capturedTitlePrefix = titlePrefix;
+
+    _charts[containerId] = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: { labels: keys, datasets: datasets },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: true, aspectRatio: ratio,
+        plugins: {
+          legend: {
+            display: true, position: 'bottom',
+            labels: { padding: 12, font: { size: 11 }, usePointStyle: true, pointStyleWidth: 10 }
+          },
+          tooltip: {
+            mode: 'index',
+            callbacks: {
+              label: function (ctx) {
+                return ctx.parsed.x > 0 ? ' ' + ctx.dataset.label + ': ' + ctx.parsed.x : null;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.04)' } },
+          y: { stacked: true, ticks: { font: { size: 12 } }, grid: { display: false } }
+        },
+        onHover: function (event, elements) { event.native.target.style.cursor = elements.length ? 'pointer' : 'default'; },
+        onClick: function (event, elements) {
+          if (!elements.length) return;
+          var el       = elements[0];
+          var groupKey = capturedKeys[el.index];
+          var dataset  = capturedDatasets[el.datasetIndex];
+          if (!groupKey || !dataset) return;
+          var statusKey = dataset._statusKey;
+          var items = _allList.filter(function (uc) {
+            var match = String(uc[capturedFieldKey] == null ? '' : uc[capturedFieldKey]).trim() === groupKey;
+            return statusKey ? (match && uc.status === statusKey) : match;
+          });
+          openListModal(capturedTitlePrefix + groupKey + (dataset.label ? ' — ' + dataset.label : ''), items);
+        }
+      }
+    });
+  }
+
+  function _renderStackedChartCSS(container, keys, stacked, totals, fieldKey, titlePrefix) {
+    var statusOrder = ['Approved', 'Under Review', 'Submitted', 'Draft', 'Rejected', 'Archived'];
+    var maxTotal    = totals[keys[0]] || 1;
+    container.innerHTML = keys.map(function (key) {
+      var total = totals[key];
+      var fn    = fieldKey === 'team'
+        ? 'Dashboard._openListByTeam(\'' + esc(key) + '\')'
+        : 'Dashboard._openListByCategory(\'' + esc(key) + '\')';
+      var pct   = ((total / maxTotal) * 100).toFixed(0) + '%';
+      var badges = statusOrder.map(function (status) {
+        var count = stacked[key][status] || 0;
+        if (!count) return '';
+        var cfg = STATUS_CFG[status] || { label: status, color: '#5f6368' };
+        return '<span style="background:' + cfg.color + '20;color:' + cfg.color +
+          ';border:1px solid ' + cfg.color + '40;border-radius:4px;padding:1px 5px;font-size:10px;white-space:nowrap">' +
+          esc(cfg.label) + ' ' + count + '</span>';
+      }).filter(Boolean).join(' ');
+      return '<div class="chart-row" style="cursor:pointer;flex-wrap:wrap;gap:4px" onclick="' + fn + '">' +
+        '<span class="chart-row-label" title="' + esc(key) + '">' + esc(key) + '</span>' +
+        '<div class="chart-bar-wrap"><div class="chart-bar" style="width:' + pct + ';background:var(--color-primary-light);border-left:3px solid var(--color-primary)"></div></div>' +
+        '<span class="chart-row-count">' + total + '</span>' +
+        (badges ? '<div style="width:100%;padding-left:var(--space-2);margin-top:2px;display:flex;flex-wrap:wrap;gap:4px">' + badges + '</div>' : '') +
+      '</div>';
     }).join('');
   }
 
