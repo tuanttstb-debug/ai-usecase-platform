@@ -187,6 +187,9 @@
             <button class="dash-tab" data-tab="explore" role="tab" aria-selected="false" id="tab-btn-explore">
               Khám phá
             </button>
+            <button class="dash-tab" data-tab="kpi" role="tab" aria-selected="false" id="tab-btn-kpi">
+              KPI &amp; Tiến độ
+            </button>
           </div>
 
           <!-- Tab: Tổng quan (admin only) -->
@@ -301,6 +304,13 @@
                 <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Team</th><th>Người đăng ký</th><th>Lĩnh vực</th><th></th></tr></thead>
                 <tbody><tr><td colspan="6" class="empty-cell">Đang tải...</td></tr></tbody>
               </table>
+            </div>
+          </div>
+
+          <!-- Tab: KPI & Tiến độ (all users) -->
+          <div id="tab-kpi" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-kpi">
+            <div id="kpiTabContent">
+              <div class="empty-state"><p class="empty-state-text">Đang tải...</p></div>
             </div>
           </div>
 

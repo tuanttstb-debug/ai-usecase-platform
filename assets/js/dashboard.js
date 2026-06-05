@@ -159,6 +159,8 @@
         _exploreList = _allList.filter(function (uc) { return uc.status === 'Approved'; });
         renderExploreTable(_exploreList);
       }
+    } else if (tab === 'kpi') {
+      renderKPITab();
     }
   }
 
@@ -1404,6 +1406,270 @@
       '<button class="toast-close" aria-label="Đóng" onclick="this.parentElement.remove()">×</button>';
     container.appendChild(toast);
     setTimeout(function () { if (toast.parentNode) toast.remove(); }, 5000);
+  }
+
+  // ── KPI Tab ──────────────────────────────────────────────────────
+
+  /* ISO Monday-based week key, e.g. "2026-06-02" (date of Monday) */
+  function _getWeekStart(date) {
+    var d = new Date(date);
+    if (isNaN(d.getTime())) return null;
+    var day = d.getDay(); // 0=Sun
+    d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  function _getWeekKey(date) {
+    var ws = _getWeekStart(date);
+    if (!ws) return null;
+    var y = ws.getFullYear();
+    var m = String(ws.getMonth() + 1).padStart(2, '0');
+    var d = String(ws.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
+  }
+
+  function _prevWeekKey(weekKey) {
+    var d = new Date(weekKey);
+    d.setDate(d.getDate() - 7);
+    return _getWeekKey(d);
+  }
+
+  function _getWeekRange(weekKey) {
+    var mon = new Date(weekKey);
+    var sun = new Date(mon.getTime() + 6 * 24 * 3600 * 1000);
+    var fmt = function (dt) { return dt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }); };
+    return fmt(mon) + ' – ' + fmt(sun);
+  }
+
+  /* Build per-user weekly submission counts from _allList (non-Draft only) */
+  function _buildKPIData() {
+    var users = {};
+    _allList.forEach(function (uc) {
+      if (!uc.status || uc.status === 'Draft') return;
+      var name = String(uc.owner_name == null ? '' : uc.owner_name).trim();
+      if (!name) return;
+      var dateStr = uc.submit_date || uc.submitted_at;
+      if (!dateStr) return;
+      var weekKey = _getWeekKey(new Date(dateStr));
+      if (!weekKey) return;
+      if (!users[name]) users[name] = { team: uc.team || '--', weeks: {}, total: 0 };
+      users[name].weeks[weekKey] = (users[name].weeks[weekKey] || 0) + 1;
+      users[name].total++;
+    });
+    return users;
+  }
+
+  /* Strict streak: if no UC this week → 0; else count consecutive weeks backward */
+  function _computeStreak(userEntry, currentWeekKey) {
+    if (!(userEntry.weeks[currentWeekKey] >= 1)) return 0;
+    var streak   = 1;
+    var checkKey = _prevWeekKey(currentWeekKey);
+    for (var i = 0; i < 104; i++) {
+      if ((userEntry.weeks[checkKey] || 0) >= 1) { streak++; checkKey = _prevWeekKey(checkKey); }
+      else break;
+    }
+    return streak;
+  }
+
+  /* Monthly aggregation for last 6 months */
+  function _buildMonthlyKPI(userData) {
+    var monthly = {};
+    Object.keys(userData).forEach(function (name) {
+      Object.keys(userData[name].weeks).forEach(function (weekKey) {
+        var monthKey = weekKey.substring(0, 7); // "2026-06"
+        monthly[monthKey] = (monthly[monthKey] || 0) + userData[name].weeks[weekKey];
+      });
+    });
+    var keys = [];
+    var now  = new Date();
+    for (var i = 5; i >= 0; i--) {
+      var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      keys.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+    }
+    return { keys: keys, counts: keys.map(function (k) { return monthly[k] || 0; }) };
+  }
+
+  function renderKPITab() {
+    var container = document.getElementById('kpiTabContent');
+    if (!container) return;
+
+    if (!_allList.length) {
+      container.innerHTML = '<div class="empty-state"><p class="empty-state-text">Dữ liệu đang tải, vui lòng chờ...</p></div>';
+      return;
+    }
+
+    var userData       = _buildKPIData();
+    var currentWeekKey = _getWeekKey(new Date());
+    var weekRange      = _getWeekRange(currentWeekKey);
+    var userNames      = Object.keys(userData);
+
+    // Enrich with streak
+    var enriched = userNames.map(function (name) {
+      var u = userData[name];
+      return { name: name, team: u.team, total: u.total, thisWeek: u.weeks[currentWeekKey] || 0, streak: _computeStreak(u, currentWeekKey) };
+    });
+
+    var achieved    = enriched.filter(function (u) { return u.thisWeek >= 1; });
+    var pctAchieved = userNames.length ? Math.round((achieved.length / userNames.length) * 100) : 0;
+    var pctColor    = pctAchieved >= 80 ? '#4CAF50' : pctAchieved >= 50 ? '#F6B100' : '#F44336';
+
+    var curUserRaw  = _user ? (_user.displayName || _user.email || '') : '';
+    var curUserKey  = curUserRaw.trim().toLowerCase();
+
+    var weeklyList  = enriched.slice().sort(function (a, b) { return b.thisWeek - a.thisWeek || a.name.localeCompare(b.name); });
+    var rankingList = enriched.slice().sort(function (a, b) { return b.total - a.total  || b.streak - a.streak; });
+    var topStreakers = enriched.slice().sort(function (a, b) { return b.streak - a.streak; }).slice(0, 3).filter(function (u) { return u.streak > 0; });
+
+    var html = '';
+
+    /* ── Header bar ──────────────────────────────────── */
+    html += '<div class="kpi-week-header">' +
+      '<div class="kpi-week-info">' +
+        '<span class="kpi-week-label">Tuần này</span>' +
+        '<span class="kpi-week-range">' + esc(weekRange) + '</span>' +
+      '</div>' +
+      '<div class="kpi-week-stats">' +
+        '<span class="kpi-week-achievement"><strong>' + achieved.length + ' / ' + userNames.length + '</strong> users đạt mục tiêu</span>' +
+        '<span class="kpi-week-pct" style="color:' + pctColor + '">' + pctAchieved + '%</span>' +
+      '</div>' +
+      '<div class="kpi-week-goal">Mục tiêu: 1 UC / người / tuần</div>' +
+    '</div>';
+
+    /* ── Section 1: Weekly progress table ────────────── */
+    html += '<div class="dash-card">' +
+      '<div class="dash-card-header"><h3>Tiến độ tuần này</h3></div>';
+
+    if (!weeklyList.length) {
+      html += '<p class="empty-state-text" style="padding:var(--space-6)">Chưa có dữ liệu</p>';
+    } else {
+      html += '<table class="dash-table">' +
+        '<thead><tr><th>Người đăng ký</th><th>Team</th><th>UC tuần này</th><th>Trạng thái</th></tr></thead>' +
+        '<tbody>' +
+        weeklyList.map(function (u) {
+          var isMe  = u.name.toLowerCase() === curUserKey;
+          var badge = u.thisWeek >= 1
+            ? '<span class="kpi-badge kpi-badge--ok">✓ Đạt</span>'
+            : '<span class="kpi-badge kpi-badge--no">⏳ Chưa</span>';
+          return '<tr' + (isMe ? ' class="kpi-row--me"' : '') + '>' +
+            '<td>' + esc(u.name) + (isMe ? ' <span class="kpi-me-tag">bạn</span>' : '') + '</td>' +
+            '<td>' + esc(u.team) + '</td>' +
+            '<td><strong>' + u.thisWeek + '</strong></td>' +
+            '<td>' + badge + '</td>' +
+          '</tr>';
+        }).join('') +
+        '</tbody></table>';
+    }
+    html += '</div>';
+
+    /* ── Section 2: Monthly chart ────────────────────── */
+    html += '<div class="dash-card">' +
+      '<div class="dash-card-header"><h3>KPI theo tháng (6 tháng gần nhất)</h3></div>' +
+      '<div id="kpiMonthChart" class="chart-container"><canvas aria-label="Biểu đồ KPI theo tháng" role="img"></canvas></div>' +
+    '</div>';
+
+    /* ── Section 3+4: Ranking + Streak ──────────────── */
+    html += '<div class="dash-grid-2">';
+
+    // Ranking table
+    var medals = ['🥇', '🥈', '🥉'];
+    html += '<div class="dash-card">' +
+      '<div class="dash-card-header"><h3>Bảng xếp hạng (tổng)</h3></div>' +
+      '<table class="dash-table">' +
+      '<thead><tr><th>#</th><th>Người đăng ký</th><th>Team</th><th>Tổng UC</th><th>Streak</th></tr></thead>' +
+      '<tbody>' +
+      rankingList.map(function (u, idx) {
+        var isMe   = u.name.toLowerCase() === curUserKey;
+        var rank   = idx < 3 ? medals[idx] : String(idx + 1);
+        var streak = u.streak > 0
+          ? '<span class="kpi-streak-badge">' + u.streak + ' 🔥</span>'
+          : '<span style="color:var(--color-text-muted)">—</span>';
+        return '<tr' + (isMe ? ' class="kpi-row--me"' : '') + '>' +
+          '<td>' + rank + '</td>' +
+          '<td>' + esc(u.name) + (isMe ? ' <span class="kpi-me-tag">bạn</span>' : '') + '</td>' +
+          '<td>' + esc(u.team) + '</td>' +
+          '<td><strong>' + u.total + '</strong></td>' +
+          '<td>' + streak + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table>' +
+    '</div>';
+
+    // Streak leaderboard
+    html += '<div class="dash-card">' +
+      '<div class="dash-card-header"><h3>🔥 Chuỗi tuần liên tiếp</h3></div>' +
+      '<div class="kpi-streak-list">';
+    if (!topStreakers.length) {
+      html += '<p class="empty-state-text" style="padding:var(--space-6)">Chưa ai đạt chuỗi tuần liên tiếp</p>';
+    } else {
+      topStreakers.forEach(function (u) {
+        var isMe = u.name.toLowerCase() === curUserKey;
+        html += '<div class="kpi-streak-item' + (isMe ? ' kpi-streak-item--me' : '') + '">' +
+          '<div class="kpi-streak-avatar">' + esc(u.name.charAt(0).toUpperCase()) + '</div>' +
+          '<div class="kpi-streak-info">' +
+            '<span class="kpi-streak-name">' + esc(u.name) + (isMe ? ' <span class="kpi-me-tag">bạn</span>' : '') + '</span>' +
+            '<span class="kpi-streak-team">' + esc(u.team) + '</span>' +
+          '</div>' +
+          '<div class="kpi-streak-count">' + u.streak + ' 🔥 <span class="kpi-streak-unit">tuần</span></div>' +
+        '</div>';
+      });
+    }
+    html += '</div></div>';
+
+    html += '</div>'; // close dash-grid-2
+
+    container.innerHTML = html;
+
+    // Render monthly chart after DOM update
+    _renderKPIMonthChart(_buildMonthlyKPI(userData));
+  }
+
+  function _renderKPIMonthChart(monthData) {
+    var container = document.getElementById('kpiMonthChart');
+    if (!container) return;
+
+    var labels = monthData.keys.map(function (k) {
+      var p = k.split('-');
+      return 'T' + parseInt(p[1]) + '/' + p[0];
+    });
+
+    if (typeof Chart === 'undefined') {
+      var maxV = Math.max.apply(null, monthData.counts) || 1;
+      container.innerHTML = monthData.keys.map(function (k, i) {
+        var c = monthData.counts[i];
+        return _chartRow(labels[i], ((c / maxV) * 100).toFixed(0) + '%', 'var(--color-primary)', String(c), 'var(--color-primary-light)', true, null);
+      }).join('');
+      return;
+    }
+
+    var canvas = container.querySelector('canvas');
+    if (!canvas) { container.innerHTML = '<canvas></canvas>'; canvas = container.querySelector('canvas'); }
+    if (_charts.kpiMonth) _charts.kpiMonth.destroy();
+
+    _charts.kpiMonth = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Số UC nộp',
+          data: monthData.counts,
+          backgroundColor: 'rgba(123,44,191,0.72)',
+          borderWidth: 0,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true, aspectRatio: 3,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function (ctx) { return ' ' + ctx.parsed.y + ' UC'; } } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 12 } } },
+          y: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.04)' } }
+        }
+      }
+    });
   }
 
   // ── Public API ────────────────────────────────────────────────────
