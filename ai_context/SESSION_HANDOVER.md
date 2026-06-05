@@ -894,6 +894,49 @@ return { record_id: recordId, usecase_id: merged.UseCase_ID, updated_at: now };
 
 ---
 
+## Session: 2026-06-05 (Part 13)
+**Scope:** USERS sheet + User management feature + 30/30 local tests pass
+**Commits:** `cc8420c` (feat) — merged vào `main`
+**Version:** 3.10.0
+
+---
+
+### Đã hoàn thành
+
+- **GAS `UserService.gs` (NEW)** — `normalizeUser_()` case-insensitive (Tuantt4=tuantt4=TUANTT4), `upsertUser_()`, `syncUsersFromMasterData_()`, `validateUserLogin_()`, `updateLastLogin_()`, `getAdminUsernamesFromSheet_()`
+- **`Config.gs`** — `SHEETS.USERS = 'USERS'` + `USERS_HEADERS` constant
+- **`Utils.gs`** — `getOrCreateSheet_` xử lý USERS sheet
+- **`AdminService.gs`** — `getAdminEmails_()` priority: USERS sheet → CONFIG sheet → Config.gs hardcoded
+- **`Code.gs`** — 5 endpoints mới: `user-login`, `users`, `user-upsert`, `user-sync`, `user-init`
+- **`auth.js`** — `AuthService.storeUser()` public method
+- **`routes.js` + `api.js`** — `validateUser`, `getUsers`, `upsertUser`, `syncUsers`, `initUsersSheet`
+- **`login.html`** — load `routes.js` + `api.js`; async login (GAS trước, local fallback)
+- **`dashboard.html`** — Tab "Người dùng" (admin-only) + user add/edit modal
+- **`dashboard.js`** — `_loadUsersTab`, `renderUsersTab`, `_bindUsersTab`, `_saveUser`, `_editUser`
+- **`dashboard.css`** — `.data-table`, `.btn--ghost`, `.dash-card-actions`
+- **Verification: 30/30 Playwright tests PASS** — T1–T8 covering login, tab visibility, modal, regression, offline fallback
+
+### USERS sheet structure
+| Column | Mô tả |
+|---|---|
+| Username | Normalized lowercase — primary key |
+| Display_Name | Tên hiển thị trong UI |
+| Role | `admin` hoặc `user` |
+| Team | Phòng/team |
+| Email | Email thực (optional, future OAuth) |
+| Active | TRUE/FALSE — deactivate không xóa row |
+| Created_At | ISO timestamp |
+| Last_Login | Cập nhật mỗi lần đăng nhập |
+
+### Case-insensitive design
+`normalizeUser_(str)` = `.trim().toLowerCase()` — áp dụng ở **mọi** điểm so sánh trong GAS và FE.
+
+### Blockers còn lại
+- **GAS-MYSTERY-01** — vẫn chưa resolve → 7 file GAS local chưa deploy
+- **FILTER-01 / PERF-02** — 1-dòng fixes, vẫn pending
+
+---
+
 ## Session: 2026-06-05
 **Scope:** Stacked breakdown charts + KPI & Tiến độ tab + local verification
 **Commits:** `9e15471` (stacked charts + guide) · `afcdf44` (KPI tab) · `91c4a00` (date fix) · `b0cff5f` / `0aa7c18` (context)
@@ -979,8 +1022,12 @@ Test runner: Playwright + Chrome (`localhost:8787` Python HTTP server).
 1. Mở `script.google.com` → My Projects → từng project → Deploy → Manage deployments
 2. Tìm URL chứa `AKfycbwe0eo3X3KW` → đổi tên project → note lại
 
-**[P0 — sau khi tìm được GAS] Paste 6 file vào GAS Editor → New version → Deploy:**
-`UseCaseService.gs` · `Code.gs` · `Config.gs` · `Utils.gs` · `LookupService.gs` · `DashboardService.gs`
+**[P0 — sau khi tìm được GAS] Paste 7 file vào GAS Editor → New version → Deploy:**
+`UserService.gs` (NEW) · `UseCaseService.gs` · `Code.gs` · `Config.gs` · `Utils.gs` · `LookupService.gs` · `DashboardService.gs`
+
+Sau khi deploy, chạy 1 lần:
+- `GAS_URL?action=user-init&admin_email=tuantt4` → tạo sheet USERS + seed admin
+- Dashboard → tab Người dùng → Đồng bộ từ UC → import tất cả owner từ MASTER_DATA
 
 **[P1] Fix `_populateTeamFilter` stale state (FILTER-01):**
 - 1 dòng: `_filterAll.team = teamSel.value` sau khi render options. File: `assets/js/dashboard.js`

@@ -10,12 +10,19 @@ Sau khi hoàn thành GAS-MYSTERY-01 bên dưới, paste **tất cả** file dư�
 
 | File | Thay đổi quan trọng | Version |
 |---|---|---|
-| `UseCaseService.gs` | `_assignUseCaseId_()` + `_ensureCounterAhead_()` + `generateUseCaseId_()` v2 + `peekNextUseCaseId_()`; **cap JSON_Backup 45,000 chars**; **`updateUseCase_` single-read (v3.7.1)** | v3.7.1 |
-| `Utils.gs` | Xóa `addHeader`; **`sanitizeStr_` strip null/surrogate/CRLF; `toSheetValue_()` chống formula injection; apply trong appendRow/setValues**; **`findRowByField_()` (v3.7.1)** | v3.7.1 |
-| `Code.gs` | Route `?action=next-id` | v3.4 |
-| `Config.gs` | `ADMIN_EMAILS = ['admin','tuantt4','manager']` (usernames) | v2.x |
+| `UserService.gs` | **NEW** — USERS sheet management, normalizeUser_(), validateUserLogin_(), syncUsersFromMasterData_() | v3.10.0 |
+| `UseCaseService.gs` | `_assignUseCaseId_()` + single-read update + cap JSON_Backup | v3.7.1 |
+| `Utils.gs` | `sanitizeStr_` + `toSheetValue_()` + `findRowByField_()` + USERS sheet support | v3.10.0 |
+| `Code.gs` | Route `?action=next-id` + 5 user endpoints | v3.10.0 |
+| `Config.gs` | `SHEETS.USERS` + `USERS_HEADERS` + `ADMIN_EMAILS = ['admin','tuantt4','manager']` | v3.10.0 |
 | `LookupService.gs` | Rewrite hoàn toàn | v2.x |
 | `DashboardService.gs` | Push `record_id`, `status`, `owner_name` vào `recent_submissions` | v3.5.1 |
+
+**Sau khi deploy, chạy 1 lần để khởi tạo USERS sheet:**
+```
+GAS_URL?action=user-init&admin_email=tuantt4
+```
+Rồi vào Dashboard → tab "Người dùng" → **Đồng bộ từ UC** → import tất cả owner từ MASTER_DATA.
 
 Test sau deploy:
 - `GAS_URL?action=next-id` → `{"success":true,"data":{"next_id":"AIUS-XXXX"}}`
@@ -110,6 +117,12 @@ Option B — Google Sign-In (proper fix):
 - [x] Full UC detail view modal — 4 sections (done 2026-06-02)
 - [ ] Dark mode — tokens sẵn sàng, thêm `@media (prefers-color-scheme: dark)` vào `variables.css`
 - [ ] Logo SVG thay sparkles trong sidebar brand
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-05 (Part 13)
+
+- [x] **USERS sheet + User management (v3.10.0)**: GAS `UserService.gs` (new) với `normalizeUser_()` case-insensitive (Tuantt4=tuantt4=TUANTT4), `upsertUser_`, `syncUsersFromMasterData_`, `validateUserLogin_`. Login async (GAS validates role → local fallback). Dashboard tab "Người dùng" (admin-only): bảng users, modal add/edit, nút Đồng bộ. 30/30 Playwright tests PASS. Commit `cc8420c`.
 
 ---
 
