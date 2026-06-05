@@ -121,6 +121,23 @@ var AuthService = (function () {
         return false;
       }
       return true;
+    },
+
+    /**
+     * Store a user object from an external source (e.g., GAS validateUserLogin response).
+     * Dùng trong login.html sau khi GAS trả về role đúng từ USERS sheet.
+     * @param {{ email, displayName, role, team?, loginAt? }} userData
+     */
+    storeUser: function(userData) {
+      if (!userData || !userData.email) return;
+      var user = {
+        email:       String(userData.email).trim().toLowerCase(),
+        displayName: userData.displayName || _buildDisplayName(userData.email),
+        role:        userData.role === 'admin' ? 'admin' : 'user',
+        team:        userData.team || '',
+        loginAt:     userData.loginAt || new Date().toISOString()
+      };
+      _save(user);
     }
   };
 })();

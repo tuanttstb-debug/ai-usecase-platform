@@ -897,3 +897,45 @@
   .kpi-week-header { flex-direction: column; align-items: flex-start; }
   .kpi-week-stats  { flex-wrap: wrap; }
 }
+
+/* ── Users Tab ──────────────────────────────────────────────────── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.data-table th {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: 2px solid var(--color-border);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+.data-table tbody tr:hover { background: var(--color-primary-surface, rgba(123,44,191,.04)); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+.dash-card-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+.btn--ghost {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm, 6px);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn--ghost:hover { background: var(--color-primary-surface, rgba(123,44,191,.06)); color: var(--color-primary); }

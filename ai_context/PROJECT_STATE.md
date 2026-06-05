@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-05 (Part 12)
-**Version:** 3.9.0
+**Last updated:** 2026-06-05 (Part 13)
+**Version:** 3.10.0
 
 ---
 
@@ -87,6 +87,7 @@ env.js → auth.js → [inline portal script]
 | Chart.js charts | ✅ | doughnut + stacked horizontal bar (Team & Category); CSS fallback nếu CDN fail |
 | Stacked breakdown charts | ✅ | NEW v3.8.0 — Team & Category bars phân tách màu theo trạng thái UC; click segment → popup lọc đúng group + status |
 | KPI & Tiến độ tab | ✅ | NEW v3.9.0 — Tab cho tất cả users; weekly progress table, monthly bar chart (6 tháng), all-time ranking, streak leaderboard; client-side từ _allList |
+| User management | ✅ | NEW v3.10.0 — Sheet USERS trong GAS; case-insensitive (normalizeUser_); login async validates GAS; admin tab quản lý users; sync từ MASTER_DATA |
 | KPI week date format | ✅ | fix `91c4a00` — manual `DD/MM` formatter thay `toLocaleDateString` (locale inconsistency trên Chromium/Windows) |
 | Responsive | ✅ | Sidebar collapse 1024px áp dụng toàn bộ pages |
 
@@ -94,7 +95,7 @@ env.js → auth.js → [inline portal script]
 
 **Active deployment URL:** `AKfycbwe0eo3X3KWxGdJ8ZWLjAgx3FVvcSOxTA5KVJGYVV3_Skbn0eXAVouzKaZOgDaDcUupew`
 **OAuth:** ✅ Authorized | **GAS code sync:** ⚠️ Local fixes chưa deploy — chưa tìm được đúng GAS project (GAS-MYSTERY-01)
-**Pending deploy (6 files):** `UseCaseService.gs` (v3.7.0) · `Utils.gs` (v3.7.0) · `Code.gs` · `Config.gs` · `LookupService.gs` · `DashboardService.gs`
+**Pending deploy (7 files):** `UserService.gs` (NEW v3.10) · `UseCaseService.gs` (v3.7.0) · `Utils.gs` (v3.7.0) · `Code.gs` · `Config.gs` · `LookupService.gs` · `DashboardService.gs`
 
 | Feature | Status | Notes |
 |---|---|---|

@@ -93,6 +93,10 @@ function getOrCreateSheet_(sheetName) {
       sheet.appendRow(['NEXT_ID', String(CONFIG_DEFAULTS.NEXT_ID), 'Auto-increment ID counter']);
       formatHeaderRow_(sheet);
       break;
+    case SHEETS.USERS:
+      sheet.appendRow(USERS_HEADERS);
+      formatHeaderRow_(sheet);
+      break;
   }
 
   return sheet;

@@ -11,8 +11,17 @@ var SHEETS = {
   LOOKUP:    'LOOKUP',         // Dropdown options (Field / Value)
   ACTIVITY:  'ACTIVITY_LOG',   // Audit trail
   DASHBOARD: 'DASHBOARD_READY',// Pre-aggregated dashboard cache
-  CONFIG:    'CONFIG'          // System config (NEXT_ID counter, v.v.)
+  CONFIG:    'CONFIG',         // System config (NEXT_ID counter, v.v.)
+  USERS:     'USERS'           // Danh sách user và phân quyền
 };
+
+// ── USERS Sheet Column Headers ────────────────────────────────────
+// Username: normalized lowercase — primary key, case-insensitive lookup
+// Role:     'admin' hoặc 'user'
+// Active:   TRUE/FALSE — deactivate không cần xóa row
+var USERS_HEADERS = [
+  'Username', 'Display_Name', 'Role', 'Team', 'Email', 'Active', 'Created_At', 'Last_Login'
+];
 
 // ── MASTER_DATA Column Headers ────────────────────────────────────
 // QUAN TRỌNG: Thứ tự này phải khớp chính xác với hàng đầu tiên của sheet MASTER_DATA.

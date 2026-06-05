@@ -180,6 +180,9 @@
             <button class="dash-tab admin-only" data-tab="all" role="tab" aria-selected="false" id="tab-btn-all" style="display:none">
               Tất cả use case
             </button>
+            <button class="dash-tab admin-only" data-tab="users" role="tab" aria-selected="false" id="tab-btn-users" style="display:none">
+              Người dùng
+            </button>
             <!-- Available to all -->
             <button class="dash-tab" data-tab="my" role="tab" aria-selected="true" id="tab-btn-my">
               Use Case của tôi
@@ -277,6 +280,32 @@
             </div>
           </div>
 
+          <!-- Tab: Người dùng (admin only) -->
+          <div id="tab-users" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-users">
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <h3>Quản lý người dùng</h3>
+                <div class="dash-card-actions" id="usersTabActions">
+                  <button id="syncUsersBtn" class="btn btn--secondary btn--sm" title="Đồng bộ user từ dữ liệu Use Case">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="14" height="14" style="vertical-align:middle;margin-right:4px">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    Đồng bộ từ UC
+                  </button>
+                  <button id="addUserBtn" class="btn btn--primary btn--sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="14" height="14" style="vertical-align:middle;margin-right:4px">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+                    </svg>
+                    Thêm user
+                  </button>
+                </div>
+              </div>
+              <div id="usersTableWrap">
+                <p class="empty-state">Đang tải...</p>
+              </div>
+            </div>
+          </div>
+
           <!-- Tab: Use Case của tôi (all users) -->
           <div id="tab-my" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-my">
             <div class="dash-card">
@@ -328,6 +357,52 @@
 
   <!-- Toast Container -->
   <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- ── User Add/Edit Modal ── -->
+  <div id="userModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
+    <div class="modal-card" style="max-width:480px;width:100%">
+      <div class="modal-header">
+        <h2 class="modal-title" id="userModalTitle">Thêm người dùng</h2>
+        <button class="modal-close" id="userModalCloseBtn" aria-label="Đóng">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:var(--space-5)">
+        <div style="display:grid;gap:var(--space-4)">
+          <div>
+            <label class="form-label" for="umUsername">Tên đăng nhập <span style="color:var(--color-error)">*</span></label>
+            <input type="text" id="umUsername" class="form-input" placeholder="VD: tuantt4" autocomplete="off">
+            <p class="form-hint">Không phân biệt hoa thường. VD: tuantt4 = Tuantt4 = TUANTT4</p>
+          </div>
+          <div>
+            <label class="form-label" for="umDisplayName">Tên hiển thị</label>
+            <input type="text" id="umDisplayName" class="form-input" placeholder="VD: Tuấn Trần">
+          </div>
+          <div>
+            <label class="form-label" for="umRole">Vai trò <span style="color:var(--color-error)">*</span></label>
+            <select id="umRole" class="form-select">
+              <option value="user">Người dùng</option>
+              <option value="admin">Quản trị viên</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="umTeam">Team / Phòng</label>
+            <input type="text" id="umTeam" class="form-input" placeholder="VD: CV2, TT SPTD">
+          </div>
+          <div>
+            <label class="form-label" for="umEmail">Email thực (tùy chọn)</label>
+            <input type="text" id="umEmail" class="form-input" placeholder="VD: user@bank.vn">
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--space-3)">
+            <input type="checkbox" id="umActive" checked style="width:16px;height:16px;accent-color:var(--color-primary)">
+            <label for="umActive" style="font-size:var(--text-sm);color:var(--color-text)">Tài khoản đang hoạt động (Active)</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--secondary" id="userModalCancelBtn">Hủy</button>
+        <button class="btn btn--primary" id="userModalSaveBtn">Lưu</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ── List Popup Modal ── -->
   <div id="listModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="listModalTitle">

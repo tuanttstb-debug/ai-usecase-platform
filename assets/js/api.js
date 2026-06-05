@@ -132,5 +132,12 @@ var Api = {
   // Dashboard & Approval
   listUseCases(filters) { return Api._request(API.list(filters)); },
   approveUseCase(data)  { return Api._request(API.approve(), data); },
-  rejectUseCase(data)   { return Api._request(API.reject(),  data); }
+  rejectUseCase(data)   { return Api._request(API.reject(),  data); },
+
+  // User management
+  validateUser(username)        { return Api._request(API.userLogin(username)); },
+  getUsers()                    { return Api._request(API.users()); },
+  upsertUser(data)              { return Api._request(API.userUpsert(), data); },
+  syncUsers(adminEmail)         { return Api._request(API.userSync(),  { reviewer_email: adminEmail }); },
+  initUsersSheet(adminEmail)    { return Api._request(API.userInit(),  { reviewer_email: adminEmail }); }
 };

@@ -26,5 +26,12 @@ var API = {
 
   // Approval endpoints (payload qua JSONP base64)
   approve: () => `${_gasBase}?action=approve`,
-  reject:  () => `${_gasBase}?action=reject`
+  reject:  () => `${_gasBase}?action=reject`,
+
+  // User management endpoints
+  userLogin:  (username) => `${_gasBase}?action=user-login&username=${encodeURIComponent(username)}`,
+  users:      ()         => `${_gasBase}?action=users`,
+  userUpsert: ()         => `${_gasBase}?action=user-upsert`,
+  userSync:   ()         => `${_gasBase}?action=user-sync`,
+  userInit:   ()         => `${_gasBase}?action=user-init`
 };

@@ -22,6 +22,7 @@
   var _ucCache      = {}; // key → uc object (safe alternative to inline JSON)
   var _rejectedList = [];
   var _filterAll    = { statuses: [], team: '' }; // multi-status + single-team filter for "all" tab
+  var _usersList    = []; // cache user list for Users tab
 
   // ── Status config ────────────────────────────────────────────────
   var STATUS_CFG = {
@@ -57,6 +58,7 @@
     _bindListModal();
     _bindKPIClicks();
     _initAllFilters();
+    _bindUsersTab();
 
     // Determine initial tab from URL param
     var sp       = new URLSearchParams(window.location.search);
@@ -161,6 +163,8 @@
       }
     } else if (tab === 'kpi') {
       renderKPITab();
+    } else if (tab === 'users' && _isAdmin) {
+      _loadUsersTab();
     }
   }
 
@@ -1674,6 +1678,165 @@
     });
   }
 
+  // ── Users Tab ─────────────────────────────────────────────────────
+
+  var ROLE_LABEL = { admin: 'Quản trị viên', user: 'Người dùng' };
+
+  async function _loadUsersTab() {
+    var wrap = document.getElementById('usersTableWrap');
+    if (!wrap) return;
+    wrap.innerHTML = '<p class="empty-state">Đang tải danh sách người dùng…</p>';
+    try {
+      _usersList = await Api.getUsers();
+      renderUsersTab(_usersList);
+    } catch(e) {
+      wrap.innerHTML = '<p class="empty-state" style="color:var(--color-error)">Không tải được danh sách user. Kiểm tra GAS deployment.</p>';
+    }
+  }
+
+  function renderUsersTab(list) {
+    var wrap = document.getElementById('usersTableWrap');
+    if (!wrap) return;
+    if (!list || !list.length) {
+      wrap.innerHTML = '<p class="empty-state">Chưa có user nào. Nhấn "Đồng bộ từ UC" để import từ dữ liệu hiện có.</p>';
+      return;
+    }
+
+    var rows = list.map(function(u, i) {
+      var activeHtml = u.active
+        ? '<span class="status-badge" style="background:rgba(76,175,80,.12);color:#388e3c">Active</span>'
+        : '<span class="status-badge" style="background:rgba(244,67,54,.1);color:#c62828">Inactive</span>';
+      var roleHtml = u.role === 'admin'
+        ? '<span class="status-badge" style="background:rgba(123,44,191,.12);color:#7B2CBF">Admin</span>'
+        : '<span class="status-badge" style="background:rgba(164,164,178,.15);color:#6D6D7A">User</span>';
+      var lastLogin = u.last_login ? u.last_login.split('T')[0] : '—';
+      var key = 'u_' + i;
+      _ucCache[key] = u;
+      return '<tr>' +
+        '<td style="font-weight:600;font-family:monospace;font-size:var(--text-sm)">' + _esc(u.username) + '</td>' +
+        '<td>' + _esc(u.display_name || '—') + '</td>' +
+        '<td>' + roleHtml + '</td>' +
+        '<td>' + _esc(u.team || '—') + '</td>' +
+        '<td>' + activeHtml + '</td>' +
+        '<td style="color:var(--color-text-secondary);font-size:var(--text-xs)">' + lastLogin + '</td>' +
+        '<td><button class="btn btn--ghost btn--sm" onclick="Dashboard._editUser(\'' + key + '\')" title="Chỉnh sửa">Sửa</button></td>' +
+        '</tr>';
+    }).join('');
+
+    wrap.innerHTML =
+      '<div style="overflow-x:auto">' +
+      '<table class="data-table" style="min-width:600px">' +
+      '<thead><tr>' +
+        '<th>Username</th><th>Tên hiển thị</th><th>Vai trò</th><th>Team</th><th>Trạng thái</th><th>Đăng nhập cuối</th><th></th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+      '</table></div>' +
+      '<p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-3)">' +
+        list.length + ' user · Username luôn so sánh không phân biệt hoa thường' +
+      '</p>';
+  }
+
+  function _esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function _bindUsersTab() {
+    // Sync button
+    var syncBtn = document.getElementById('syncUsersBtn');
+    if (syncBtn) {
+      syncBtn.addEventListener('click', async function() {
+        if (!_isAdmin || !_user) return;
+        syncBtn.disabled = true;
+        syncBtn.textContent = 'Đang đồng bộ…';
+        try {
+          var res = await Api.syncUsers(_user.email);
+          showToast('Đồng bộ xong: +' + (res.synced || 0) + ' user mới, ' + (res.skipped || 0) + ' đã có', 'success');
+          await _loadUsersTab();
+        } catch(e) {
+          showToast('Lỗi sync: ' + (e.message || e), 'error');
+        } finally {
+          syncBtn.disabled = false;
+          syncBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="14" height="14" style="vertical-align:middle;margin-right:4px"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>Đồng bộ từ UC';
+        }
+      });
+    }
+
+    // Add user button
+    var addBtn = document.getElementById('addUserBtn');
+    if (addBtn) {
+      addBtn.addEventListener('click', function() { _openUserModal(null); });
+    }
+
+    // Modal close/cancel
+    var closeBtn  = document.getElementById('userModalCloseBtn');
+    var cancelBtn = document.getElementById('userModalCancelBtn');
+    if (closeBtn)  closeBtn.addEventListener('click',  _closeUserModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', _closeUserModal);
+
+    // Modal save
+    var saveBtn = document.getElementById('userModalSaveBtn');
+    if (saveBtn) saveBtn.addEventListener('click', _saveUser);
+
+    // Close on overlay click
+    var modal = document.getElementById('userModal');
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) _closeUserModal();
+      });
+    }
+  }
+
+  function _openUserModal(userData) {
+    var modal = document.getElementById('userModal');
+    if (!modal) return;
+    var isEdit = !!userData;
+    document.getElementById('userModalTitle').textContent = isEdit ? 'Chỉnh sửa người dùng' : 'Thêm người dùng';
+    document.getElementById('umUsername').value     = isEdit ? (userData.username || '') : '';
+    document.getElementById('umUsername').readOnly  = isEdit; // username không đổi khi edit
+    document.getElementById('umDisplayName').value  = isEdit ? (userData.display_name || '') : '';
+    document.getElementById('umRole').value         = isEdit ? (userData.role || 'user') : 'user';
+    document.getElementById('umTeam').value         = isEdit ? (userData.team  || '') : '';
+    document.getElementById('umEmail').value        = isEdit ? (userData.email || '') : '';
+    document.getElementById('umActive').checked     = isEdit ? !!userData.active : true;
+    modal.classList.remove('hidden');
+  }
+
+  function _closeUserModal() {
+    var modal = document.getElementById('userModal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  async function _saveUser() {
+    if (!_isAdmin || !_user) return;
+    var uname = (document.getElementById('umUsername').value || '').trim();
+    if (!uname) { showToast('Vui lòng nhập tên đăng nhập', 'error'); return; }
+
+    var saveBtn = document.getElementById('userModalSaveBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Đang lưu…';
+
+    try {
+      var payload = {
+        Username:     uname,
+        Display_Name: (document.getElementById('umDisplayName').value || '').trim(),
+        Role:         document.getElementById('umRole').value,
+        Team:         (document.getElementById('umTeam').value  || '').trim(),
+        Email:        (document.getElementById('umEmail').value || '').trim(),
+        Active:       document.getElementById('umActive').checked,
+        reviewer_email: _user.email
+      };
+      var res = await Api.upsertUser(payload);
+      showToast(res.created ? 'Đã thêm user "' + uname + '"' : 'Đã cập nhật user "' + uname + '"', 'success');
+      _closeUserModal();
+      await _loadUsersTab();
+    } catch(e) {
+      showToast('Lỗi lưu user: ' + (e.message || e), 'error');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Lưu';
+    }
+  }
+
   // ── Public API ────────────────────────────────────────────────────
   window.Dashboard = {
     _byKey: function (key) {
@@ -1706,7 +1869,12 @@
     // Legacy compat
     _openDetail:        openDetail,
     _approve:           function (recordId, name) { _openModalApprove(recordId, name); },
-    _reject:            function (recordId, name) { _openModalReject(recordId, name); }
+    _reject:            function (recordId, name) { _openModalReject(recordId, name); },
+    // Users tab
+    _editUser: function(key) {
+      var u = _ucCache[key];
+      if (u) _openUserModal(u);
+    }
   };
 
 })();
