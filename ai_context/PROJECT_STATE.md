@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-05 (Part 14)
-**Version:** 3.10.1
+**Last updated:** 2026-06-08
+**Version:** 3.10.2
 
 ---
 
@@ -86,7 +86,7 @@ env.js → auth.js → [inline portal script]
 | Heroicons SVG | ✅ | Tất cả emoji → SVG inline (dashboard, register, index) |
 | Chart.js charts | ✅ | doughnut + stacked horizontal bar (Team & Category); CSS fallback nếu CDN fail |
 | Stacked breakdown charts | ✅ | NEW v3.8.0 — Team & Category bars phân tách màu theo trạng thái UC; click segment → popup lọc đúng group + status |
-| KPI & Tiến độ tab | ✅ | v3.10.1 — Tab cho tất cả users; users với 0 UC hiển thị (từ USERS sheet); case-insensitive matching; lazy load Api.getUsers() khi click tab; fallback _allList nếu GAS unavailable |
+| KPI & Tiến độ tab | ✅ | v3.10.2 — Week nav ‹/› xem lại tuần trước; chỉ đếm Approved UCs; `KPI_EXCLUDED_USERS` loại directors (cuongvm1); render ngay không chờ getUsers(); 15/15 Playwright PASS |
 | User management | ✅ | NEW v3.10.0 — Sheet USERS trong GAS; case-insensitive (normalizeUser_); login async validates GAS; admin tab quản lý users; sync từ MASTER_DATA |
 | KPI week date format | ✅ | fix `91c4a00` — manual `DD/MM` formatter thay `toLocaleDateString` (locale inconsistency trên Chromium/Windows) |
 | Responsive | ✅ | Sidebar collapse 1024px áp dụng toàn bộ pages |

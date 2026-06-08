@@ -163,13 +163,19 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 
 ---
 
-## KPI-SPINNER-01 — KPI tab không có loading spinner khi lazy-fetch users (v3.10.1, 2026-06-05)
+## ~~KPI-SPINNER-01~~ — CLOSED (2026-06-08, v3.10.2)
 
-**Mô tả:** Khi user click tab KPI lần đầu và `_usersList` chưa có, `_loadTabData('kpi')` gọi `Api.getUsers()` trước khi render. Trong thời gian GAS trả lời (~0.5–2s), tab KPI hiển thị nội dung cũ (hoặc trống). Không có spinner/loading state.
+**Đã fix:** `_loadTabData('kpi')` nay render ngay với `_allList` hiện có; `getUsers()` chạy background + re-render sau khi xong. Tab KPI xuất hiện ngay khi click, không còn blank.
 
-**Rủi ro:** Cosmetic — user có thể nghĩ tab bị lỗi nếu GAS chậm.
+---
 
-**Fix:** Thêm `container.innerHTML = '<div class="empty-state"><p>Đang tải...</p></div>'` ở đầu branch `if (!_usersList.length)` trong `_loadTabData('kpi')`. File: `assets/js/dashboard.js`.
+## KPI-APPROVED-01 — "% đạt" giảm đột ngột sau v3.10.2 (2026-06-08)
+
+**Mô tả:** v3.10.2 đổi KPI filter từ `status !== 'Draft'` → `status === 'Approved'`. UC đang chờ duyệt (Submitted/Under Review) không còn tính KPI. Users nộp UC trong tuần nhưng chưa được admin duyệt sẽ thấy "⏳ Chưa" thay vì "✓ Đạt" cho đến khi UC được approve.
+
+**Rủi ro:** UX — user nộp xong có thể thấy mình "chưa đạt" dù đã nộp. Behavior này là intentional theo yêu cầu ("chỉ theo dõi UC được duyệt") nhưng có thể gây nhầm lẫn.
+
+**Mitigation nếu cần:** Thêm cột "Đã nộp (chờ duyệt)" vào bảng KPI để user thấy trạng thái trung gian. Hiện tại chưa implement.
 
 ---
 

@@ -83,6 +83,16 @@ Option B — Google Sign-In (proper fix):
 
 ---
 
+## P1 — Quản lý KPI_EXCLUDED_USERS qua USERS sheet (thay env.js)
+
+Hiện tại: `KPI_EXCLUDED_USERS: ['cuongvm1']` hardcode trong `config/env.js` → cần deploy frontend mỗi khi thêm/xóa.
+
+Cải tiến: Thêm column `KPI_Exempt` (TRUE/FALSE) vào USERS sheet → `_buildKPIData()` đọc từ `_usersList` để exclude → admin tự quản lý qua tab Người dùng, không cần sửa code.
+
+**Effort:** Low — 1 column GAS + 1 condition FE. **Blocking:** GAS-MYSTERY-01 phải xong trước.
+
+---
+
 ## P1 — Fix regression risk (v3.6) — còn pending
 
 - [ ] `_populateTeamFilter()` stale state: thêm `_filterAll.team = teamSel.value` sau khi render options. File `assets/js/dashboard.js` hàm `_populateTeamFilter`. Chi tiết xem TECH_DEBT `FILTER-01`.
@@ -117,6 +127,16 @@ Option B — Google Sign-In (proper fix):
 - [x] Full UC detail view modal — 4 sections (done 2026-06-02)
 - [ ] Dark mode — tokens sẵn sàng, thêm `@media (prefers-color-scheme: dark)` vào `variables.css`
 - [ ] Logo SVG thay sparkles trong sidebar brand
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-08
+
+- [x] **KPI week navigation (v3.10.2)**: Nút ‹/› trong header cho phép xem lại KPI các tuần trước. "›" disabled khi đang ở tuần hiện tại. Label tự động "Tuần này" / "N tuần trước". Section title thay đổi theo tuần xem. `Dashboard._kpiNav(dir)` trong public API. Streak tính relative theo tuần đang xem. Commit `4e48d17`.
+- [x] **KPI excluded users (v3.10.2)**: `KPI_EXCLUDED_USERS: ['cuongvm1']` trong `config/env.js`. `_buildKPIData()` skip excluded users tại tất cả paths (USERS sheet, byEmail fallback, byName fallback). Giám đốc Trung Tâm không xuất hiện trong bảng KPI.
+- [x] **KPI Approved-only (v3.10.2)**: Filter đổi từ `!== 'Draft'` → `=== 'Approved'`. UC Rejected/Submitted/Under Review không tính KPI. Goal text: "1 UC được duyệt / người / tuần".
+- [x] **FIX KPI-SPINNER-01 (v3.10.2)**: `_loadTabData('kpi')` render ngay với data có sẵn thay vì chờ `getUsers()`. `getUsers()` vẫn chạy background + re-render sau khi xong. Nav buttons xuất hiện ngay khi click tab.
+- [x] **15/15 Playwright tests PASS** — verified trên local server.
 
 ---
 

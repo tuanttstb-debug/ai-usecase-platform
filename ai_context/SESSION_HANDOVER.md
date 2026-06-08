@@ -1077,14 +1077,20 @@ Test runner: Playwright + Chrome (`localhost:8787` Python HTTP server).
 | File | Delta |
 |---|---|
 | `config/env.js` | +3 lines: `KPI_EXCLUDED_USERS: ['cuongvm1']` |
-| `assets/js/dashboard.js` | +35 lines: `_kpiViewedWeek` state; `_nextWeekKey()`; `_buildKPIData()` excluded check + Approved-only filter; `renderKPITab()` week nav + dynamic label; `Dashboard._kpiNav()` |
-| `assets/css/dashboard.css` | +28 lines: `.kpi-week-nav`, `.kpi-nav-btn` styles |
+| `assets/js/dashboard.js` | +66 lines net: `_kpiViewedWeek` state; `_nextWeekKey()`; `_buildKPIData()` excluded check + Approved-only filter; `renderKPITab()` week nav + dynamic label; `Dashboard._kpiNav()`; render-immediately fix in `_loadTabData('kpi')` |
+| `assets/css/dashboard.css` | +30 lines: `.kpi-week-nav`, `.kpi-nav-btn` styles |
 
 ### Decisions chốt
 1. **KPI = Approved only** — UC nộp xong nhưng chưa được duyệt không tính; phản ánh đúng giá trị thực tế
-2. **`KPI_EXCLUDED_USERS` trong env.js** — admin có thể thêm/bỏ user mà không cần sửa logic JS
-3. **Week nav không thay đổi monthly chart và ranking** — Monthly chart luôn 6 tháng gần nhất; Ranking tính tổng all-time. Chỉ section "Tiến độ tuần" thay đổi theo tuần đang xem
-4. **Streak tính theo tuần đang xem** — `_computeStreak(u, viewedWeekKey)` → xem tuần 3 tuần trước sẽ thấy streak tại thời điểm đó
+2. **`KPI_EXCLUDED_USERS` trong env.js** — admin có thể thêm/bỏ user mà không cần sửa logic JS; hiện tại `['cuongvm1']`
+3. **Week nav chỉ thay đổi "Tiến độ tuần"** — Monthly chart luôn 6 tháng gần nhất; Ranking tính tổng all-time; Streak tính backward từ tuần đang xem
+4. **Render-immediately fix** — `_loadTabData('kpi')` nay render ngay với data có sẵn, sau đó re-render sau khi `getUsers()` resolve; trước đây chờ `getUsers()` (20s timeout) mới render → nav buttons không xuất hiện
+
+### Bug found + fixed trong session này
+**KPI-SPINNER-01 CLOSED** — `_loadTabData('kpi')` cũ: nếu `_usersList` rỗng, gọi `renderKPITab()` sau `getUsers()` resolve, không render gì trong lúc chờ → nav buttons không xuất hiện. Fix: render ngay với `_allList` hiện có, `getUsers()` chạy background và re-render sau khi xong.
+
+### Test kết quả
+15/15 Playwright tests PASS — login inject → KPI tab → nav buttons, label, disabled state, cuongvm1 exclusion, prev/next navigation, 3-week back, no JS errors.
 
 ---
 
