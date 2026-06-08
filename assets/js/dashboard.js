@@ -23,6 +23,7 @@
   var _rejectedList = [];
   var _filterAll    = { statuses: [], team: '' }; // multi-status + single-team filter for "all" tab
   var _usersList    = []; // cache user list for Users tab
+  var _kpiViewedWeek = null; // null = current week; updated by week navigation buttons
 
   // ── Status config ────────────────────────────────────────────────
   var STATUS_CFG = {
@@ -162,14 +163,13 @@
         renderExploreTable(_exploreList);
       }
     } else if (tab === 'kpi') {
+      renderKPITab(); // render immediately with available data
       if (!_usersList.length) {
-        // Try fetching USERS sheet from GAS; render regardless of outcome
+        // Then fetch USERS sheet for users-with-0-UCs feature; re-render when ready
         Api.getUsers()
           .then(function (list) { _usersList = list || []; })
           .catch(function () { /* GAS users endpoint not deployed yet — fall back to _allList */ })
           .then(function () { renderKPITab(); });
-      } else {
-        renderKPITab();
       }
     } else if (tab === 'users' && _isAdmin) {
       _loadUsersTab();
@@ -1447,6 +1447,12 @@
     return _getWeekKey(d);
   }
 
+  function _nextWeekKey(weekKey) {
+    var d = new Date(weekKey);
+    d.setDate(d.getDate() + 7);
+    return _getWeekKey(d);
+  }
+
   function _getWeekRange(weekKey) {
     var mon = new Date(weekKey);
     var sun = new Date(mon.getTime() + 6 * 24 * 3600 * 1000);
@@ -1465,12 +1471,15 @@
      UC ownership matched by: normalize(owner_email) === username (primary),
                               or normalize(owner_name) matches username / display_name (secondary). */
   function _buildKPIData() {
-    // Step 1: aggregate UC stats keyed by normalized owner_email and owner_name
+    // Users excluded from KPI tracking (e.g. directors who don't submit weekly)
+    var excluded = (APP_CONFIG.KPI_EXCLUDED_USERS || []).map(_norm);
+
+    // Step 1: aggregate UC stats — only Approved UCs count for KPI
     var byEmail = {}; // norm(owner_email) → {team, weeks, total, rawName}
     var byName  = {}; // norm(owner_name)  → same (secondary index)
 
     _allList.forEach(function (uc) {
-      if (!uc.status || uc.status === 'Draft') return;
+      if (uc.status !== 'Approved') return;
       var dateStr = uc.submit_date || uc.submitted_at;
       if (!dateStr) return;
       var weekKey = _getWeekKey(new Date(dateStr));
@@ -1499,6 +1508,7 @@
       _usersList.forEach(function (u) {
         if (u.active === false) return; // skip deactivated
         var uKey  = _norm(u.username);
+        if (excluded.indexOf(uKey) !== -1) return; // skip excluded users (e.g. directors)
         var dnKey = _norm(u.display_name);
         if (!uKey) return;
 
@@ -1518,6 +1528,7 @@
       // Step 2b: UC owners not found in USERS sheet (submitted before user management was added)
       Object.keys(byEmail).forEach(function (eKey) {
         if (claimed[eKey]) return;
+        if (excluded.indexOf(eKey) !== -1) return;
         var stats = byEmail[eKey];
         result[eKey] = {
           username: eKey,
@@ -1530,11 +1541,13 @@
     } else {
       // Fallback: derive from _allList (old behavior — only users who have submitted UCs)
       Object.keys(byEmail).forEach(function (key) {
+        if (excluded.indexOf(key) !== -1) return;
         var stats = byEmail[key];
         result[key] = { username: key, name: stats.rawName || key, team: stats.team, weeks: stats.weeks, total: stats.total };
       });
       Object.keys(byName).forEach(function (key) {
         if (result[key]) return;
+        if (excluded.indexOf(key) !== -1) return;
         var stats = byName[key];
         result[key] = { username: key, name: stats.rawName || key, team: stats.team, weeks: stats.weeks, total: stats.total };
       });
@@ -1582,10 +1595,14 @@
       return;
     }
 
-    var userData       = _buildKPIData();
-    var currentWeekKey = _getWeekKey(new Date());
-    var weekRange      = _getWeekRange(currentWeekKey);
-    var userKeys       = Object.keys(userData);
+    var userData      = _buildKPIData();
+    var todayWeekKey  = _getWeekKey(new Date());
+    var viewedWeekKey = _kpiViewedWeek || todayWeekKey;
+    var weekRange     = _getWeekRange(viewedWeekKey);
+    var isCurrentWeek = viewedWeekKey === todayWeekKey;
+    var weeksBack     = isCurrentWeek ? 0 : Math.round((new Date(todayWeekKey) - new Date(viewedWeekKey)) / (7 * 24 * 3600 * 1000));
+    var weekLabel     = isCurrentWeek ? 'Tuần này' : weeksBack + ' tuần trước';
+    var userKeys      = Object.keys(userData);
 
     // Enrich with streak; carry username for case-insensitive "isMe" detection
     var enriched = userKeys.map(function (key) {
@@ -1595,8 +1612,8 @@
         name:     u.name     || key,
         team:     u.team,
         total:    u.total,
-        thisWeek: u.weeks[currentWeekKey] || 0,
-        streak:   _computeStreak(u, currentWeekKey)
+        thisWeek: u.weeks[viewedWeekKey] || 0,
+        streak:   _computeStreak(u, viewedWeekKey)
       };
     });
 
@@ -1615,20 +1632,25 @@
 
     /* ── Header bar ──────────────────────────────────── */
     html += '<div class="kpi-week-header">' +
-      '<div class="kpi-week-info">' +
-        '<span class="kpi-week-label">Tuần này</span>' +
-        '<span class="kpi-week-range">' + esc(weekRange) + '</span>' +
+      '<div class="kpi-week-nav">' +
+        '<button class="kpi-nav-btn" onclick="Dashboard._kpiNav(\'prev\')" title="Tuần trước">&#8249;</button>' +
+        '<div class="kpi-week-info">' +
+          '<span class="kpi-week-label">' + esc(weekLabel) + '</span>' +
+          '<span class="kpi-week-range">' + esc(weekRange) + '</span>' +
+        '</div>' +
+        '<button class="kpi-nav-btn" onclick="Dashboard._kpiNav(\'next\')" title="Tuần sau"' + (isCurrentWeek ? ' disabled' : '') + '>&#8250;</button>' +
       '</div>' +
       '<div class="kpi-week-stats">' +
         '<span class="kpi-week-achievement"><strong>' + achieved.length + ' / ' + userKeys.length + '</strong> users đạt mục tiêu</span>' +
         '<span class="kpi-week-pct" style="color:' + pctColor + '">' + pctAchieved + '%</span>' +
       '</div>' +
-      '<div class="kpi-week-goal">Mục tiêu: 1 UC / người / tuần</div>' +
+      '<div class="kpi-week-goal">Mục tiêu: 1 UC được duyệt / người / tuần</div>' +
     '</div>';
 
     /* ── Section 1: Weekly progress table ────────────── */
+    var sectionTitle = isCurrentWeek ? 'Tiến độ tuần này' : ('Tiến độ tuần ' + weekRange);
     html += '<div class="dash-card">' +
-      '<div class="dash-card-header"><h3>Tiến độ tuần này</h3></div>';
+      '<div class="dash-card-header"><h3>' + esc(sectionTitle) + '</h3></div>';
 
     if (!weeklyList.length) {
       html += '<p class="empty-state-text" style="padding:var(--space-6)">Chưa có dữ liệu</p>';
@@ -1954,6 +1976,18 @@
     _openDetail:        openDetail,
     _approve:           function (recordId, name) { _openModalApprove(recordId, name); },
     _reject:            function (recordId, name) { _openModalReject(recordId, name); },
+    // KPI week navigation
+    _kpiNav: function (dir) {
+      var todayKey = _getWeekKey(new Date());
+      var current  = _kpiViewedWeek || todayKey;
+      if (dir === 'prev') {
+        _kpiViewedWeek = _prevWeekKey(current);
+      } else if (dir === 'next' && current !== todayKey) {
+        var next = _nextWeekKey(current);
+        _kpiViewedWeek = next > todayKey ? todayKey : next;
+      }
+      renderKPITab();
+    },
     // Users tab
     _editUser: function(key) {
       var u = _ucCache[key];

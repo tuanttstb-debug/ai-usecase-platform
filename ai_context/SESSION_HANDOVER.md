@@ -1063,6 +1063,31 @@ Test runner: Playwright + Chrome (`localhost:8787` Python HTTP server).
 
 ---
 
+## Session: 2026-06-08
+**Scope:** KPI tab enhancements — week navigation, exclude directors, Approved-only count
+**Version:** 3.10.2
+
+### Đã hoàn thành
+
+- **FEAT: KPI week navigation** — Nút ‹/› trong header tuần cho phép xem lại KPI các tuần trước. `_kpiViewedWeek` state var (null = tuần hiện tại). `_nextWeekKey()` helper mới. Nút "›" disabled khi đang xem tuần hiện tại. Section title thay đổi động: "Tuần này" / "N tuần trước". `Dashboard._kpiNav(dir)` trong public API. Streak tính tương đối theo tuần đang xem.
+- **FEAT: Loại user khỏi KPI** — `KPI_EXCLUDED_USERS: ['cuongvm1']` trong `config/env.js`. `_buildKPIData()` bỏ qua user trong danh sách này ở tất cả paths (USERS sheet, byEmail fallback, byName fallback). Dễ thêm/bỏ user bằng cách sửa `env.js`.
+- **FIX: KPI chỉ đếm UC được duyệt** — Đổi `if (!uc.status || uc.status === 'Draft') return` → `if (uc.status !== 'Approved') return`. UC bị từ chối, đang nộp, đang review không còn tính KPI. Goal text: "1 UC được duyệt / người / tuần".
+
+### Files changed
+| File | Delta |
+|---|---|
+| `config/env.js` | +3 lines: `KPI_EXCLUDED_USERS: ['cuongvm1']` |
+| `assets/js/dashboard.js` | +35 lines: `_kpiViewedWeek` state; `_nextWeekKey()`; `_buildKPIData()` excluded check + Approved-only filter; `renderKPITab()` week nav + dynamic label; `Dashboard._kpiNav()` |
+| `assets/css/dashboard.css` | +28 lines: `.kpi-week-nav`, `.kpi-nav-btn` styles |
+
+### Decisions chốt
+1. **KPI = Approved only** — UC nộp xong nhưng chưa được duyệt không tính; phản ánh đúng giá trị thực tế
+2. **`KPI_EXCLUDED_USERS` trong env.js** — admin có thể thêm/bỏ user mà không cần sửa logic JS
+3. **Week nav không thay đổi monthly chart và ranking** — Monthly chart luôn 6 tháng gần nhất; Ranking tính tổng all-time. Chỉ section "Tiến độ tuần" thay đổi theo tuần đang xem
+4. **Streak tính theo tuần đang xem** — `_computeStreak(u, viewedWeekKey)` → xem tuần 3 tuần trước sẽ thấy streak tại thời điểm đó
+
+---
+
 ## Recommended next actions (session kế tiếp)
 
 **[P0 — USER ACTION] Tìm GAS project (GAS-MYSTERY-01):**

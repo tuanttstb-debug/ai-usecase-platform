@@ -742,6 +742,36 @@
   margin-bottom: var(--space-5);
   box-shadow: var(--shadow-card);
 }
+.kpi-week-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.kpi-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+  flex-shrink: 0;
+}
+.kpi-nav-btn:hover:not(:disabled) {
+  background: var(--color-primary-surface, #f3ebfc);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.kpi-nav-btn:disabled {
+  opacity: .35;
+  cursor: default;
+}
 .kpi-week-info {
   display: flex;
   flex-direction: column;

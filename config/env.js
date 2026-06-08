@@ -11,6 +11,9 @@ var APP_CONFIG = {
   // Lưu ý: kiểm tra phía frontend (UI-level). Backend GAS có validation riêng.
   ADMIN_EMAILS: ['cuongvm1', 'tuantt4', 'dunglq1'],
 
+  // Danh sách username bị loại khỏi theo dõi KPI (VD: Giám đốc, quản lý cấp cao)
+  KPI_EXCLUDED_USERS: ['cuongvm1'],
+
   // sessionStorage key — lưu email admin trong phiên làm việc (legacy, kept for backward compat)
   ADMIN_SESSION_KEY: 'ai_admin_email',
 
