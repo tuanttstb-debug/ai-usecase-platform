@@ -1556,6 +1556,19 @@
     return result;
   }
 
+  /* Filter _allList by owner for KPI user row drill-down */
+  function _openKPIUserList(username, displayName) {
+    var uKey = _norm(username);
+    var dKey = _norm(displayName);
+    var items = _allList.filter(function (uc) {
+      var eKey = _norm(uc.owner_email);
+      var nKey = _norm(uc.owner_name);
+      return (uKey && (eKey === uKey || nKey === uKey)) ||
+             (dKey && (eKey === dKey || nKey === dKey));
+    });
+    openListModal((displayName || username) + ' — Use case', items);
+  }
+
   /* Strict streak: if no UC this week → 0; else count consecutive weeks backward */
   function _computeStreak(userEntry, currentWeekKey) {
     if (!(userEntry.weeks[currentWeekKey] >= 1)) return 0;
@@ -1656,7 +1669,7 @@
       html += '<p class="empty-state-text" style="padding:var(--space-6)">Chưa có dữ liệu</p>';
     } else {
       html += '<table class="dash-table">' +
-        '<thead><tr><th>Người đăng ký</th><th>Team</th><th>UC tuần này</th><th>Trạng thái</th></tr></thead>' +
+        '<thead><tr><th>Người đăng ký</th><th>Team</th><th>UC tuần này</th><th>Trạng thái</th><th></th></tr></thead>' +
         '<tbody>' +
         weeklyList.map(function (u) {
           var isMe  = u.username === curUserKey || u.name.toLowerCase() === curUserKey;
@@ -1668,6 +1681,7 @@
             '<td>' + esc(u.team) + '</td>' +
             '<td><strong>' + u.thisWeek + '</strong></td>' +
             '<td>' + badge + '</td>' +
+            '<td><button class="btn btn--ghost btn--sm" onclick="event.stopPropagation();Dashboard._openKPIUserList(\'' + esc(u.username) + '\',\'' + esc(u.name) + '\')">Xem US</button></td>' +
           '</tr>';
         }).join('') +
         '</tbody></table>';
@@ -1688,7 +1702,7 @@
     html += '<div class="dash-card">' +
       '<div class="dash-card-header"><h3>Bảng xếp hạng (tổng)</h3></div>' +
       '<table class="dash-table">' +
-      '<thead><tr><th>#</th><th>Người đăng ký</th><th>Team</th><th>Tổng UC</th><th>Streak</th></tr></thead>' +
+      '<thead><tr><th>#</th><th>Người đăng ký</th><th>Team</th><th>Tổng UC</th><th>Streak</th><th></th></tr></thead>' +
       '<tbody>' +
       rankingList.map(function (u, idx) {
         var isMe   = u.username === curUserKey || u.name.toLowerCase() === curUserKey;
@@ -1702,6 +1716,7 @@
           '<td>' + esc(u.team) + '</td>' +
           '<td><strong>' + u.total + '</strong></td>' +
           '<td>' + streak + '</td>' +
+          '<td><button class="btn btn--ghost btn--sm" onclick="event.stopPropagation();Dashboard._openKPIUserList(\'' + esc(u.username) + '\',\'' + esc(u.name) + '\')">Xem US</button></td>' +
         '</tr>';
       }).join('') +
       '</tbody></table>' +
@@ -1723,6 +1738,7 @@
             '<span class="kpi-streak-team">' + esc(u.team) + '</span>' +
           '</div>' +
           '<div class="kpi-streak-count">' + u.streak + ' 🔥 <span class="kpi-streak-unit">tuần</span></div>' +
+          '<button class="btn btn--ghost btn--sm" onclick="event.stopPropagation();Dashboard._openKPIUserList(\'' + esc(u.username) + '\',\'' + esc(u.name) + '\')">Xem US</button>' +
         '</div>';
       });
     }
@@ -1976,6 +1992,8 @@
     _openDetail:        openDetail,
     _approve:           function (recordId, name) { _openModalApprove(recordId, name); },
     _reject:            function (recordId, name) { _openModalReject(recordId, name); },
+    // KPI user drill-down
+    _openKPIUserList: _openKPIUserList,
     // KPI week navigation
     _kpiNav: function (dir) {
       var todayKey = _getWeekKey(new Date());
