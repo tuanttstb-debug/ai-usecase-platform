@@ -814,6 +814,39 @@
   white-space: nowrap;
 }
 
+/* View mode toggle (Tổng / Theo tuần) */
+.kpi-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 3px;
+  flex-shrink: 0;
+}
+.kpi-view-btn {
+  padding: 5px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+.kpi-view-btn:hover:not(.active) {
+  background: var(--color-primary-surface, #f3ebfc);
+  color: var(--color-primary);
+}
+.kpi-view-btn.active {
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
 /* Achievement badges */
 .kpi-badge {
   display: inline-flex;

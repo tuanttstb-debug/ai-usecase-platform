@@ -24,6 +24,7 @@
   var _filterAll    = { statuses: [], team: '' }; // multi-status + single-team filter for "all" tab
   var _usersList    = []; // cache user list for Users tab
   var _kpiViewedWeek = null; // null = current week; updated by week navigation buttons
+  var _kpiViewMode   = 'total'; // 'total' | 'week' — default shows all-time ranking
 
   // ── Status config ────────────────────────────────────────────────
   var STATUS_CFG = {
@@ -1635,71 +1636,45 @@
     var pctColor    = pctAchieved >= 80 ? '#4CAF50' : pctAchieved >= 50 ? '#F6B100' : '#F44336';
 
     // Match current user by username (= _user.email in this system) — case-insensitive
-    var curUserKey = (_user ? (_user.email || _user.displayName || '') : '').trim().toLowerCase();
-
+    var curUserKey  = (_user ? (_user.email || _user.displayName || '') : '').trim().toLowerCase();
     var weeklyList  = enriched.slice().sort(function (a, b) { return b.thisWeek - a.thisWeek || a.name.localeCompare(b.name); });
     var rankingList = enriched.slice().sort(function (a, b) { return b.total - a.total  || b.streak - a.streak; });
     var topStreakers = enriched.slice().sort(function (a, b) { return b.streak - a.streak; }).slice(0, 3).filter(function (u) { return u.streak > 0; });
+    var medals      = ['🥇', '🥈', '🥉'];
 
     var html = '';
 
     /* ── Header bar ──────────────────────────────────── */
-    html += '<div class="kpi-week-header">' +
-      '<div class="kpi-week-nav">' +
-        '<button class="kpi-nav-btn" onclick="Dashboard._kpiNav(\'prev\')" title="Tuần trước">&#8249;</button>' +
-        '<div class="kpi-week-info">' +
-          '<span class="kpi-week-label">' + esc(weekLabel) + '</span>' +
-          '<span class="kpi-week-range">' + esc(weekRange) + '</span>' +
+    html += '<div class="kpi-week-header">';
+
+    // View mode toggle — always shown
+    html += '<div class="kpi-view-toggle">' +
+      '<button class="kpi-view-btn' + (_kpiViewMode === 'total' ? ' active' : '') + '" onclick="Dashboard._kpiSetView(\'total\')" title="Xem tổng hợp">Tổng</button>' +
+      '<button class="kpi-view-btn' + (_kpiViewMode === 'week'  ? ' active' : '') + '" onclick="Dashboard._kpiSetView(\'week\')"  title="Xem theo tuần">Theo tuần</button>' +
+    '</div>';
+
+    // Week navigation — only in week mode
+    if (_kpiViewMode === 'week') {
+      html +=
+        '<div class="kpi-week-nav">' +
+          '<button class="kpi-nav-btn" onclick="Dashboard._kpiNav(\'prev\')" title="Tuần trước">&#8249;</button>' +
+          '<div class="kpi-week-info">' +
+            '<span class="kpi-week-label">' + esc(weekLabel) + '</span>' +
+            '<span class="kpi-week-range">' + esc(weekRange) + '</span>' +
+          '</div>' +
+          '<button class="kpi-nav-btn" onclick="Dashboard._kpiNav(\'next\')" title="Tuần sau"' + (isCurrentWeek ? ' disabled' : '') + '>&#8250;</button>' +
         '</div>' +
-        '<button class="kpi-nav-btn" onclick="Dashboard._kpiNav(\'next\')" title="Tuần sau"' + (isCurrentWeek ? ' disabled' : '') + '>&#8250;</button>' +
-      '</div>' +
-      '<div class="kpi-week-stats">' +
-        '<span class="kpi-week-achievement"><strong>' + achieved.length + ' / ' + userKeys.length + '</strong> users đạt mục tiêu</span>' +
-        '<span class="kpi-week-pct" style="color:' + pctColor + '">' + pctAchieved + '%</span>' +
-      '</div>' +
-      '<div class="kpi-week-goal">Mục tiêu: 1 UC được duyệt / người / tuần</div>' +
-    '</div>';
-
-    /* ── Section 1: Weekly progress table ────────────── */
-    var sectionTitle = isCurrentWeek ? 'Tiến độ tuần này' : ('Tiến độ tuần ' + weekRange);
-    html += '<div class="dash-card">' +
-      '<div class="dash-card-header"><h3>' + esc(sectionTitle) + '</h3></div>';
-
-    if (!weeklyList.length) {
-      html += '<p class="empty-state-text" style="padding:var(--space-6)">Chưa có dữ liệu</p>';
-    } else {
-      html += '<table class="dash-table">' +
-        '<thead><tr><th>Người đăng ký</th><th>Team</th><th>UC tuần này</th><th>Trạng thái</th><th></th></tr></thead>' +
-        '<tbody>' +
-        weeklyList.map(function (u) {
-          var isMe  = u.username === curUserKey || u.name.toLowerCase() === curUserKey;
-          var badge = u.thisWeek >= 1
-            ? '<span class="kpi-badge kpi-badge--ok">✓ Đạt</span>'
-            : '<span class="kpi-badge kpi-badge--no">⏳ Chưa</span>';
-          return '<tr' + (isMe ? ' class="kpi-row--me"' : '') + '>' +
-            '<td>' + esc(u.name) + (isMe ? ' <span class="kpi-me-tag">bạn</span>' : '') + '</td>' +
-            '<td>' + esc(u.team) + '</td>' +
-            '<td><strong>' + u.thisWeek + '</strong></td>' +
-            '<td>' + badge + '</td>' +
-            '<td><button class="btn btn--ghost btn--sm" onclick="event.stopPropagation();Dashboard._openKPIUserList(\'' + esc(u.username) + '\',\'' + esc(u.name) + '\')">Xem US</button></td>' +
-          '</tr>';
-        }).join('') +
-        '</tbody></table>';
+        '<div class="kpi-week-stats">' +
+          '<span class="kpi-week-achievement"><strong>' + achieved.length + ' / ' + userKeys.length + '</strong> users đạt mục tiêu</span>' +
+          '<span class="kpi-week-pct" style="color:' + pctColor + '">' + pctAchieved + '%</span>' +
+        '</div>' +
+        '<div class="kpi-week-goal">Mục tiêu: 1 UC được duyệt / người / tuần</div>';
     }
-    html += '</div>';
 
-    /* ── Section 2: Monthly chart ────────────────────── */
-    html += '<div class="dash-card">' +
-      '<div class="dash-card-header"><h3>KPI theo tháng (6 tháng gần nhất)</h3></div>' +
-      '<div id="kpiMonthChart" class="chart-container"><canvas aria-label="Biểu đồ KPI theo tháng" role="img"></canvas></div>' +
-    '</div>';
+    html += '</div>'; // end kpi-week-header
 
-    /* ── Section 3+4: Ranking + Streak ──────────────── */
-    html += '<div class="dash-grid-2">';
-
-    // Ranking table
-    var medals = ['🥇', '🥈', '🥉'];
-    html += '<div class="dash-card">' +
+    /* ── Shared fragments ──────────────────────────── */
+    var _rankingHtml = '<div class="dash-card">' +
       '<div class="dash-card-header"><h3>Bảng xếp hạng (tổng)</h3></div>' +
       '<table class="dash-table">' +
       '<thead><tr><th>#</th><th>Người đăng ký</th><th>Team</th><th>Tổng UC</th><th>Streak</th><th></th></tr></thead>' +
@@ -1722,16 +1697,13 @@
       '</tbody></table>' +
     '</div>';
 
-    // Streak leaderboard
-    html += '<div class="dash-card">' +
-      '<div class="dash-card-header"><h3>🔥 Chuỗi tuần liên tiếp</h3></div>' +
-      '<div class="kpi-streak-list">';
+    var _streakInner = '';
     if (!topStreakers.length) {
-      html += '<p class="empty-state-text" style="padding:var(--space-6)">Chưa ai đạt chuỗi tuần liên tiếp</p>';
+      _streakInner = '<p class="empty-state-text" style="padding:var(--space-6)">Chưa ai đạt chuỗi tuần liên tiếp</p>';
     } else {
       topStreakers.forEach(function (u) {
         var isMe = u.username === curUserKey || u.name.toLowerCase() === curUserKey;
-        html += '<div class="kpi-streak-item' + (isMe ? ' kpi-streak-item--me' : '') + '">' +
+        _streakInner += '<div class="kpi-streak-item' + (isMe ? ' kpi-streak-item--me' : '') + '">' +
           '<div class="kpi-streak-avatar">' + esc(u.name.charAt(0).toUpperCase()) + '</div>' +
           '<div class="kpi-streak-info">' +
             '<span class="kpi-streak-name">' + esc(u.name) + (isMe ? ' <span class="kpi-me-tag">bạn</span>' : '') + '</span>' +
@@ -1742,9 +1714,53 @@
         '</div>';
       });
     }
-    html += '</div></div>';
+    var _streakHtml = '<div class="dash-card">' +
+      '<div class="dash-card-header"><h3>🔥 Chuỗi tuần liên tiếp</h3></div>' +
+      '<div class="kpi-streak-list">' + _streakInner + '</div>' +
+    '</div>';
 
-    html += '</div>'; // close dash-grid-2
+    var _monthChartHtml = '<div class="dash-card">' +
+      '<div class="dash-card-header"><h3>KPI theo tháng (6 tháng gần nhất)</h3></div>' +
+      '<div id="kpiMonthChart" class="chart-container"><canvas aria-label="Biểu đồ KPI theo tháng" role="img"></canvas></div>' +
+    '</div>';
+
+    /* ── Layout by view mode ─────────────────────── */
+    if (_kpiViewMode === 'total') {
+      // Ranking full-width first, then monthly chart, then streak
+      html += _rankingHtml + _monthChartHtml + _streakHtml;
+
+    } else {
+      // Weekly progress first, then monthly chart, then ranking + streak side by side
+      var sectionTitle = isCurrentWeek ? 'Tiến độ tuần này' : ('Tiến độ tuần ' + weekRange);
+      html += '<div class="dash-card">' +
+        '<div class="dash-card-header"><h3>' + esc(sectionTitle) + '</h3></div>';
+
+      if (!weeklyList.length) {
+        html += '<p class="empty-state-text" style="padding:var(--space-6)">Chưa có dữ liệu</p>';
+      } else {
+        html += '<table class="dash-table">' +
+          '<thead><tr><th>Người đăng ký</th><th>Team</th><th>UC tuần này</th><th>Trạng thái</th><th></th></tr></thead>' +
+          '<tbody>' +
+          weeklyList.map(function (u) {
+            var isMe  = u.username === curUserKey || u.name.toLowerCase() === curUserKey;
+            var badge = u.thisWeek >= 1
+              ? '<span class="kpi-badge kpi-badge--ok">✓ Đạt</span>'
+              : '<span class="kpi-badge kpi-badge--no">⏳ Chưa</span>';
+            return '<tr' + (isMe ? ' class="kpi-row--me"' : '') + '>' +
+              '<td>' + esc(u.name) + (isMe ? ' <span class="kpi-me-tag">bạn</span>' : '') + '</td>' +
+              '<td>' + esc(u.team) + '</td>' +
+              '<td><strong>' + u.thisWeek + '</strong></td>' +
+              '<td>' + badge + '</td>' +
+              '<td><button class="btn btn--ghost btn--sm" onclick="event.stopPropagation();Dashboard._openKPIUserList(\'' + esc(u.username) + '\',\'' + esc(u.name) + '\')">Xem US</button></td>' +
+            '</tr>';
+          }).join('') +
+          '</tbody></table>';
+      }
+      html += '</div>';
+
+      html += _monthChartHtml;
+      html += '<div class="dash-grid-2">' + _rankingHtml + _streakHtml + '</div>';
+    }
 
     container.innerHTML = html;
 
@@ -1994,6 +2010,12 @@
     _reject:            function (recordId, name) { _openModalReject(recordId, name); },
     // KPI user drill-down
     _openKPIUserList: _openKPIUserList,
+    // KPI view mode toggle (total / week)
+    _kpiSetView: function (mode) {
+      if (mode !== 'total' && mode !== 'week') return;
+      _kpiViewMode = mode;
+      renderKPITab();
+    },
     // KPI week navigation
     _kpiNav: function (dir) {
       var todayKey = _getWeekKey(new Date());

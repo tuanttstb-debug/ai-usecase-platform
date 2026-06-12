@@ -313,9 +313,9 @@ var FIELD_CONFIG = {
   },
   Demo_Link: {
     label: 'Link demo / tài liệu',
-    type: 'url',
-    placeholder: 'https://',
-    helper: 'Link video demo, slide, hoặc bản thử nghiệm',
+    type: 'text',
+    placeholder: 'https://... hoặc http://localhost:...',
+    helper: 'Link video demo, slide, bản thử nghiệm — chấp nhận cả link nội bộ/localhost',
     conditional: { field: 'Demo_Status', notValue: 'Chưa có' },
     group: 'demo'
   },
