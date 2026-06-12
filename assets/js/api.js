@@ -18,8 +18,13 @@
 var Api = {
 
   // ── JSONP core ──────────────────────────────────────────────────
-  _jsonp(url, timeoutMs) {
+  // _retries: số lần retry còn lại khi timeout (mặc định 0 — caller quyết định)
+  // Retry chỉ kích hoạt khi TIMEOUT, KHÔNG kích hoạt khi script.onerror
+  // (onerror nghĩa GAS có thể đã xử lý xong → retry có thể gây duplicate ghi)
+  _jsonp(url, timeoutMs, _retries) {
     timeoutMs = timeoutMs || 20000;
+    _retries  = _retries  !== undefined ? _retries : 0;
+    var self = this;
     return new Promise(function(resolve, reject) {
       var cbName  = '__gasCb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
       var script  = document.createElement('script');
@@ -43,14 +48,22 @@ var Api = {
 
       timer = setTimeout(function() {
         cleanup();
-        reject(new Error(
-          'Timeout kết nối GAS (' + (timeoutMs / 1000) + 's).\n' +
-          'Kiểm tra: GAS URL đúng chưa, deployment còn active không.'
-        ));
+        if (_retries > 0) {
+          // Timeout — thử lại sau 2s (chỉ áp dụng cho read operations)
+          setTimeout(function() {
+            self._jsonp(url, timeoutMs, _retries - 1).then(resolve, reject);
+          }, 2000);
+        } else {
+          reject(new Error(
+            'Timeout kết nối GAS (' + (timeoutMs / 1000) + 's).\n' +
+            'Kiểm tra: GAS URL đúng chưa, deployment còn active không.'
+          ));
+        }
       }, timeoutMs);
 
       script.onerror = function() {
         cleanup();
+        // Không retry khi onerror — GAS có thể đã ghi xong, retry có thể tạo bản ghi trùng
         reject(new Error(
           'GAS script load thất bại.\n' +
           'Kiểm tra: URL deployment và cài đặt "Who has access: Anyone".'
@@ -67,7 +80,12 @@ var Api = {
   // ── Request với optional payload (GET + JSONP cho mọi loại) ─────
   // data sẽ được base64url-encode rồi gắn vào URL param "payload"
   // timeoutMs: override mặc định 20s — dùng 45s cho write operations (create/update)
+  // Retry policy: read ops (data=null) → 2 retries × 2s delay
+  //               write ops (data!=null) → 0 retries (tránh duplicate ghi)
   _request(url, data, timeoutMs) {
+    // Write ops có payload → không retry (GAS có thể đã ghi trước khi timeout)
+    // Read ops không có payload → retry 2 lần sau 2s mỗi lần
+    var retries = (data !== undefined && data !== null) ? 0 : 2;
     if (data) {
       try {
         // Strip lone surrogates trước khi encode:
@@ -109,7 +127,7 @@ var Api = {
         ));
       }
     }
-    return Api._jsonp(url, timeoutMs);
+    return Api._jsonp(url, timeoutMs, retries);
   },
 
   // ── Public API ──────────────────────────────────────────────────

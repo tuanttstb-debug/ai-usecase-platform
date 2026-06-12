@@ -2,6 +2,8 @@
   var currentRecordId  = null;
   // Lưu data edit mode để re-apply sau khi lookup rebuild xong (fix race condition)
   var _pendingEditData = null;
+  // Pre-fetch lúc load để không block submit critical path (phương án 3 — giảm timeout)
+  var _preloadedNextId = null;
 
   /* ── Entry Point ── */
   async function init() {
@@ -68,21 +70,28 @@
     });
   }
 
-  /* ── Load lookup data (không block form render) ── */
+  /* ── Load lookup data + pre-fetch nextId song song (không block form render) ── */
   async function loadLookupData() {
-    try {
-      const lookup = await Api.getLookup();
-      window.__LOOKUP = lookup;
-      // Rebuild các select/checkbox đã render với data thật từ GAS
+    // Fetch lookup và nextId đồng thời — cả 2 là read ops, không phụ thuộc nhau
+    const [lookupResult, idResult] = await Promise.allSettled([
+      Api.getLookup(),
+      Api.getNextId()
+    ]);
+
+    if (lookupResult.status === 'fulfilled') {
+      window.__LOOKUP = lookupResult.value;
       rebuildLookupFields();
-    } catch (err) {
-      // Fallback: dùng default values từ FIELD_CONFIG — form vẫn hoạt động
-      console.warn('Không load được lookup từ GAS, dùng defaults:', err.message);
+    } else {
+      console.warn('Không load được lookup từ GAS, dùng defaults:', lookupResult.reason.message);
       Toast.show(
-        'Không kết nối được server.\nForm dùng dữ liệu mặc định — vẫn có thể điền và gửi.\n(' + err.message + ')',
+        'Không kết nối được server.\nForm dùng dữ liệu mặc định — vẫn có thể điền và gửi.\n(' + lookupResult.reason.message + ')',
         'warning',
         8000
       );
+    }
+
+    if (idResult.status === 'fulfilled' && idResult.value && idResult.value.next_id) {
+      _preloadedNextId = idResult.value.next_id;
     }
   }
 
@@ -175,16 +184,21 @@
         Object.keys(data).forEach(function(k) {
           if (data[k] === '' || data[k] === null || data[k] === undefined) delete data[k];
         });
-        // Fetch một ID fresh ngay trước khi gửi để GAS ưu tiên dùng nó.
-        // Nếu GAS thấy ID đã bị dùng (race), GAS tự sinh ID mới trong lock.
-        // Nếu GAS offline, bỏ qua — GAS vẫn tự sinh được.
-        const badge = document.getElementById('nextIdBadge');
-        if (badge) { badge.textContent = 'Đang cấp mã…'; badge.className = 'nextid-badge loading'; badge.style.display = ''; }
-        try {
-          const idRes = await Api.getNextId();
-          if (idRes && idRes.next_id) { data.UseCase_ID = idRes.next_id; submitHintId = idRes.next_id; }
-        } catch (_) { /* GAS offline — GAS sẽ tự sinh ID */ }
-        if (badge) badge.style.display = 'none';
+        // Dùng ID đã pre-fetch lúc load form — không block submit critical path.
+        // Nếu pre-fetch chưa kịp hoàn tất (GAS chậm lúc load), fallback fetch trực tiếp.
+        if (_preloadedNextId) {
+          data.UseCase_ID = _preloadedNextId;
+          submitHintId    = _preloadedNextId;
+          _preloadedNextId = null; // consume — tránh dùng lại nếu user submit lần 2
+        } else {
+          const badge = document.getElementById('nextIdBadge');
+          if (badge) { badge.textContent = 'Đang cấp mã…'; badge.className = 'nextid-badge loading'; badge.style.display = ''; }
+          try {
+            const idRes = await Api.getNextId();
+            if (idRes && idRes.next_id) { data.UseCase_ID = idRes.next_id; submitHintId = idRes.next_id; }
+          } catch (_) { /* GAS offline — GAS sẽ tự sinh ID */ }
+          if (badge) badge.style.display = 'none';
+        }
         const result = await Api.createUseCase(data);
         Storage.clear();
         showSuccessScreen(result.usecase_id || 'AIUS-????');

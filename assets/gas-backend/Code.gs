@@ -233,6 +233,23 @@ function route_(action, params, body) {
 }
 
 // ─────────────────────────────────────────────────────────────────
+// Keep-warm: chạy mỗi 4 phút qua Apps Script Time-driven trigger
+//
+// Cách setup (làm 1 lần trong GAS console):
+//   1. Mở project GAS → bên trái chọn "Triggers" (⏰)
+//   2. "+ Add Trigger" → Function: keepWarm_
+//   3. Event source: Time-driven → Minutes timer → Every 4 minutes
+//   4. Save
+//
+// Mục đích: Giữ GAS V8 runtime luôn warm → loại bỏ cold start 5-15s
+// khi user submit use case.
+// ─────────────────────────────────────────────────────────────────
+function keepWarm_() {
+  // Lightweight no-op: chỉ log timestamp để trigger runtime khởi động
+  Logger.log('[keep-warm] ' + new Date().toISOString());
+}
+
+// ─────────────────────────────────────────────────────────────────
 // Payload decoder — base64url → UTF-8 JSON string → object
 // ─────────────────────────────────────────────────────────────────
 
