@@ -15,7 +15,7 @@
       // Auto-fill và lock trường người đăng ký từ user đã đăng nhập
       _autoFillOwner();
 
-      // 2. Load lookup data từ GAS (background)
+      // 2. Load lookup data và next ID từ GAS (background, song song)
       loadLookupData(); // async, không block
 
       // 3. Edit mode hay new mode
@@ -36,6 +36,7 @@
       } else {
         const draft = Storage.load();
         if (draft) showDraftBanner(draft);
+        // ID sẽ được fetch và gắn vào payload lúc submit (không hiện sớm để tránh stale)
       }
 
       // 4. Autosave
@@ -157,6 +158,7 @@
       return;
     }
     showLoading(true, 'Đang gửi...');
+    var submitHintId = null; // Lưu hint ID để dùng trong timeout recovery (create mode)
     try {
       if (currentRecordId) {
         data.Record_ID = currentRecordId;
@@ -166,15 +168,87 @@
         Toast.show('Cập nhật thành công!', 'success');
         showSuccessScreen('Đã cập nhật');
       } else {
-        data.Status   = 'Submitted';
-        const result  = await Api.createUseCase(data);
+        data.Status = 'Submitted';
+        // Strip empty fields để giảm kích thước payload GET URL.
+        // Mỗi ký tự tiếng Việt tốn 3 bytes UTF-8 → 4 chars base64url → URL dễ vượt giới hạn GAS (~8KB).
+        // GAS tự khởi tạo tất cả field về '' nên bỏ qua field rỗng ở create mode là an toàn.
+        Object.keys(data).forEach(function(k) {
+          if (data[k] === '' || data[k] === null || data[k] === undefined) delete data[k];
+        });
+        // Fetch một ID fresh ngay trước khi gửi để GAS ưu tiên dùng nó.
+        // Nếu GAS thấy ID đã bị dùng (race), GAS tự sinh ID mới trong lock.
+        // Nếu GAS offline, bỏ qua — GAS vẫn tự sinh được.
+        const badge = document.getElementById('nextIdBadge');
+        if (badge) { badge.textContent = 'Đang cấp mã…'; badge.className = 'nextid-badge loading'; badge.style.display = ''; }
+        try {
+          const idRes = await Api.getNextId();
+          if (idRes && idRes.next_id) { data.UseCase_ID = idRes.next_id; submitHintId = idRes.next_id; }
+        } catch (_) { /* GAS offline — GAS sẽ tự sinh ID */ }
+        if (badge) badge.style.display = 'none';
+        const result = await Api.createUseCase(data);
         Storage.clear();
         showSuccessScreen(result.usecase_id || 'AIUS-????');
       }
     } catch (err) {
-      Toast.show('Lỗi gửi: ' + err.message, 'error');
+      await _handleSubmitError(err, currentRecordId, submitHintId);
     } finally {
       showLoading(false);
+    }
+  }
+
+  /* ── Submit Error Handler ── */
+  // Phân biệt transport error (GAS đã ghi xong nhưng response không về) vs lỗi thật.
+  //
+  // Có 2 loại transport error cho UPDATE:
+  //   1. Timeout (45s) — GAS chậm, response chưa về
+  //   2. script.onerror ("script load thất bại") — GAS chạy xong, ghi data thành công,
+  //      nhưng response chứa full merged object (~7,000+ chars) → redirect URL
+  //      script.googleusercontent.com/macros/echo?user_content_key=<VERY_LONG> quá dài → 400
+  //      → browser nhận HTTP 400 → script.onerror fire
+  //
+  // Cả 2 đều có thể xảy ra SAU KHI data đã được ghi vào DB (với UPDATE).
+  async function _handleSubmitError(err, recordId, hintId) {
+    var isTimeout     = err.message && err.message.indexOf('Timeout') !== -1;
+    var isScriptError = err.message && err.message.indexOf('script load thất bại') !== -1;
+    var isTransportErr = isTimeout || isScriptError;
+
+    if (!isTransportErr) {
+      // Lỗi thật (validation, encode, GAS trả success:false) — hiện bình thường
+      Toast.show('Lỗi gửi: ' + err.message, 'error');
+      return;
+    }
+
+    if (recordId) {
+      // ── UPDATE transport error: auto-verify bằng getUseCase ──────────────
+      // Với UPDATE: GAS luôn ghi TRƯỚC khi gửi response → data rất có thể đã trong DB.
+      // Gọi getUseCase (response nhỏ, không bị 400) để xác nhận.
+      showLoading(true, 'Đang xác nhận kết quả...');
+      try {
+        var verified = await Api.getUseCase(recordId);
+        if (verified && verified.Record_ID) {
+          Storage.clear();
+          Toast.show('Cập nhật thành công!', 'success');
+          showSuccessScreen('Đã cập nhật');
+          return;
+        }
+      } catch (_e) { /* GAS vẫn bận hoặc offline — fall through */ }
+      showLoading(false);
+      Toast.show(
+        'Không xác nhận được kết quả — vui lòng kiểm tra dashboard\n' +
+        'xem use case đã được cập nhật chưa trước khi thử lại.',
+        'warning',
+        10000
+      );
+    } else {
+      // ── CREATE transport error: cảnh báo tránh submit lại ─────────────────
+      // Không thể tự verify vì chưa có Record_ID. Dùng hint ID làm gợi ý.
+      var hintMsg = hintId ? (' (mã dự kiến: ' + hintId + ')') : '';
+      Toast.show(
+        'Lỗi kết nối' + hintMsg + '.\n' +
+        'Dữ liệu CÓ THỂ đã được lưu — kiểm tra dashboard trước khi nộp lại để tránh trùng lặp.',
+        'warning',
+        12000
+      );
     }
   }
 

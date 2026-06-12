@@ -5,17 +5,89 @@
 // ── ID Generation ─────────────────────────────────────────────────
 
 /**
+ * Lấy tất cả UseCase_ID hiện có từ MASTER_DATA.
+ * @returns {string[]} VD: ['AIUS-0001', 'AIUS-0003']
+ */
+function _getAllUseCaseIds_() {
+  var master = getOrCreateSheet_(SHEETS.MASTER);
+  var data   = master.getDataRange().getValues();
+  if (data.length < 2) return [];
+  var headers = data[0].map(String);
+  var idCol   = headers.indexOf('UseCase_ID');
+  if (idCol === -1) return [];
+  var ids = [];
+  for (var i = 1; i < data.length; i++) {
+    var val = String(data[i][idCol]).trim();
+    if (val && val.indexOf(ID_PREFIX) === 0) ids.push(val);
+  }
+  return ids;
+}
+
+/**
+ * Tìm số thứ tự lớn nhất trong các UseCase_ID hiện có ở MASTER_DATA.
+ * @returns {number} Số lớn nhất, 0 nếu chưa có record nào
+ */
+function _getMaxExistingIdNum_() {
+  var ids = _getAllUseCaseIds_();
+  var max = 0;
+  ids.forEach(function(id) {
+    var num = parseInt(id.slice(ID_PREFIX.length), 10);
+    if (!isNaN(num) && num > max) max = num;
+  });
+  return max;
+}
+
+/**
+ * Xem trước UseCase_ID tiếp theo sẽ được cấp (không tiêu thụ counter).
+ * Kết quả là best-guess — có thể thay đổi nếu có request đồng thời.
+ * @returns {{ next_id: string }}
+ */
+function peekNextUseCaseId_() {
+  var sheet          = getOrCreateSheet_(SHEETS.CONFIG);
+  var data           = sheet.getDataRange().getValues();
+  var nextFromConfig = CONFIG_DEFAULTS.NEXT_ID;
+
+  if (data.length >= 2) {
+    var keyCol = data[0].map(String).indexOf('Key');
+    var valCol = data[0].map(String).indexOf('Value');
+    if (keyCol !== -1 && valCol !== -1) {
+      for (var i = 1; i < data.length; i++) {
+        if (String(data[i][keyCol]).trim() === 'NEXT_ID') {
+          nextFromConfig = parseInt(data[i][valCol], 10) || CONFIG_DEFAULTS.NEXT_ID;
+          break;
+        }
+      }
+    }
+  }
+
+  var maxExisting = _getMaxExistingIdNum_();
+  var candidate   = Math.max(nextFromConfig, maxExisting + 1);
+  var existingIds = _getAllUseCaseIds_();
+  var idStr;
+  do {
+    idStr     = ID_PREFIX + ('0000' + candidate).slice(-ID_PADDING);
+    candidate = candidate + 1;
+  } while (existingIds.indexOf(idStr) !== -1);
+
+  return { next_id: idStr };
+}
+
+/**
  * Sinh UseCase_ID dạng AIUS-NNNN với atomic increment.
- * FIX: Acquire lock TRƯỚC khi đọc sheet (tránh race condition).
+ * FIX v2: Đồng bộ với MASTER_DATA trước khi gán → tránh trùng dù counter lệch.
+ * - Lấy max(CONFIG.NEXT_ID, maxExisting + 1) làm điểm bắt đầu
+ * - Loop skip qua bất kỳ ID nào đã tồn tại trong sheet
+ * - Ghi counter = nextCandidate sau khi gán
  * @returns {string} VD: 'AIUS-0001'
  */
 function generateUseCaseId_() {
   var lock = LockService.getScriptLock();
-  lock.waitLock(LOCK_TIMEOUT_MS); // Lock trước — FIX race condition
+  lock.waitLock(LOCK_TIMEOUT_MS);
   try {
-    var sheet  = getOrCreateSheet_(SHEETS.CONFIG);
-    var data   = sheet.getDataRange().getValues();
-    var nextId = CONFIG_DEFAULTS.NEXT_ID;
+    var sheet          = getOrCreateSheet_(SHEETS.CONFIG);
+    var data           = sheet.getDataRange().getValues();
+    var nextFromConfig = CONFIG_DEFAULTS.NEXT_ID;
+    var configRowIndex = -1; // 1-based row index trong sheet
 
     if (data.length >= 2) {
       var keyCol = data[0].map(String).indexOf('Key');
@@ -23,34 +95,94 @@ function generateUseCaseId_() {
       if (keyCol !== -1 && valCol !== -1) {
         for (var i = 1; i < data.length; i++) {
           if (String(data[i][keyCol]).trim() === 'NEXT_ID') {
-            nextId = parseInt(data[i][valCol], 10) || CONFIG_DEFAULTS.NEXT_ID;
+            nextFromConfig = parseInt(data[i][valCol], 10) || CONFIG_DEFAULTS.NEXT_ID;
+            configRowIndex = i + 1; // 0-based array → 1-based sheet row
             break;
           }
         }
       }
     }
 
-    var idStr  = ID_PREFIX + ('0000' + nextId).slice(-ID_PADDING);
-    var newVal = nextId + 1;
+    // Đồng bộ với dữ liệu thực tế: dùng max(CONFIG, maxExisting + 1)
+    var maxExisting = _getMaxExistingIdNum_();
+    var candidate   = Math.max(nextFromConfig, maxExisting + 1);
 
-    // Update counter trong sheet
-    var updated = false;
-    var keyColIdx = data[0] ? data[0].map(String).indexOf('Key') : -1;
-    for (var j = 1; j < data.length; j++) {
-      if (String(data[j][0]).trim() === 'NEXT_ID') {
-        sheet.getRange(j + 1, 2).setValue(newVal);
-        updated = true;
-        break;
-      }
-    }
-    if (!updated) {
-      sheet.appendRow(['NEXT_ID', newVal, 'Auto-increment ID counter']);
+    // Tìm ID chưa tồn tại (xử lý collision hiếm gặp do import/migration)
+    var existingIds = _getAllUseCaseIds_();
+    var idStr;
+    do {
+      idStr     = ID_PREFIX + ('0000' + candidate).slice(-ID_PADDING);
+      candidate = candidate + 1;
+    } while (existingIds.indexOf(idStr) !== -1);
+
+    // Lưu counter tiếp theo vào CONFIG sheet
+    if (configRowIndex > 0) {
+      sheet.getRange(configRowIndex, 2).setValue(candidate);
+    } else {
+      sheet.appendRow(['NEXT_ID', candidate, 'Auto-increment ID counter']);
     }
 
     return idStr;
   } finally {
     lock.releaseLock();
   }
+}
+
+// ── ID Assignment ─────────────────────────────────────────────────
+
+/**
+ * Chọn UseCase_ID cho record mới.
+ * Nếu FE gửi kèm hint (vừa fetch từ peekNextUseCaseId_) và hint còn free
+ * → dùng hint trong scope của lock + cập nhật counter.
+ * Ngược lại → gọi generateUseCaseId_() (cũng có lock bên trong).
+ *
+ * Cơ chế này giảm window race condition xuống gần 0: FE fetch ID ngay trước
+ * khi submit, GAS validate trong lock — nếu 2 request cùng lúc gửi cùng hint,
+ * chỉ 1 cái thắng lock và được dùng hint đó, cái kia fallback generate mới.
+ *
+ * @param {string} hint - UseCase_ID từ FE (vd: 'AIUS-0005'), có thể rỗng/undefined
+ * @returns {string} UseCase_ID được cấp
+ */
+function _assignUseCaseId_(hint) {
+  var hintStr = hint ? String(hint).trim() : '';
+  var idPattern = new RegExp('^' + ID_PREFIX + '\\d{' + ID_PADDING + ',}$');
+  if (hintStr && idPattern.test(hintStr)) {
+    var lock = LockService.getScriptLock();
+    lock.waitLock(LOCK_TIMEOUT_MS);
+    try {
+      if (_getAllUseCaseIds_().indexOf(hintStr) === -1) {
+        _ensureCounterAhead_(hintStr);
+        return hintStr;
+      }
+    } finally {
+      lock.releaseLock();
+    }
+  }
+  return generateUseCaseId_();
+}
+
+/**
+ * Đảm bảo CONFIG.NEXT_ID > số trong useCaseId vừa được cấp.
+ * Phải gọi trong scope lock đang active.
+ * @param {string} useCaseId - VD: 'AIUS-0005'
+ */
+function _ensureCounterAhead_(useCaseId) {
+  var minNext = parseInt(useCaseId.slice(ID_PREFIX.length), 10) + 1;
+  var sheet   = getOrCreateSheet_(SHEETS.CONFIG);
+  var data    = sheet.getDataRange().getValues();
+  if (data.length < 2) { sheet.appendRow(['NEXT_ID', minNext, 'Auto-increment ID counter']); return; }
+  var keyCol  = data[0].map(String).indexOf('Key');
+  var valCol  = data[0].map(String).indexOf('Value');
+  if (keyCol === -1 || valCol === -1) return;
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][keyCol]).trim() === 'NEXT_ID') {
+      if (minNext > (parseInt(data[i][valCol], 10) || 1)) {
+        sheet.getRange(i + 1, valCol + 1).setValue(minNext);
+      }
+      return;
+    }
+  }
+  sheet.appendRow(['NEXT_ID', minNext, 'Auto-increment ID counter']);
 }
 
 // ── Create ────────────────────────────────────────────────────────
@@ -72,7 +204,9 @@ function createUseCase_(data) {
   // ── 2. Sinh IDs ───────────────────────────────────────────────
   var now       = new Date().toISOString();
   var recordId  = Utilities.getUuid();
-  var useCaseId = generateUseCaseId_();
+  // Dùng ID hint từ FE nếu còn free (kiểm tra trong lock), ngược lại generate mới.
+  // Fix: tránh duplicate khi nhiều user submit đồng thời.
+  var useCaseId = _assignUseCaseId_(sanitizeStr_(data.UseCase_ID));
 
   // ── 3. Build record object ─────────────────────────────────────
   var obj = {};
@@ -112,9 +246,12 @@ function createUseCase_(data) {
   }
 
   // ── 6. JSON_Backup (snapshot không bao gồm chính nó) ─────────
+  // Google Sheets giới hạn 50,000 chars/cell. JSON_Backup có thể vượt nếu
+  // nhiều textarea field được fill đầy. Truncate an toàn thay vì để setValues fail.
   var backupData = {};
   HEADERS.forEach(function(h) { if (h !== 'JSON_Backup') backupData[h] = obj[h]; });
-  obj.JSON_Backup = JSON.stringify(backupData);
+  var backupStr = JSON.stringify(backupData);
+  obj.JSON_Backup = backupStr.length <= 45000 ? backupStr : '';
 
   // ── 7. Ghi vào sheet ──────────────────────────────────────────
   appendRowFromObject_(SHEETS.MASTER, obj);
@@ -145,9 +282,13 @@ function updateUseCase_(recordId, data) {
   var errors = validateUpdate_(data); // FIX: thực sự gọi validateUpdate_
   if (errors.length) throw new Error(errors.join(' | '));
 
-  // ── 2. Lấy record hiện tại ────────────────────────────────────
-  var existing = findObjectByField_(SHEETS.MASTER, 'Record_ID', recordId);
-  if (!existing) throw new Error('Không tìm thấy use case với Record_ID: ' + recordId);
+  // ── 2. Lấy record hiện tại (single read — trả về sheet ref để write sau) ─
+  // findRowByField_ đọc MASTER_DATA một lần duy nhất và giữ sheet reference.
+  // Ghi đè sau đó dùng found.sheet + found.rowIndex → không cần đọc lại lần 2.
+  // (So với findObjectByField_ + updateRowByRecordId_ cũ: 2 full reads → 1 read)
+  var found = findRowByField_(SHEETS.MASTER, 'Record_ID', recordId);
+  if (!found) throw new Error('Không tìm thấy use case với Record_ID: ' + recordId);
+  var existing = found.obj;
 
   var now    = new Date().toISOString();
   var merged = {};
@@ -192,21 +333,25 @@ function updateUseCase_(recordId, data) {
   }
 
   // ── 7. Cập nhật JSON_Backup ───────────────────────────────────
+  // Cap tại 45,000 chars để tránh vượt giới hạn 50,000 chars/cell của Google Sheets
   var backupData = {};
   HEADERS.forEach(function(h) { if (h !== 'JSON_Backup') backupData[h] = merged[h]; });
-  merged.JSON_Backup = JSON.stringify(backupData);
+  var backupStr = JSON.stringify(backupData);
+  merged.JSON_Backup = backupStr.length <= 45000 ? backupStr : '';
 
-  // ── 8. Ghi vào sheet ──────────────────────────────────────────
-  updateRowByRecordId_(SHEETS.MASTER, recordId, merged);
+  // ── 8. Ghi vào sheet (dùng cached sheet ref — không đọc lại lần 2) ──────
+  var row = found.headers.map(function(h) {
+    var val = (merged[h] !== undefined && merged[h] !== null) ? merged[h] : '';
+    return toSheetValue_(val);
+  });
+  found.sheet.getRange(found.rowIndex, 1, 1, found.headers.length).setValues([row]);
   logActivity_(merged.UseCase_ID, recordId, 'UPDATED', 'Cập nhật qua API',
                merged.Owner_Email, prevStatus, newStatus);
 
-  // Trả về merged object nhưng không bao gồm JSON_Backup (quá lớn)
-  var returnObj = {};
-  Object.keys(merged).forEach(function(k) {
-    if (k !== 'JSON_Backup') returnObj[k] = merged[k];
-  });
-  return returnObj;
+  // Trả về minimal response — FE không dùng merged object sau update.
+  // Trả full merged (7,000+ chars khi Prompt_Context đầy) làm JSONP body quá lớn →
+  // Google redirect URL vượt giới hạn → HTTP 400 dù data đã ghi thành công trong sheet.
+  return { record_id: recordId, usecase_id: merged.UseCase_ID, updated_at: now };
 }
 
 // ── Read ──────────────────────────────────────────────────────────

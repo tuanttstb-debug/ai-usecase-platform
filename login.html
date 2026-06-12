@@ -82,31 +82,40 @@
 
   <!-- Scripts -->
   <script src="config/env.js"></script>
+  <script src="config/routes.js"></script>
   <script src="assets/js/auth.js"></script>
+  <script src="assets/js/api.js"></script>
   <script>
     (function () {
       'use strict';
+
+      // Accept only *.html filenames (optional simple query string).
+      function safeReturnUrl(raw) {
+        var decoded = raw || 'index.html';
+        return /^[a-zA-Z0-9_-]+\.html(\?[a-zA-Z0-9_.=&%-]*)?$/.test(decoded)
+          ? decoded : 'index.html';
+      }
 
       // If already logged in → go to return URL or portal
       var existingUser = AuthService.getUser();
       if (existingUser) {
         var sp = new URLSearchParams(window.location.search);
-        var ret = sp.get('return') || 'index.html';
-        // Allow only safe relative paths (no protocol, no //, no JS)
-        window.location.replace(/^[a-zA-Z0-9_\-./]+$/.test(ret) ? ret : 'index.html');
+        window.location.replace(safeReturnUrl(sp.get('return')));
         return;
       }
 
-      var emailEl   = document.getElementById('loginEmail');
-      var errorEl   = document.getElementById('loginEmailError');
-      var errorMsg  = document.getElementById('loginEmailErrorMsg');
-      var loginBtn  = document.getElementById('loginBtn');
+      var emailEl  = document.getElementById('loginEmail');
+      var errorEl  = document.getElementById('loginEmailError');
+      var errorMsg = document.getElementById('loginEmailErrorMsg');
+      var loginBtn = document.getElementById('loginBtn');
 
       function showError(msg) {
         errorMsg.textContent = msg;
         errorEl.classList.add('visible');
         emailEl.classList.add('has-error');
         emailEl.setAttribute('aria-invalid', 'true');
+        loginBtn.classList.remove('is-loading');
+        loginBtn.disabled = false;
         emailEl.focus();
       }
 
@@ -121,25 +130,48 @@
         loginBtn.disabled = on;
       }
 
+      function doRedirect() {
+        var sp = new URLSearchParams(window.location.search);
+        window.location.replace(safeReturnUrl(sp.get('return')));
+      }
+
       emailEl.addEventListener('input', clearError);
 
       document.getElementById('loginForm').addEventListener('submit', function (e) {
         e.preventDefault();
         clearError();
 
-        var result = AuthService.login((emailEl.value || '').trim());
-        if (!result.success) {
-          showError(result.error);
-          return;
-        }
+        var uname = (emailEl.value || '').trim();
+        if (!uname) { showError('Vui lòng nhập tên đăng nhập'); return; }
 
         setLoading(true);
-        // Brief delay for UX feedback; swap for real async auth call here
-        setTimeout(function () {
-          var sp  = new URLSearchParams(window.location.search);
-          var ret = sp.get('return') || 'index.html';
-          window.location.replace(/^[a-zA-Z0-9_\-./]+$/.test(ret) ? ret : 'index.html');
-        }, 380);
+
+        // Validate với GAS USERS sheet — lấy role chính xác từ server
+        Api.validateUser(uname)
+          .then(function(data) {
+            // GAS trả về { username, displayName, role, team, email }
+            AuthService.storeUser({
+              email:       data.username,
+              displayName: data.displayName,
+              role:        data.role,
+              team:        data.team || '',
+              loginAt:     new Date().toISOString()
+            });
+            doRedirect();
+          })
+          .catch(function(err) {
+            // GAS không khả dụng hoặc lỗi mạng → fallback về local session
+            var msg = String(err && err.message || '');
+            // Nếu GAS trả lỗi rõ ràng (tài khoản bị khóa) → hiện lỗi
+            if (msg.indexOf('vô hiệu hóa') !== -1 || msg.indexOf('chưa được cấp phép') !== -1) {
+              showError(msg);
+              return;
+            }
+            // Trường hợp còn lại (timeout, mất mạng) → local login
+            var result = AuthService.login(uname);
+            if (!result.success) { showError(result.error); return; }
+            doRedirect();
+          });
       });
     })();
   </script>

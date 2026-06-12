@@ -21,7 +21,11 @@ var FormMapper = {
           data[el.name].push(el.value);
         }
       } else {
-        data[el.name] = el.value;
+        // Normalize CRLF → LF for textarea (Windows clipboard pastes \r\n)
+        var raw = el.value;
+        data[el.name] = el.tagName === 'TEXTAREA'
+          ? raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+          : raw;
       }
     });
 

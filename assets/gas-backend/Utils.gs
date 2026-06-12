@@ -93,6 +93,10 @@ function getOrCreateSheet_(sheetName) {
       sheet.appendRow(['NEXT_ID', String(CONFIG_DEFAULTS.NEXT_ID), 'Auto-increment ID counter']);
       formatHeaderRow_(sheet);
       break;
+    case SHEETS.USERS:
+      sheet.appendRow(USERS_HEADERS);
+      formatHeaderRow_(sheet);
+      break;
   }
 
   return sheet;
@@ -151,7 +155,9 @@ function appendRowFromObject_(sheetName, obj) {
 
   var headers = data[0].map(String);
   var row = headers.map(function(h) {
-    return obj[h] !== undefined && obj[h] !== null ? obj[h] : '';
+    var val = (obj[h] !== undefined && obj[h] !== null) ? obj[h] : '';
+    // toSheetValue_: prefix formula-starting strings với ' để tránh Sheets interpret làm formula
+    return toSheetValue_(val);
   });
   sheet.appendRow(row);
 }
@@ -172,7 +178,9 @@ function updateRowByRecordId_(sheetName, recordId, obj) {
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][recordCol]) === String(recordId)) {
       var row = headers.map(function(h, j) {
-        return (obj[h] !== undefined && obj[h] !== null) ? obj[h] : data[i][j];
+        var val = (obj[h] !== undefined && obj[h] !== null) ? obj[h] : data[i][j];
+        // toSheetValue_: prefix formula-starting strings với ' để tránh Sheets interpret làm formula
+        return toSheetValue_(val);
       });
       sheet.getRange(i + 1, 1, 1, headers.length).setValues([row]);
       return true;
@@ -189,6 +197,37 @@ function findObjectByField_(sheetName, field, value) {
   var objects = readSheetAsObjects_(sheetName);
   for (var i = 0; i < objects.length; i++) {
     if (String(objects[i][field]) === String(value)) return objects[i];
+  }
+  return null;
+}
+
+/**
+ * Tìm hàng trong sheet theo field = value — single sheet read.
+ * Trả về đủ thông tin để write sau đó mà KHÔNG cần đọc lại sheet.
+ *
+ * Dùng thay cho findObjectByField_ + updateRowByRecordId_ khi cần read+write
+ * trong một operation (tránh double read → giảm ~30-50% execution time).
+ *
+ * @param {string} sheetName
+ * @param {string} field  - Tên cột để tìm (vd: 'Record_ID')
+ * @param {string} value  - Giá trị cần khớp
+ * @returns {{ obj: Object, rowIndex: number, headers: string[], sheet: Sheet } | null}
+ */
+function findRowByField_(sheetName, field, value) {
+  var sheet   = getOrCreateSheet_(sheetName);
+  var data    = sheet.getDataRange().getValues();
+  if (data.length < 2) return null;
+  var headers  = data[0].map(String);
+  var fieldCol = headers.indexOf(field);
+  if (fieldCol === -1) return null;
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][fieldCol]) === String(value)) {
+      var obj = {};
+      headers.forEach(function(h, j) {
+        obj[h] = (data[i][j] !== undefined && data[i][j] !== null) ? data[i][j] : '';
+      });
+      return { obj: obj, rowIndex: i + 1, headers: headers, sheet: sheet };
+    }
   }
   return null;
 }
@@ -281,13 +320,42 @@ function computeHoursSavedMonth_(beforeMin, afterMin) {
 }
 
 /**
- * Sanitize string đầu vào: trim, giới hạn độ dài.
+ * Sanitize string đầu vào: trim, giới hạn độ dài, strip ký tự không an toàn.
+ * - Strip null bytes (\0): Google Sheets setValues() có thể fail nếu có \0
+ * - Strip lone surrogates: chuỗi UTF-16 không hợp lệ có thể gây lỗi JSON
+ * - Strip \r: normalize về \n để tránh hiển thị không nhất quán trong Sheets
  */
 function sanitizeStr_(val, maxLen) {
   if (val === null || val === undefined) return '';
   var s = String(val).trim();
+  // Strip null bytes (Google Sheets không chấp nhận \0 trong cell values)
+  s = s.replace(/\0/g, '');
+  // Strip lone surrogates (UTF-16 không hợp lệ, gây lỗi JSON.stringify/parse).
+  // Regex giữ surrogate pair hợp lệ (emoji, ký tự BMP mở rộng), chỉ strip lone surrogate.
+  s = s.replace(/([\uD800-\uDBFF][\uDC00-\uDFFF])|[\uD800-\uDFFF]/g, function(m, pair) {
+    return pair || '';
+  });
+  // Normalize \r\n và lone \r → \n (Windows CRLF → Unix LF)
+  s = s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   if (maxLen && s.length > maxLen) s = s.substring(0, maxLen);
   return s;
+}
+
+/**
+ * Escape giá trị trước khi ghi vào Google Sheets cell để tránh formula injection.
+ * GAS appendRow()/setValues() interpret strings bắt đầu bằng =, +, -, @ như formulas.
+ * Google Sheets hiểu prefix ' là "force text mode" — khi đọc lại getValue() không có '.
+ *
+ * Chỉ dùng hàm này khi BUILD ROW ARRAY để ghi sheet, KHÔNG dùng trong JSON_Backup
+ * (vì JSON_Backup cần lưu giá trị gốc, không phải giá trị với prefix ').
+ *
+ * @param {*} val - Giá trị cell
+ * @returns {*} Giá trị an toàn để ghi vào Sheets
+ */
+function toSheetValue_(val) {
+  if (typeof val !== 'string') return val;
+  if (/^[=+\-@|]/.test(val)) return "'" + val;
+  return val;
 }
 
 /**

@@ -236,3 +236,890 @@
 - **[BUG-GAS-01] GAS data loading lỗi** — `?action=health` OK nhưng `?action=lookup` / `?action=list` không load được. Root cause chưa xác định. Cần: paste exact error message từ toast hoặc GAS Executions log
 - **[BUG-FE-01] auth.js chưa push GitHub** — fix URL duplicate đã đúng trong local nhưng GitHub Pages vẫn phục vụ code cũ
 - **Utils.gs** fix addHeader cần deploy lên GAS
+
+---
+
+## Session: 2026-06-02
+**Scope:** Full UC detail view before approval + GAS permission fix + full flow test
+**Commits:** `afd1933` (feat), `0b8c7a0` (fix) — merged vào `main`
+
+### Đã hoàn thành
+
+- **[BUG-FE-01] Verified closed** — auth.js URL fix đã có trên GitHub từ trước, handover cũ ghi sai trạng thái
+- **Full flow test (Playwright)** — 17/18 pass; 1 false positive (test dùng `tuantt4` là admin nhưng assume là user thường); UI role-based hoạt động đúng
+- **FEAT: Xem chi tiết UC trước khi duyệt** — rebuild modal thành 4 section theo wizard steps; progressive fetch: mở ngay với list data → background fetch `getUseCase` → re-render full data khi GAS trả về
+- **FIX: GAS `ADMIN_EMAILS` mismatch** — `Config.gs` cũ dùng email (`admin@sptd.vn`); auth đã chuyển sang username → fix thành `['admin', 'tuantt4', 'manager']`
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/js/dashboard.js` | +180 lines: `openDetail` gọi `_fetchFullDetail`; thêm `_fetchFullDetail`, `_normalizeFullData`; rewrite `_renderDetailBody` (4 sections); helpers `_dsection`, `_dsubsec`, `_dgrid`, `_dfield` |
+| `assets/css/dashboard.css` | +96 lines: detail section styles — step badges, 2-col grid, pre-wrap values, subsection, wide-modal padding reset |
+| `assets/gas-backend/Config.gs` | Line 111: `ADMIN_EMAILS = ['admin', 'tuantt4', 'manager']` (usernames, không phải emails) |
+
+### Decisions chốt
+1. **Modal progressive load** — hiện ngay với list data (12 fields), fetch full data từ GAS ngầm. Nếu GAS lỗi, partial view vẫn hữu ích; không show error toast để tránh nhiễu
+2. **Sections tự ẩn nếu empty** — Sections 2/3/4 không render khi không có data → clean với data cũ hoặc khi GAS chưa deploy
+3. **`_normalizeFullData`** — normalize PascalCase từ `getUseCase` response về snake_case dùng chung
+4. **ADMIN_EMAILS dùng username** — nhất quán với auth system, không dùng email format
+
+### Blockers hiện tại
+- **[BUG-GAS-02] NEW — GAS new deployment chưa authorize**: Khi deploy GAS Web App mới, cần chạy thủ công 1 hàm trong GAS Editor để grant OAuth → Sheets access. Chưa làm → create/submit bị "không có quyền"
+- **[BUG-GAS-03] NEW — CONFIG sheet override `Config.gs`**: `getAdminEmails_()` đọc CONFIG sheet row `ADMIN_EMAILS` trước khi fallback về `Config.gs`. Nếu sheet còn giá trị `admin@sptd.vn,manager@sptd.vn` thì fix `Config.gs` bị vô hiệu → phải update cell trong sheet thành `admin,tuantt4,manager`
+- **[BUG-GAS-01] vẫn open** — root cause lookup/list loading chưa xác định
+
+### Regression risks
+- `_renderDetailBody` rewrite hoàn toàn — field keys từ `listUseCases` (`uc.pain_point`, `uc.team`...) phải khớp với `_dgrid`/`_dfield` calls. Verify với GAS data thật sau khi authorize
+- `openDetail` gọi `Api.getUseCase(record_id)` mỗi lần mở modal — 1 JSONP request thêm/lần; acceptable nhưng cần monitor nếu GAS có rate limit
+
+---
+
+## Session: 2026-06-02 (Part 2)
+**Scope:** Root cause diagnosis — data loading failure + URL fix
+**Commits:** `b265ebe` (fix URL + resolve merge conflict)
+
+### Đã hoàn thành
+
+- **[BUG-GAS-01] ROOT CAUSE XÁC ĐỊNH + CLOSED** — Phân tích toàn bộ git history `config/env.js` (7 URL khác nhau trong 35 phút). Root cause: commit `a76bd9f` nhập URL không tồn tại (`AKfycbx8b7h...`) khi cố revert — không khớp với bất kỳ deployment nào trong GAS.
+- **[BUG-GAS-02] CLOSED** — User đã authorize OAuth cho deployment hiện tại. Link đang hoạt động.
+- **`env.js` cố định tại URL working**: `AKfycbyaM1dQcCZYHNam3zb6UrwP5Qf8BnsJr1XzjPUuGqla-k2WCAI5llLllIhadU7mfBfP`
+- **Quy trình deploy chuẩn documented** trong `TODO_NEXT.md` — ngăn tái phát
+
+### Timeline sự cố hôm nay (để tham khảo)
+
+| Thời gian | Hành động | Kết quả |
+|---|---|---|
+| Trước 15:00 | URL gốc `AKfycbwe0eo3X3KW...` | ✅ Hoạt động |
+| 15:00 | Deploy mới → URL `AKfycbzaMcZAEPa...` | ❌ Chưa auth OAuth |
+| 15:13 | Deploy mới → URL `AKfycbz4TmB4Ds...` | ❌ Chưa auth OAuth |
+| 15:15 | "Revert" → URL `AKfycbx8b7hdBNc...` | ❌ URL không tồn tại |
+| 15:3x | Deploy mới → URL `AKfycbwVGwFLjq...` | ❌ Chưa auth OAuth |
+| 15:35 | Deploy mới → URL `AKfycbyaM1dQcC...` → **authorize** | ✅ **Hoạt động** |
+
+### Root cause pattern
+Khi tạo "New Deployment" trong GAS: URL thay đổi + cần authorize OAuth lại. Giải pháp lâu dài: luôn dùng "Edit deployment → New version" thay vì "New Deployment" để giữ URL cố định.
+
+### Blockers còn lại
+- **[BUG-GAS-03]** CONFIG sheet `ADMIN_EMAILS` cần update → ảnh hưởng approve/reject
+- **P0** GAS code sync: `Config.gs`, `Utils.gs`, `LookupService.gs` local fixes chưa vào GAS Editor
+
+---
+
+## Session: 2026-06-02 (Part 3)
+**Scope:** Bug fixes (URL, CSS modal) + 3 new features (auto-load, explore tab, copy prompt)
+**Commits:** `93a2e58` (CSS fix), `b265ebe` (URL fix), `f1530ec` (features)
+**Version:** 3.3.0
+
+### Đã hoàn thành
+
+- **[BUG-GAS-01] CLOSED** — Root cause xác định: `env.js` trỏ URL không tồn tại (`AKfycbx8b7h...`). Đã restore URL working `AKfycbwe0eo3X3KW...`.
+- **[BUG-GAS-02] CLOSED** — OAuth đã authorize cho active deployment.
+- **Approve/Reject confirmed working** — User xác nhận "từ chối, duyệt thành công".
+- **[BUG-CSS-01] FIXED** — Modal footer bị đẩy xuống dưới viewport khi nội dung 4-section dài. Fix: `overflow:hidden` + `min-height:0` trên `.modal-card--wide`. File: `assets/css/components.css`.
+- **FEAT: Auto-load on startup** — Thay `_loadTabData(initTab)` bằng `_loadStartupData()`. Single `Promise.all([listUseCases, getDashboard])` populate tất cả tabs ngay khi `DOMContentLoaded`. Non-admin: 1 request; Admin: 2 requests.
+- **FEAT: Tab "Khám phá"** — Tab mới visible tất cả users. Hiển thị use cases có status=Approved từ toàn org. Searchable theo tên/team/lĩnh vực/người đăng ký.
+- **FEAT: Copy Prompt** — Nút `📋 Copy Prompt` trong footer detail modal. Hiện khi UC có data prompt (sau `_fetchFullDetail`). Ghép 8 trường thành text có `# heading`. `navigator.clipboard` với `execCommand` fallback.
+
+### Files changed
+
+| File | Delta |
+|---|---|
+| `assets/css/components.css` | +2 lines: `overflow:hidden` + `min-height:0` trên `.modal-card--wide` |
+| `assets/js/dashboard.js` | +152 lines: `_loadStartupData`, `renderExploreTable`, `_bindExploreSearch`, `_hasPromptData`, `_copyPrompt`, `_fallbackCopy`; update `_bindRefresh`, `_confirmDetailAction`, `openDetail`, `_fetchFullDetail`, `_bindDetailModal` |
+| `dashboard.html` | +20 lines: explore tab button + panel + copy prompt button |
+| `config/env.js` | URL restored (multiple commits) |
+| `ai_context/*.md` | Session docs updated |
+
+### Decisions chốt
+
+1. **`_loadStartupData` = single source of truth** — Cả refresh button và post-approve/reject đều gọi `_loadStartupData()`. `_pendingList` derive client-side từ `_allList` (filter Submitted/Under Review).
+2. **Explore chỉ show Approved** — Regular user chỉ thấy UC đã được duyệt → cleaner UX, tránh noise từ draft/pending của người khác.
+3. **Copy prompt = full text** — Ghép 8 trường với `# header` Markdown-style → paste được trực tiếp vào Claude/ChatGPT.
+4. **GAS URL mystery** — URL `AKfycbwe0eo3X3KW...` hoạt động nhưng không tìm thấy trong GAS deployment history của user → có thể thuộc GAS project khác. Cần identify project để quản lý.
+
+### Blockers còn lại
+
+- **[GAS-MYSTERY-01]** GAS URL active không tìm thấy trong deployment history → không quản lý được, không thể update code GAS
+- **[BUG-GAS-03]** STATUS UNCLEAR — approve/reject đang hoạt động nên CONFIG sheet của GAS project active có thể đã đúng. Cần verify bằng cách mở đúng GAS project và check CONFIG sheet
+- **GAS code sync** — Local fixes (`Config.gs`, `Utils.gs`, `LookupService.gs`) chưa vào GAS Editor vì chưa tìm được đúng project
+
+### Regression risks
+
+- **`_pendingList` derive client-side**: trước đây GAS filter `filter:'pending'` — giờ filter JS từ `_allList` limit 200. Nếu >200 records total, một số pending records ở cuối list có thể không hiển thị trong tab "Chờ duyệt".
+- **`_loadTabData('my')` gọi `_loadMyUseCases()`** — vẫn fetch API riêng khi user click tab My sau startup → double fetch. Harmless nhưng lãng phí 1 request.
+- **Explore tab empty nếu không có Approved UC** — Khi dùng lần đầu, nếu chưa có UC nào được duyệt, tab Khám phá sẽ trống. Đây là expected behavior nhưng có thể confuse user mới.
+
+---
+
+## Session: 2026-06-02 (Part 4)
+**Scope:** Tự động sinh UseCase_ID chống trùng + hiển thị mã dự kiến trên form
+**Version:** 3.4.0
+
+### Vấn đề gốc (root cause)
+`generateUseCaseId_()` cũ chỉ dùng counter từ CONFIG sheet, không cross-check với MASTER_DATA. Nếu:
+- Sheet có ID cao hơn counter (import thủ công, rollback, migration)
+- Counter bị reset
+→ Có thể sinh ra ID đã tồn tại.
+
+Ngoài ra, có 1 bug tinh tế: code cũ dùng `data[j][0]` hardcoded thay vì `keyCol` index để tìm row NEXT_ID trong CONFIG sheet — hoạt động đúng trong thực tế vì cột 0 luôn là `Key`, nhưng không robust.
+
+### Đã hoàn thành
+
+- **[GAS] `_getAllUseCaseIds_()`** — NEW helper: đọc tất cả UseCase_ID từ MASTER_DATA
+- **[GAS] `_getMaxExistingIdNum_()`** — NEW helper: tìm số thứ tự cao nhất hiện có
+- **[GAS] `generateUseCaseId_()` rewrite v2** — sync `max(CONFIG.NEXT_ID, maxExisting + 1)` + collision loop + fix `configRowIndex` tracking (không còn dùng `data[j][0]` hardcoded)
+- **[GAS] `peekNextUseCaseId_()`** — NEW: xem trước ID tiếp theo, read-only, không tiêu thụ counter
+- **[GAS] `Code.gs`** — thêm endpoint `?action=next-id`
+- **[FE] `routes.js`** — thêm `API.nextId()`
+- **[FE] `api.js`** — thêm `Api.getNextId()`
+- **[FE] `register.html`** — thêm `#nextIdBadge` trong wizard-meta
+- **[FE] `app.js`** — `loadNextIdPreview()`: load + hiển thị badge "Mã dự kiến: AIUS-XXXX" ở new mode; ẩn ở edit mode
+- **[FE] `wizard.css`** — `.nextid-badge` styles (purple, subtle border)
+- **[TEST] `assets/tests/test-id-generation.js`** — 14 unit tests, 14/14 pass
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/gas-backend/UseCaseService.gs` | +72 lines: 3 new functions + rewrite `generateUseCaseId_()` |
+| `assets/gas-backend/Code.gs` | +4 lines: route `?action=next-id` |
+| `config/routes.js` | +1 line: `API.nextId()` |
+| `assets/js/api.js` | +1 line: `Api.getNextId()` |
+| `assets/js/app.js` | +22 lines: `loadNextIdPreview()` + call in new mode |
+| `register.html` | +1 line: `#nextIdBadge` span |
+| `assets/css/wizard.css` | +14 lines: `.nextid-badge` styles |
+| `assets/tests/test-id-generation.js` | NEW: 14 unit tests |
+
+### Decisions chốt
+1. **Sync strategy = max(CONFIG, maxExisting + 1)**: luôn dùng giá trị lớn hơn → không bao giờ tạo ID < maxExisting
+2. **Collision loop**: sau khi chọn candidate từ max(), loop skip qua bất kỳ ID nào đã tồn tại → handles edge cases như manually-inserted IDs ở giữa range
+3. **Peek = no lock, no write**: `peekNextUseCaseId_()` không dùng LockService → nhanh, không block concurrent creates; trade-off: preview có thể lệch nếu có create đồng thời (acceptable cho preview UX)
+4. **Badge ẩn ở edit mode**: ID đã được cấp và hiển thị trong `editModeBanner` → không cần preview
+5. **Badge ẩn khi GAS lỗi**: `loadNextIdPreview()` catch lỗi silently → không làm phiền user khi GAS offline
+
+### GAS deployment note
+Sau khi tìm được đúng GAS project (P0 blocker), paste `UseCaseService.gs` và `Code.gs` mới vào GAS Editor → "Edit deployment → New version → Deploy".
+
+---
+
+## Session: 2026-06-03
+**Scope:** Drill-down list popup + đồng bộ nút Chi tiết tại "Nộp gần đây"
+**Commit:** `7dde9d2`
+**Version:** 3.5.0
+
+### Đã hoàn thành
+
+- **FEAT: List popup modal** — Click vào các vùng tương tác trên dashboard mở popup bảng danh sách use case lọc theo ngữ cảnh
+  - KPI card "Tổng use case" → all list
+  - KPI card "Đã duyệt" → filter Approved
+  - KPI card "Chờ duyệt" → filter Submitted + Under Review
+  - KPI card "Giờ tiết kiệm" → filter Approved
+  - Chart.js doughnut segment (status) → filter by status
+  - Chart.js horizontal bar (team) → filter by team
+  - Chart.js horizontal bar (category) → filter by category
+  - CSS fallback charts → clickable qua `Dashboard._openListByStatus/Team/Category`
+- **FEAT: Chi tiết trong list popup** — Mỗi row có nút "Chi tiết" → mở `openDetail()` chồng lên list modal. Escape đóng detail trước, list modal vẫn còn. Escape lần 2 đóng list modal.
+- **FIX: recentTable đồng bộ** — Tab "Tổng quan" → "Nộp gần đây" thêm cột nút "Chi tiết" (colspan 4→5), dùng cùng `openDetail()` như các bảng khác.
+
+### Files changed
+| File | Delta |
+|---|---|
+| `dashboard.html` | +16 lines: `#listModal` HTML; `#recentTable` header thêm `<th></th>` |
+| `assets/js/dashboard.js` | +163 lines: `openListModal`, `_closeListModal`, `_bindListModal`, `_bindKPIClicks`; update `renderStatusChart`/`renderBreakdownChart` onClick+onHover; update `_chartRow` thêm onclickStr; update `_renderStatusChartCSS`, `_renderBreakdownChartCSS`; update `renderRecentTable`; update `window.Dashboard` public API |
+| `assets/css/dashboard.css` | +30 lines: `.modal-card--list`, `.kpi-card--clickable` |
+
+### Decisions chốt
+1. **List modal chồng lên detail modal** — z-index tự nhiên từ DOM order (`listModal` trước `usDetailModal`). Không cần thêm z-index.
+2. **Escape priority** — `_bindListModal` handler check nếu detail modal đang mở thì bỏ qua → Escape đóng detail trước, lần 2 đóng list.
+3. **KPI click = admin only** — `_bindKPIClicks()` guard `if (!_isAdmin) return` → regular user không thấy click cursor trên KPI.
+4. **CSS fallback charts** — `_chartRow` nhận thêm tham số `onclickStr`; CSS fallback truyền `Dashboard._openListByStatus/Team/Category(label)` inline.
+5. **`capturedLabels/capturedFieldKey`** — Closure capture trong Chart.js `onClick` để tránh stale reference khi chart bị destroy/recreate.
+
+### Open issues (không blocking)
+- GAS-MYSTERY-01, GAS code sync — vẫn còn từ session trước
+
+---
+
+## Session: 2026-06-03 (Part 2)
+**Scope:** Fix đồng bộ xem chi tiết recentTable với các màn khác
+**Commit:** `7715389`
+
+### Root cause đã xác định
+
+`DashboardService.gs` — `computeDashboardSummary_()` chỉ push 4 trường vào `recent_submissions`:
+```
+{ usecase_id, name, team, submitted_at }
+```
+Thiếu `record_id` và `status` → `openDetail()` không gọi `_fetchFullDetail()` → modal chỉ thấy dữ liệu tối thiểu, không có approve/reject buttons, không load chi tiết đầy đủ.
+
+Các bảng khác (allTable, myTable, pendingList, exploreTable, exploreTable) dùng data từ `_allList` (endpoint `listUseCases`) đã có đủ trường → hoạt động đúng.
+
+### Đã hoàn thành
+
+**FE — `assets/js/dashboard.js`:**
+- `renderRecentTable()`: enrich từng item từ `_allList` theo `usecase_id` trước khi cache. Nếu tìm thấy → dùng object đầy đủ (có `record_id`, `status`, tất cả fields). Preserve `submitted_at` date gốc.
+- `openDetail()`: thêm safety net — nếu UC thiếu `record_id`, tìm bản đầy đủ trong `_allList` trước khi render. Áp dụng cho mọi nguồn, không chỉ recentTable.
+- Date field: dùng `submitted_at || submit_date` (hai nguồn data dùng key khác nhau)
+
+**GAS — `assets/gas-backend/DashboardService.gs`:**
+- `computeDashboardSummary_()`: push thêm `record_id`, `status`, `owner_name` vào mỗi item `recentList` — fix tại nguồn sau khi deploy GAS
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/js/dashboard.js` | +24 lines: enrichment logic trong `renderRecentTable` + safety net trong `openDetail` |
+| `assets/gas-backend/DashboardService.gs` | +3 fields: `record_id`, `status`, `owner_name` trong `recent_submissions` |
+
+### Decisions chốt
+1. **FE enrich = primary fix** — Hoạt động ngay với GAS hiện tại (không cần deploy GAS mới). `_allList` luôn load trước khi user có thể click recentTable (cùng `Promise.all` trong `_loadStartupData`).
+2. **`openDetail` safety net = defensive fix** — Bảo vệ mọi trường hợp UC thiếu `record_id` từ bất kỳ nguồn nào, không chỉ recentTable.
+3. **GAS fix = fix tại nguồn** — Sau khi deploy GAS mới, `recent_submissions` sẽ có đủ trường ngay, không cần enrich từ `_allList`.
+4. **Không thay đổi filter** — `recent_submissions` vẫn chỉ lọc `Status === SUBMITTED` (không mở rộng sang `Under Review`) vì chưa có PO confirmation.
+
+### Test checklist
+- [ ] Login admin → tab Tổng quan → bảng "Nộp gần đây" → click nút "Chi tiết" → modal mở đúng 4 section
+- [ ] Modal header hiện đúng status badge (Submitted/màu purple)
+- [ ] Approve/Reject buttons hiện (vì status = Submitted)
+- [ ] Section 2 (Luồng AI & Prompt) / Section 3 / Section 4 load sau khi GAS fetch xong
+- [ ] Copy Prompt button hiện sau khi full data load
+- [ ] Click "Chi tiết" trong list popup (từ KPI click) → detail modal hoạt động như nhau
+
+---
+
+## Session: 2026-06-03 (Part 3)
+**Scope:** Filter tab Tất cả + Box Từ chối
+**Commit:** `2eda85a`
+**Version:** 3.6.0
+
+### Đã hoàn thành
+
+**Feature 1 — Filter tab "Tất cả use case":**
+- Multi-select status pills: click toggle từng trạng thái, "Tất cả" reset về all
+- Team dropdown: danh sách build động từ `_allList` sau khi data load
+- Search kết hợp với filter (không thay thế)
+- Count badge "X / Tổng" cập nhật real-time theo filter hiện tại
+- Filter state `_filterAll` giữ nguyên khi data refresh
+
+**Feature 2 — Box "Từ chối" trong tab Tổng quan:**
+- `dash-card--rejected`: viền đỏ trái, ẩn khi không có rejected UC
+- Preview tối đa 5 UC, nút "Xem tất cả" mở list popup khi > 5
+- Mỗi row có nút "Chi tiết" → `openDetail()` đầy đủ 4 section (đồng bộ với các màn khác)
+- Tự ẩn khi không có UC nào bị từ chối (clean UX)
+
+### Files changed
+| File | Delta |
+|---|---|
+| `dashboard.html` | +30 lines: filter bar trong tab Tất cả; rejected card trong tab Tổng quan |
+| `assets/js/dashboard.js` | +143 lines: `_filterAll`/`_rejectedList` state; `_initAllFilters`, `_populateTeamFilter`, `_applyAllTableFilters`, `renderRejectedCard`; update `_loadStartupData`/`_loadAllUseCases`/`_bindSearch` |
+| `assets/css/dashboard.css` | +87 lines: `.filter-bar`, `.filter-pill`, `.filter-select`, `.all-count-badge`, `.dash-card--rejected`, `.tab-badge--danger` |
+
+### Decisions chốt
+1. **Multi-select status via pill toggle** — mỗi pill là toggle độc lập; "Tất cả" pill reset tất cả; "Tất cả" tự active khi không chọn gì
+2. **Team dropdown = dynamic** — `_populateTeamFilter()` gọi sau `_allList` load; preserve selection khi re-render
+3. **`_applyAllTableFilters()` = single source of truth** — search, status filter, team filter đều qua hàm này; `_bindSearch` đơn giản hóa thành `debounce(_applyAllTableFilters, 300)`
+4. **Rejected card ẩn khi không có data** — `card.style.display = items.length ? '' : 'none'` → không show empty box khi chưa có UC bị từ chối
+5. **REJECTED_PREVIEW = 5** — giống pattern của recentTable; "Xem tất cả" dùng lại `openListModal` hiện có
+
+### Test checklist
+- [ ] Login admin → tab Tất cả → click pill "Đã duyệt" → chỉ hiện Approved UCs
+- [ ] Click thêm pill "Từ chối" → hiện cả Approved + Rejected (multi-select)
+- [ ] Click "Tất cả" pill → reset về all
+- [ ] Chọn team trong dropdown → filter theo team
+- [ ] Search + filter kết hợp hoạt động
+- [ ] Count badge "X / Tổng" cập nhật đúng
+- [ ] Tab Tổng quan → box "Từ chối" hiện khi có rejected UC
+- [ ] Click "Chi tiết" trong rejected card → detail modal đầy đủ
+- [ ] Nút "Xem tất cả" → list popup "Đã từ chối" với toàn bộ danh sách
+
+### Regression risks (v3.6)
+- **`_applyAllTableFilters` thay thế `renderAllTable(_allList)` trực tiếp** — nếu `_allList` chưa load khi filter được gọi → render empty. Cần verify `_initAllFilters()` không trigger filter trước khi data load (hiện tại OK vì pills chỉ bắt sự kiện click, không tự gọi).
+- **`_populateTeamFilter()` preserve selection** — khi data reload (refresh button), giá trị `_filterAll.team` được đọc lại để re-select. Nếu team không còn trong list mới → dropdown về "Tất cả" nhưng `_filterAll.team` vẫn giữ giá trị cũ → filter lạ. Cần reset: `_filterAll.team = teamSel.value` trong `_populateTeamFilter` sau khi render.
+- **`rejectedCard` ẩn khi không có data** — nếu admin có Rejected UCs nhưng `_allList` limit 200 không bao gồm hết → card thiếu data. Acceptable hiện tại nhưng cần pagination dài hạn.
+
+---
+
+---
+
+## Session: 2026-06-03 (Part 4)
+**Scope:** Fix URL duplicate "ai-usecase-platform" sau khi đăng nhập
+**Commit:** `2a5a2af`
+**Version:** 3.6.1
+
+### Root cause
+Khi user mở app qua trailing-slash URL (e.g. `https://…/ai-usecase-platform/`):
+- `window.location.pathname.split('/').filter(Boolean).pop()` → trả về `'ai-usecase-platform'` thay vì `'index.html'`
+- Chuỗi này được encode vào `?return=ai-usecase-platform`
+- Sau khi login: `window.location.replace('ai-usecase-platform')` chạy từ `login.html` tại `/ai-usecase-platform/login.html`
+- Browser resolve thành `…/ai-usecase-platform/ai-usecase-platform` → 404 / loop
+
+### Đã hoàn thành
+
+**Fix lớp 1 — `assets/js/auth.js` `requireAuth()`:**
+- Validate segment bằng regex `/\.html?$/i` trước khi dùng làm return URL
+- Nếu không có đuôi `.html` → fallback về `'index.html'`
+
+**Fix lớp 2 — `login.html` `safeReturnUrl()`:**
+- Tạo helper function dùng chung cho cả 2 chỗ redirect (already-logged-in check + form submit)
+- Regex mới `/^[a-zA-Z0-9_-]+\.html(\?[a-zA-Z0-9_.=&%-]*)?$/` — chỉ chấp nhận `*.html`, từ chối directory name
+- Xoá regex cũ `^[a-zA-Z0-9_\-./]+$` (quá rộng, không kiểm tra extension)
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/js/auth.js` | `requireAuth()`: thêm `.html` extension check, +2 lines comment |
+| `login.html` | `safeReturnUrl()` helper mới; 2 redirect dùng chung; -2 lines duplicate |
+
+### Test cases coverage
+| Scenario | Trước fix | Sau fix |
+|---|---|---|
+| Mở `…/ai-usecase-platform/` (trailing slash) | ❌ redirect → `…/ai-usecase-platform/ai-usecase-platform` | ✅ redirect → `…/ai-usecase-platform/index.html` |
+| Mở `…/ai-usecase-platform` (no slash) | ❌ redirect → `…/ai-usecase-platform/ai-usecase-platform` | ✅ redirect → `…/ai-usecase-platform/index.html` |
+| Mở `…/ai-usecase-platform/dashboard.html` | ✅ redirect → `…/ai-usecase-platform/login.html?return=dashboard.html` | ✅ không đổi |
+| `?return=` chứa directory name | ❌ dùng được vì regex cũ pass | ✅ reject → fallback `index.html` |
+| `?return=dashboard.html` | ✅ | ✅ không đổi |
+
+---
+
+---
+
+## Session: 2026-06-03 (Part 5)
+**Scope:** Fix confirm button bị frozen sau approve/reject đầu tiên
+**Commit:** `4bc33bc`
+**Version:** 3.6.2
+
+### Root cause
+`_confirmDetailAction()` set `confirmBtn.disabled = true` khi bắt đầu xử lý, nhưng **chỉ reset về `false` trong `catch` (error path)**. Success path không bao giờ reset. Kết quả: sau approve/reject thành công, button bị frozen disabled. Lần mở modal tiếp theo — `openDetail()` không reset `disabled` → button bị kẹt → user click không có tác dụng.
+
+### Đã hoàn thành
+
+**Fix lớp 1 — `openDetail()` reset block:**
+```js
+document.getElementById('detailActionConfirmBtn').disabled = false;
+```
+Thêm vào block "Reset action area" trong `openDetail()` → mỗi lần mở modal đều reset.
+
+**Fix lớp 2 — `_showActionArea()` (defense-in-depth):**
+```js
+confirmBtn.disabled = false;
+```
+Thêm ngay sau khi lấy `confirmBtn` element → đảm bảo reset kể cả khi user đến từ path không qua `openDetail`.
+
+### Test kết quả (Playwright, live GitHub Pages)
+| Case | Kết quả |
+|---|---|
+| Button initial state = enabled | ✅ |
+| Simulate stuck (disabled=true) → click Chi tiết → button reset | ✅ |
+| Source có ≥2 điểm reset (catch + openDetail + _showActionArea) = 3 điểm | ✅ |
+
+---
+
+---
+
+## Session: 2026-06-03 (Part 6)
+**Scope:** Fix duplicate UseCase_ID khi submit đồng thời — gen ID xuống lúc Submit
+**Commit:** `3780bf6`
+**Version:** 3.6.3
+
+### Root cause
+`peekNextUseCaseId_()` không có lock — không atomic. Khi nhiều user submit cùng lúc:
+1. Cả 2 FE peek → cùng thấy `AIUS-0005`
+2. Cả 2 gọi `createUseCase()` → GAS (nếu chưa deploy v2) ghi 2 row với cùng `AIUS-0005`
+
+Nếu GAS v2 đã deploy (có `LockService`) thì ổn, nhưng vì GAS-MYSTERY-01 vẫn còn → không đảm bảo.
+
+### Fix 2 lớp
+
+**Lớp 1 — FE `app.js`:**
+- Xóa `loadNextIdPreview()` khỏi `init()` — không hiện badge sớm (stale, gây nhầm)
+- Trong `submitForm()`: gọi `Api.getNextId()` ngay trước `createUseCase()`, gắn kết quả vào `data.UseCase_ID` làm hint
+- Nếu GAS offline: try/catch bỏ qua, GAS tự sinh ID server-side
+
+**Lớp 2 — GAS `UseCaseService.gs`:**
+- Thêm `_assignUseCaseId_(hint)`: nhận hint từ FE, acquire `LockService`, check hint còn free không → dùng + sync counter qua `_ensureCounterAhead_()`; nếu hint đã dùng → fallback `generateUseCaseId_()`
+- Thêm `_ensureCounterAhead_()`: đảm bảo `CONFIG.NEXT_ID` không bao giờ re-issue số đã dùng
+- `createUseCase_()` dùng `_assignUseCaseId_(sanitizeStr_(data.UseCase_ID))` thay vì `generateUseCaseId_()` trực tiếp
+
+### Kết quả
+- Race window thu hẹp từ (mở form → submit) xuống còn ~1 JSONP RTT
+- 2 concurrent submit với cùng hint: chỉ 1 thắng lock + dùng hint; cái kia fallback generate mới → 0 duplicate
+
+### Test kết quả (Playwright, local server)
+| Test | Kết quả |
+|---|---|
+| next-id NOT called on page load | ✅ |
+| nextIdBadge hidden on load | ✅ |
+| getNextId() called at submit time | ✅ |
+| UseCase_ID hint trong createUseCase payload | ✅ |
+| getNextId() offline → createUseCase vẫn chạy (graceful) | ✅ |
+| lookup still loads normally (no regression) | ✅ |
+
+### Note về GAS deployment
+`_assignUseCaseId_()` và `_ensureCounterAhead_()` cần paste vào GAS Editor sau khi tìm được đúng project (GAS-MYSTERY-01). Khi chưa deploy: FE gửi hint nhưng GAS cũ bỏ qua (dùng `generateUseCaseId_()` cũ) → không tệ hơn trước, chỉ chưa đạt full fix.
+
+---
+
+---
+
+## Session: 2026-06-03 (Part 7)
+**Scope:** Fix toàn diện ký tự đặc biệt gây lỗi lưu vào GAS — v3.7.0
+**Commit:** `76b0242`
+**Version:** 3.7.0
+
+### Root cause phân tích
+
+6 bugs được phát hiện qua rà soát toàn bộ encoding pipeline FE → GAS → Google Sheets:
+
+| Bug | Mức độ | Mô tả |
+|---|---|---|
+| SPECIAL-01 | Minor | CRLF `\r\n` từ Windows clipboard tạo `\r` sót trong Sheets |
+| SPECIAL-02 | **High** | Formula injection: giá trị bắt đầu `=`,`+`,`-`,`@`,`\|` bị Sheets interpret làm formula → DATA CORRUPTION |
+| SPECIAL-03 | **Critical** | Null byte `\0` → `setValues` fail → SAVE FAILURE |
+| SPECIAL-04 | Minor | `\r` giữa chuỗi không bị `sanitizeStr_` strip |
+| SPECIAL-05 | **Critical** | `JSON_Backup` vượt 50,000 chars/cell limit → `setValues` throw → SAVE FAILURE |
+| SPECIAL-06 | **Critical** | Lone surrogate Unicode → `encodeURIComponent` throw URIError → SAVE FAILURE |
+
+### Đã hoàn thành
+
+**FE — `assets/js/form-mapper.js`:**
+- `collectData()`: normalize `\r\n` → `\n`, lone `\r` → `\n` cho textarea elements (SPECIAL-01)
+
+**FE — `assets/js/api.js`:**
+- `_request()`: strip lone surrogate trước khi encode (giữ surrogate pair = emoji hợp lệ) (SPECIAL-06)
+- Thêm payload size guard: nếu payload > 50,000 chars → reject với error message rõ ràng
+- Error message khi encode fail rõ hơn (có hint về ký tự đặc biệt)
+
+**GAS — `assets/gas-backend/Utils.gs`:**
+- `sanitizeStr_()`: strip null byte `\0`, strip lone surrogate, normalize `\r\n`/`\r` → `\n` (SPECIAL-03, 04, 06)
+- **NEW** `toSheetValue_(val)`: helper prefix `'` cho strings bắt đầu bằng formula chars → chống formula injection trong `appendRow`/`setValues` (SPECIAL-02)
+- `appendRowFromObject_()`: dùng `toSheetValue_()` khi build row array
+- `updateRowByRecordId_()`: dùng `toSheetValue_()` khi build row array
+
+**GAS — `assets/gas-backend/UseCaseService.gs`:**
+- `createUseCase_()`: cap `JSON_Backup` tại 45,000 chars (SPECIAL-05)
+- `updateUseCase_()`: cap `JSON_Backup` tại 45,000 chars (SPECIAL-05)
+
+**Test — `assets/tests/test-special-chars.js` (NEW):**
+- 62 test cases: A (encoding roundtrip), B (sanitizeStr_), C (toSheetValue_), D (JSON_Backup), E (CRLF), F (end-to-end Prompt_Context)
+- 62/62 PASS
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/js/form-mapper.js` | +5 lines: CRLF normalization trong collectData |
+| `assets/js/api.js` | +20 lines: lone surrogate strip + payload size guard + better error msg |
+| `assets/gas-backend/Utils.gs` | +34 lines: sanitizeStr_ improvements + new toSheetValue_() + apply in write helpers |
+| `assets/gas-backend/UseCaseService.gs` | +6 lines: JSON_Backup size cap trong create + update |
+| `assets/tests/test-special-chars.js` | NEW: 62 unit tests |
+
+### Lưu ý GAS deployment
+`Utils.gs` và `UseCaseService.gs` có thay đổi cần deploy. Do GAS-MYSTERY-01 vẫn chưa resolved, các fix GAS chưa active trên production.
+Khi tìm được đúng project → deploy tất cả 6 files (xem TODO_NEXT.md).
+
+### Quyết định kỹ thuật
+1. **`toSheetValue_` chỉ apply khi ghi sheet** — không apply trong `sanitizeStr_` để JSON_Backup lưu giá trị gốc (không có `'` prefix)
+2. **Lone surrogate regex**: `/([\uD800-\uDBFF][\uDC00-\uDFFF])|[\uD800-\uDFFF]/g` — surrogate pair match trước, lone surrogate còn lại bị strip
+3. **JSON_Backup = 45,000 chars** (không phải 50,000) — buffer 5,000 chars cho overhead
+
+---
+
+---
+
+## Session: 2026-06-03 (Part 8)
+**Scope:** Fix timeout false-failure khi create/update UC
+**Commit:** `e83f16b`
+**Version:** 3.7.1
+
+### Root cause phân tích
+
+GAS `createUseCase_` / `updateUseCase_` thực hiện quá nhiều sheet reads đồng bộ:
+- `updateUseCase_`: đọc MASTER_DATA 2 lần (`findObjectByField_` + `updateRowByRecordId_`) + ghi ACTIVITY_LOG
+- `createUseCase_`: đọc MASTER_DATA (ID assignment) + CONFIG + ghi MASTER + ACTIVITY_LOG
+- `LOCK_TIMEOUT_MS = 10000`: lock chờ tối đa 10s
+- Tổng execution: có thể 15–25s với sheet nhiều rows → vượt 20s FE JSONP timeout
+- GAS ghi xong nhưng response về sau khi FE đã cleanup callback → user thấy "lỗi" nhưng data đã lưu
+
+### Đã hoàn thành
+
+**FE — `assets/js/api.js`:**
+- `_request(url, data, timeoutMs)`: thêm param `timeoutMs` truyền xuống `_jsonp()`
+- `createUseCase` / `updateUseCase`: dùng `45000ms` thay vì mặc định `20000ms`
+
+**FE — `assets/js/app.js`:**
+- `submitForm()`: tách xử lý lỗi ra `_handleSubmitError(err, recordId, hintId)`
+- `_handleSubmitError()`:
+  - Lỗi thật (không phải timeout): hiện toast error như cũ
+  - **Update timeout**: auto-verify bằng `Api.getUseCase(recordId)` — nếu record tồn tại → show success, nếu không → warn user kiểm tra dashboard
+  - **Create timeout**: hiện warning kèm hint ID, hướng dẫn kiểm tra dashboard trước khi nộp lại
+
+**GAS — `assets/gas-backend/Utils.gs`:**
+- Thêm `findRowByField_(sheetName, field, value)`: đọc sheet 1 lần, trả về `{obj, rowIndex, headers, sheet}` → caller write trực tiếp không cần đọc lại
+
+**GAS — `assets/gas-backend/UseCaseService.gs`:**
+- Rewrite `updateUseCase_()`: dùng `findRowByField_` thay cho `findObjectByField_` + `updateRowByRecordId_`
+- Kết quả: MASTER_DATA chỉ đọc **1 lần** thay vì 2 → giảm ~30-50% execution time cho update
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/js/api.js` | +5 lines: timeoutMs param + 45s cho write ops |
+| `assets/js/app.js` | +48 lines: `_handleSubmitError()` + smart timeout recovery |
+| `assets/gas-backend/Utils.gs` | +32 lines: `findRowByField_()` |
+| `assets/gas-backend/UseCaseService.gs` | +10/-8 lines: single-read update |
+
+### Decisions chốt
+1. **45s timeout** — đủ cho GAS với sheet ~200 rows; GAS hard limit là 6 phút nên vẫn còn margin
+2. **Update auto-verify** — dùng `getUseCase` (read-only, nhanh hơn write) để xác nhận; nếu GAS vẫn bận → warn thay vì fail silently
+3. **Create warning** — không thể verify ID vì chưa có Record_ID; hint ID giúp user tìm trên dashboard
+4. **GAS single-read** — `findRowByField_` giữ `sheet` reference → write dùng `sheet.getRange().setValues()` trong cùng execution, không mở lại sheet
+
+### GAS deployment note
+`Utils.gs` + `UseCaseService.gs` có thay đổi → cần deploy sau khi tìm được GAS project (GAS-MYSTERY-01). Trước khi deploy GAS, FE đã hoạt động với 45s timeout + smart recovery.
+
+---
+
+## Session: 2026-06-03 (Part 9)
+**Scope:** Fix HTTP 400 khi create/update với Prompt_Context có nội dung
+**Commit:** `006bae5`
+**Version:** 3.7.2
+
+### Root cause phân tích (2 scenario)
+
+**CREATE — data KHÔNG trong DB khi có 400:**
+- Tiếng Việt tốn 3 bytes UTF-8/ký tự → base64url expand 4× so với ASCII
+- 1,500 ký tự Việt trong Prompt_Context → ~6,000 chars base64url → full GET URL ~6,200 chars
+- GAS infrastructure giới hạn ~8KB URL → reject trước khi `doGet` chạy → HTTP 400
+- Không có data nào được ghi → User nhầm tưởng data có trong DB từ lần submit thành công trước đó
+
+**UPDATE — data CÓ trong DB nhưng vẫn 400:**
+- GAS chạy xong, ghi data thành công vào sheet
+- `updateUseCase_` trả về full merged object (~7,000+ chars khi Prompt_Context có nội dung)
+- `sendJsonP_` tạo JSONP body lớn → Google cần embed response vào redirect URL → URL quá dài → HTTP 400
+- Data đã ghi nhưng response delivery thất bại → user thấy 400 nhưng data vẫn có trong sheet
+
+### Đã hoàn thành
+
+**FE — `assets/js/api.js`:**
+- Đổi payload size check từ pre-encode JSON (50,000 chars, không hiệu quả) sang **post-encode base64url (7,500 chars)**
+- Tiếng Việt expand ~4×, pre-encode check không phản ánh URL thực tế
+- Error message mới nêu rõ field `Prompt_Context`, giải thích Vietnamese overhead
+
+**FE — `assets/js/app.js`:**
+- **Strip empty fields** khỏi CREATE payload trước khi encode
+- GAS tự khởi tạo tất cả field về '' → safe khi bỏ field rỗng
+- Giảm URL điển hình ~60% (form có ~35 fields, phần lớn rỗng)
+
+**GAS — `assets/gas-backend/UseCaseService.gs`:**
+- `updateUseCase_()` trả về **minimal response** `{record_id, usecase_id, updated_at}` thay vì full merged object
+- FE không sử dụng merged data sau update
+- Giảm JSONP response body từ ~7,000+ chars → ~100 chars → fix UPDATE 400
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/js/api.js` | +9/-4 lines: post-encode size check + detailed error message |
+| `assets/js/app.js` | +6 lines: strip empty fields cho create payload |
+| `assets/gas-backend/UseCaseService.gs` | +3/-7 lines: minimal update response |
+
+### Decisions chốt
+1. **7,500 chars base64url limit** — buffer ~500 chars cho URL overhead (base URL 130 chars + action + callback ~60 chars = 190 chars), tổng URL ~7,690 chars, an toàn dưới 8KB
+2. **Strip empty cho create chỉ** — update cần giữ empty values (để clear fields đã fill trước đó)
+3. **Minimal update response** — `{record_id, usecase_id, updated_at}` đủ cho FE verify (dùng trong `_handleSubmitError` auto-verify qua `getUseCase`)
+4. **Không thay đổi `toSheetValue_`** — `'` prefix được Sheets API xử lý như "text escape" (consumed), không gây 400 Sheets API error
+
+### GAS deployment note
+`UseCaseService.gs` có thay đổi → cần deploy khi tìm được GAS project (GAS-MYSTERY-01).
+Trước khi deploy GAS: FE đã có strip-empty + post-encode size check → CREATE sẽ tốt hơn.
+Sau khi deploy GAS: UPDATE 400 cũng được fix (minimal response).
+
+---
+
+## Session: 2026-06-03 (Part 10)
+**Scope:** Fix HTTP 400 UPDATE — xác nhận root cause qua URL thực tế + FE workaround
+**Commit:** `d52c756`
+**Version:** 3.7.3
+
+### Root cause xác nhận qua URL thực tế
+
+User cung cấp failing request URL:
+```
+https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhn...<10,000+ chars>...&lib=...
+```
+
+**Cơ chế:**
+1. GAS nhận request → `doGet` chạy → ghi data vào DB ✅
+2. GAS tạo JSONP response gồm full merged object (Prompt_Context ~5,000 chars tiếng Việt)
+3. GAS trả 302 redirect đến `googleusercontent.com/macros/echo?user_content_key=<ENCODED_RESPONSE>`
+4. `user_content_key` = base64url encode của toàn bộ JSONP response → ~10,000+ chars
+5. Browser theo redirect → URL quá giới hạn → **HTTP 400**
+6. `<script>` tag nhận 400 → `script.onerror` → error "GAS script load thất bại"
+
+### Vấn đề với fix trước
+
+`_handleSubmitError` v3.7.1 chỉ kiểm tra `isTimeout` (message chứa "Timeout"). `script.onerror` tạo ra error "GAS script load thất bại" → bypass logic auto-verify → user thấy "Lỗi gửi: GAS script load thất bại" dù data đã ghi xong.
+
+### Đã hoàn thành
+
+**FE — `assets/js/app.js`:**
+- `_handleSubmitError()`: thêm `isScriptError` = check "script load thất bại"
+- `isTransportErr = isTimeout || isScriptError` — cả hai đều trigger UPDATE auto-verify
+- Khi `isScriptError` cho UPDATE: gọi `getUseCase(recordId)` → nếu record tồn tại → show success
+- Error message cập nhật (không mention "45s" cho script.onerror case)
+
+### Files changed
+| File | Delta |
+|---|---|
+| `assets/js/app.js` | +11/-10 lines: `isScriptError` + `isTransportErr` trong `_handleSubmitError` |
+
+### Luồng xử lý sau fix (UPDATE với Prompt_Context dài)
+
+```
+User click Update
+  → GAS runs → writes to DB → returns full merged response → 302 redirect
+  → googleusercontent returns 400 (URL quá dài)
+  → script.onerror → "GAS script load thất bại"
+  → _handleSubmitError: isScriptError=true, recordId exists
+  → showLoading("Đang xác nhận kết quả...")
+  → Api.getUseCase(recordId) → success (small response)
+  → Storage.clear() → Toast "Cập nhật thành công!" → showSuccessScreen
+```
+
+### Fix vĩnh viễn cần deploy GAS
+
+Deploy `UseCaseService.gs` (đã có trong repo, minimal response):
+```js
+return { record_id: recordId, usecase_id: merged.UseCase_ID, updated_at: now };
+```
+→ `user_content_key` chỉ ~100 chars → URL không bao giờ quá giới hạn
+
+---
+
+---
+
+## Session: 2026-06-05 (Part 13)
+**Scope:** USERS sheet + User management feature + 30/30 local tests pass
+**Commits:** `cc8420c` (feat) — merged vào `main`
+**Version:** 3.10.0
+
+---
+
+### Đã hoàn thành
+
+- **GAS `UserService.gs` (NEW)** — `normalizeUser_()` case-insensitive (Tuantt4=tuantt4=TUANTT4), `upsertUser_()`, `syncUsersFromMasterData_()`, `validateUserLogin_()`, `updateLastLogin_()`, `getAdminUsernamesFromSheet_()`
+- **`Config.gs`** — `SHEETS.USERS = 'USERS'` + `USERS_HEADERS` constant
+- **`Utils.gs`** — `getOrCreateSheet_` xử lý USERS sheet
+- **`AdminService.gs`** — `getAdminEmails_()` priority: USERS sheet → CONFIG sheet → Config.gs hardcoded
+- **`Code.gs`** — 5 endpoints mới: `user-login`, `users`, `user-upsert`, `user-sync`, `user-init`
+- **`auth.js`** — `AuthService.storeUser()` public method
+- **`routes.js` + `api.js`** — `validateUser`, `getUsers`, `upsertUser`, `syncUsers`, `initUsersSheet`
+- **`login.html`** — load `routes.js` + `api.js`; async login (GAS trước, local fallback)
+- **`dashboard.html`** — Tab "Người dùng" (admin-only) + user add/edit modal
+- **`dashboard.js`** — `_loadUsersTab`, `renderUsersTab`, `_bindUsersTab`, `_saveUser`, `_editUser`
+- **`dashboard.css`** — `.data-table`, `.btn--ghost`, `.dash-card-actions`
+- **Verification: 30/30 Playwright tests PASS** — T1–T8 covering login, tab visibility, modal, regression, offline fallback
+
+### USERS sheet structure
+| Column | Mô tả |
+|---|---|
+| Username | Normalized lowercase — primary key |
+| Display_Name | Tên hiển thị trong UI |
+| Role | `admin` hoặc `user` |
+| Team | Phòng/team |
+| Email | Email thực (optional, future OAuth) |
+| Active | TRUE/FALSE — deactivate không xóa row |
+| Created_At | ISO timestamp |
+| Last_Login | Cập nhật mỗi lần đăng nhập |
+
+### Case-insensitive design
+`normalizeUser_(str)` = `.trim().toLowerCase()` — áp dụng ở **mọi** điểm so sánh trong GAS và FE.
+
+### Blockers còn lại
+- **GAS-MYSTERY-01** — vẫn chưa resolve → 7 file GAS local chưa deploy
+- **FILTER-01 / PERF-02** — 1-dòng fixes, vẫn pending
+
+---
+
+## Session: 2026-06-05
+**Scope:** Stacked breakdown charts + KPI & Tiến độ tab + local verification
+**Commits:** `9e15471` (stacked charts + guide) · `afcdf44` (KPI tab) · `91c4a00` (date fix) · `b0cff5f` / `0aa7c18` (context)
+**Version:** 3.9.0
+
+---
+
+### Tasks completed
+
+| # | Mô tả | Commit |
+|---|-------|--------|
+| 1 | **Stacked bar charts** — "Phân bổ theo Team" và "Phân bổ theo Lĩnh vực" đổi từ single-bar sang stacked bar phân màu theo 6 trạng thái. Click segment → list modal lọc group + status. CSS fallback hiện badge trạng thái dưới mỗi row. | `9e15471` |
+| 2 | **User guide** — `HUONG_DAN_NHAP_LIEU.txt`: hướng dẫn đầy đủ 32 trường cho 4 bước wizard. | `9e15471` |
+| 3 | **KPI & Tiến độ tab** — Tab mới visible tất cả users. 4 section: header tuần (% đạt), bảng tiến độ tuần, bar chart 6 tháng, ranking tổng + streak leaderboard. Tính client-side từ `_allList`. | `afcdf44` |
+| 4 | **Fix date format** — `_getWeekRange` dùng `toLocaleDateString('vi-VN')` trả về hyphens (`01-06`) thay vì slashes (`01/06`) trên một số Chromium/Windows. Đổi sang manual `padStart` formatter. | `91c4a00` |
+
+---
+
+### Files changed
+
+| File | Delta |
+|------|-------|
+| `assets/js/dashboard.js` | +`renderStackedChart` + `_renderStackedChartCSS` (replace `renderBreakdownChart` call sites); +`renderKPITab`, `_buildKPIData`, `_getWeekKey`, `_getWeekStart`, `_prevWeekKey`, `_getWeekRange`, `_computeStreak`, `_buildMonthlyKPI`, `_renderKPIMonthChart`; fix `_getWeekRange` manual formatter; update `_loadTabData` |
+| `dashboard.html` | +tab button `[data-tab="kpi"]`; +tab panel `#tab-kpi` |
+| `assets/css/dashboard.css` | +~170 lines: `.kpi-week-header`, `.kpi-badge`, `.kpi-me-tag`, `.kpi-row--me`, `.kpi-streak-*` |
+| `HUONG_DAN_NHAP_LIEU.txt` | NEW — hướng dẫn nhập liệu 32 trường |
+| `ai_context/PROJECT_STATE.md` | Version bump → 3.9.0; feature rows added |
+| `ai_context/TODO_NEXT.md` | Part 11 + 12 entries added |
+
+---
+
+### Decisions chốt
+
+1. **Stacked data = client-side từ `_allList`** — không cần endpoint GAS mới. Tính đơn giản, không cần deploy GAS để có tính năng.
+2. **KPI visible tất cả users** — không admin-only. Khuyến khích cạnh tranh lành mạnh trong toàn đội.
+3. **Định nghĩa đạt KPI** = UC có `status ≠ 'Draft'` (Submitted trở lên). Draft không tính.
+4. **Week key = ISO Monday date string** (e.g. `"2026-06-02"`) — tránh ISO week number arithmetic phức tạp tại year boundaries.
+5. **Strict streak** — không UC tuần đang chạy → streak = 0. Khuyến khích nộp sớm trong tuần.
+6. **Manual `DD/MM` formatter** — `toLocaleDateString('vi-VN')` unreliable trên headless Chromium (hyphens vs slashes theo OS locale). Dùng `padStart` thủ công để đảm bảo nhất quán mọi môi trường.
+7. **`renderBreakdownChart` vẫn giữ trong code** — không xóa để tránh break CSS fallback references; tuy nhiên không còn được gọi cho team/category charts.
+
+---
+
+### Verification (Playwright local)
+
+Test runner: Playwright + Chrome (`localhost:8787` Python HTTP server).
+
+| Check | Kết quả |
+|-------|---------|
+| KPI tab button & panel visible | ✅ |
+| teamChart canvas rendered (Chart.js stacked) | ✅ |
+| categoryChart canvas rendered | ✅ |
+| Click teamChart bar → listModal "Team: CV2 — Đã duyệt" | ✅ |
+| Click categoryChart bar → listModal "Lĩnh vực: Vận hành — Đã duyệt" | ✅ |
+| KPI tab renders week header + table + chart | ✅ |
+| Current user row highlighted (kpi-row--me) | ✅ |
+| KPI tab visible for regular user; overview hidden | ✅ |
+| Week range format `"01/06 – 07/06"` slashes | ✅ (after fix) |
+| JS errors | ✅ 0 |
+
+---
+
+### Regression risks
+
+- **`renderBreakdownChart` dead code** — hàm vẫn tồn tại nhưng không được gọi cho team/category charts nữa. CSS fallback references (`Dashboard._openListByTeam/Category`) vẫn hoạt động vì hàm `_renderBreakdownChartCSS` vẫn còn. Không có risk immediate.
+- **KPI stats subject to DATA-LIMIT-01** — `_buildKPIData()` iterate trên `_allList` (max 200 records). Nếu total UC > 200 thì `thisWeek` / `streak` / `ranking` sẽ thiếu data của user có UC ngoài top 200. Cùng limitation với các tab khác.
+- **Streak chỉ đúng khi user nộp đủ 1 UC/tuần** — với dữ liệu test hiện tại tất cả UCs được nộp trong 1 tuần (T6/2026) nên 100% đạt + streak = 1. Behavior sẽ rõ hơn sau vài tuần có real data.
+
+---
+
+### Blockers còn lại (không thay đổi từ session trước)
+
+- **GAS-MYSTERY-01** — URL GAS active không tìm được project nguồn → toàn bộ GAS code local chưa deploy. **Cần user action.**
+- **GAS pending deploy** — 6 files cần paste + deploy khi tìm được project (xem TODO_NEXT P0).
+- **FILTER-01** — `_populateTeamFilter` stale state: 1-dòng fix, vẫn pending.
+- **PERF-02** — `_loadTabData('my')` double-fetch: 1-dòng guard, vẫn pending.
+
+---
+
+---
+
+## Session: 2026-06-05 (Part 14)
+**Scope:** KPI & Tiến độ tab — load user list từ USERS sheet + case-insensitive matching
+**Commit:** `e3c2922`
+**Version:** 3.10.1
+
+---
+
+### Đã hoàn thành
+
+- **FEAT: KPI tab hiển thị users với 0 UC** — `_buildKPIData()` rewrite hoàn toàn. Primary source là `_usersList` (USERS sheet). Users chưa nộp UC vẫn xuất hiện với `thisWeek=0` + badge "⏳ Chưa". Inactive users (`active=false`) excluded.
+- **FIX: Case-insensitive matching** — `_norm()` helper: `.trim().toLowerCase()` áp dụng cho tất cả key so sánh. Tuantt4=TuanTT4=tuantt4 merge thành 1 entry. Không còn duplicate row.
+- **FIX: "isMe" highlight** — `curUserKey` lấy từ `_user.email` (= username) thay vì `displayName`. `isMe` check: `u.username === curUserKey` (primary) → `u.name.toLowerCase()` (fallback).
+- **Lazy load users cho KPI tab** — `_loadTabData('kpi')`: nếu `_usersList` chưa có, tự gọi `Api.getUsers()` trước khi render; fail-silently nếu GAS endpoint chưa deploy → fallback `_allList` (backward compat hoàn toàn).
+- **Edge case: UC owners không có trong USERS sheet** — vẫn xuất hiện trong KPI (submitted trước khi có user management).
+- **Tests:** `test-kpi-data.js` — 20/20 pass (5 suites: users với 0 UC, case-insensitive, fallback, owner_email missing, isMe detection)
+
+### Files changed
+
+| File | Delta |
+|------|-------|
+| `assets/js/dashboard.js` | +69/-22 lines: `_norm()` helper; `_buildKPIData()` rewrite (byEmail+byName index, USERS sheet join); `_loadTabData('kpi')` lazy users load; `renderKPITab()` username-based isMe, userKeys |
+| `assets/tests/test-kpi-data.js` | NEW — 20 unit tests |
+| `assets/tests/test-kpi-playwright.js` | NEW — Playwright integration test template (requires local server) |
+
+### Decisions chốt
+
+1. **`_norm()` = single normalize function** — `trim().toLowerCase()` dùng ở mọi điểm so sánh trong `_buildKPIData`. Không inline lặp lại.
+2. **byEmail primary, byName secondary** — `owner_email` (username) là key chính vì reliable hơn `owner_name` (display name). Nếu `owner_email` rỗng → fallback `owner_name`.
+3. **Lazy load, không thêm vào `_loadStartupData`** — tránh thêm request có thể timeout (GAS-MYSTERY-01) vào startup critical path. KPI tab load users khi user click tab lần đầu.
+4. **Inactive users excluded** — `u.active === false` → skip. Consistent với logic USERS sheet.
+5. **pctAchieved denominator = tất cả active users** — mẫu số giờ bao gồm cả users 0 UC → % đạt KPI phản ánh đúng thực tế team hơn (có thể thấp hơn trước).
+
+### Regression risks
+
+- **pctAchieved thấp hơn** — Trước đây mẫu số chỉ là users có ≥1 UC (đều đạt). Nay mẫu số là tất cả active users → % thường thấp hơn. Đây là intentional/accurate nhưng có thể gây ngạc nhiên.
+- **Lazy `Api.getUsers()` on KPI tab click** — nếu GAS chậm, user thấy tab trống ~1-2 giây trước khi render. Acceptable; không có spinner riêng cho phase này.
+- **`_buildKPIData` fallback khi `_usersList = []`** — nếu GAS users endpoint fail, hành vi giống v3.9.0 (chỉ hiện users có UC). Không tệ hơn baseline.
+
+### Open issues (không thay đổi)
+
+- GAS-MYSTERY-01 — 7 file GAS chưa deploy → user-login validate qua GAS không có tác dụng
+- FILTER-01, PERF-02 — 1-line fixes vẫn pending
+
+---
+
+## Session: 2026-06-08
+**Scope:** KPI tab enhancements — week navigation, exclude directors, Approved-only count
+**Version:** 3.10.2
+
+### Đã hoàn thành
+
+- **FEAT: KPI week navigation** — Nút ‹/› trong header tuần cho phép xem lại KPI các tuần trước. `_kpiViewedWeek` state var (null = tuần hiện tại). `_nextWeekKey()` helper mới. Nút "›" disabled khi đang xem tuần hiện tại. Section title thay đổi động: "Tuần này" / "N tuần trước". `Dashboard._kpiNav(dir)` trong public API. Streak tính tương đối theo tuần đang xem.
+- **FEAT: Loại user khỏi KPI** — `KPI_EXCLUDED_USERS: ['cuongvm1']` trong `config/env.js`. `_buildKPIData()` bỏ qua user trong danh sách này ở tất cả paths (USERS sheet, byEmail fallback, byName fallback). Dễ thêm/bỏ user bằng cách sửa `env.js`.
+- **FIX: KPI chỉ đếm UC được duyệt** — Đổi `if (!uc.status || uc.status === 'Draft') return` → `if (uc.status !== 'Approved') return`. UC bị từ chối, đang nộp, đang review không còn tính KPI. Goal text: "1 UC được duyệt / người / tuần".
+
+### Files changed
+| File | Delta |
+|---|---|
+| `config/env.js` | +3 lines: `KPI_EXCLUDED_USERS: ['cuongvm1']` |
+| `assets/js/dashboard.js` | +66 lines net: `_kpiViewedWeek` state; `_nextWeekKey()`; `_buildKPIData()` excluded check + Approved-only filter; `renderKPITab()` week nav + dynamic label; `Dashboard._kpiNav()`; render-immediately fix in `_loadTabData('kpi')` |
+| `assets/css/dashboard.css` | +30 lines: `.kpi-week-nav`, `.kpi-nav-btn` styles |
+
+### Decisions chốt
+1. **KPI = Approved only** — UC nộp xong nhưng chưa được duyệt không tính; phản ánh đúng giá trị thực tế
+2. **`KPI_EXCLUDED_USERS` trong env.js** — admin có thể thêm/bỏ user mà không cần sửa logic JS; hiện tại `['cuongvm1']`
+3. **Week nav chỉ thay đổi "Tiến độ tuần"** — Monthly chart luôn 6 tháng gần nhất; Ranking tính tổng all-time; Streak tính backward từ tuần đang xem
+4. **Render-immediately fix** — `_loadTabData('kpi')` nay render ngay với data có sẵn, sau đó re-render sau khi `getUsers()` resolve; trước đây chờ `getUsers()` (20s timeout) mới render → nav buttons không xuất hiện
+
+### Bug found + fixed trong session này
+**KPI-SPINNER-01 CLOSED** — `_loadTabData('kpi')` cũ: nếu `_usersList` rỗng, gọi `renderKPITab()` sau `getUsers()` resolve, không render gì trong lúc chờ → nav buttons không xuất hiện. Fix: render ngay với `_allList` hiện có, `getUsers()` chạy background và re-render sau khi xong.
+
+### Test kết quả
+15/15 Playwright tests PASS — login inject → KPI tab → nav buttons, label, disabled state, cuongvm1 exclusion, prev/next navigation, 3-week back, no JS errors.
+
+---
+
+## Recommended next actions (session kế tiếp)
+
+**[P0 — USER ACTION] Tìm GAS project (GAS-MYSTERY-01):**
+1. Mở `script.google.com` → My Projects → từng project → Deploy → Manage deployments
+2. Tìm URL chứa `AKfycbwe0eo3X3KW` → đổi tên project → note lại
+
+**[P0 — sau khi tìm được GAS] Paste 7 file vào GAS Editor → New version → Deploy:**
+`UserService.gs` (NEW) · `UseCaseService.gs` · `Code.gs` · `Config.gs` · `Utils.gs` · `LookupService.gs` · `DashboardService.gs`
+
+Sau khi deploy, chạy 1 lần:
+- `GAS_URL?action=user-init&admin_email=tuantt4` → tạo sheet USERS + seed admin
+- Dashboard → tab Người dùng → Đồng bộ từ UC → import tất cả owner từ MASTER_DATA
+
+**[P1] Fix `_populateTeamFilter` stale state (FILTER-01):**
+- 1 dòng: `_filterAll.team = teamSel.value` sau khi render options. File: `assets/js/dashboard.js`
+
+**[P1] Fix `_loadTabData('my')` double-fetch (PERF-02):**
+- Thêm guard `if (_myList.length === 0)`. File: `assets/js/dashboard.js`
+
+**[P1] Regression risks còn mở (không blocking):**
+- `_pendingList` derive client-side từ `_allList` limit 200 → UC pending sau row 200 không hiện tab Chờ duyệt
+- `rejectedCard` cũng limit 200 → admin list lớn có thể miss rejected UC cuối
+- KPI stats subject to DATA-LIMIT-01 (cùng giới hạn 200 records)
+
+**[P2] Pagination** — `_allList` giới hạn 200 records
+
+**[P2] BUG-03** — Status="Draft" khi tạo mới: confirm với PO là bug hay intent
+
+**[P3] Xóa dead code** — `renderBreakdownChart` và `_renderBreakdownChartCSS` không còn được gọi cho team/category charts (đã thay bằng `renderStackedChart`). Có thể xóa nếu muốn clean up.

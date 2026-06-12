@@ -4,141 +4,251 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
-## P0 — [BLOCKING] Fix GAS data loading (BUG-GAS-01)
+## P0 — [NEEDS DEPLOY] Sync GAS code sau khi tìm được project
 
-`?action=health` OK nhưng `?action=lookup` / `?action=list` lỗi. Root cause chưa xác định.
+Sau khi hoàn thành GAS-MYSTERY-01 bên dưới, paste **tất cả** file dưới vào GAS Editor → **Edit deployment → New version → Deploy**:
 
-**Diagnostic cần làm ngay:**
-- [ ] Mở trực tiếp trên browser: `GAS_URL?action=lookup` → paste response
-- [ ] Mở: `GAS_URL?action=list&limit=3` → paste response
-- [ ] GAS Editor → **Executions** → copy 2-3 dòng lỗi gần nhất
-- [ ] Paste **chính xác nội dung toast** (phần trong dấu ngoặc đơn) khi app báo lỗi
+| File | Thay đổi quan trọng | Version |
+|---|---|---|
+| `UserService.gs` | **NEW** — USERS sheet management, normalizeUser_(), validateUserLogin_(), syncUsersFromMasterData_() | v3.10.0 |
+| `UseCaseService.gs` | `_assignUseCaseId_()` + single-read update + cap JSON_Backup | v3.7.1 |
+| `Utils.gs` | `sanitizeStr_` + `toSheetValue_()` + `findRowByField_()` + USERS sheet support | v3.10.0 |
+| `Code.gs` | Route `?action=next-id` + 5 user endpoints | v3.10.0 |
+| `Config.gs` | `SHEETS.USERS` + `USERS_HEADERS` + `ADMIN_EMAILS = ['admin','tuantt4','manager']` | v3.10.0 |
+| `LookupService.gs` | Rewrite hoàn toàn | v2.x |
+| `DashboardService.gs` | Push `record_id`, `status`, `owner_name` vào `recent_submissions` | v3.5.1 |
 
-**Nguyên nhân khả dĩ:**
-1. GAS script chưa được authorize để truy cập Google Sheet (chạy thủ công 1 lần để grant OAuth)
-2. Conflict hàm/biến trong GAS project thực tế (khác với local files)
-3. `Utils.gs` addHeader fix chưa được deploy
-
-**Fix nếu là authorization:**
-→ Trong GAS Editor: chạy thủ công hàm `getLookupData_()` → GAS sẽ hỏi cấp quyền → Approve
-
----
-
-## P0 — [PENDING] Push auth.js lên GitHub (BUG-FE-01)
-
-Fix URL duplicate (`ai-usecase-platform/ai-usecase-platform/register.html`) đã đúng trong local.
-
-```bash
-git add assets/js/auth.js
-git commit -m "fix: requireAuth uses basename to prevent URL duplication on subdirectory deploy"
-git push
+**Sau khi deploy, chạy 1 lần để khởi tạo USERS sheet:**
 ```
+GAS_URL?action=user-init&admin_email=tuantt4
+```
+Rồi vào Dashboard → tab "Người dùng" → **Đồng bộ từ UC** → import tất cả owner từ MASTER_DATA.
+
+Test sau deploy:
+- `GAS_URL?action=next-id` → `{"success":true,"data":{"next_id":"AIUS-XXXX"}}`
+- Submit 1 UC mới với ký tự đặc biệt trong Prompt_Context (VD: `"quotes"`, `=formula`, emoji 🎯) → kiểm tra lưu đúng trong sheet
+- Submit UC mới → kiểm tra ID trả về khớp với ID trong sheet
 
 ---
 
-## P0 — Deploy Utils.gs lên GAS
+## P0 — [BLOCKING] Tìm đúng GAS project (GAS-MYSTERY-01)
 
-Xóa `addHeader` calls trong `sendJson_()`. File đã sửa tại local, chưa deploy.
+GAS URL đang hoạt động (`AKfycbwe0eo3X3KW...`) không tìm thấy trong deployment history → không biết project nào đang serve, không thể update code GAS.
+
+**Fix:**
+1. Mở `script.google.com` → **My Projects** → duyệt tất cả project
+2. Với mỗi project → **Deploy → Manage deployments** → tìm URL chứa `AKfycbwe0eo3X3KW`
+3. Khi tìm được: đổi tên project thành `AI Use Case Platform` để không lạc lần sau
+4. Kiểm tra project đó có đúng code không (so với `assets/gas-backend/`)
 
 ---
 
-## P0 — Test toàn bộ flow sau session 2026-05-29 (Part 3)
+## P0 — Verify BUG-GAS-03 (CONFIG sheet ADMIN_EMAILS)
 
-Serve qua HTTP local: `python -m http.server 8080` hoặc `npx serve .`
+Approve/reject đang hoạt động nhưng chưa rõ vì BUG-GAS-03 đã được fix hay vì GAS project khác không có CONFIG sheet issue.
+
+**Verify:**
+1. Mở Google Sheet gắn với GAS project active
+2. Sheet **CONFIG** → row `Key = ADMIN_EMAILS` → kiểm tra `Value`
+3. Nếu `Value` vẫn là `admin@sptd.vn,...` → đổi thành `admin,tuantt4,manager`
+4. Nếu row không tồn tại → bỏ qua (GAS fallback về `Config.gs`)
+
+---
+
+## P1 — End-to-end smoke test sau khi fix P0
 
 Checklist:
-- [ ] Login với username "tuantt4" → redirect về index.html (portal)
-- [ ] Login với username "admin" → portal + hiển thị Dashboard nav trong sidebar
-- [ ] index.html: sidebar đúng — Home active, Dashboard chỉ hiện với admin
-- [ ] register.html: sidebar đúng — Đăng ký active; Owner_Name/Owner_Email auto-fill + readonly
-- [ ] dashboard.html (admin): thấy 4 tabs, KPI row, refresh button
-- [ ] dashboard.html (user thường): chỉ thấy "Use Case của tôi" tab
-- [ ] dashboard.html?tab=my: auto-select tab My US
-- [ ] "Use Case của tôi" tab: load danh sách đúng user
-- [ ] Click row → US detail popup hiện ra đúng thông tin
-- [ ] Admin click Duyệt/Từ chối trong popup → confirmation area hiện, submit → toast success
-- [ ] Logout từ bất kỳ page nào → về login.html
-
----
-
-## P0 (cũ) — Verify login + portal flow
-
-Cần serve qua HTTP local server (vì sessionStorage không hoạt động đúng với `file://`):
-```bash
-# Python:
-python -m http.server 8080
-# Node:
-npx serve .
-```
-
-Checklist:
-- [ ] `login.html`: nhập email ngẫu nhiên → redirect về `index.html`
-- [ ] `login.html`: nhập email admin (`admin@sptd.vn`) → redirect về `index.html` với card Dashboard hiển thị
-- [ ] `index.html` (portal): user chip hiển thị đúng tên
-- [ ] `index.html` (portal): section "Báo cáo & Phân tích" chỉ hiện khi admin
-- [ ] `register.html` không có session → redirect về `login.html`
-- [ ] `register.html` có session → form load bình thường
-- [ ] `dashboard.html` không có session → redirect về `login.html`
-- [ ] `dashboard.html` có session non-admin → redirect về `index.html`
-- [ ] Logout ở portal → về `login.html`, session bị xoá
-- [ ] Backward compat: truy cập `index.html?edit=AIUS-0001` → redirect về `register.html?edit=AIUS-0001`
-
----
-
-## P1 — Deploy GAS (bắt buộc để dashboard live)
-
-- [ ] Copy `assets/gas-backend/AdminService.gs` vào GAS project
-- [ ] Trong `Config.gs`: cập nhật `ADMIN_EMAILS` với email thật
-- [ ] Deploy lại GAS Web App (update existing deployment, không phải New)
-- [ ] Cập nhật `config/env.js::APP_CONFIG.ADMIN_EMAILS` với email thật
-- [ ] Test approve/reject flow từ dashboard
+- [ ] `GAS_URL?action=health` → `{"success":true}`
+- [ ] Login regular user → dashboard → tab **Khám phá** hiển thị Approved UCs
+- [ ] Click UC trong Khám phá → detail modal mở → **Copy Prompt** hiện → click → toast "Đã copy"
+- [ ] Login admin → tất cả tabs load ngay (không cần click từng tab)
+- [ ] Admin: tab "Chờ duyệt" → xem chi tiết → Duyệt → toast + reload
+- [ ] Submit use case mới từ register.html → không lỗi
 
 ---
 
 ## P2 — Nâng cấp auth (security)
 
-**Hiện tại (v3.1):** Username tự nhập, không verify, không có password. SEC-01 vẫn tồn tại.
+**Hiện tại (v3.3):** Username tự nhập, không verify. SEC-01 vẫn tồn tại.
 
-**Recommended next:**
+Option A — Whitelist username (quick win):
+- `AuthService.login()`: check username trong whitelist trước khi cho login
 
-Option A — Thêm whitelist username:
-- `AuthService.login()`: check username có trong whitelist (không phải chỉ admin)
-- Nếu username không trong whitelist → không cho đăng nhập
+Option B — Google Sign-In (proper fix):
+- `google.accounts.oauth2.initTokenClient()`
 
-Option B — Google Sign-In:
-- `google.accounts.oauth2.initTokenClient()` (GSI v2)
-- Verify token via GAS
+**PO cần confirm:**
+- [ ] BUG-03: `Status="Draft"` khi tạo mới — design intent hay bug?
+- [ ] Whitelist toàn bộ user hay chỉ admin?
 
-**Clarify với PO:**
-- [ ] BUG-03: Status="Draft" khi tạo mới là design intent hay bug?
-- [ ] Có cần whitelist user (không phải chỉ admin) không?
-- [ ] Có cần nhiều roles hơn không? (approver, viewer, submitter)
+---
+
+## P1 — Quản lý KPI_EXCLUDED_USERS qua USERS sheet (thay env.js)
+
+Hiện tại: `KPI_EXCLUDED_USERS: ['cuongvm1']` hardcode trong `config/env.js` → cần deploy frontend mỗi khi thêm/xóa.
+
+Cải tiến: Thêm column `KPI_Exempt` (TRUE/FALSE) vào USERS sheet → `_buildKPIData()` đọc từ `_usersList` để exclude → admin tự quản lý qua tab Người dùng, không cần sửa code.
+
+**Effort:** Low — 1 column GAS + 1 condition FE. **Blocking:** GAS-MYSTERY-01 phải xong trước.
+
+---
+
+## P1 — Fix regression risk (v3.6) — còn pending
+
+- [ ] `_populateTeamFilter()` stale state: thêm `_filterAll.team = teamSel.value` sau khi render options. File `assets/js/dashboard.js` hàm `_populateTeamFilter`. Chi tiết xem TECH_DEBT `FILTER-01`.
+- [ ] `_loadTabData('my')` double-fetch: thêm guard `if (_myList.length === 0)`. Chi tiết xem TECH_DEBT `PERF-02`.
 
 ---
 
 ## P3 — Feature backlog
 
-- [ ] "Use case của tôi" — list submissions của logged-in user (filter by Owner_Email)
-- [ ] Pagination cho dashboard "Tất cả use case" (hiện giới hạn 200 records)
-- [ ] "Under Review" status transition cho dashboard workflow
-- [ ] Export to CSV từ dashboard
+- [ ] Explore tab: show empty state với CTA "Chưa có UC nào được duyệt — hãy là người đầu tiên!" thay vì text thuần
+- [ ] Pagination cho dashboard (giới hạn 200 records hiện tại) — ảnh hưởng rejected card + filter
+- [ ] "Under Review" status transition cho workflow
+- [ ] Export to CSV từ dashboard (tab Tất cả + filter state)
+- [ ] Line chart (submission trend) — cần `trend_data` từ GAS API
+- [ ] Fix double-fetch: `_loadTabData('my')` vẫn gọi `_loadMyUseCases()` sau startup
+- [ ] Filter tab Tất cả: thêm nút "Reset tất cả filter" (1 click reset status + team + search)
 
 ---
 
-## P4 — Tech debt follow-up
+## P4 — Tech debt
 
 - [ ] Migrate JS từ global var sang ES Modules (MAINT-01)
-- [ ] Add script load order check vào dev docs (MAINT-02)
+- [ ] Add `Content-Security-Policy` header (SEC-02)
 - [ ] Fill `assets/docs/` với deployment guide thực tế (MAINT-07)
-- [ ] Add `Content-Security-Policy` header để giảm XSS risk (SEC-02 follow-up)
 
 ---
 
-## P5 — UI Polish (sau v3.0 refactor)
+## P5 — UI Polish
 
-- [x] **SVG icon library** — Heroicons 2.0 inline, thay toàn bộ emoji trong dashboard.html (done 2026-05-29)
-- [x] **Chart.js integration** — doughnut (status) + horizontal bar (team, category) — done 2026-05-29
-- [ ] **Line chart (submission trend)** — cần thêm `trend_data` field từ GAS API trước khi implement
-- [ ] **Sidebar cho register.html** — nếu PO muốn consistent enterprise layout toàn bộ app
-- [ ] **Dark mode** — tokens đã sẵn sàng, chỉ cần thêm `@media (prefers-color-scheme: dark)` block trong `variables.css`
-- [ ] **Logo SVG** — thay thế Heroicons sparkles trong sidebar brand bằng logo TPBank BIZ proper
+- [x] SVG icon library — Heroicons 2.0 (done 2026-05-29)
+- [x] Chart.js integration (done 2026-05-29)
+- [x] Full UC detail view modal — 4 sections (done 2026-06-02)
+- [ ] Dark mode — tokens sẵn sàng, thêm `@media (prefers-color-scheme: dark)` vào `variables.css`
+- [ ] Logo SVG thay sparkles trong sidebar brand
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-08
+
+- [x] **KPI week navigation (v3.10.2)**: Nút ‹/› trong header cho phép xem lại KPI các tuần trước. "›" disabled khi đang ở tuần hiện tại. Label tự động "Tuần này" / "N tuần trước". Section title thay đổi theo tuần xem. `Dashboard._kpiNav(dir)` trong public API. Streak tính relative theo tuần đang xem. Commit `4e48d17`.
+- [x] **KPI excluded users (v3.10.2)**: `KPI_EXCLUDED_USERS: ['cuongvm1']` trong `config/env.js`. `_buildKPIData()` skip excluded users tại tất cả paths (USERS sheet, byEmail fallback, byName fallback). Giám đốc Trung Tâm không xuất hiện trong bảng KPI.
+- [x] **KPI Approved-only (v3.10.2)**: Filter đổi từ `!== 'Draft'` → `=== 'Approved'`. UC Rejected/Submitted/Under Review không tính KPI. Goal text: "1 UC được duyệt / người / tuần".
+- [x] **FIX KPI-SPINNER-01 (v3.10.2)**: `_loadTabData('kpi')` render ngay với data có sẵn thay vì chờ `getUsers()`. `getUsers()` vẫn chạy background + re-render sau khi xong. Nav buttons xuất hiện ngay khi click tab.
+- [x] **15/15 Playwright tests PASS** — verified trên local server.
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-05 (Part 14)
+
+- [x] **KPI tab — users với 0 UC (v3.10.1)**: `_buildKPIData()` rewrite: primary source `_usersList` (USERS sheet). Users chưa nộp UC hiện với badge "⏳ Chưa". Case-insensitive via `_norm()` (Tuantt4=TuanTT4=tuantt4 → 1 entry). Lazy load `Api.getUsers()` khi click KPI tab nếu chưa có; fail-silently → fallback `_allList`. "isMe" dùng `u.username === curUserKey`. 20/20 tests pass. Commit `e3c2922`.
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-05 (Part 13)
+
+- [x] **USERS sheet + User management (v3.10.0)**: GAS `UserService.gs` (new) với `normalizeUser_()` case-insensitive (Tuantt4=tuantt4=TUANTT4), `upsertUser_`, `syncUsersFromMasterData_`, `validateUserLogin_`. Login async (GAS validates role → local fallback). Dashboard tab "Người dùng" (admin-only): bảng users, modal add/edit, nút Đồng bộ. 30/30 Playwright tests PASS. Commit `cc8420c`.
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-05 (Part 12)
+
+- [x] **fix: KPI week range date format**: `toLocaleDateString('vi-VN')` trả về "01-06" thay vì "01/06" trên một số Chromium build. Fix dùng `padStart` thủ công, luôn ra `DD/MM`. Commit `91c4a00`.
+- [x] **KPI & Tiến độ tab (v3.9.0)**: Tab mới hiển thị cho tất cả users. (1) Header bar tuần hiện tại + % đạt; (2) Bảng tiến độ tuần: mỗi user, highlight row của chính mình; (3) Bar chart KPI 6 tháng; (4) Bảng xếp hạng tổng; (5) Leaderboard streak chuỗi tuần. Logic: chỉ tính non-Draft UCs, tuần ISO Thứ 2→CN, strict streak (không UC tuần này = 0). Toàn bộ tính client-side từ _allList. Commit `afcdf44`.
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-05 (Part 11)
+
+- [x] **Stacked breakdown charts (v3.8.0)**: "Phân bổ theo Team" và "Phân bổ theo Lĩnh vực nghiệp vụ" nay hiển thị stacked bar phân màu theo 6 trạng thái (Approved/Under Review/Submitted/Draft/Rejected/Archived). Data tính client-side từ `_allList`. Click vào segment mở list popup lọc đúng team/category + status đó. CSS fallback hiện badge trạng thái dưới mỗi row. Commit `9e15471`.
+- [x] **Tài liệu nhập liệu**: `HUONG_DAN_NHAP_LIEU.txt` — hướng dẫn đầy đủ 32 trường + lưu ý chung cho người dùng. Commit `9e15471`.
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 10)
+
+- [x] **FIX HTTP 400 UPDATE workaround (v3.7.3)**: Root cause xác nhận qua URL thực tế: user_content_key trong googleusercontent redirect URL dài 10,000+ chars (GAS nhúng full merged object). FE fix: mở rộng _handleSubmitError để cả isScriptError ("script load thất bại") trigger auto-verify bằng getUseCase. Fix vĩnh viễn cần deploy GAS minimal response (UseCaseService.gs đã có trong repo). Commit `d52c756`.
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 9)
+
+- [x] **FIX HTTP 400 Prompt_Context (v3.7.2)**: Root cause: tiếng Việt expand 4× sau base64url → GET URL vượt GAS ~8KB limit (CREATE); updateUseCase_ trả full merged object ~7000+ chars → JSONP redirect URL quá lớn (UPDATE). Fix: strip empty fields cho create payload, minimal update response ({record_id, usecase_id, updated_at}), đổi payload limit check sang post-encode 7500 chars. Commit `006bae5`.
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 8)
+
+- [x] **FIX Timeout false-failure create/update (v3.7.1)**: Root cause: GAS đọc MASTER_DATA nhiều lần → execution >20s → FE timeout nhưng GAS vẫn ghi xong. Fix 3 lớp: (1) FE timeout tăng 20s→45s cho write ops; (2) smart recovery: update auto-verify bằng getUseCase, create hiện warning với hint ID; (3) GAS updateUseCase_ đọc MASTER 1 lần thay vì 2 bằng findRowByField_(). Commit `e83f16b`.
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 7)
+
+- [x] **FIX Special chars toàn diện (v3.7.0)**: Tìm và fix 6 bugs trong encoding pipeline FE → GAS → Google Sheets. Bao gồm: formula injection (SPECIAL-02 HIGH), null byte save failure (SPECIAL-03 CRITICAL), JSON_Backup cell overflow (SPECIAL-05 CRITICAL), lone surrogate encode failure (SPECIAL-06 CRITICAL), CRLF normalization (SPECIAL-01/04 MINOR). Test: 62/62 pass. Commit `76b0242`.
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 6)
+
+- [x] **FIX Duplicate UseCase_ID (v3.6.3)**: Chuyển gen mã từ page-load sang submit-time. FE gắn fresh ID hint vào payload; GAS `_assignUseCaseId_()` validate trong lock, dùng nếu còn free, fallback generate nếu collision. 8/8 local tests pass. Commit `3780bf6`.
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 5)
+
+- [x] **BUG-CONFIRM-BTN (v3.6.2)**: Fix confirm button frozen sau approve/reject đầu tiên. Root cause: `disabled=true` chỉ reset trong `catch`, không reset trong success path. Fix 2 lớp: `openDetail()` + `_showActionArea()`. Commit `4bc33bc`.
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 4)
+
+- [x] **BUG-AUTH-URL (v3.6.1)**: Fix URL duplicate `ai-usecase-platform` sau khi login khi truy cập trailing-slash URL. Fix 2 lớp: `auth.js` validate `.html` extension + `login.html` `safeReturnUrl()` helper. Commit `2a5a2af`.
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 3)
+
+- [x] **Filter tab Tất cả (v3.6)**: Multi-select status pills + team dropdown + search kết hợp, count badge real-time
+- [x] **Box Từ chối (v3.6)**: Rejected card trong tab Tổng quan, preview 5 UC + Xem tất cả list popup, Chi tiết đầy đủ
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-03 (Part 2)
+
+- [x] **Fix đồng bộ recentTable chi tiết (v3.5.1)**: Enrich recent_submissions từ _allList trước khi cache; openDetail safety net; DashboardService.gs fix tại nguồn
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-03
+
+- [x] **Drill-down list popup (v3.5)**: Click KPI cards / chart segments / chart bars → popup bảng use case lọc theo ngữ cảnh, mỗi row có nút "Chi tiết" mở detail modal chồng lên
+- [x] **recentTable đồng bộ**: Thêm cột "Chi tiết" vào bảng "Nộp gần đây" (tab Tổng quan)
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-02
+
+- [x] BUG-GAS-01: URL sai → restore đúng URL
+- [x] BUG-GAS-02: OAuth authorized
+- [x] BUG-CSS-01: modal footer bị đẩy xuống khi nội dung dài
+- [x] Auto-load tất cả tabs khi login (`_loadStartupData`)
+- [x] Tab Khám phá (all approved UCs, searchable, all users)
+- [x] Copy Prompt (8 fields, clipboard API + fallback)
+- [x] Approve/Reject confirmed working end-to-end
+- [x] **Unique UseCase ID (v3.4)**: `generateUseCaseId_()` sync MASTER_DATA + collision loop + `?action=next-id` preview endpoint + badge trên wizard form
+
+---
+
+## Quy trình deploy GAS chuẩn (bắt buộc đọc trước khi deploy)
+
+**KHÔNG** nhấn "New Deployment" → URL thay đổi + mất OAuth + phải update `env.js`.
+
+**Quy trình đúng:**
+```
+GAS Editor → Deploy → Manage Deployments
+  → Chọn deployment đang dùng → Edit (bút chì)
+  → Version: "New version" → Deploy
+```
+URL không đổi, không cần redo OAuth, không cần update `env.js`.

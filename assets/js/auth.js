@@ -99,9 +99,11 @@ var AuthService = (function () {
      */
     requireAuth: function () {
       if (!this.isLoggedIn()) {
-        // Use only the filename (basename) to avoid duplicating the base path
-        // when deployed under a subdirectory (e.g. GitHub Pages /repo-name/).
-        var page = window.location.pathname.split('/').filter(Boolean).pop() || 'index.html';
+        var last = window.location.pathname.split('/').filter(Boolean).pop() || '';
+        // Only use the segment if it is an .html file.
+        // Trailing-slash URLs (e.g. /ai-usecase-platform/) make .pop() return the
+        // repo/directory name, which then appears twice in the post-login redirect.
+        var page = /\.html?$/i.test(last) ? last : 'index.html';
         var ret  = encodeURIComponent(page + window.location.search);
         window.location.replace('login.html?return=' + ret);
         return false;
@@ -119,6 +121,23 @@ var AuthService = (function () {
         return false;
       }
       return true;
+    },
+
+    /**
+     * Store a user object from an external source (e.g., GAS validateUserLogin response).
+     * Dùng trong login.html sau khi GAS trả về role đúng từ USERS sheet.
+     * @param {{ email, displayName, role, team?, loginAt? }} userData
+     */
+    storeUser: function(userData) {
+      if (!userData || !userData.email) return;
+      var user = {
+        email:       String(userData.email).trim().toLowerCase(),
+        displayName: userData.displayName || _buildDisplayName(userData.email),
+        role:        userData.role === 'admin' ? 'admin' : 'user',
+        team:        userData.team || '',
+        loginAt:     userData.loginAt || new Date().toISOString()
+      };
+      _save(user);
     }
   };
 })();

@@ -10,6 +10,7 @@ var API = {
   duplicateCheck: () => `${_gasBase}?action=duplicate-check`,
   dashboard:      () => `${_gasBase}?action=dashboard`,
   health:         () => `${_gasBase}?action=health`,
+  nextId:         () => `${_gasBase}?action=next-id`,
 
   // Dashboard: list use cases với optional filters
   list: (filters) => {
@@ -25,5 +26,12 @@ var API = {
 
   // Approval endpoints (payload qua JSONP base64)
   approve: () => `${_gasBase}?action=approve`,
-  reject:  () => `${_gasBase}?action=reject`
+  reject:  () => `${_gasBase}?action=reject`,
+
+  // User management endpoints
+  userLogin:  (username) => `${_gasBase}?action=user-login&username=${encodeURIComponent(username)}`,
+  users:      ()         => `${_gasBase}?action=users`,
+  userUpsert: ()         => `${_gasBase}?action=user-upsert`,
+  userSync:   ()         => `${_gasBase}?action=user-sync`,
+  userInit:   ()         => `${_gasBase}?action=user-init`
 };

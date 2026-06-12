@@ -404,9 +404,11 @@
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 .modal-card--wide .modal-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 @keyframes modalIn {

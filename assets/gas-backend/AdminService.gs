@@ -14,23 +14,31 @@
 // ── Admin Validation ──────────────────────────────────────────────
 
 /**
- * Đọc danh sách admin emails.
- * Ưu tiên: CONFIG sheet (key=ADMIN_EMAILS) > ADMIN_EMAILS constant trong Config.gs
- * CONFIG sheet cho phép cập nhật không cần re-deploy GAS.
+ * Đọc danh sách admin usernames (đã normalize lowercase).
+ * Ưu tiên:
+ *   1. USERS sheet — Role=admin, Active=TRUE (single source of truth)
+ *   2. CONFIG sheet — key=ADMIN_EMAILS (comma-separated, cho phép update không deploy)
+ *   3. Config.gs ADMIN_EMAILS — hardcoded fallback cuối cùng
  */
 function getAdminEmails_() {
+  // Priority 1: USERS sheet
+  try {
+    var fromSheet = getAdminUsernamesFromSheet_();
+    if (fromSheet.length > 0) return fromSheet;
+  } catch(e) { /* Fallback */ }
+
+  // Priority 2: CONFIG sheet
   try {
     var entry = findObjectByField_(SHEETS.CONFIG, 'Key', 'ADMIN_EMAILS');
     if (entry && entry.Value) {
       return String(entry.Value).split(',')
-        .map(function(e) { return e.trim().toLowerCase(); })
+        .map(function(e) { return normalizeUser_(e); })
         .filter(Boolean);
     }
-  } catch (e) { /* Fallback nếu CONFIG sheet lỗi */ }
+  } catch(e) { /* Fallback */ }
 
-  return (ADMIN_EMAILS || []).map(function(e) {
-    return String(e).trim().toLowerCase();
-  });
+  // Priority 3: Config.gs hardcoded
+  return (ADMIN_EMAILS || []).map(function(e) { return normalizeUser_(e); });
 }
 
 /**

@@ -180,9 +180,18 @@
             <button class="dash-tab admin-only" data-tab="all" role="tab" aria-selected="false" id="tab-btn-all" style="display:none">
               Tất cả use case
             </button>
+            <button class="dash-tab admin-only" data-tab="users" role="tab" aria-selected="false" id="tab-btn-users" style="display:none">
+              Người dùng
+            </button>
             <!-- Available to all -->
             <button class="dash-tab" data-tab="my" role="tab" aria-selected="true" id="tab-btn-my">
               Use Case của tôi
+            </button>
+            <button class="dash-tab" data-tab="explore" role="tab" aria-selected="false" id="tab-btn-explore">
+              Khám phá
+            </button>
+            <button class="dash-tab" data-tab="kpi" role="tab" aria-selected="false" id="tab-btn-kpi">
+              KPI &amp; Tiến độ
             </button>
           </div>
 
@@ -208,14 +217,29 @@
                 <canvas aria-label="Biểu đồ phân bổ theo lĩnh vực" role="img"></canvas>
               </div>
             </div>
+            <!-- Rejected card — admin only, shown by JS when data exists -->
+            <div class="dash-card dash-card--rejected" id="rejectedCard" style="display:none">
+              <div class="dash-card-header">
+                <div style="display:flex;align-items:center;gap:var(--space-3)">
+                  <h3>Use Case bị từ chối</h3>
+                  <span id="rejectedCountBadge" class="tab-badge tab-badge--danger">0</span>
+                </div>
+                <button class="btn btn-sm btn-outline" id="viewAllRejectedBtn" style="display:none">Xem tất cả →</button>
+              </div>
+              <table id="rejectedTable" class="dash-table" aria-label="Danh sách use case bị từ chối">
+                <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Người đăng ký</th><th>Team</th><th>Ngày nộp</th><th></th></tr></thead>
+                <tbody><tr><td colspan="6" class="empty-cell">Đang tải...</td></tr></tbody>
+              </table>
+            </div>
+
             <div class="dash-card">
               <div class="dash-card-header">
                 <h3>Nộp gần đây</h3>
                 <span id="refreshedAt" class="dash-card-meta"></span>
               </div>
               <table id="recentTable" class="dash-table" aria-label="Danh sách use case nộp gần đây">
-                <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Team</th><th>Ngày nộp</th></tr></thead>
-                <tbody><tr><td colspan="4" class="empty-cell">Đang tải...</td></tr></tbody>
+                <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Team</th><th>Ngày nộp</th><th></th></tr></thead>
+                <tbody><tr><td colspan="5" class="empty-cell">Đang tải...</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -231,15 +255,54 @@
           <div id="tab-all" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-all">
             <div class="dash-card">
               <div class="dash-card-header">
-                <h3>Tất cả use case</h3>
+                <h3>Tất cả use case <span id="allTableCount" class="all-count-badge"></span></h3>
                 <div class="search-box">
                   <input type="search" id="searchInput" class="search-input" placeholder="Tìm theo tên, người đăng ký, team..." aria-label="Tìm kiếm use case">
                 </div>
               </div>
+              <!-- Filter bar -->
+              <div class="filter-bar" role="group" aria-label="Bộ lọc use case">
+                <div class="filter-bar-group">
+                  <span class="filter-bar-label">Trạng thái</span>
+                  <div class="filter-pills" id="statusFilterPills" role="group" aria-label="Lọc theo trạng thái"></div>
+                </div>
+                <div class="filter-bar-group">
+                  <label class="filter-bar-label" for="teamFilter">Team</label>
+                  <select id="teamFilter" class="filter-select" aria-label="Lọc theo team">
+                    <option value="">Tất cả</option>
+                  </select>
+                </div>
+              </div>
               <table id="allTable" class="dash-table" aria-label="Danh sách tất cả use case">
                 <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Người đăng ký</th><th>Team</th><th>Trạng thái</th><th></th></tr></thead>
-                <tbody><tr><td colspan="6" class="empty-cell">Chọn tab để tải dữ liệu</td></tr></tbody>
+                <tbody><tr><td colspan="6" class="empty-cell">Đang tải...</td></tr></tbody>
               </table>
+            </div>
+          </div>
+
+          <!-- Tab: Người dùng (admin only) -->
+          <div id="tab-users" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-users">
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <h3>Quản lý người dùng</h3>
+                <div class="dash-card-actions" id="usersTabActions">
+                  <button id="syncUsersBtn" class="btn btn--secondary btn--sm" title="Đồng bộ user từ dữ liệu Use Case">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="14" height="14" style="vertical-align:middle;margin-right:4px">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    Đồng bộ từ UC
+                  </button>
+                  <button id="addUserBtn" class="btn btn--primary btn--sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="14" height="14" style="vertical-align:middle;margin-right:4px">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+                    </svg>
+                    Thêm user
+                  </button>
+                </div>
+              </div>
+              <div id="usersTableWrap">
+                <p class="empty-state">Đang tải...</p>
+              </div>
             </div>
           </div>
 
@@ -257,6 +320,29 @@
             </div>
           </div>
 
+          <!-- Tab: Khám phá (all users) — approved use cases from org -->
+          <div id="tab-explore" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-explore">
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <h3>Khám phá Use Case</h3>
+                <div class="search-box">
+                  <input type="search" id="exploreSearch" class="search-input" placeholder="Tìm theo tên, team, lĩnh vực..." aria-label="Tìm kiếm use case">
+                </div>
+              </div>
+              <table id="exploreTable" class="dash-table" aria-label="Danh sách use case đã được duyệt">
+                <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Team</th><th>Người đăng ký</th><th>Lĩnh vực</th><th></th></tr></thead>
+                <tbody><tr><td colspan="6" class="empty-cell">Đang tải...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab: KPI & Tiến độ (all users) -->
+          <div id="tab-kpi" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-kpi">
+            <div id="kpiTabContent">
+              <div class="empty-state"><p class="empty-state-text">Đang tải...</p></div>
+            </div>
+          </div>
+
         </div><!-- /dashboardContent -->
 
       </div><!-- /app-content -->
@@ -271,6 +357,68 @@
 
   <!-- Toast Container -->
   <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- ── User Add/Edit Modal ── -->
+  <div id="userModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
+    <div class="modal-card" style="max-width:480px;width:100%">
+      <div class="modal-header">
+        <h2 class="modal-title" id="userModalTitle">Thêm người dùng</h2>
+        <button class="modal-close" id="userModalCloseBtn" aria-label="Đóng">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:var(--space-5)">
+        <div style="display:grid;gap:var(--space-4)">
+          <div>
+            <label class="form-label" for="umUsername">Tên đăng nhập <span style="color:var(--color-error)">*</span></label>
+            <input type="text" id="umUsername" class="form-input" placeholder="VD: tuantt4" autocomplete="off">
+            <p class="form-hint">Không phân biệt hoa thường. VD: tuantt4 = Tuantt4 = TUANTT4</p>
+          </div>
+          <div>
+            <label class="form-label" for="umDisplayName">Tên hiển thị</label>
+            <input type="text" id="umDisplayName" class="form-input" placeholder="VD: Tuấn Trần">
+          </div>
+          <div>
+            <label class="form-label" for="umRole">Vai trò <span style="color:var(--color-error)">*</span></label>
+            <select id="umRole" class="form-select">
+              <option value="user">Người dùng</option>
+              <option value="admin">Quản trị viên</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="umTeam">Team / Phòng</label>
+            <input type="text" id="umTeam" class="form-input" placeholder="VD: CV2, TT SPTD">
+          </div>
+          <div>
+            <label class="form-label" for="umEmail">Email thực (tùy chọn)</label>
+            <input type="text" id="umEmail" class="form-input" placeholder="VD: user@bank.vn">
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--space-3)">
+            <input type="checkbox" id="umActive" checked style="width:16px;height:16px;accent-color:var(--color-primary)">
+            <label for="umActive" style="font-size:var(--text-sm);color:var(--color-text)">Tài khoản đang hoạt động (Active)</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--secondary" id="userModalCancelBtn">Hủy</button>
+        <button class="btn btn--primary" id="userModalSaveBtn">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── List Popup Modal ── -->
+  <div id="listModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="listModalTitle">
+    <div class="modal-card modal-card--list">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:var(--space-3);flex:1;min-width:0">
+          <h3 id="listModalTitle" style="margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Danh sách Use Case</h3>
+          <span id="listModalCount" class="id-badge" style="flex-shrink:0"></span>
+        </div>
+        <button class="modal-close" id="listModalCloseBtn" aria-label="Đóng">×</button>
+      </div>
+      <div class="modal-body" id="listModalBody">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
 
   <!-- ── US Detail Modal ── -->
   <div id="usDetailModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle">
@@ -308,6 +456,7 @@
       <div class="modal-footer" id="detailModalFooter">
         <a id="detailEditBtn" href="#" class="btn btn-outline" style="display:none">✏️ Chỉnh sửa</a>
         <div style="flex:1"></div>
+        <button class="btn btn-outline" id="detailCopyPromptBtn" style="display:none">📋 Copy Prompt</button>
         <button class="btn btn-outline" id="detailCloseBtn">Đóng</button>
         <button class="btn btn-danger" id="detailRejectBtn" style="display:none">✕ Từ chối</button>
         <button class="btn btn-success" id="detailApproveBtn" style="display:none">✓ Duyệt</button>

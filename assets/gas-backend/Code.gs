@@ -97,6 +97,10 @@ function route_(action, params, body) {
     return createResponse_(true, 'Lookup data', getLookupData_());
   }
 
+  if (action === 'next-id') {
+    return createResponse_(true, 'Next available UseCase ID', peekNextUseCaseId_());
+  }
+
   // Debug endpoint: xem raw LOOKUP sheet (dùng khi cần troubleshoot)
   if (action === 'lookup-debug') {
     var sheet = getOrCreateSheet_(SHEETS.LOOKUP);
@@ -165,6 +169,64 @@ function route_(action, params, body) {
     if (!rejectEmail)    return createResponse_(false, 'Thiếu reviewer_email');
     return createResponse_(true, 'Use case đã bị từ chối',
       rejectUseCase_(rejectRecordId, rejectEmail, rejectComment));
+  }
+
+  // ── User management endpoints ──────────────────────────────────
+
+  // Validate login + update Last_Login + trả về user info từ USERS sheet
+  if (action === 'user-login') {
+    var loginUser = params.username || body.username || '';
+    if (!loginUser) return createResponse_(false, 'Thiếu username');
+    return createResponse_(true, 'Đăng nhập thành công', validateUserLogin_(loginUser));
+  }
+
+  // Danh sách tất cả user (để admin quản lý)
+  if (action === 'users') {
+    var rawUsers = getAllUsers_();
+    return createResponse_(true, 'Danh sách user', rawUsers.map(function(u) {
+      return {
+        username:     normalizeUser_(u.Username),
+        display_name: u.Display_Name || '',
+        role:         normalizeUser_(u.Role || 'user'),
+        team:         u.Team  || '',
+        email:        u.Email || '',
+        active:       (u.Active === true || String(u.Active).toUpperCase() === 'TRUE'),
+        created_at:   u.Created_At || '',
+        last_login:   u.Last_Login || ''
+      };
+    }));
+  }
+
+  // Tạo mới hoặc cập nhật user (admin only)
+  if (action === 'user-upsert') {
+    var upsertAdmin = body.reviewer_email || body.admin_email || '';
+    if (!isAdminEmail_(upsertAdmin)) {
+      return createResponse_(false, 'Không có quyền quản lý user: ' + upsertAdmin);
+    }
+    var upsertUsername = body.Username || body.username || '';
+    if (!upsertUsername) return createResponse_(false, 'Thiếu Username');
+    body.Username = upsertUsername;
+    var upsertResult = upsertUser_(body);
+    return createResponse_(true, upsertResult.created ? 'Đã tạo user mới' : 'Đã cập nhật user', upsertResult);
+  }
+
+  // Đồng bộ USERS sheet từ MASTER_DATA (admin only)
+  if (action === 'user-sync') {
+    var syncAdmin = body.reviewer_email || body.admin_email || params.admin_email || '';
+    if (!isAdminEmail_(syncAdmin)) {
+      return createResponse_(false, 'Không có quyền thực hiện sync: ' + syncAdmin);
+    }
+    return createResponse_(true, 'Sync hoàn tất', syncUsersFromMasterData_());
+  }
+
+  // Khởi tạo sheet USERS + seed từ ADMIN_EMAILS (admin only, gọi 1 lần)
+  if (action === 'user-init') {
+    var initAdmin = body.reviewer_email || body.admin_email || params.admin_email || '';
+    if (!isAdminEmail_(initAdmin)) {
+      return createResponse_(false, 'Không có quyền khởi tạo: ' + initAdmin);
+    }
+    initUsersSheet_();
+    return createResponse_(true, 'Sheet USERS đã được khởi tạo', { status: 'ok' });
   }
 
   return createResponse_(false, 'Endpoint không tồn tại: ' + action);
