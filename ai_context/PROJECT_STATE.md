@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-08
-**Version:** 3.10.2
+**Last updated:** 2026-06-17
+**Version:** 3.10.2 (feat complete; GAS champion-review deploy pending)
 
 ---
 
@@ -10,25 +10,33 @@
 ### Pages & Routes
 | URL | File | Auth | Description |
 |-----|------|------|-------------|
-| `/login.html` | `login.html` | Public | Login page — email only |
+| `/login.html` | `login.html` | Public | Login page — username only |
 | `/index.html` | `index.html` | User+ | Portal home (service cards) |
-| `/register.html` | `register.html` | User+ | Wizard 4-step (moved from index.html) |
-| `/dashboard.html` | `dashboard.html` | Admin only | Dashboard + approval |
+| `/register.html` | `register.html` | User+ | Wizard 4-step + scoring preview + self-assessment sliders |
+| `/dashboard.html` | `dashboard.html` | User+ | Dashboard (admin: all tabs; user: My/Explore/KPI) |
+| `/users.html` | `users.html` | Admin only | Standalone user management page |
+| `/review-queue.html` | `review-queue.html` | Champion+ | Champion review queue — 3 sections + slide-in panel |
 
 ### Auth Flow
 ```
 Any page → AuthService.requireAuth()
   → not logged in → login.html?return=<page>
-  → login form submit → AuthService.login(email)
-    → role = 'admin' if email in APP_CONFIG.ADMIN_EMAILS
-    → role = 'user' otherwise
+  → login form submit → AuthService.login(username)
+    → GAS ?action=user-login → role from USERS sheet
+    → fallback: role = 'admin' if username in APP_CONFIG.ADMIN_EMAILS
+    →           role = 'champion' if username in APP_CONFIG.CHAMPION_USERS
+    →           else role = 'user'
     → store to sessionStorage['ai_user_session']
   → redirect to return URL or index.html
 
-dashboard.html → AuthService.requireAdmin()
+users.html → AuthService.requireAdmin()
   → not logged in → login.html
   → logged in but not admin → index.html
-  → admin confirmed → show dashboard
+
+review-queue.html → AuthService.requireChampionOrAdmin()
+  → not logged in → login.html
+  → logged in but role is 'user' → index.html
+  → admin or champion → show review queue
 ```
 
 ### Session Storage Keys
@@ -41,7 +49,17 @@ dashboard.html → AuthService.requireAdmin()
 ```
 env.js → auth.js → [auth guard inline] → routes.js → constants.js
 → helpers.js → storage.js → api.js → validation.js → toast.js
-→ duplicate-check.js → form-mapper.js → wizard.js → app.js
+→ duplicate-check.js → form-mapper.js → wizard.js → scoring.js → app.js
+```
+
+### Script Load Order (users.html)
+```
+env.js → auth.js → [requireAdmin inline] → routes.js → toast.js → api.js → users.js
+```
+
+### Script Load Order (review-queue.html)
+```
+env.js → auth.js → [requireChampionOrAdmin inline] → routes.js → toast.js → api.js → scoring.js → review-queue.js
 ```
 
 ### Script Load Order (dashboard.html)
@@ -88,20 +106,28 @@ env.js → auth.js → [inline portal script]
 | Stacked breakdown charts | ✅ | NEW v3.8.0 — Team & Category bars phân tách màu theo trạng thái UC; click segment → popup lọc đúng group + status |
 | KPI & Tiến độ tab | ✅ | v3.10.2 — Week nav ‹/› xem lại tuần trước; chỉ đếm Approved UCs; `KPI_EXCLUDED_USERS` loại directors (cuongvm1); render ngay không chờ getUsers(); 15/15 Playwright PASS |
 | User management | ✅ | NEW v3.10.0 — Sheet USERS trong GAS; case-insensitive (normalizeUser_); login async validates GAS; admin tab quản lý users; sync từ MASTER_DATA |
+| Standalone users.html | ✅ | NEW v3.10.2 (2026-06-17) — Separate page (not dashboard tab); admin-only; table + add/edit modal; champion role option |
+| Champion role | ✅ | NEW v3.10.2 (2026-06-17) — New role between admin and user; team-scoped UC review; scores Quality/BV/Innovation 0–10; USERS sheet is source of truth |
+| Review queue page | ✅ | NEW v3.10.2 (2026-06-17) — review-queue.html; 3 queues: Chờ đánh giá/Đang review/Đã hoàn thành; slide-in review panel with sliders + projected score |
+| Scoring preview (register) | ✅ | NEW v3.10.2 (2026-06-17) — Live scoring ring + bars while filling wizard; self-assessment BV + Innovation sliders; Quality shown as 0 (TBD) |
+| Score display (explore) | ✅ | NEW v3.10.2 (2026-06-17) — Score chip on approved UCs in Explore tab; rank color badge |
+| ScoringEngine JS module | ✅ | NEW v3.10.2 (2026-06-17) — assets/js/scoring.js; mirrors GAS ScoringEngine.gs; used by register.html preview + review-queue.html panel |
+| Playwright test suite | ✅ | NEW v3.10.2 (2026-06-17) — 59/59 pass; 4 spec files; JSONP mock via page.route(); session inject via addInitScript() |
 | KPI week date format | ✅ | fix `91c4a00` — manual `DD/MM` formatter thay `toLocaleDateString` (locale inconsistency trên Chromium/Windows) |
 | Responsive | ✅ | Sidebar collapse 1024px áp dụng toàn bộ pages |
 
 ## Backend (GAS) — ⚠️ Partial
 
-**Active deployment URL:** `AKfycbwe0eo3X3KWxGdJ8ZWLjAgx3FVvcSOxTA5KVJGYVV3_Skbn0eXAVouzKaZOgDaDcUupew`
+**Active deployment URL:** `AKfycbypN8afAl2zQwpR7K6k1-699g3HAhFAIqAOtDn3qY1nJWzuN1bd8n99bzRUzaV8ZMyTCw`
 **OAuth:** ✅ Authorized | **GAS code sync:** ⚠️ Local fixes chưa deploy — chưa tìm được đúng GAS project (GAS-MYSTERY-01)
 
-**Pending deploy (7 files):**
+**Pending deploy (9 files):**
 
 | File | Thay đổi chính | Version |
 |---|---|---|
+| `AdminService.gs` | **NEW funcs** — isChampionForTeam_() + submitChampionReview_() | v3.10.2 |
+| `Code.gs` | Routes next-id + 5 user endpoints + champion-review | v3.10.2 |
 | `UserService.gs` | **NEW** — USERS sheet, normalizeUser_(), validateUserLogin_(), syncUsersFromMasterData_() | v3.10.0 |
-| `Code.gs` | Routes next-id + 5 user endpoints | v3.10.0 |
 | `Config.gs` | SHEETS.USERS + USERS_HEADERS + usernames ADMIN_EMAILS | v3.10.0 |
 | `Utils.gs` | sanitizeStr_ + toSheetValue_() + findRowByField_() + USERS case | v3.10.0 |
 | `UseCaseService.gs` | _assignUseCaseId_() + single-read update + JSON_Backup cap | v3.7.1 |
@@ -124,14 +150,37 @@ env.js → auth.js → [inline portal script]
 | user-login / users / user-upsert / user-sync | ⏳ | Code ready locally, chưa deploy (GAS-MYSTERY-01) |
 | Authentication | ❌ | Username-based FE only, no real auth (SEC-01) |
 
-## Auth Architecture Notes (v3.10)
+## Auth Architecture Notes (v3.10.2)
+
+**Roles:** `admin` | `champion` (new 2026-06-17) | `user`
+
 - **Login:** Async — gọi GAS `?action=user-login` lấy role từ USERS sheet; fallback về local nếu GAS offline
-- **Role resolution priority:** USERS sheet (Active=TRUE) → `APP_CONFIG.ADMIN_EMAILS` (local fallback khi offline)
+- **Role resolution priority:** USERS sheet (Active=TRUE) → `APP_CONFIG.ADMIN_EMAILS` (admin fallback) → `APP_CONFIG.CHAMPION_USERS` (champion fallback)
 - **Admin list:** GAS USERS sheet (Role=admin) → `Config.gs` ADMIN_EMAILS → `config/env.js` ADMIN_EMAILS
+- **Champion detection:** GAS USERS sheet (Role=champion, Active=TRUE, Team=<team>) → `APP_CONFIG.CHAMPION_USERS` (FE-only fallback list, currently `[]`)
 - **Session:** sessionStorage `ai_user_session` = `{email: username, displayName, role, team, loginAt}`
-- **Dashboard access:** All logged-in users → dashboard.html; admin sees full tabs + Users tab, user sees My/Explore/KPI
+- **Page access matrix:**
+  - `dashboard.html` — all logged-in users (admin: full tabs; user: My/Explore/KPI)
+  - `users.html` — admin only
+  - `review-queue.html` — admin OR champion
+- **Champion team scope:** `review-queue.js _filter()` compares `uc.team.toLowerCase() === user.team.toLowerCase()`; GAS also enforces in `isChampionForTeam_()`
 - **Owner fields:** Auto-filled from session on register; readonly after fill
 - **CAVEAT:** Khi GAS offline, fallback local không check `Active=FALSE` → deactivated user vẫn login được (USER-OFFLINE-01 in TECH_DEBT)
+
+## Scoring Architecture (v3.10.2)
+
+**Total = 100pt:**
+- Auto Score (70pt max): Efficiency 20 + Adoption 20 + Reuse 20 + Frequency 15 + Docs 5
+- Manual Score (30pt max): Quality 10 (champion) + Business_Value 10 + Innovation 10
+
+**Rank thresholds:** ≥85 TOP_PERFORMER (#7B2CBF) · ≥70 STRONG_CONTRIBUTOR (#4CAF50) · ≥50 AVERAGE (#F6B100) · <50 BOTTOM_PERFORMER (#F44336)
+
+**Self-assessment flow:**
+1. User fills wizard → adjusts BV + Innovation sliders (0–10, default 5)
+2. Register.html preview shows live score (Quality=0 since unknown)
+3. Sliders submitted with UC payload → stored on MASTER sheet
+4. Champion opens review panel → sets Quality/BV/Innovation sliders → submits
+5. GAS `submitChampionReview_()` calls `scoreUseCase_()` → overwrites Total_Score + Rank_Category
 
 ## Data Layer — ✅ Unchanged
 Google Sheets structure unchanged. API contract (field names) unchanged. localStorage key unchanged.

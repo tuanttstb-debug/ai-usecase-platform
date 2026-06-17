@@ -1098,14 +1098,15 @@ Test runner: Playwright + Chrome (`localhost:8787` Python HTTP server).
 
 **[P0 — USER ACTION] Tìm GAS project (GAS-MYSTERY-01):**
 1. Mở `script.google.com` → My Projects → từng project → Deploy → Manage deployments
-2. Tìm URL chứa `AKfycbwe0eo3X3KW` → đổi tên project → note lại
+2. Tìm URL chứa `AKfycbypN8afAl2z` → đổi tên project → note lại
 
-**[P0 — sau khi tìm được GAS] Paste 7 file vào GAS Editor → New version → Deploy:**
-`UserService.gs` (NEW) · `UseCaseService.gs` · `Code.gs` · `Config.gs` · `Utils.gs` · `LookupService.gs` · `DashboardService.gs`
+**[P0 — sau khi tìm được GAS] Paste 9 file vào GAS Editor → Edit deployment → New version → Deploy:**
+`AdminService.gs` (NEW funcs) · `Code.gs` (champion-review route) · `UserService.gs` (NEW) · `UseCaseService.gs` · `Config.gs` · `Utils.gs` · `LookupService.gs` · `DashboardService.gs`
 
 Sau khi deploy, chạy 1 lần:
 - `GAS_URL?action=user-init&admin_email=tuantt4` → tạo sheet USERS + seed admin
 - Dashboard → tab Người dùng → Đồng bộ từ UC → import tất cả owner từ MASTER_DATA
+- Thêm champion users vào USERS sheet: Role=champion, Active=TRUE, Team=<tên team khớp MASTER_DATA>
 
 **[P1] Fix `_populateTeamFilter` stale state (FILTER-01):**
 - 1 dòng: `_filterAll.team = teamSel.value` sau khi render options. File: `assets/js/dashboard.js`
@@ -1123,3 +1124,67 @@ Sau khi deploy, chạy 1 lần:
 **[P2] BUG-03** — Status="Draft" khi tạo mới: confirm với PO là bug hay intent
 
 **[P3] Xóa dead code** — `renderBreakdownChart` và `_renderBreakdownChartCSS` không còn được gọi cho team/category charts (đã thay bằng `renderStackedChart`). Có thể xóa nếu muốn clean up.
+
+---
+
+## Session: 2026-06-17
+**Scope:** Champion Role + Review Queue + Scoring Preview + Standalone User Management page
+**Commit:** `c6eca78` (main) — 26 files changed, +2648 insertions, -138 deletions
+**Tests:** 59/59 Playwright PASS (4 spec files, local Python http.server port 8787)
+**GAS deploy:** ⚠️ PENDING — `AdminService.gs` + `Code.gs` edited locally, NOT yet deployed
+
+### Files Added
+
+| File | Description |
+|---|---|
+| `users.html` | Standalone admin-only user management (replaces dashboard tab) |
+| `review-queue.html` | Champion+admin review queue — 3 sections + slide-in review panel |
+| `assets/js/users.js` | UsersPage IIFE — table render, add/edit modal, role color badges |
+| `assets/js/review-queue.js` | ReviewQueue IIFE — load, team-filter, panel open/close, submit |
+| `assets/js/scoring.js` | ScoringEngine client-side (mirrors GAS ScoringEngine.gs) |
+| `playwright.config.js` | Playwright config — Python http.server port 8787, Chromium only |
+| `tests/helpers.js` | `setSession()`, `mockGAS()`, fixture users + UC list |
+| `tests/01-auth-nav.spec.js` | 15 tests: role-based nav on index/register/dashboard |
+| `tests/02-users-page.spec.js` | 9 tests: users.html access, table render, modal, redirect |
+| `tests/03-review-queue.spec.js` | 12 tests: access control, badge counts, panel, submit API |
+| `tests/04-scoring-preview.spec.js` | 21 tests: ScoringEngine unit + register.html preview sliders |
+| `tests/scoring-test.html` | Minimal HTML fixture (only loads scoring.js, no auth) |
+
+### Files Modified
+
+| File | Delta |
+|---|---|
+| `register.html` | navUsers/navReviewQueue; scoring preview panel + self-assessment sliders; `<link>` to dashboard.css |
+| `index.html` | navUsers + navReviewQueue (replaced navManagerReview) |
+| `assets/js/app.js` | `_bindScoringPreview()`, `_updateScoringPreview()`; slider values injected at submit |
+| `assets/css/dashboard.css` | +~380 lines: score ring/bars/sliders, rq-sections, review panel overlay |
+| `assets/js/auth.js` | `isChampion()`, `isChampionOrAdmin()`, `requireChampionOrAdmin()`, `populateSidebarUser()`, `setupNav()` |
+| `config/env.js` | `CHAMPION_USERS: []` fallback list |
+| `config/routes.js` | `submitChampionReview` endpoint |
+| `assets/js/api.js` | `Api.submitChampionReview()` |
+| `assets/gas-backend/AdminService.gs` | `isChampionForTeam_()` + `submitChampionReview_()` |
+| `assets/gas-backend/Code.gs` | `champion-review` route |
+| `package.json` | `@playwright/test` devDependency |
+
+### Decisions Made This Session
+
+1. Champion cannot approve/reject (admin-only right); champion scores Quality/BV/Innovation 0–10
+2. Champion sees only their own team's UCs — enforced both FE (`_filter()`) and GAS (`isChampionForTeam_()`)
+3. Separate pages (users.html, review-queue.html) — not tabs inside dashboard
+4. Self-assessment: BV + Innovation sliders on register wizard; Quality scored post-review by champion
+5. Scores visible publicly on Explore tab
+6. `tests/scoring-test.html` minimal fixture → avoids auth redirect that blocked ScoringEngine loading in tests
+
+### Bugs Fixed During Session
+
+- `getAllRows_()` does not exist → fixed to `getAllUsers_()` in `isChampionForTeam_()`
+- USERS lookup was `u.Email || u.Username` → fixed to `u.Username || u.Email` (reviewer_email is username)
+- `uc.owner` field doesn't exist → fixed to `uc.owner_name` in `review-queue.js`
+- `@playwright/test` not installed → added as devDependency
+- ScoringEngine tests hitting auth redirect → fixed with `tests/scoring-test.html` fixture
+
+### Blocker
+
+GAS files NOT deployed. `champion-review` route + `isChampionForTeam_()` only exist locally.
+Deploy via "Edit deployment → New version" (NOT New Deployment — keep URL unchanged).
+GAS URL: `AKfycbypN8afAl2zQwpR7K6k1-699g3HAhFAIqAOtDn3qY1nJWzuN1bd8n99bzRUzaV8ZMyTCw`

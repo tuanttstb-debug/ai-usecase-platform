@@ -223,3 +223,47 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 **Rủi ro:** Cosmetic only — data vẫn đúng trong sheet, chỉ UI bị stale cho đến khi admin click lại tab.
 
 **Fix:** Thêm `if (currentTab === 'users') _loadUsersTab()` vào `_bindRefresh` handler. File: `assets/js/dashboard.js`.
+
+---
+
+## CHAMPION-01 — `isChampionForTeam_()` O(n) scan USERS sheet per request (v3.10.2, 2026-06-17)
+
+**Mô tả:** `isChampionForTeam_()` trong `AdminService.gs` gọi `getAllUsers_()` và loop qua toàn bộ USERS sheet mỗi lần có `champion-review` request. Không có caching.
+
+**Rủi ro:** Thấp với <100 users. Nếu USERS sheet phát triển lên vài trăm rows, mỗi review request thêm latency đáng kể.
+
+**Fix nếu cần:** Cache kết quả `getAllUsers_()` với `CacheService` trong GAS (expiry 5 phút), hoặc dùng indexed lookup (Map từ email → user object) trong cùng execution context.
+
+**File:** `assets/gas-backend/AdminService.gs` — `isChampionForTeam_()`
+
+---
+
+## CHAMPION-02 — Team name must match exactly between USERS sheet and MASTER_DATA (v3.10.2, 2026-06-17)
+
+**Mô tả:** `isChampionForTeam_()` compare lowercase của `u.Team` (USERS sheet) với lowercase của `existing.Team` (MASTER sheet). Comparison là case-insensitive nhưng nếu có typo ("Team Số" vs "Team So") → champion thấy UCs trong filter (FE dùng `user.team` từ session) nhưng GAS reject khi submit review vì MASTER team không khớp với USERS team.
+
+**Rủi ro:** Champion có thể mở panel, điền điểm, submit → nhận lỗi "Không có quyền champion review cho team: X" vì tên team trong MASTER có dấu còn USERS không (hoặc ngược lại).
+
+**Fix:** Normalize team names khi nhập liệu. Admin nên copy-paste tên team từ MASTER_DATA vào USERS sheet thay vì gõ tay.
+
+---
+
+## CHAMPION-03 — Self-assessment scores overwritten by champion review (v3.10.2, 2026-06-17)
+
+**Mô tả:** Khi user submit UC, `Business_Value_Score` và `Innovation_Score` từ sliders (self-assessment) được ghi vào MASTER sheet. Khi champion review, `submitChampionReview_()` ghi lại `Business_Value_Score` và `Innovation_Score` với giá trị champion chọn, overwriting giá trị user tự đánh giá. Không có audit trail "user nói X, champion nói Y".
+
+**Rủi ro:** Nếu cần so sánh self-assessment vs champion assessment (e.g. cho governance report), dữ liệu đã mất.
+
+**Fix nếu cần:** Thêm columns `User_BV_Self` và `User_Inn_Self` vào MASTER_DATA để lưu riêng giá trị user nhập. Chỉ cần khi có yêu cầu governance/audit. Hiện tại chưa cần.
+
+---
+
+## PLAYWRIGHT-01 — Hardcoded Windows path + Python http.server in playwright.config.js (v3.10.2, 2026-06-17)
+
+**Mô tả:** `playwright.config.js` có `cwd: 'D:\\Công việc\\Vibecode\\...'` hardcoded Windows path. `webServer.command` dùng `python -m http.server 8787` (Python 3 only, không HTTPS, không keep-alive headers).
+
+**Rủi ro:** Tests sẽ fail trên bất kỳ máy nào khác (khác user/path), và sẽ fail trong CI/CD environment.
+
+**Fix khi cần CI/CD:** Dùng `path.resolve(__dirname)` thay hardcoded path; thay `python -m http.server` bằng `npx serve -s . -l 8787` (cross-platform, có proper MIME types).
+
+**File:** `playwright.config.js` — `webServer.cwd` và `webServer.command`.

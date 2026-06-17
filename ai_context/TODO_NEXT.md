@@ -10,11 +10,12 @@ Sau khi hoàn thành GAS-MYSTERY-01 bên dưới, paste **tất cả** file dư�
 
 | File | Thay đổi quan trọng | Version |
 |---|---|---|
+| `AdminService.gs` | **NEW funcs** — `isChampionForTeam_()` + `submitChampionReview_()` | v3.10.2 |
+| `Code.gs` | Route `?action=next-id` + 5 user endpoints + **`champion-review`** | v3.10.2 |
 | `UserService.gs` | **NEW** — USERS sheet management, normalizeUser_(), validateUserLogin_(), syncUsersFromMasterData_() | v3.10.0 |
 | `UseCaseService.gs` | `_assignUseCaseId_()` + single-read update + cap JSON_Backup | v3.7.1 |
 | `Utils.gs` | `sanitizeStr_` + `toSheetValue_()` + `findRowByField_()` + USERS sheet support | v3.10.0 |
-| `Code.gs` | Route `?action=next-id` + 5 user endpoints | v3.10.0 |
-| `Config.gs` | `SHEETS.USERS` + `USERS_HEADERS` + `ADMIN_EMAILS = ['admin','tuantt4','manager']` | v3.10.0 |
+| `Config.gs` | `SHEETS.USERS` + `USERS_HEADERS` + `ADMIN_EMAILS = ['cuongvm1','tuantt4','dunglq1']` | v3.10.0 |
 | `LookupService.gs` | Rewrite hoàn toàn | v2.x |
 | `DashboardService.gs` | Push `record_id`, `status`, `owner_name` vào `recent_submissions` | v3.5.1 |
 
@@ -26,7 +27,8 @@ Rồi vào Dashboard → tab "Người dùng" → **Đồng bộ từ UC** → i
 
 Test sau deploy:
 - `GAS_URL?action=next-id` → `{"success":true,"data":{"next_id":"AIUS-XXXX"}}`
-- Submit 1 UC mới với ký tự đặc biệt trong Prompt_Context (VD: `"quotes"`, `=formula`, emoji 🎯) → kiểm tra lưu đúng trong sheet
+- `GAS_URL?action=champion-review` (không có body) → expect error "Thiếu Record_ID", không phải 404
+- Submit 1 UC mới với ký tự đặc biệt trong Prompt_Context → kiểm tra lưu đúng trong sheet
 - Submit UC mới → kiểm tra ID trả về khớp với ID trong sheet
 
 ---
@@ -37,7 +39,7 @@ GAS URL đang hoạt động (`AKfycbwe0eo3X3KW...`) không tìm thấy trong de
 
 **Fix:**
 1. Mở `script.google.com` → **My Projects** → duyệt tất cả project
-2. Với mỗi project → **Deploy → Manage deployments** → tìm URL chứa `AKfycbwe0eo3X3KW`
+2. Với mỗi project → **Deploy → Manage deployments** → tìm URL chứa `AKfycbypN8afAl2z`
 3. Khi tìm được: đổi tên project thành `AI Use Case Platform` để không lạc lần sau
 4. Kiểm tra project đó có đúng code không (so với `assets/gas-backend/`)
 
@@ -127,6 +129,30 @@ Cải tiến: Thêm column `KPI_Exempt` (TRUE/FALSE) vào USERS sheet → `_buil
 - [x] Full UC detail view modal — 4 sections (done 2026-06-02)
 - [ ] Dark mode — tokens sẵn sàng, thêm `@media (prefers-color-scheme: dark)` vào `variables.css`
 - [ ] Logo SVG thay sparkles trong sidebar brand
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-17
+
+- [x] **Champion role (v3.10.2)**: New role between admin and user. Role resolution: USERS sheet primary (Role=champion, Active=TRUE, Team set) → `APP_CONFIG.CHAMPION_USERS` FE fallback. `AuthService.isChampion()`, `isChampionOrAdmin()`, `requireChampionOrAdmin()` in auth.js. Commit `c6eca78`.
+- [x] **Standalone users.html (v3.10.2)**: Separate admin-only page (not dashboard tab). Table render + add/edit modal + role color badges. `assets/js/users.js` (UsersPage IIFE). Commit `c6eca78`.
+- [x] **Review queue page (v3.10.2)**: `review-queue.html` accessible to admin + champion. 3 sections: Chờ đánh giá (Submitted) / Đang review (Under Review) / Đã hoàn thành (Approved + scored). Slide-in review panel with Quality/BV/Innovation sliders, projected score display, rank chip. `assets/js/review-queue.js`. Champion filter: only shows team's UCs. Commit `c6eca78`.
+- [x] **Scoring preview in register.html (v3.10.2)**: Live score ring + bar chart while filling wizard. Self-assessment sliders: BV + Innovation (0–10, default 5). Quality=0 (set by champion later). Slider values submitted with UC payload. `assets/js/scoring.js` (ScoringEngine client-side). Commit `c6eca78`.
+- [x] **GAS: isChampionForTeam_() + submitChampionReview_()**: `AdminService.gs` additions. Authorization: admin OR champion for matching team. Calculates final score via `scoreUseCase_()`. Commit `c6eca78` (local only — NOT deployed yet).
+- [x] **59/59 Playwright tests PASS**: 4 spec files across auth/users/review-queue/scoring-preview. JSONP mock via `page.route()`. Session inject via `page.addInitScript()`. Commit `c6eca78`.
+
+---
+
+## P0 — [UNBLOCKING] Champion end-to-end test after GAS deploy
+
+After deploying GAS, test the full champion flow:
+- [ ] Add champion row to USERS sheet: `Username=<username>`, `Role=champion`, `Active=TRUE`, `Team=<exact team name>`
+- [ ] Login as champion → verify `navReviewQueue` visible, `navUsers` NOT visible, role label shows "Champion"
+- [ ] Navigate to `review-queue.html` → verify only team's UCs appear in queues
+- [ ] Click "Review" → slide-in panel opens → UC ID displayed correctly
+- [ ] Set Quality slider to 8, BV to 7, Inn to 6 → projected score updates correctly
+- [ ] Click submit → verify toast "Review đã được ghi nhận" + queue reloads
+- [ ] Check MASTER sheet: `Quality_Score=8`, `Business_Value_Score=7`, `Innovation_Score=6`, `Total_Score` recalculated
 
 ---
 
