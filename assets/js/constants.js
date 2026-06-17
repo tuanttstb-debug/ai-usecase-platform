@@ -2,12 +2,13 @@
    FIELDS — tên cột Google Sheets (KHÔNG đổi — ảnh hưởng API contract)
    ───────────────────────────────────────── */
 var FIELDS = {
+  // ── Form fields (existing — do NOT rename) ───────────────────
   USE_CASE_NAME:       'UseCase_Name',
   OWNER_NAME:          'Owner_Name',
   OWNER_EMAIL:         'Owner_Email',
   TEAM:                'Team',
   BUSINESS_CATEGORY:   'Business_Category',
-  CURRENT_STAGE:       'Current_Stage',      // ← THÊM MỚI: Stage S1-S4
+  CURRENT_STAGE:       'Current_Stage',
   PAIN_POINT:          'Pain_Point',
   CURRENT_PROCESS:     'Current_Process',
   CURRENT_TIME_MIN:    'Current_Time_Min',
@@ -34,7 +35,70 @@ var FIELDS = {
   REUSE_ADJUSTMENT:    'Reuse_Adjustment',
   WHEN_TO_USE:         'When_To_Use',
   USAGE_STEPS:         'Usage_Steps',
-  USAGE_NOTES:         'Usage_Notes'
+  USAGE_NOTES:         'Usage_Notes',
+
+  // ── Governance v3.0 — Execution fields ──────────────────────
+  USECASE_CATEGORY:    'UseCase_Category',
+  EXECUTION_PLAN:      'Execution_Plan',
+  PLANNED_START:       'Planned_Start_Date',
+  PLANNED_END:         'Planned_End_Date',
+  CURRENT_PROGRESS:    'Current_Progress',
+  WEEKLY_UPDATE:       'Weekly_Update',
+  NEXT_MILESTONE:      'Next_Milestone',
+  BLOCKER:             'Blocker',
+  MANAGER_SUPPORT:     'Manager_Support',
+  LAST_WEEKLY_REPORT:  'Last_Weekly_Report',
+
+  // ── Governance v3.0 — Scoring (read-only for UI) ────────────
+  EFFICIENCY_SCORE:    'Efficiency_Score',
+  ADOPTION_SCORE_CALC: 'Adoption_Score_Calc',
+  REUSE_SCORE:         'Reuse_Score',
+  FREQUENCY_SCORE:     'Frequency_Score',
+  DOCUMENTATION_SCORE: 'Documentation_Score',
+  AUTO_SCORE:          'Auto_Score',
+  BUSINESS_VALUE_SCORE:'Business_Value_Score',
+  QUALITY_SCORE:       'Quality_Score',
+  INNOVATION_SCORE:    'Innovation_Score',
+  MANUAL_SCORE:        'Manual_Score',
+  TOTAL_SCORE:         'Total_Score',
+  RANK_CATEGORY:       'Rank_Category',
+
+  // ── Governance v3.0 — Performance (read-only for UI) ────────
+  MONTHLY_USAGE_COUNT: 'Monthly_Usage_Count',
+  HOURS_SAVED_ACTUAL:  'Hours_Saved_Actual',
+  REUSE_COUNT_TRACKED: 'Reuse_Count_Tracked',
+  DEPT_RANKING:        'Department_Ranking',
+  CENTER_RANKING:      'Center_Ranking',
+  CATEGORY_RANKING:    'Category_Ranking',
+  REWARD_ELIGIBLE:     'Reward_Eligible',
+  WARNING_FLAG:        'Warning_Flag',
+
+  // ── Governance v3.0 — Review workflow ────────────────────────
+  REVIEW_STATUS:             'Review_Status',
+  SELF_ASSESSMENT_SCORE:     'Self_Assessment_Score',
+  MANAGER_REVIEW_SCORE:      'Manager_Review_Score',
+  COMMITTEE_REVIEW_SCORE:    'Committee_Review_Score',
+  REVIEW_COMMITTEE_COMMENT:  'Review_Committee_Comment'
+};
+
+// ── Governance constants (mirrored from GAS Config.gs) ──────────
+var RANK_LABELS = {
+  TOP_PERFORMER:      { label: 'Top Performer',      color: '#4CAF50', bg: '#E8F5E9' },
+  STRONG_CONTRIBUTOR: { label: 'Strong Contributor',  color: '#2196F3', bg: '#E3F2FD' },
+  AVERAGE:            { label: 'Trung bình',          color: '#F6B100', bg: '#FFF8E1' },
+  BOTTOM_PERFORMER:   { label: 'Cần cải thiện',       color: '#F44336', bg: '#FFEBEE' }
+};
+
+var USECASE_CATEGORIES = [
+  'PRODUCTIVITY', 'ANALYSIS', 'AUTOMATION', 'KNOWLEDGE', 'ADVANCED_AI'
+];
+
+var CATEGORY_LABELS = {
+  PRODUCTIVITY: 'Năng suất cá nhân',
+  ANALYSIS:     'Phân tích & Review',
+  AUTOMATION:   'Tự động hóa',
+  KNOWLEDGE:    'Quản lý tri thức',
+  ADVANCED_AI:  'AI nâng cao'
 };
 
 /* ─────────────────────────────────────────

@@ -33,5 +33,26 @@ var API = {
   users:      ()         => `${_gasBase}?action=users`,
   userUpsert: ()         => `${_gasBase}?action=user-upsert`,
   userSync:   ()         => `${_gasBase}?action=user-sync`,
-  userInit:   ()         => `${_gasBase}?action=user-init`
+  userInit:   ()         => `${_gasBase}?action=user-init`,
+
+  // Governance v3.0 endpoints
+  weeklyReport:   (weekStart) => {
+    var url = `${_gasBase}?action=weekly-report`;
+    if (weekStart) url += '&week_start=' + encodeURIComponent(weekStart);
+    return url;
+  },
+  leaderboard: (filters) => {
+    var url = `${_gasBase}?action=leaderboard`;
+    if (filters) {
+      if (filters.category) url += '&category=' + encodeURIComponent(filters.category);
+      if (filters.team)     url += '&team='     + encodeURIComponent(filters.team);
+      if (filters.limit)    url += '&limit='    + encodeURIComponent(filters.limit);
+    }
+    return url;
+  },
+  weeklyUpdate:   () => `${_gasBase}?action=weekly-update`,
+  selfAssessment: () => `${_gasBase}?action=self-assessment`,
+  managerReview:  () => `${_gasBase}?action=manager-review`,
+  scoreRecalc:    () => `${_gasBase}?action=score-recalc`,
+  rankRecalc:     () => `${_gasBase}?action=rank-recalc`
 };

@@ -34,22 +34,28 @@ function getDashboardSummary_() {
 }
 
 /**
- * Tính toán dashboard summary từ MASTER_DATA.
- * Được gọi nội bộ hoặc từ trigger time-based.
+ * Tính toán dashboard summary từ MASTER_DATA (Governance v3.0).
+ * Bổ sung: top/bottom performers, ranking metrics, reward/warning lists,
+ *          category distribution, score averages theo team.
  */
 function computeDashboardSummary_() {
   var all = readSheetAsObjects_(SHEETS.MASTER);
 
-  var statusCounts   = {};
-  var teamCounts     = {};
-  var categoryCounts = {};
-  var recentList     = [];
+  var statusCounts    = {};
+  var teamCounts      = {};
+  var categoryCounts  = {};
+  var ucCategoryCounts= {};
+  var recentList      = [];
+  var scoredList      = [];
+  var teamScoreMap    = {}; // team → [scores]
 
-  var totalTimeSavedMin   = 0;
+  var totalTimeSavedMin    = 0;
   var totalHoursSavedMonth = 0;
+  var totalHoursSavedActual= 0;
   var countWithMeasurement = 0;
   var countApproved        = 0;
   var countWithDemo        = 0;
+  var countStandardized    = 0;
 
   all.forEach(function(uc) {
     // ── Status breakdown ───────────────────────────────────────
@@ -61,13 +67,18 @@ function computeDashboardSummary_() {
     var team = uc.Team || 'Unknown';
     teamCounts[team] = (teamCounts[team] || 0) + 1;
 
-    // ── Category breakdown ─────────────────────────────────────
+    // ── Business Category breakdown ───────────────────────────
     var cat = uc.Business_Category || 'Unknown';
     categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+
+    // ── UseCase_Category breakdown ────────────────────────────
+    var ucCat = uc.UseCase_Category || 'UNCATEGORIZED';
+    ucCategoryCounts[ucCat] = (ucCategoryCounts[ucCat] || 0) + 1;
 
     // ── Time saving metrics ────────────────────────────────────
     var hours = safeNum_(uc.Estimated_Hours_Saved_Month);
     totalHoursSavedMonth += hours;
+    totalHoursSavedActual += safeNum_(uc.Hours_Saved_Actual);
 
     var before = safeNum_(uc.Before_Time_Min);
     var after  = safeNum_(uc.After_Time_Min);
@@ -76,10 +87,42 @@ function computeDashboardSummary_() {
       countWithMeasurement++;
     }
 
-    // ── Demo count ────────────────────────────────────────────
+    // ── Demo + Standardized count ─────────────────────────────
     if (uc.Demo_Status && uc.Demo_Status !== 'Chưa có') countWithDemo++;
+    if (String(uc.Standardized_Flag).toUpperCase() === 'TRUE') countStandardized++;
 
-    // ── Recent submissions (top 5 mới nhất theo Submit_Date) ──
+    // ── Scoring data collection ───────────────────────────────
+    var totalScore = safeNum_(uc.Total_Score);
+    if (totalScore > 0 || uc.Rank_Category) {
+      scoredList.push({
+        record_id:          uc.Record_ID,
+        usecase_id:         uc.UseCase_ID,
+        name:               uc.UseCase_Name,
+        team:               uc.Team || '',
+        owner_name:         uc.Owner_Name || '',
+        owner_email:        uc.Owner_Email || '',
+        usecase_category:   uc.UseCase_Category || '',
+        total_score:        totalScore,
+        auto_score:         safeNum_(uc.Auto_Score),
+        manual_score:       safeNum_(uc.Manual_Score),
+        rank_category:      uc.Rank_Category || '',
+        center_ranking:     safeNum_(uc.Center_Ranking),
+        department_ranking: safeNum_(uc.Department_Ranking),
+        reward_eligible:    uc.Reward_Eligible || 'FALSE',
+        warning_flag:       uc.Warning_Flag    || 'FALSE',
+        current_progress:   safeNum_(uc.Current_Progress),
+        hours_saved_actual: safeNum_(uc.Hours_Saved_Actual),
+        status:             uc.Status
+      });
+    }
+
+    // ── Team score accumulation ───────────────────────────────
+    if (totalScore > 0) {
+      if (!teamScoreMap[team]) teamScoreMap[team] = [];
+      teamScoreMap[team].push(totalScore);
+    }
+
+    // ── Recent submissions ────────────────────────────────────
     if (uc.Submit_Date && uc.Status === STATUS.SUBMITTED) {
       recentList.push({
         record_id:    uc.Record_ID,
@@ -93,24 +136,68 @@ function computeDashboardSummary_() {
     }
   });
 
-  // Sort recent submissions và lấy top 5
+  // ── Sort & slice performers ────────────────────────────────────
+  scoredList.sort(function(a, b) { return b.total_score - a.total_score; });
+  var top10    = scoredList.slice(0, 10);
+  var bottom10 = scoredList.slice(-10).reverse();
+
+  // ── Reward / Warning lists ────────────────────────────────────
+  var rewardEligible = scoredList.filter(function(uc) {
+    return String(uc.reward_eligible).toUpperCase() === 'TRUE';
+  });
+  var warningList = scoredList.filter(function(uc) {
+    return String(uc.warning_flag).toUpperCase() === 'TRUE';
+  });
+
+  // ── Rank category breakdown ───────────────────────────────────
+  var rankBreakdown = {};
+  scoredList.forEach(function(uc) {
+    var r = uc.rank_category || 'UNRANKED';
+    rankBreakdown[r] = (rankBreakdown[r] || 0) + 1;
+  });
+
+  // ── Average score per team ────────────────────────────────────
+  var avgScoreByTeam = {};
+  Object.keys(teamScoreMap).forEach(function(t) {
+    var scores = teamScoreMap[t];
+    avgScoreByTeam[t] = Math.round(
+      scores.reduce(function(s, x) { return s + x; }, 0) / scores.length * 10
+    ) / 10;
+  });
+
+  // ── High impact (top score + high hours saved) ────────────────
+  var highImpact = scoredList.filter(function(uc) {
+    return uc.total_score >= SCORE_THRESHOLDS.STRONG && uc.hours_saved_actual >= 10;
+  }).slice(0, 10);
+
+  // ── Recent submissions ────────────────────────────────────────
   recentList.sort(function(a, b) {
     return new Date(b.submitted_at) - new Date(a.submitted_at);
   });
-  var recentSubmissions = recentList.slice(0, 5);
 
   return {
-    refreshed_at:              new Date().toISOString(),
-    total_use_cases:           all.length,
-    status_breakdown:          statusCounts,
-    team_breakdown:            teamCounts,
-    category_breakdown:        categoryCounts,
-    total_time_saved_min:      Math.round(totalTimeSavedMin),
-    total_hours_saved_month:   Math.round(totalHoursSavedMonth * 100) / 100,
-    use_cases_with_measurement:countWithMeasurement,
-    approved_count:            countApproved,
-    with_demo_count:           countWithDemo,
-    recent_submissions:        recentSubmissions
+    refreshed_at:               new Date().toISOString(),
+    total_use_cases:            all.length,
+    total_scored:               scoredList.length,
+    status_breakdown:           statusCounts,
+    team_breakdown:             teamCounts,
+    category_breakdown:         categoryCounts,
+    usecase_category_breakdown: ucCategoryCounts,
+    rank_breakdown:             rankBreakdown,
+    total_time_saved_min:       Math.round(totalTimeSavedMin),
+    total_hours_saved_month:    Math.round(totalHoursSavedMonth * 100) / 100,
+    total_hours_saved_actual:   Math.round(totalHoursSavedActual * 100) / 100,
+    use_cases_with_measurement: countWithMeasurement,
+    approved_count:             countApproved,
+    standardized_count:         countStandardized,
+    with_demo_count:            countWithDemo,
+    top_performers:             top10,
+    bottom_performers:          bottom10,
+    high_impact_cases:          highImpact,
+    reward_eligible_list:       rewardEligible,
+    warning_list:               warningList,
+    avg_score_by_team:          avgScoreByTeam,
+    recent_submissions:         recentList.slice(0, 5)
   };
 }
 

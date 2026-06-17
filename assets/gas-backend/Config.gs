@@ -52,7 +52,51 @@ var HEADERS = [
   'Estimated_Hours_Saved_Month', 'Estimated_Cost_Impact', 'Business_Value',
   'Scale_Potential', 'Risk_Level', 'Leadership_Support_Needed',
   // Dedup & versioning
-  'Similarity_Score', 'Duplicate_Flag', 'Edit_Version', 'JSON_Backup'
+  'Similarity_Score', 'Duplicate_Flag', 'Edit_Version', 'JSON_Backup',
+
+  // ── GOVERNANCE v3.0 — Execution Tracking ─────────────────────────
+  'UseCase_Category',        // PRODUCTIVITY / ANALYSIS / AUTOMATION / KNOWLEDGE / ADVANCED_AI
+  'Execution_Plan',          // Mô tả kế hoạch triển khai
+  'Planned_Start_Date',      // Ngày dự kiến bắt đầu
+  'Planned_End_Date',        // Ngày dự kiến hoàn thành
+  'Current_Progress',        // % hoàn thành (0-100)
+  'Weekly_Update',           // Cập nhật tuần gần nhất
+  'Next_Milestone',          // Milestone tiếp theo
+  'Blocker',                 // Rào cản hiện tại
+  'Manager_Support',         // Hỗ trợ cần từ quản lý
+  'Last_Weekly_Report',      // Ngày cập nhật tuần gần nhất (ISO)
+
+  // ── GOVERNANCE v3.0 — Scoring Engine ─────────────────────────────
+  'Efficiency_Score',        // Auto: (before-after)/before * 20, max 20
+  'Adoption_Score_Calc',     // Auto: dựa theo Active_User_Count, max 20
+  'Reuse_Score',             // Auto: dựa theo Reuse_Level, max 20
+  'Frequency_Score',         // Auto: dựa theo Monthly_Usage_Count, max 15
+  'Documentation_Score',     // Auto: kiểm tra prompt+guide+demo+examples, max 5 (note: 70-total=5 leftover)
+  'Auto_Score',              // Tổng auto score (70 điểm tối đa)
+  'Business_Value_Score',    // Manual: 0-10
+  'Quality_Score',           // Manual: 0-10
+  'Innovation_Score',        // Manual: 0-10
+  'Manual_Score',            // Tổng manual score (30 điểm tối đa)
+  'Total_Score',             // Auto_Score + Manual_Score (100 điểm)
+  'Rank_Category',           // TOP_PERFORMER / STRONG_CONTRIBUTOR / AVERAGE / BOTTOM_PERFORMER
+  'Score_Updated_At',        // Thời điểm tính điểm gần nhất
+
+  // ── GOVERNANCE v3.0 — Performance Tracking ───────────────────────
+  'Monthly_Usage_Count',     // Số lần sử dụng trong tháng
+  'Hours_Saved_Actual',      // Giờ tiết kiệm thực tế (do người dùng báo cáo)
+  'Reuse_Count_Tracked',     // Số lần đã tái sử dụng thực tế
+  'Department_Ranking',      // Xếp hạng trong phòng/team
+  'Center_Ranking',          // Xếp hạng toàn trung tâm
+  'Category_Ranking',        // Xếp hạng trong cùng UseCase_Category
+  'Reward_Eligible',         // TRUE/FALSE — đủ điều kiện khen thưởng
+  'Warning_Flag',            // TRUE/FALSE — cờ cảnh báo hiệu suất thấp
+
+  // ── GOVERNANCE v3.0 — Multi-Layer Review ─────────────────────────
+  'Review_Status',           // Pending_Review / Manager_Review / Committee_Review / Finalized
+  'Self_Assessment_Score',   // Layer 1: tự đánh giá (20%)
+  'Manager_Review_Score',    // Layer 2: quản lý đánh giá (20%)
+  'Committee_Review_Score',  // Layer 4: hội đồng đánh giá (10%)
+  'Review_Committee_Comment' // Nhận xét hội đồng
 ];
 
 // ── ACTIVITY_LOG Column Headers ───────────────────────────────────
@@ -122,3 +166,51 @@ var ADMIN_EMAILS = ['admin', 'tuantt4', 'manager'];
 
 // ── Business Rules ────────────────────────────────────────────────
 var WORKING_DAYS_PER_MONTH = 22; // Số ngày làm việc/tháng để ước tính giờ tiết kiệm
+
+// ── Governance v3.0 — UseCase Category ───────────────────────────
+var USECASE_CATEGORIES = {
+  PRODUCTIVITY:  'PRODUCTIVITY',   // Email writing, summarization
+  ANALYSIS:      'ANALYSIS',       // Legal review, BRD review
+  AUTOMATION:    'AUTOMATION',     // Excel automation, workflow automation
+  KNOWLEDGE:     'KNOWLEDGE',      // Internal chatbot, knowledge retrieval
+  ADVANCED_AI:   'ADVANCED_AI'    // Agents, MCP, API orchestration
+};
+
+// ── Governance v3.0 — Review Workflow Status ──────────────────────
+var REVIEW_STATUS = {
+  PENDING:    'Pending_Review',
+  MANAGER:    'Manager_Review',
+  COMMITTEE:  'Committee_Review',
+  FINALIZED:  'Finalized'
+};
+
+// ── Governance v3.0 — Rank Categories ────────────────────────────
+var RANK = {
+  TOP:      'TOP_PERFORMER',       // 85-100 điểm
+  STRONG:   'STRONG_CONTRIBUTOR',  // 70-84 điểm
+  AVERAGE:  'AVERAGE',             // 50-69 điểm
+  BOTTOM:   'BOTTOM_PERFORMER'     // <50 điểm
+};
+
+// ── Governance v3.0 — Scoring Thresholds ─────────────────────────
+var SCORE_THRESHOLDS = {
+  TOP:    85,
+  STRONG: 70,
+  AVERAGE: 50
+};
+
+// ── Governance v3.0 — Scoring Weights ────────────────────────────
+var SCORE_WEIGHTS = {
+  EFFICIENCY_MAX:    20,
+  ADOPTION_MAX:      20,
+  REUSE_MAX:         20,
+  FREQUENCY_MAX:     15,
+  DOCUMENTATION_MAX:  5,  // 70 total auto
+  QUALITY_MANUAL:    10,
+  BUSINESS_MANUAL:   10,
+  INNOVATION_MANUAL: 10   // 30 total manual
+};
+
+// ── Governance v3.0 — Weekly Report ──────────────────────────────
+var OVERDUE_DAYS_THRESHOLD    = 7;   // Số ngày không cập nhật → overdue warning
+var BOTTOM_PERFORMER_THRESHOLD = 10; // % dưới cùng → committee review bắt buộc

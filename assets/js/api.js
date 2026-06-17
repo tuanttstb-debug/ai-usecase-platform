@@ -157,5 +157,38 @@ var Api = {
   getUsers()                    { return Api._request(API.users()); },
   upsertUser(data)              { return Api._request(API.userUpsert(), data); },
   syncUsers(adminEmail)         { return Api._request(API.userSync(),  { reviewer_email: adminEmail }); },
-  initUsersSheet(adminEmail)    { return Api._request(API.userInit(),  { reviewer_email: adminEmail }); }
+  initUsersSheet(adminEmail)    { return Api._request(API.userInit(),  { reviewer_email: adminEmail }); },
+
+  // ── Governance v3.0 ────────────────────────────────────────────
+  getLeaderboard(filters)       { return Api._request(API.leaderboard(filters)); },
+  getWeeklyReport(weekStart)    { return Api._request(API.weeklyReport(weekStart)); },
+  submitWeeklyUpdate(data)      { return Api._request(API.weeklyUpdate(),   data, 45000); },
+  submitSelfAssessment(data)    { return Api._request(API.selfAssessment(), data, 30000); },
+  submitManagerReview(data)     { return Api._request(API.managerReview(),  data, 30000); },
+  recalculateScores(adminEmail) { return Api._request(API.scoreRecalc(),  { admin_email: adminEmail }); },
+  recalculateRankings(adminEmail){ return Api._request(API.rankRecalc(),  { admin_email: adminEmail }); },
+
+  // ── Convenience: callback-style JSONP (for pages that don't use Promises) ──
+  jsonp(url, callback) {
+    var cbName  = '__gasCb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    var script  = document.createElement('script');
+    var timer   = null;
+    var settled = false;
+    function cleanup() {
+      if (settled) return; settled = true;
+      clearTimeout(timer);
+      if (script.parentNode) script.parentNode.removeChild(script);
+      delete window[cbName];
+    }
+    window[cbName] = function(data) { cleanup(); callback(data); };
+    timer = setTimeout(function() { cleanup(); callback(null); }, 25000);
+    script.onerror = function() { cleanup(); callback(null); };
+    var sep = url.indexOf('?') === -1 ? '?' : '&';
+    script.src = url + sep + 'callback=' + cbName;
+    (document.head || document.body).appendChild(script);
+  },
+
+  currentUser() {
+    try { return JSON.parse(sessionStorage.getItem(APP_CONFIG.USER_SESSION_KEY)); } catch(e) { return null; }
+  }
 };

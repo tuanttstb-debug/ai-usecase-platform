@@ -88,7 +88,7 @@ function route_(action, params, body) {
 
   if (action === 'health') {
     return createResponse_(true, 'OK', {
-      status: 'healthy', version: '2.1.0',
+      status: 'healthy', version: '3.0.0',
       timestamp: new Date().toISOString()
     });
   }
@@ -142,12 +142,69 @@ function route_(action, params, body) {
   // ── Dashboard: list use cases (dùng URL params, không phải payload) ──
   if (action === 'list') {
     var listFilters = {
-      filter: params.filter || '',
-      status: params.status || '',
-      team:   params.team   || '',
-      limit:  params.limit  || '100'
+      filter:   params.filter   || '',
+      status:   params.status   || '',
+      team:     params.team     || '',
+      category: params.category || '',
+      limit:    params.limit    || '100'
     };
     return createResponse_(true, 'Use case list', listUseCases_(listFilters));
+  }
+
+  // ── Governance: Weekly Report ──────────────────────────────────
+  if (action === 'weekly-report') {
+    var weekOptions = { week_start: params.week_start || body.week_start || '' };
+    return createResponse_(true, 'Báo cáo tuần', getWeeklyReport_(weekOptions));
+  }
+
+  // ── Governance: Leaderboard (top/bottom + category ranking) ───
+  if (action === 'leaderboard') {
+    var lbCategory = params.category || body.category || '';
+    var lbTeam     = params.team     || body.team     || '';
+    var lbLimit    = parseInt(params.limit || body.limit || '20', 10);
+    return createResponse_(true, 'Leaderboard', getLeaderboard_(lbCategory, lbTeam, lbLimit));
+  }
+
+  // ── Governance: Weekly Update (user submits progress) ─────────
+  if (action === 'weekly-update') {
+    var wuRecordId = body.Record_ID || body.record_id;
+    if (!wuRecordId) return createResponse_(false, 'Thiếu Record_ID');
+    return createResponse_(true, 'Cập nhật tiến độ tuần thành công',
+      submitWeeklyUpdate_(wuRecordId, body));
+  }
+
+  // ── Governance: Self Assessment ───────────────────────────────
+  if (action === 'self-assessment') {
+    var saRecordId = body.Record_ID || body.record_id;
+    if (!saRecordId) return createResponse_(false, 'Thiếu Record_ID');
+    return createResponse_(true, 'Tự đánh giá đã được ghi nhận',
+      submitSelfAssessment_(saRecordId, body));
+  }
+
+  // ── Governance: Manager Review ────────────────────────────────
+  if (action === 'manager-review') {
+    var mrRecordId = body.Record_ID || body.record_id;
+    if (!mrRecordId) return createResponse_(false, 'Thiếu Record_ID');
+    return createResponse_(true, 'Manager review đã được ghi nhận',
+      submitManagerReview_(mrRecordId, body));
+  }
+
+  // ── Governance: Recalculate all scores (admin only) ───────────
+  if (action === 'score-recalc') {
+    var rcAdmin = body.admin_email || params.admin_email || '';
+    if (!isAdminEmail_(rcAdmin)) {
+      return createResponse_(false, 'Không có quyền recalculate scores: ' + rcAdmin);
+    }
+    return createResponse_(true, 'Recalculate hoàn tất', recalculateAllScores_());
+  }
+
+  // ── Governance: Recalculate rankings (admin only) ─────────────
+  if (action === 'rank-recalc') {
+    var rrAdmin = body.admin_email || params.admin_email || '';
+    if (!isAdminEmail_(rrAdmin)) {
+      return createResponse_(false, 'Không có quyền recalculate rankings: ' + rrAdmin);
+    }
+    return createResponse_(true, 'Ranking recalculate hoàn tất', recalculateRankings_());
   }
 
   // ── Approval endpoints (data qua base64url payload) ──────────────

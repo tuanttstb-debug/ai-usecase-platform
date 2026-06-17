@@ -245,7 +245,17 @@ function createUseCase_(data) {
     obj.Estimated_Hours_Saved_Month = computeHoursSavedMonth_(data.Before_Time_Min, data.After_Time_Min);
   }
 
-  // ── 6. JSON_Backup (snapshot không bao gồm chính nó) ─────────
+  // ── 6. Auto-score (Governance v3.0) ──────────────────────────
+  try {
+    var createScores = scoreUseCase_(obj);
+    Object.keys(createScores).forEach(function(k) { obj[k] = createScores[k]; });
+    // Set initial Review_Status
+    obj.Review_Status = REVIEW_STATUS.PENDING;
+  } catch (scoreErr) {
+    logError_('createUseCase_ scoring', scoreErr, { recordId: recordId });
+  }
+
+  // ── 7. JSON_Backup (snapshot không bao gồm chính nó) ─────────
   // Google Sheets giới hạn 50,000 chars/cell. JSON_Backup có thể vượt nếu
   // nhiều textarea field được fill đầy. Truncate an toàn thay vì để setValues fail.
   var backupData = {};
@@ -253,7 +263,7 @@ function createUseCase_(data) {
   var backupStr = JSON.stringify(backupData);
   obj.JSON_Backup = backupStr.length <= 45000 ? backupStr : '';
 
-  // ── 7. Ghi vào sheet ──────────────────────────────────────────
+  // ── 8. Ghi vào sheet ──────────────────────────────────────────
   appendRowFromObject_(SHEETS.MASTER, obj);
   logActivity_(useCaseId, recordId, 'CREATED', 'Use case tạo mới qua API', data.Owner_Email,
                '', obj.Status);
@@ -332,7 +342,15 @@ function updateUseCase_(recordId, data) {
     merged.Estimated_Hours_Saved_Month = computeHoursSavedMonth_(before, after);
   }
 
-  // ── 7. Cập nhật JSON_Backup ───────────────────────────────────
+  // ── 7. Auto-score (Governance v3.0) ──────────────────────────
+  try {
+    var updateScores = scoreUseCase_(merged);
+    Object.keys(updateScores).forEach(function(k) { merged[k] = updateScores[k]; });
+  } catch (scoreErr2) {
+    logError_('updateUseCase_ scoring', scoreErr2, { recordId: recordId });
+  }
+
+  // ── 8. Cập nhật JSON_Backup ───────────────────────────────────
   // Cap tại 45,000 chars để tránh vượt giới hạn 50,000 chars/cell của Google Sheets
   var backupData = {};
   HEADERS.forEach(function(h) { if (h !== 'JSON_Backup') backupData[h] = merged[h]; });

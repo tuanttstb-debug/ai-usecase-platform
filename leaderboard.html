@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaderboard — AI Governance</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%237B2CBF' stroke-width='1.5'><path stroke-linecap='round' stroke-linejoin='round' d='M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0'/></svg>">
+
+  <link rel="stylesheet" href="assets/css/variables.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/typography.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/states.css">
+  <link rel="stylesheet" href="assets/css/dashboard.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+
+  <style>
+    /* ── Leaderboard-specific styles ── */
+    .lb-header { padding: var(--space-8) var(--space-8) var(--space-6); border-bottom: 1px solid var(--color-border); }
+    .lb-filters { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; }
+    .lb-filter-select { padding: var(--space-2) var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: var(--text-sm); background: var(--color-surface); color: var(--color-text); cursor: pointer; }
+    .lb-tabs { display: flex; gap: var(--space-2); margin-top: var(--space-5); border-bottom: 2px solid var(--color-border); }
+    .lb-tab { padding: var(--space-3) var(--space-5); font-size: var(--text-sm); font-weight: var(--font-weight-medium); color: var(--color-text-secondary); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all var(--transition-fast); }
+    .lb-tab.is-active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+    .lb-tab:hover:not(.is-active) { color: var(--color-text); }
+
+    /* Ranking table */
+    .rank-table { width: 100%; border-collapse: collapse; }
+    .rank-table th { padding: var(--space-3) var(--space-4); text-align: left; font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--color-border); background: var(--color-bg-alt); }
+    .rank-table td { padding: var(--space-4); border-bottom: 1px solid var(--color-border); font-size: var(--text-sm); vertical-align: middle; }
+    .rank-table tr:last-child td { border-bottom: none; }
+    .rank-table tr:hover td { background: var(--color-bg-alt); }
+
+    /* Rank number badge */
+    .rank-num { width: 32px; height: 32px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-weight: var(--font-weight-bold); font-size: var(--text-sm); flex-shrink: 0; }
+    .rank-num.gold   { background: #FFF3CD; color: #856404; }
+    .rank-num.silver { background: #F0F0F0; color: #555; }
+    .rank-num.bronze { background: #FFE8D6; color: #7C4A1E; }
+    .rank-num.normal { background: var(--color-bg); color: var(--color-text-secondary); }
+    .rank-num.bottom { background: var(--color-error-light); color: var(--color-error); }
+
+    /* Score badge */
+    .score-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); }
+    .score-badge.top    { background: #E8F5E9; color: #2E7D32; }
+    .score-badge.strong { background: #E3F2FD; color: #1565C0; }
+    .score-badge.avg    { background: #FFF8E1; color: #E65100; }
+    .score-badge.bottom { background: #FFEBEE; color: #C62828; }
+
+    /* Rank category pill */
+    .rank-pill { display: inline-block; padding: 2px 8px; border-radius: var(--radius-full); font-size: 11px; font-weight: var(--font-weight-semibold); }
+
+    /* Score bar mini */
+    .score-bar-wrap { display: flex; align-items: center; gap: var(--space-3); }
+    .score-bar-track { flex: 1; height: 6px; background: var(--color-border); border-radius: 3px; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 3px; background: var(--color-primary); transition: width 0.6s ease; }
+    .score-bar-fill.top    { background: #4CAF50; }
+    .score-bar-fill.strong { background: #2196F3; }
+    .score-bar-fill.avg    { background: #F6B100; }
+    .score-bar-fill.bottom { background: #F44336; }
+    .score-val { font-weight: var(--font-weight-semibold); font-size: var(--text-sm); min-width: 32px; text-align: right; }
+
+    /* Category distribution */
+    .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--space-4); margin-top: var(--space-4); }
+    .cat-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5); }
+    .cat-card-name { font-size: var(--text-xs); font-weight: var(--font-weight-semibold); text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-text-secondary); margin-bottom: var(--space-2); }
+    .cat-card-count { font-size: var(--text-2xl); font-weight: var(--font-weight-bold); color: var(--color-primary); }
+    .cat-card-avg { font-size: var(--text-xs); color: var(--color-text-secondary); margin-top: 4px; }
+
+    /* Loading + empty */
+    .lb-loading { display: flex; align-items: center; justify-content: center; padding: var(--space-16); color: var(--color-text-muted); gap: var(--space-3); }
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--color-border); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .section-panel { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); overflow: hidden; margin-bottom: var(--space-6); }
+    .section-panel-header { padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--color-border); display: flex; align-items: center; justify-content: space-between; }
+    .section-panel-title { font-size: var(--text-base); font-weight: var(--font-weight-semibold); color: var(--color-text); }
+    .section-panel-body { padding: 0; }
+
+    .owner-cell { display: flex; flex-direction: column; }
+    .owner-name { font-weight: var(--font-weight-medium); color: var(--color-text); }
+    .owner-team { font-size: var(--text-xs); color: var(--color-text-secondary); margin-top: 1px; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- ── Left Sidebar ── -->
+  <aside class="app-sidebar" id="appSidebar">
+    <a href="index.html" class="sidebar-brand">
+      <div class="sidebar-brand-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/></svg>
+      </div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">AI Governance</span>
+        <span class="sidebar-brand-sub">TT SPTD</span>
+      </div>
+    </a>
+
+    <nav class="sidebar-nav">
+      <span class="sidebar-section-label">Quản lý</span>
+      <a href="dashboard.html" class="sidebar-nav-item" id="navDashboard" style="display:none">
+        <i class="sidebar-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"/></svg></i>
+        <span class="sidebar-nav-label">Dashboard</span>
+      </a>
+      <a href="leaderboard.html" class="sidebar-nav-item is-active">
+        <i class="sidebar-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"/></svg></i>
+        <span class="sidebar-nav-label">Leaderboard</span>
+      </a>
+      <a href="register.html" class="sidebar-nav-item">
+        <i class="sidebar-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg></i>
+        <span class="sidebar-nav-label">Đăng ký Use Case</span>
+      </a>
+      <a href="weekly-update.html" class="sidebar-nav-item">
+        <i class="sidebar-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg></i>
+        <span class="sidebar-nav-label">Cập nhật tuần</span>
+      </a>
+      <a href="manager-review.html" class="sidebar-nav-item" id="navManagerReview" style="display:none">
+        <i class="sidebar-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg></i>
+        <span class="sidebar-nav-label">Manager Review</span>
+      </a>
+      <div class="sidebar-divider"></div>
+      <span class="sidebar-section-label">Hệ thống</span>
+      <a href="index.html" class="sidebar-nav-item">
+        <i class="sidebar-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg></i>
+        <span class="sidebar-nav-label">Trang chủ</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer" id="sidebarFooter"></div>
+  </aside>
+
+  <!-- ── Main content ── -->
+  <main class="app-main">
+    <div class="lb-header">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--space-4)">
+        <div>
+          <h1 style="font-size:var(--text-2xl); font-weight:var(--font-weight-bold); color:var(--color-text); margin:0">Leaderboard</h1>
+          <p style="font-size:var(--text-sm); color:var(--color-text-secondary); margin:4px 0 0">Xếp hạng hiệu suất AI Use Case — TT SPTD</p>
+        </div>
+        <button class="btn btn--secondary" id="btnRefresh" onclick="loadLeaderboard()">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+          Làm mới
+        </button>
+      </div>
+      <div class="lb-filters" style="margin-top:var(--space-4)">
+        <label style="font-size:var(--text-sm); color:var(--color-text-secondary)">Lọc theo:</label>
+        <select class="lb-filter-select" id="filterCategory" onchange="loadLeaderboard()">
+          <option value="">Tất cả category</option>
+          <option value="PRODUCTIVITY">Năng suất cá nhân</option>
+          <option value="ANALYSIS">Phân tích &amp; Review</option>
+          <option value="AUTOMATION">Tự động hóa</option>
+          <option value="KNOWLEDGE">Quản lý tri thức</option>
+          <option value="ADVANCED_AI">AI nâng cao</option>
+        </select>
+        <select class="lb-filter-select" id="filterTeam" onchange="loadLeaderboard()">
+          <option value="">Tất cả team</option>
+        </select>
+      </div>
+
+      <div class="lb-tabs">
+        <div class="lb-tab is-active" data-tab="top" onclick="switchTab('top', this)">Top Performers</div>
+        <div class="lb-tab" data-tab="bottom" onclick="switchTab('bottom', this)">Cần cải thiện</div>
+        <div class="lb-tab" data-tab="category" onclick="switchTab('category', this)">Theo Category</div>
+      </div>
+    </div>
+
+    <div style="padding: var(--space-6) var(--space-8)">
+      <!-- Top performers tab -->
+      <div id="tabTop">
+        <div class="section-panel">
+          <div class="section-panel-header">
+            <span class="section-panel-title">🏆 Top Performers</span>
+            <span id="topCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span>
+          </div>
+          <div class="section-panel-body" id="topTable">
+            <div class="lb-loading"><div class="spinner"></div> Đang tải...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom performers tab -->
+      <div id="tabBottom" style="display:none">
+        <div class="section-panel">
+          <div class="section-panel-header">
+            <span class="section-panel-title">⚠️ Cần cải thiện</span>
+            <span id="bottomCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span>
+          </div>
+          <div class="section-panel-body" id="bottomTable">
+            <div class="lb-loading"><div class="spinner"></div> Đang tải...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category tab -->
+      <div id="tabCategory" style="display:none">
+        <div id="categoryContent">
+          <div class="lb-loading"><div class="spinner"></div> Đang tải...</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="config/env.js"></script>
+<script src="config/routes.js"></script>
+<script src="assets/js/constants.js"></script>
+<script src="assets/js/helpers.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+
+<script>
+var _lbData   = null;
+var _activeTab = 'top';
+
+document.addEventListener('DOMContentLoaded', function() {
+  initAuth();
+  loadLeaderboard();
+});
+
+function initAuth() {
+  var user = Api.currentUser ? Api.currentUser() : null;
+  try { user = JSON.parse(sessionStorage.getItem(APP_CONFIG.USER_SESSION_KEY)); } catch(e) {}
+  if (!user) { window.location.href = 'login.html'; return; }
+  var footer = document.getElementById('sidebarFooter');
+  if (footer) footer.innerHTML = '<div class="sidebar-user"><span class="sidebar-user-name">' + (user.displayName || user.email || '') + '</span><span class="sidebar-user-role">' + (user.role || 'user') + '</span></div>';
+  if (user.role === 'admin') {
+    document.getElementById('navDashboard').style.display = '';
+    document.getElementById('navManagerReview').style.display = '';
+  }
+}
+
+function loadLeaderboard() {
+  var category = document.getElementById('filterCategory').value;
+  var team     = document.getElementById('filterTeam').value;
+
+  setLoading(true);
+  Api.jsonp(API.leaderboard({ category: category, team: team, limit: 20 }), function(res) {
+    if (!res || !res.success) { setError('Không tải được dữ liệu'); return; }
+    _lbData = res.data;
+    renderAll(_lbData);
+    setLoading(false);
+  });
+}
+
+function renderAll(data) {
+  if (!data) return;
+  renderTable('topTable',    data.top_performers,    false);
+  renderTable('bottomTable', data.bottom_performers, true);
+  renderCategorySection(data.category_rankings);
+  document.getElementById('topCount').textContent    = (data.top_performers    || []).length + ' use cases';
+  document.getElementById('bottomCount').textContent = (data.bottom_performers || []).length + ' use cases';
+  // Populate team dropdown from data
+  var currentTeam = document.getElementById('filterTeam').value;
+  var teams = {};
+  (data.top_performers || []).concat(data.bottom_performers || []).forEach(function(uc) {
+    if (uc.team) teams[uc.team] = 1;
+  });
+  var sel = document.getElementById('filterTeam');
+  while (sel.options.length > 1) sel.remove(1);
+  Object.keys(teams).sort().forEach(function(t) {
+    var opt = document.createElement('option'); opt.value = t; opt.textContent = t;
+    if (t === currentTeam) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function renderTable(containerId, items, isBottom) {
+  var el = document.getElementById(containerId);
+  if (!items || items.length === 0) {
+    el.innerHTML = '<div style="padding:var(--space-8);text-align:center;color:var(--color-text-muted)">Chưa có dữ liệu xếp hạng</div>';
+    return;
+  }
+  var rows = items.map(function(uc, i) {
+    var rank  = uc.rank || (i + 1);
+    var cls   = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : isBottom ? 'bottom' : 'normal';
+    var score = uc.total_score || 0;
+    var rankCat = uc.rank_category || '';
+    var barCls  = rankCat === 'TOP_PERFORMER' ? 'top' : rankCat === 'STRONG_CONTRIBUTOR' ? 'strong' : rankCat === 'AVERAGE' ? 'avg' : 'bottom';
+    var pillStyle = RANK_LABELS[rankCat] ? ('background:' + RANK_LABELS[rankCat].bg + ';color:' + RANK_LABELS[rankCat].color) : '';
+    var rewardBadge = String(uc.reward_eligible).toUpperCase() === 'TRUE'
+      ? '<span style="font-size:10px;background:#E8F5E9;color:#2E7D32;padding:2px 6px;border-radius:10px;margin-left:4px">Khen thưởng</span>' : '';
+    var warnBadge = String(uc.warning_flag).toUpperCase() === 'TRUE'
+      ? '<span style="font-size:10px;background:#FFEBEE;color:#C62828;padding:2px 6px;border-radius:10px;margin-left:4px">Cảnh báo</span>' : '';
+    return '<tr>' +
+      '<td><div class="rank-num ' + cls + '">' + rank + '</div></td>' +
+      '<td><div class="owner-cell"><span class="owner-name">' + esc(uc.name) + rewardBadge + warnBadge + '</span><span class="owner-team">' + esc(uc.usecase_id) + ' · ' + esc(uc.team) + '</span></div></td>' +
+      '<td><div class="owner-cell"><span class="owner-name">' + esc(uc.owner_name) + '</span></div></td>' +
+      '<td><span class="rank-pill" style="' + pillStyle + '">' + (RANK_LABELS[rankCat] ? RANK_LABELS[rankCat].label : rankCat) + '</span></td>' +
+      '<td><div class="score-bar-wrap"><div class="score-bar-track"><div class="score-bar-fill ' + barCls + '" style="width:' + score + '%"></div></div><span class="score-val">' + score + '</span></div></td>' +
+      '<td style="color:var(--color-text-secondary);font-size:var(--text-xs)">' + (uc.hours_saved_actual > 0 ? uc.hours_saved_actual + 'h' : '—') + '</td>' +
+      '</tr>';
+  }).join('');
+
+  el.innerHTML = '<table class="rank-table">' +
+    '<thead><tr><th style="width:48px">#</th><th>Use Case</th><th>Người đăng ký</th><th>Hạng</th><th style="min-width:180px">Điểm (100)</th><th>Giờ tiết kiệm</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody></table>';
+}
+
+function renderCategorySection(catRankings) {
+  var el = document.getElementById('categoryContent');
+  if (!catRankings || Object.keys(catRankings).length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:var(--space-8);color:var(--color-text-muted)">Chưa có dữ liệu theo category</div>';
+    return;
+  }
+  var html = '';
+  Object.keys(catRankings).forEach(function(cat) {
+    var items = catRankings[cat];
+    if (!items || items.length === 0) return;
+    var label = CATEGORY_LABELS[cat] || cat;
+    html += '<div class="section-panel" style="margin-bottom:var(--space-5)">';
+    html += '<div class="section-panel-header"><span class="section-panel-title">' + label + '</span><span style="font-size:var(--text-xs);color:var(--color-text-secondary)">' + items.length + ' use cases</span></div>';
+    html += '<div class="section-panel-body">';
+    // Mini table for category
+    var rows = items.slice(0, 5).map(function(uc, i) {
+      var score = uc.total_score || 0;
+      var barCls = score >= 85 ? 'top' : score >= 70 ? 'strong' : score >= 50 ? 'avg' : 'bottom';
+      return '<tr>' +
+        '<td style="width:32px;color:var(--color-text-secondary);font-weight:600">' + (i+1) + '</td>' +
+        '<td><span style="font-weight:500">' + esc(uc.name) + '</span><br><span style="font-size:11px;color:var(--color-text-secondary)">' + esc(uc.team) + ' · ' + esc(uc.owner_name) + '</span></td>' +
+        '<td style="min-width:140px"><div class="score-bar-wrap"><div class="score-bar-track"><div class="score-bar-fill ' + barCls + '" style="width:' + score + '%"></div></div><span class="score-val">' + score + '</span></div></td>' +
+        '</tr>';
+    }).join('');
+    html += '<table class="rank-table"><thead><tr><th>#</th><th>Use Case</th><th>Điểm</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    html += '</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+function switchTab(tab, el) {
+  _activeTab = tab;
+  document.querySelectorAll('.lb-tab').forEach(function(t) { t.classList.remove('is-active'); });
+  el.classList.add('is-active');
+  document.getElementById('tabTop').style.display      = tab === 'top'      ? '' : 'none';
+  document.getElementById('tabBottom').style.display   = tab === 'bottom'   ? '' : 'none';
+  document.getElementById('tabCategory').style.display = tab === 'category' ? '' : 'none';
+}
+
+function setLoading(on) {
+  document.getElementById('btnRefresh').disabled = on;
+}
+
+function setError(msg) {
+  ['topTable','bottomTable','categoryContent'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = '<div style="padding:var(--space-8);text-align:center;color:var(--color-error)">' + msg + '</div>';
+  });
+}
+
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>
