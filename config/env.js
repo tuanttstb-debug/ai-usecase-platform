@@ -11,6 +11,10 @@ var APP_CONFIG = {
   // Lưu ý: kiểm tra phía frontend (UI-level). Backend GAS có validation riêng.
   ADMIN_EMAILS: ['cuongvm1', 'tuantt4', 'dunglq1'],
 
+  // Danh sách username được cấp quyền champion (review UC của team mình)
+  // Nguồn chính là USERS sheet (Role=champion). List này là fallback FE-only.
+  CHAMPION_USERS: [],
+
   // Danh sách username bị loại khỏi theo dõi KPI (VD: Giám đốc, quản lý cấp cao)
   KPI_EXCLUDED_USERS: ['cuongvm1'],
 

@@ -54,5 +54,6 @@ var API = {
   selfAssessment: () => `${_gasBase}?action=self-assessment`,
   managerReview:  () => `${_gasBase}?action=manager-review`,
   scoreRecalc:    () => `${_gasBase}?action=score-recalc`,
-  rankRecalc:     () => `${_gasBase}?action=rank-recalc`
+  rankRecalc:     () => `${_gasBase}?action=rank-recalc`,
+  championReview: () => `${_gasBase}?action=champion-review`
 };

@@ -189,6 +189,14 @@ function route_(action, params, body) {
       submitManagerReview_(mrRecordId, body));
   }
 
+  // ── Governance: Champion Review ───────────────────────────────
+  if (action === 'champion-review') {
+    var crRecordId = body.Record_ID || body.record_id;
+    if (!crRecordId) return createResponse_(false, 'Thiếu Record_ID');
+    return createResponse_(true, 'Champion review đã được ghi nhận',
+      submitChampionReview_(crRecordId, body));
+  }
+
   // ── Governance: Recalculate all scores (admin only) ───────────
   if (action === 'score-recalc') {
     var rcAdmin = body.admin_email || params.admin_email || '';

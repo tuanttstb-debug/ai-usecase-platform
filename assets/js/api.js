@@ -165,6 +165,7 @@ var Api = {
   submitWeeklyUpdate(data)      { return Api._request(API.weeklyUpdate(),   data, 45000); },
   submitSelfAssessment(data)    { return Api._request(API.selfAssessment(), data, 30000); },
   submitManagerReview(data)     { return Api._request(API.managerReview(),  data, 30000); },
+  submitChampionReview(data)    { return Api._request(API.championReview(), data, 30000); },
   recalculateScores(adminEmail) { return Api._request(API.scoreRecalc(),  { admin_email: adminEmail }); },
   recalculateRankings(adminEmail){ return Api._request(API.rankRecalc(),  { admin_email: adminEmail }); },
 

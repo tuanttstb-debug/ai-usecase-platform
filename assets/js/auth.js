@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────────────────────────
 // auth.js — AuthService
 //
-// Lightweight session-based auth. Email-only for now.
-// Designed to be migrated to OAuth/SAML: swap _providers['local'] only.
+// Roles: admin | champion | user
+// Champion: can review UCs of their own team (no approve/reject)
 //
 // Depends on: config/env.js (APP_CONFIG) — must load first.
 // Session key: APP_CONFIG.USER_SESSION_KEY || 'ai_user_session'
-// Role resolution: email in APP_CONFIG.ADMIN_EMAILS → 'admin', else 'user'
+// Role resolution: ADMIN_EMAILS → admin, CHAMPION_USERS → champion, else user
 // ─────────────────────────────────────────────────────────────────
 
 var AuthService = (function () {
@@ -17,9 +17,14 @@ var AuthService = (function () {
 
   // ── Role resolution ──────────────────────────────────────────────
   function _resolveRole(email) {
+    var normalized = email.toLowerCase().trim();
     var adminList = ((typeof APP_CONFIG !== 'undefined' && APP_CONFIG.ADMIN_EMAILS) || [])
       .map(function (e) { return String(e).toLowerCase().trim(); });
-    return adminList.indexOf(email.toLowerCase().trim()) !== -1 ? 'admin' : 'user';
+    if (adminList.indexOf(normalized) !== -1) return 'admin';
+    var championList = ((typeof APP_CONFIG !== 'undefined' && APP_CONFIG.CHAMPION_USERS) || [])
+      .map(function (e) { return String(e).toLowerCase().trim(); });
+    if (championList.indexOf(normalized) !== -1) return 'champion';
+    return 'user';
   }
 
   // Build display name from username (or email local-part)
@@ -36,13 +41,12 @@ var AuthService = (function () {
   function _save(user) {
     try {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
-      // Backward compat: keep legacy ADMIN_SESSION_KEY for dashboard.js fallback
       if (user.role === 'admin'
           && typeof APP_CONFIG !== 'undefined'
           && APP_CONFIG.ADMIN_SESSION_KEY) {
         sessionStorage.setItem(APP_CONFIG.ADMIN_SESSION_KEY, user.email);
       }
-    } catch (e) { /* storage unavailable — session won't persist */ }
+    } catch (e) {}
   }
 
   function _clear() {
@@ -57,11 +61,6 @@ var AuthService = (function () {
   // ── Public API ───────────────────────────────────────────────────
   return {
 
-    /**
-     * Login with email.
-     * Returns { success: true, user } or { success: false, error: string }
-     * To extend: add real provider call here, keep return contract identical.
-     */
     login: function (username) {
       var uname = String(username || '').trim();
       if (!uname) {
@@ -93,16 +92,18 @@ var AuthService = (function () {
       return !!(u && u.role === 'admin');
     },
 
-    /**
-     * Redirect to login if not authenticated.
-     * Call at page init — returns false if redirect was issued.
-     */
+    isChampion: function () {
+      var u = this.getUser();
+      return !!(u && u.role === 'champion');
+    },
+
+    isChampionOrAdmin: function () {
+      return this.isAdmin() || this.isChampion();
+    },
+
     requireAuth: function () {
       if (!this.isLoggedIn()) {
         var last = window.location.pathname.split('/').filter(Boolean).pop() || '';
-        // Only use the segment if it is an .html file.
-        // Trailing-slash URLs (e.g. /ai-usecase-platform/) make .pop() return the
-        // repo/directory name, which then appears twice in the post-login redirect.
         var page = /\.html?$/i.test(last) ? last : 'index.html';
         var ret  = encodeURIComponent(page + window.location.search);
         window.location.replace('login.html?return=' + ret);
@@ -111,9 +112,6 @@ var AuthService = (function () {
       return true;
     },
 
-    /**
-     * Redirect to portal if not admin (also covers not-logged-in → login).
-     */
     requireAdmin: function () {
       if (!this.requireAuth()) return false;
       if (!this.isAdmin()) {
@@ -123,21 +121,82 @@ var AuthService = (function () {
       return true;
     },
 
+    requireChampionOrAdmin: function () {
+      if (!this.requireAuth()) return false;
+      if (!this.isChampionOrAdmin()) {
+        window.location.replace('index.html');
+        return false;
+      }
+      return true;
+    },
+
     /**
-     * Store a user object from an external source (e.g., GAS validateUserLogin response).
-     * Dùng trong login.html sau khi GAS trả về role đúng từ USERS sheet.
+     * Store a user object from GAS validateUserLogin response.
      * @param {{ email, displayName, role, team?, loginAt? }} userData
      */
     storeUser: function(userData) {
       if (!userData || !userData.email) return;
+      var role = String(userData.role || 'user').toLowerCase().trim();
+      if (role !== 'admin' && role !== 'champion') role = 'user';
       var user = {
         email:       String(userData.email).trim().toLowerCase(),
         displayName: userData.displayName || _buildDisplayName(userData.email),
-        role:        userData.role === 'admin' ? 'admin' : 'user',
+        role:        role,
         team:        userData.team || '',
         loginAt:     userData.loginAt || new Date().toISOString()
       };
       _save(user);
+    },
+
+    /**
+     * Show/hide sidebar nav items based on current user role.
+     * Call once after DOM is ready. Safe to call multiple times.
+     */
+    setupNav: function () {
+      var user  = this.getUser();
+      var role  = user ? (user.role || 'user') : 'user';
+      var isAdm = role === 'admin';
+      var isChm = role === 'champion';
+
+      function show(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = '';
+      }
+      if (isAdm) {
+        show('navDashboard');
+        show('navUsers');
+        show('navReviewQueue');
+      } else if (isChm) {
+        show('navReviewQueue');
+      }
+    },
+
+    /**
+     * Populate sidebar footer user info and bind logout.
+     * Call once after DOM is ready.
+     */
+    populateSidebarUser: function () {
+      var user = this.getUser();
+      if (!user) return;
+      var initials = (user.displayName || user.email || '?').charAt(0).toUpperCase();
+      var roleLabels = { admin: 'Admin', champion: 'Champion', user: 'Người dùng' };
+      var roleLabel  = roleLabels[user.role] || 'Người dùng';
+
+      function setEl(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+      setEl('sidebarAvatar',   initials);
+      setEl('sidebarUserName', user.displayName || user.email);
+      setEl('sidebarUserRole', roleLabel);
+      setEl('topbarAvatar',    initials);
+      setEl('topbarUserName',  user.displayName || user.email);
+
+      var chip = document.getElementById('topbarUserChip');
+      if (chip) chip.style.display = '';
+
+      var logoutBtn = document.getElementById('sidebarLogoutBtn');
+      if (logoutBtn) logoutBtn.addEventListener('click', function () {
+        AuthService.logout();
+        window.location.replace('login.html');
+      });
     }
   };
 })();

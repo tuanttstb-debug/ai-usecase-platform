@@ -412,3 +412,86 @@ function submitManagerReview_(recordId, data) {
     total_score:        updates.Total_Score
   };
 }
+
+// ── Champion helpers ──────────────────────────────────────────────
+
+/**
+ * Returns true if email belongs to an active champion for the given team.
+ * Checks USERS sheet: Role='champion', Active=TRUE, Team matches (case-insensitive).
+ */
+function isChampionForTeam_(email, team) {
+  if (!email || !team) return false;
+  var normalizedEmail = String(email).toLowerCase().trim();
+  var normalizedTeam  = String(team).toLowerCase().trim();
+  try {
+    var users = getAllUsers_();
+    for (var i = 0; i < users.length; i++) {
+      var u = users[i];
+      var uEmail  = String(u.Username || u.Email || '').toLowerCase().trim();
+      var uRole   = String(u.Role || '').toLowerCase().trim();
+      var uActive = u.Active === true || String(u.Active).toLowerCase() === 'true';
+      var uTeam   = String(u.Team || '').toLowerCase().trim();
+      if (uEmail === normalizedEmail && uRole === 'champion' && uActive && uTeam === normalizedTeam) {
+        return true;
+      }
+    }
+  } catch (e) {
+    logError_('isChampionForTeam_', e, { email: email, team: team });
+  }
+  return false;
+}
+
+/**
+ * Champion review: scores Quality/BusinessValue/Innovation, re-calculates total.
+ * Auth: admin OR champion whose team matches the UC's team.
+ */
+function submitChampionReview_(recordId, data) {
+  if (!recordId) throw new Error('Record_ID là bắt buộc');
+
+  var reviewerEmail = String(data.reviewer_email || '').trim();
+  var existing = findObjectByField_(SHEETS.MASTER, 'Record_ID', recordId);
+  if (!existing) throw new Error('Không tìm thấy use case: ' + recordId);
+
+  // Auth check: admin OR champion of the same team
+  var ucTeam = String(existing.Team || '').trim();
+  if (!isAdminEmail_(reviewerEmail) && !isChampionForTeam_(reviewerEmail, ucTeam)) {
+    throw new Error('Không có quyền champion review cho team: ' + ucTeam);
+  }
+
+  var now = new Date().toISOString();
+  var updates = {
+    Record_ID:   recordId,
+    Reviewer:    reviewerEmail,
+    Review_Date: now,
+    Updated_At:  now
+  };
+
+  if (data.Quality_Score        !== undefined) updates.Quality_Score        = Math.min(10, Math.max(0, safeNum_(data.Quality_Score)));
+  if (data.Business_Value_Score !== undefined) updates.Business_Value_Score = Math.min(10, Math.max(0, safeNum_(data.Business_Value_Score)));
+  if (data.Innovation_Score     !== undefined) updates.Innovation_Score     = Math.min(10, Math.max(0, safeNum_(data.Innovation_Score)));
+  if (data.Review_Comment       !== undefined) updates.Review_Committee_Comment = String(data.Review_Comment).substring(0, 500);
+
+  // Re-score with updated manual scores
+  var merged = {};
+  Object.keys(existing).forEach(function(k) { merged[k] = existing[k]; });
+  Object.keys(updates).forEach(function(k)  { merged[k] = updates[k]; });
+  try {
+    var scores = scoreUseCase_(merged);
+    Object.keys(scores).forEach(function(k) { updates[k] = scores[k]; });
+  } catch (e) {
+    logError_('submitChampionReview_ scoring', e, { recordId: recordId });
+  }
+
+  updateRowByRecordId_(SHEETS.MASTER, recordId, updates);
+  logActivity_(existing.UseCase_ID, recordId, 'CHAMPION_REVIEW',
+    'Champion review: Q=' + (updates.Quality_Score || 0) +
+    ' BV=' + (updates.Business_Value_Score || 0) +
+    ' Inn=' + (updates.Innovation_Score || 0) +
+    ' Total=' + (updates.Total_Score || '?'),
+    reviewerEmail, null, null);
+
+  return {
+    record_id:   recordId,
+    total_score: updates.Total_Score
+  };
+}

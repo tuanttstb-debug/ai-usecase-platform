@@ -5,6 +5,79 @@
   // Pre-fetch lúc load để không block submit critical path (phương án 3 — giảm timeout)
   var _preloadedNextId = null;
 
+  /* ── Scoring Preview ── */
+  function _updateScoringPreview() {
+    if (typeof ScoringEngine === 'undefined') return;
+    var panel = document.getElementById('scoringPreview');
+    if (!panel) return;
+
+    var uc = FormMapper.collectData();
+    // Merge in slider self-assessment values
+    var sliderBiz = document.getElementById('sliderBizValue');
+    var sliderInn = document.getElementById('sliderInnovation');
+    if (sliderBiz) uc.Business_Value_Score = parseInt(sliderBiz.value, 10) || 0;
+    if (sliderInn) uc.Innovation_Score     = parseInt(sliderInn.value, 10) || 0;
+    uc.Quality_Score = 0; // unknown until champion reviews
+
+    var s = ScoringEngine.compute(uc);
+
+    // Show panel once user has filled any field
+    panel.style.display = '';
+
+    function setTxt(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    function setBarW(id, pct) {
+      var el = document.getElementById(id);
+      if (el) el.style.width = Math.min(100, Math.max(0, pct)) + '%';
+    }
+
+    setTxt('scoreTotalVal', s.total);
+    setTxt('valEfficiency',   s.efficiency);
+    setTxt('valAdoption',     s.adoption);
+    setTxt('valReuse',        s.reuse);
+    setTxt('valFrequency',    s.frequency);
+    setTxt('valDocumentation', s.documentation);
+
+    setBarW('barEfficiency',   (s.efficiency   / 20) * 100);
+    setBarW('barAdoption',     (s.adoption     / 20) * 100);
+    setBarW('barReuse',        (s.reuse        / 20) * 100);
+    setBarW('barFrequency',    (s.frequency    / 15) * 100);
+    setBarW('barDocumentation',(s.documentation / 5)  * 100);
+
+    // Slider display labels
+    setTxt('valBizSelf', uc.Business_Value_Score);
+    setTxt('valInnSelf', uc.Innovation_Score);
+
+    // SVG ring — circumference = 2π×32 ≈ 201
+    var ringFill = document.getElementById('scoreRingFill');
+    if (ringFill) {
+      var circ = 201;
+      var offset = circ - (s.total / 100) * circ;
+      ringFill.style.strokeDasharray  = circ;
+      ringFill.style.strokeDashoffset = offset;
+      ringFill.style.stroke           = s.rank.color;
+    }
+
+    var chip = document.getElementById('scoreRankChip');
+    if (chip) {
+      chip.textContent       = s.rank.label;
+      chip.style.background  = s.rank.color;
+      chip.style.display     = '';
+    }
+  }
+
+  function _bindScoringPreview() {
+    var form = document.getElementById('useCaseForm');
+    if (form) {
+      form.addEventListener('change', _updateScoringPreview);
+      form.addEventListener('input',  _updateScoringPreview);
+    }
+    ['sliderBizValue', 'sliderInnovation'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', _updateScoringPreview);
+    });
+    _updateScoringPreview();
+  }
+
   /* ── Entry Point ── */
   async function init() {
     showLoading(true, 'Đang khởi tạo...');
@@ -49,6 +122,9 @@
 
       // 5. Submit
       document.getElementById('submitBtn').addEventListener('click', submitForm);
+
+      // 6. Scoring preview
+      _bindScoringPreview();
 
     } catch (err) {
       Toast.show('Lỗi khởi tạo: ' + err.message, 'error');
@@ -156,6 +232,11 @@
   /* ── Form Submission ── */
   async function submitForm() {
     const data = FormMapper.collectData();
+    // Inject self-assessment slider values
+    var sliderBiz = document.getElementById('sliderBizValue');
+    var sliderInn = document.getElementById('sliderInnovation');
+    if (sliderBiz) data.Business_Value_Score = parseInt(sliderBiz.value, 10) || 0;
+    if (sliderInn) data.Innovation_Score     = parseInt(sliderInn.value, 10) || 0;
     // Inject Owner_Email từ session (field ẩn, không render trên UI)
     if (typeof AuthService !== 'undefined') {
       var _u = AuthService.getUser();
@@ -268,7 +349,7 @@
 
   /* ── Success Screen ── */
   function showSuccessScreen(useCaseId) {
-    ['useCaseForm', 'wizardNavWrapper', 'stepIndicators', 'stepCounter'].forEach(id => {
+    ['useCaseForm', 'wizardNavWrapper', 'stepIndicators', 'stepCounter', 'scoringPreview'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });

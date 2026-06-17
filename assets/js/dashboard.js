@@ -60,7 +60,6 @@
     _bindListModal();
     _bindKPIClicks();
     _initAllFilters();
-    _bindUsersTab();
 
     // Determine initial tab from URL param
     var sp       = new URLSearchParams(window.location.search);
@@ -73,29 +72,34 @@
 
   // ── Layout setup (role-based visibility) ─────────────────────────
   function _setupLayout() {
+    var isChampion = typeof AuthService !== 'undefined' && typeof AuthService.isChampion === 'function' && AuthService.isChampion();
     if (_isAdmin) {
-      // Show KPI row
       var kpiRow = document.getElementById('kpiRow');
       if (kpiRow) kpiRow.style.display = '';
 
-      // Show admin tabs
       document.querySelectorAll('.admin-only').forEach(function (el) {
         el.style.display = '';
       });
 
-      // Show Dashboard nav item
       var navDash = document.getElementById('navDashboard');
       if (navDash) navDash.style.display = '';
 
-      // Show refresh button
+      var navUsers = document.getElementById('navUsers');
+      if (navUsers) navUsers.style.display = '';
+
+      var navReviewQueue = document.getElementById('navReviewQueue');
+      if (navReviewQueue) navReviewQueue.style.display = '';
+
       var refreshBtn = document.getElementById('refreshBtn');
       if (refreshBtn) refreshBtn.style.display = '';
 
-      // Update topbar title
       var title = document.getElementById('topbarTitle');
       if (title) title.textContent = 'Dashboard Quản lý';
     } else {
-      // Regular user: topbar shows "Use Case của tôi"
+      if (isChampion) {
+        var navRQ = document.getElementById('navReviewQueue');
+        if (navRQ) navRQ.style.display = '';
+      }
       var title2 = document.getElementById('topbarTitle');
       if (title2) title2.textContent = 'Use Case của tôi';
     }
@@ -105,15 +109,16 @@
   function _populateSidebar() {
     if (!_user) return;
     var initials = (_user.displayName || _user.email || '?').charAt(0).toUpperCase();
+    var roleLabels = { admin: 'Admin', champion: 'Champion', user: 'Người dùng' };
+    var roleLabel  = roleLabels[_user.role] || 'Người dùng';
     function setEl(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
     setEl('sidebarAvatar',   initials);
     setEl('sidebarUserName', _user.displayName || _user.email);
-    setEl('sidebarUserRole', _isAdmin ? 'Admin' : 'Người dùng');
+    setEl('sidebarUserRole', roleLabel);
     setEl('topbarAvatar',    initials);
     setEl('topbarUserName',  _user.displayName || _user.email);
     var chip = document.getElementById('topbarUserChip'); if (chip) chip.style.display = '';
 
-    // Logout
     var logoutBtn = document.getElementById('sidebarLogoutBtn');
     if (logoutBtn) logoutBtn.addEventListener('click', function () {
       if (typeof AuthService !== 'undefined') AuthService.logout();
@@ -690,16 +695,29 @@
     var tbody = document.querySelector('#exploreTable tbody');
     if (!tbody) return;
     if (!items.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Chưa có use case nào được duyệt</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">Chưa có use case nào được duyệt</td></tr>';
       return;
     }
     tbody.innerHTML = items.map(function (uc) {
       var k = _cache(uc);
+      var scoreVal = uc.total_score || uc.auto_score || 0;
+      var scoreHtml, rankHtml;
+      if (scoreVal > 0) {
+        var rank = (typeof ScoringEngine !== 'undefined') ? ScoringEngine.getRankInfo(scoreVal) : null;
+        var c = rank ? rank.color : '#999';
+        scoreHtml = '<span class="score-chip" style="background:' + c + '20;color:' + c + ';border:1px solid ' + c + '40;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:600">' + scoreVal + '</span>';
+        rankHtml  = rank ? '<span style="font-size:11px;font-weight:600;color:' + c + '">' + esc(rank.label) + '</span>' : '<span style="color:var(--color-text-muted);font-size:11px">--</span>';
+      } else {
+        scoreHtml = '<span style="color:var(--color-text-muted);font-size:12px">--</span>';
+        rankHtml  = '<span style="color:var(--color-text-muted);font-size:11px">Chưa chấm</span>';
+      }
       return '<tr style="cursor:pointer" onclick="Dashboard._byKey(\'' + esc(k) + '\')">' +
         '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
         '<td>' + esc(uc.name       || '') + '</td>' +
         '<td>' + esc(uc.team       || '--') + '</td>' +
         '<td>' + esc(uc.owner_name || '--') + '</td>' +
+        '<td style="text-align:center">' + scoreHtml + '</td>' +
+        '<td>' + rankHtml + '</td>' +
         '<td>' + esc(uc.category   || '--') + '</td>' +
         '<td>' + _btnDetail(uc, 'Xem') + '</td>' +
       '</tr>';
