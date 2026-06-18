@@ -31,7 +31,18 @@
       </a>
 
       <nav class="sidebar-nav" role="menubar">
+        <a href="index.html" class="sidebar-nav-item" role="menuitem">
+          <i class="sidebar-nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+            </svg>
+          </i>
+          <span class="sidebar-nav-label">Trang chủ</span>
+        </a>
+
+        <div class="sidebar-divider" aria-hidden="true"></div>
         <span class="sidebar-section-label">Quản lý</span>
+
         <a href="dashboard.html" class="sidebar-nav-item" id="navDashboard" role="menuitem" style="display:none">
           <i class="sidebar-nav-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
@@ -97,18 +108,6 @@
           </i>
           <span class="sidebar-nav-label">Cập nhật tuần</span>
         </a>
-
-        <div class="sidebar-divider" aria-hidden="true"></div>
-        <span class="sidebar-section-label">Hệ thống</span>
-
-        <a href="index.html" class="sidebar-nav-item" role="menuitem">
-          <i class="sidebar-nav-icon" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-            </svg>
-          </i>
-          <span class="sidebar-nav-label">Trang chủ</span>
-        </a>
       </nav>
 
       <div class="sidebar-footer">
@@ -147,6 +146,22 @@
       <main class="app-content" role="main">
         <!-- Queue sections -->
         <div id="rqLoading" class="empty-state">Đang tải hàng đợi review…</div>
+
+        <!-- Filter bar -->
+        <div class="rq-filter-bar" id="rqFilterBar" style="display:none">
+          <input type="search" id="rqSearch" class="rq-search-input" placeholder="Tìm theo tên hoặc mã UC…" autocomplete="off">
+          <select id="rqTeamFilter" class="rq-team-select">
+            <option value="">Tất cả team</option>
+          </select>
+          <div class="rq-filter-pills">
+            <button class="rq-pill active" data-section="">Tất cả</button>
+            <button class="rq-pill" data-section="pending">Chờ đánh giá</button>
+            <button class="rq-pill" data-section="underReview">Đang review</button>
+            <button class="rq-pill" data-section="done">Đã hoàn thành</button>
+          </div>
+          <span class="rq-result-count" id="rqResultCount"></span>
+        </div>
+
         <div id="rqContent" style="display:none">
           <!-- Section 1: Chờ đánh giá -->
           <section class="rq-section" id="rqSectionPending">

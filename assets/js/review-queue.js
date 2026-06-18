@@ -4,6 +4,7 @@
   var _allUcs = [];      // full list from GAS
   var _cache  = {};      // recordId → uc
   var _currentUc = null; // uc being reviewed in the panel
+  var _filterState = { search: '', team: '', section: '' };
 
   /* ── Utilities ── */
   function esc(str) {
@@ -90,13 +91,107 @@
       '</table>';
   }
 
+  /* ── UI Filters ── */
+  function _norm(s) { return String(s || '').trim().toLowerCase(); }
+
+  function _populateTeamFilter() {
+    var sel = document.getElementById('rqTeamFilter');
+    if (!sel) return;
+    var user = AuthService.getUser();
+    // Champion only sees their own team → no need for dropdown
+    if (user && user.role !== 'admin') {
+      sel.style.display = 'none';
+      return;
+    }
+    var teams = [];
+    _allUcs.forEach(function (uc) {
+      var t = String(uc.team || '').trim();
+      if (t && teams.indexOf(t) === -1) teams.push(t);
+    });
+    teams.sort();
+    sel.innerHTML = '<option value="">Tất cả team</option>' +
+      teams.map(function (t) { return '<option value="' + esc(t) + '">' + esc(t) + '</option>'; }).join('');
+    if (_filterState.team) sel.value = _filterState.team;
+  }
+
+  function _applyFilters() {
+    var base    = _filter(_allUcs);       // role-based
+    var q       = _norm(_filterState.search);
+    var team    = _norm(_filterState.team);
+    var section = _filterState.section;
+
+    var list = base.filter(function (uc) {
+      if (q && _norm(uc.name).indexOf(q) === -1 && _norm(uc.usecase_id).indexOf(q) === -1) return false;
+      if (team && _norm(uc.team) !== team) return false;
+      return true;
+    });
+
+    var groups = _group(list);
+    var total  = list.length;
+
+    var sectionMap = {
+      '':            ['rqSectionPending', 'rqSectionUnderReview', 'rqSectionDone'],
+      'pending':     ['rqSectionPending'],
+      'underReview': ['rqSectionUnderReview'],
+      'done':        ['rqSectionDone']
+    };
+    var visible = sectionMap[section] || sectionMap[''];
+
+    ['rqSectionPending', 'rqSectionUnderReview', 'rqSectionDone'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = visible.indexOf(id) !== -1 ? '' : 'none';
+    });
+
+    if (visible.indexOf('rqSectionPending')     !== -1) _renderQueue('rqTablePending',     'rqBadgePending',     groups.pending,     false);
+    if (visible.indexOf('rqSectionUnderReview') !== -1) _renderQueue('rqTableUnderReview', 'rqBadgeUnderReview', groups.underReview, false);
+    if (visible.indexOf('rqSectionDone')        !== -1) _renderQueue('rqTableDone',        'rqBadgeDone',        groups.done,        true);
+
+    var countEl = document.getElementById('rqResultCount');
+    if (countEl) countEl.textContent = total + ' use case';
+  }
+
+  function _bindFilters() {
+    var searchEl = document.getElementById('rqSearch');
+    if (searchEl) {
+      var debounce;
+      searchEl.addEventListener('input', function () {
+        clearTimeout(debounce);
+        debounce = setTimeout(function () {
+          _filterState.search = searchEl.value;
+          _applyFilters();
+        }, 250);
+      });
+    }
+
+    var teamSel = document.getElementById('rqTeamFilter');
+    if (teamSel) {
+      teamSel.addEventListener('change', function () {
+        _filterState.team = teamSel.value;
+        _applyFilters();
+      });
+    }
+
+    var pills = document.querySelectorAll('.rq-pill');
+    pills.forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        pills.forEach(function (p) { p.classList.remove('active'); });
+        pill.classList.add('active');
+        _filterState.section = pill.getAttribute('data-section') || '';
+        _applyFilters();
+      });
+    });
+  }
+
   /* ── Load ── */
   async function _load() {
     document.getElementById('rqLoading').style.display = '';
     document.getElementById('rqContent').style.display = 'none';
+    var filterBar = document.getElementById('rqFilterBar');
+    if (filterBar) filterBar.style.display = 'none';
     try {
       var result = await Api.listUseCases({ limit: 500 });
       _allUcs = Array.isArray(result) ? result : (result.items || result.data || []);
+      _populateTeamFilter();
       _render();
     } catch (e) {
       document.getElementById('rqLoading').textContent = 'Không tải được dữ liệu. Kiểm tra kết nối GAS.';
@@ -105,15 +200,11 @@
   }
 
   function _render() {
-    var filtered = _filter(_allUcs);
-    var groups   = _group(filtered);
-
-    _renderQueue('rqTablePending',     'rqBadgePending',     groups.pending,     false);
-    _renderQueue('rqTableUnderReview', 'rqBadgeUnderReview', groups.underReview, false);
-    _renderQueue('rqTableDone',        'rqBadgeDone',        groups.done,        true);
-
+    _applyFilters();
     document.getElementById('rqLoading').style.display = 'none';
     document.getElementById('rqContent').style.display = '';
+    var filterBar = document.getElementById('rqFilterBar');
+    if (filterBar) filterBar.style.display = '';
   }
 
   /* ── Review Panel ── */
@@ -252,6 +343,7 @@
   /* ── Init ── */
   document.addEventListener('DOMContentLoaded', function () {
     _bind();
+    _bindFilters();
     _load();
   });
 

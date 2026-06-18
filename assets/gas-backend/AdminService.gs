@@ -194,7 +194,12 @@ function listUseCases_(filters) {
       hours_saved_actual:  safeNum_(uc.Hours_Saved_Actual),
       blocker:             String(uc.Blocker       || '').substring(0, 200),
       last_weekly_report:  uc.Last_Weekly_Report   || '',
-      pain_point:          String(uc.Pain_Point    || '').substring(0, 200)
+      pain_point:          String(uc.Pain_Point    || '').substring(0, 200),
+      review_comment:      String(uc.Review_Comment || '').substring(0, 300),
+      reviewer_email:      uc.Reviewer             || '',
+      quality_score:       safeNum_(uc.Quality_Score),
+      business_value_score: safeNum_(uc.Business_Value_Score),
+      innovation_score:    safeNum_(uc.Innovation_Score)
     };
   });
 }

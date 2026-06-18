@@ -1046,6 +1046,13 @@
       usage_notes:          d.Usage_Notes             || '',
       review_comment:       d.Review_Comment          || '',
       reviewer_email:       d.Reviewer                || d.reviewer_email || '',
+      quality_score:        (parseFloat(d.Quality_Score        || d.quality_score)        || 0),
+      business_value_score: (parseFloat(d.Business_Value_Score || d.business_value_score) || 0),
+      innovation_score:     (parseFloat(d.Innovation_Score     || d.innovation_score)     || 0),
+      auto_score:           (parseFloat(d.Auto_Score           || d.auto_score)           || 0),
+      manual_score:         (parseFloat(d.Manual_Score         || d.manual_score)         || 0),
+      total_score:          (parseFloat(d.Total_Score          || d.total_score)          || 0),
+      rank_category:        d.Rank_Category || d.rank_category || '',
     };
   }
 
@@ -1114,6 +1121,61 @@
     var s5 = _dgrid([['Người duyệt', uc.reviewer_email]]) +
              _dfield('Nhận xét duyệt', uc.review_comment, true);
     if (s5.trim()) html += _dsection('✓', 'Thông tin phê duyệt', [s5], 'detail-section--review');
+
+    // ── Section ★ Đánh giá & Điểm số ─────────────────────────────────
+    (function () {
+      var auto   = uc.auto_score           || 0;
+      var manual = uc.manual_score         || 0;
+      var total  = uc.total_score          || (auto + manual);
+      var q      = uc.quality_score        || 0;
+      var bv     = uc.business_value_score || 0;
+      var inn    = uc.innovation_score     || 0;
+      var rankInfo  = typeof ScoringEngine !== 'undefined' ? ScoringEngine.getRankInfo(total) : null;
+      var hasScore  = auto > 0 || manual > 0 || q > 0 || bv > 0 || inn > 0;
+
+      var sScore = '';
+      if (!hasScore) {
+        sScore = '<div class="not-scored-notice"><span class="not-scored-icon">⏳</span><span>Chưa thực hiện chấm điểm</span></div>';
+      } else {
+        var rankBadge = (rankInfo && total > 0)
+          ? '<span class="score-rank-badge" style="background:' + rankInfo.color + '20;color:' + rankInfo.color + ';border:1px solid ' + rankInfo.color + '40">' + esc(rankInfo.label) + '</span>'
+          : '';
+        sScore += '<div class="score-total-row">' +
+          '<div class="score-total-num"><span class="score-total-val">' + total + '</span><span class="score-total-max">&nbsp;/100</span><span class="score-total-label">Tổng điểm</span></div>' +
+          rankBadge +
+        '</div>';
+
+        sScore += '<div class="score-subsections">';
+        sScore += '<div class="score-subsection">' +
+          '<div class="score-subsection-title">Điểm Auto <em>(hệ thống)</em>' +
+            '<span class="score-val-badge">' + auto + ' / 70</span>' +
+          '</div>' +
+          '<p class="score-subsection-note">Tính tự động: hiệu quả thời gian · số người dùng · tái sử dụng · tần suất · tài liệu</p>' +
+        '</div>';
+
+        if (manual > 0 || q > 0 || bv > 0 || inn > 0) {
+          sScore += '<div class="score-subsection">' +
+            '<div class="score-subsection-title">Điểm Champion <em>(đánh giá)</em>' +
+              '<span class="score-val-badge score-val-badge--champion">' + manual + ' / 30</span>' +
+            '</div>' +
+            '<div class="score-breakdown-grid">' +
+              '<div class="score-component"><span class="score-comp-label">Chất lượng</span><span class="score-comp-val">' + q + '<span class="score-comp-max">/10</span></span></div>' +
+              '<div class="score-component"><span class="score-comp-label">Giá trị KD</span><span class="score-comp-val">' + bv + '<span class="score-comp-max">/10</span></span></div>' +
+              '<div class="score-component"><span class="score-comp-label">Sáng tạo</span><span class="score-comp-val">' + inn + '<span class="score-comp-max">/10</span></span></div>' +
+            '</div>';
+          if (uc.reviewer_email) sScore += '<div class="score-reviewer">Người đánh giá: <strong>' + esc(uc.reviewer_email) + '</strong></div>';
+          if (uc.review_comment) sScore += '<div class="score-comment">' + esc(uc.review_comment) + '</div>';
+          sScore += '</div>';
+        } else {
+          sScore += '<div class="score-subsection">' +
+            '<div class="score-subsection-title">Điểm Champion <em>(đánh giá)</em></div>' +
+            '<div class="not-scored-notice not-scored-notice--sm">Chưa có đánh giá từ Champion</div>' +
+          '</div>';
+        }
+        sScore += '</div>';
+      }
+      html += _dsection('★', 'Đánh giá & Điểm số', [sScore], 'detail-section--score');
+    })();
 
     // Loading hint while full data is being fetched
     if (!isFullData && uc.record_id) {
@@ -1585,7 +1647,80 @@
       return (uKey && (eKey === uKey || nKey === uKey)) ||
              (dKey && (eKey === dKey || nKey === dKey));
     });
-    openListModal((displayName || username) + ' — Use case', items);
+    _openKPIScoreList((displayName || username) + ' — Use case', items);
+  }
+
+  /* Specialized score list popup for KPI tab — shows Auto/Champion scores per UC */
+  function _openKPIScoreList(title, items) {
+    var titleEl = document.getElementById('listModalTitle');
+    var countEl = document.getElementById('listModalCount');
+    var body    = document.getElementById('listModalBody');
+    if (!titleEl || !body) return;
+
+    titleEl.textContent = title;
+    if (countEl) countEl.textContent = (items ? items.length : 0) + ' use case';
+
+    if (!items || !items.length) {
+      body.innerHTML = '<p style="padding:var(--space-8);text-align:center;color:var(--color-text-muted);font-size:var(--text-sm)">Không có use case nào</p>';
+    } else {
+      var rows = items.map(function (uc) {
+        var cfg        = STATUS_CFG[uc.status] || { label: uc.status || '--', color: '#5f6368' };
+        var autoScore  = uc.auto_score   || 0;
+        var manScore   = uc.manual_score || 0;
+        var totalScore = uc.total_score  || 0;
+        var rankInfo   = typeof ScoringEngine !== 'undefined' ? ScoringEngine.getRankInfo(totalScore) : null;
+
+        var autoHtml = autoScore > 0
+          ? '<span style="color:var(--color-text-secondary);font-size:var(--text-sm)">' + autoScore + '<span style="color:var(--color-text-muted)">/70</span></span>'
+          : '<span style="color:var(--color-text-muted)">—</span>';
+
+        var championHtml = manScore > 0
+          ? '<span class="score-chip" style="background:var(--color-primary-surface,rgba(123,44,191,.12));color:var(--color-primary)">' + manScore + '/30</span>'
+          : '<span class="champion-unscored">⏳ Chưa chấm</span>';
+
+        var totalHtml = (totalScore > 0 && rankInfo)
+          ? '<span class="score-chip" style="background:' + rankInfo.color + '20;color:' + rankInfo.color + '">' + totalScore + '</span>'
+          : '<span style="color:var(--color-text-muted)">—</span>';
+
+        var rankHtml = (rankInfo && totalScore > 0)
+          ? '<span style="font-size:11px;font-weight:600;color:' + rankInfo.color + '">' + esc(rankInfo.label) + '</span>'
+          : '<span style="color:var(--color-text-muted);font-size:11px">—</span>';
+
+        var comment = uc.review_comment || '';
+        var commentHtml = comment
+          ? '<span style="font-size:11px;color:var(--color-text-secondary);font-style:italic" title="' + esc(comment) + '">' + esc(comment.length > 50 ? comment.substring(0, 50) + '…' : comment) + '</span>'
+          : '<span style="color:var(--color-text-muted);font-size:11px">—</span>';
+
+        return '<tr>' +
+          '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
+          '<td>' + esc(uc.name || '') + '</td>' +
+          '<td><span class="status-badge" style="background:' + cfg.color + '20;color:' + cfg.color + '">' + esc(cfg.label) + '</span></td>' +
+          '<td style="text-align:center">' + autoHtml + '</td>' +
+          '<td style="text-align:center">' + championHtml + '</td>' +
+          '<td style="text-align:center">' + totalHtml + '</td>' +
+          '<td>' + rankHtml + '</td>' +
+          '<td>' + commentHtml + '</td>' +
+          '<td>' + _btnDetail(uc, 'Chi tiết') + '</td>' +
+        '</tr>';
+      }).join('');
+
+      body.innerHTML =
+        '<div style="overflow-x:auto">' +
+        '<table class="dash-table" style="margin:0;font-size:var(--text-sm);min-width:800px">' +
+          '<thead><tr>' +
+            '<th>Mã</th><th>Tên Use Case</th><th>Trạng thái</th>' +
+            '<th style="text-align:center">Điểm Auto</th>' +
+            '<th style="text-align:center">Điểm Champion</th>' +
+            '<th style="text-align:center">Tổng</th>' +
+            '<th>Rank</th>' +
+            '<th>Nhận xét</th>' +
+            '<th></th>' +
+          '</tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table></div>';
+    }
+
+    document.getElementById('listModal').classList.remove('hidden');
   }
 
   /* Strict streak: if no UC this week → 0; else count consecutive weeks backward */
