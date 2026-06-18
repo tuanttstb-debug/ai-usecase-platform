@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-17
-**Version:** 3.10.2 (feat complete; GAS champion-review deploy pending)
+**Last updated:** 2026-06-18
+**Version:** 3.10.3 (sidebar UI sync + champion DB fix + GAS fully deployed)
 
 ---
 
@@ -100,7 +100,8 @@ env.js → auth.js → [inline portal script]
 | Copy Prompt | ✅ | NEW v3.3 — 8 prompt fields → clipboard; hiện sau khi full data load |
 | Approval flow | ✅ | Confirmed working; confirm button re-enable fix v3.6.2 |
 | Auto-load on startup | ✅ | NEW v3.3 — _loadStartupData() thay lazy tab-click loading |
-| TPBank sidebar UI | ✅ | Tất cả pages dùng sidebar — consistent layout |
+| Sidebar UI sync | ✅ | v3.10.3 (2026-06-18) — Đồng bộ Pattern A sidebar trên toàn bộ pages: leaderboard/weekly-update thêm navUsers+navReviewQueue, xóa navManagerReview, thay inline JS bằng AuthService; users/review-queue Pattern B → A brand, role="menubar", section label Quản lý, topbar CSS class chuẩn |
+| TPBank sidebar UI | ✅ | Tất cả pages dùng sidebar — consistent layout, Pattern A (sidebar-brand + Bình dân hóa AI) |
 | Heroicons SVG | ✅ | Tất cả emoji → SVG inline (dashboard, register, index) |
 | Chart.js charts | ✅ | doughnut + stacked horizontal bar (Team & Category); CSS fallback nếu CDN fail |
 | Stacked breakdown charts | ✅ | NEW v3.8.0 — Team & Category bars phân tách màu theo trạng thái UC; click segment → popup lọc đúng group + status |
@@ -116,25 +117,29 @@ env.js → auth.js → [inline portal script]
 | KPI week date format | ✅ | fix `91c4a00` — manual `DD/MM` formatter thay `toLocaleDateString` (locale inconsistency trên Chromium/Windows) |
 | Responsive | ✅ | Sidebar collapse 1024px áp dụng toàn bộ pages |
 
-## Backend (GAS) — ⚠️ Partial
+## Backend (GAS) — ✅ Deployed
 
 **Active deployment URL:** `AKfycbypN8afAl2zQwpR7K6k1-699g3HAhFAIqAOtDn3qY1nJWzuN1bd8n99bzRUzaV8ZMyTCw`
-**OAuth:** ✅ Authorized | **GAS code sync:** ⚠️ Local fixes chưa deploy — chưa tìm được đúng GAS project (GAS-MYSTERY-01)
+**OAuth:** ✅ Authorized | **GAS code sync:** ✅ Tất cả 9 files đã deploy — GAS-MYSTERY-01 CLOSED (2026-06-18)
 
-**Pending deploy (9 files):**
+**Deployed files (2026-06-18):**
 
 | File | Thay đổi chính | Version |
 |---|---|---|
-| `AdminService.gs` | **NEW funcs** — isChampionForTeam_() + submitChampionReview_() | v3.10.2 |
+| `AdminService.gs` | isChampionForTeam_() + submitChampionReview_() | v3.10.2 |
 | `Code.gs` | Routes next-id + 5 user endpoints + champion-review | v3.10.2 |
-| `UserService.gs` | **NEW** — USERS sheet, normalizeUser_(), validateUserLogin_(), syncUsersFromMasterData_() | v3.10.0 |
+| `UserService.gs` | USERS sheet, normalizeUser_(), validateUserLogin_(), syncUsersFromMasterData_(); **fix champion role save** | v3.10.3 |
 | `Config.gs` | SHEETS.USERS + USERS_HEADERS + usernames ADMIN_EMAILS | v3.10.0 |
 | `Utils.gs` | sanitizeStr_ + toSheetValue_() + findRowByField_() + USERS case | v3.10.0 |
 | `UseCaseService.gs` | _assignUseCaseId_() + single-read update + JSON_Backup cap | v3.7.1 |
 | `LookupService.gs` | Rewrite hoàn toàn | v2.x |
 | `DashboardService.gs` | record_id + status + owner_name trong recent_submissions | v3.5.1 |
 
-**Sau khi deploy:** Chạy `?action=user-init&admin_email=tuantt4` → Dashboard → tab Người dùng → Đồng bộ từ UC
+**Khởi tạo sau deploy (nếu USERS sheet chưa có):**
+```
+GAS_URL?action=user-init&admin_email=tuantt4
+```
+Rồi Dashboard → tab Người dùng → **Đồng bộ từ UC** → import owners từ MASTER_DATA.
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -147,7 +152,8 @@ env.js → auth.js → [inline portal script]
 | duplicateCheck | ✅ | Live |
 | lookupData | ✅ | Live |
 | dashboard API | ✅ | Live |
-| user-login / users / user-upsert / user-sync | ⏳ | Code ready locally, chưa deploy (GAS-MYSTERY-01) |
+| user-login / users / user-upsert / user-sync | ✅ | Deployed 2026-06-18 |
+| champion-review | ✅ | Deployed 2026-06-18 |
 | Authentication | ❌ | Username-based FE only, no real auth (SEC-01) |
 
 ## Auth Architecture Notes (v3.10.2)
@@ -210,10 +216,20 @@ Key tokens (all in `variables.css`):
 ## Layout Architecture (v3.0.0)
 | Page | Layout | Sidebar |
 |---|---|---|
-| `dashboard.html` | `.app-layout` → sidebar + topbar | ✅ Yes (252px purple) |
+| `dashboard.html` | `.app-layout` → sidebar + topbar | ✅ Yes (252px purple) — Pattern A |
+| `users.html` | `.app-layout` → sidebar + topbar | ✅ Yes — Pattern A (fixed v3.10.3) |
+| `review-queue.html` | `.app-layout` → sidebar + topbar | ✅ Yes — Pattern A (fixed v3.10.3) |
+| `leaderboard.html` | `.app-layout` → sidebar + topbar | ✅ Yes — Pattern A |
+| `weekly-update.html` | `.app-layout` → sidebar + topbar | ✅ Yes — Pattern A |
 | `index.html` | `.portal-header` + `.portal-main` | ❌ Top-header only |
 | `register.html` | `.app-header` + `.app-container` | ❌ Top-header only |
 | `login.html` | `.login-page` centered card | ❌ Auth page |
+
+**Sidebar Pattern A (chuẩn — tất cả pages phải tuân theo):**
+- `<aside aria-label="Điều hướng chính">` → `<a href="index.html" class="sidebar-brand">` → `.sidebar-brand-logo` + `.sidebar-brand-text` (name: "Bình dân hóa AI", sub: "TT SPTD")
+- `<nav role="menubar">` → `<span class="sidebar-section-label">Quản lý</span>` trước group đầu tiên
+- Topbar: `.topbar-user-chip` / `.topbar-user-avatar` / `.topbar-user-name`
+- Inline JS: `AuthService.requireAuth()` (hoặc requireAdmin/requireChampionOrAdmin) + `populateSidebarUser()` + `setupNav()`
 
 Sidebar collapses at **1024px** (off-canvas, `.is-open` toggle).
 

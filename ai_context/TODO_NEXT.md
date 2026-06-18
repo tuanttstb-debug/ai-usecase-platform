@@ -4,60 +4,30 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
-## P0 — [NEEDS DEPLOY] Sync GAS code sau khi tìm được project
+## P0 — Champion end-to-end test (GAS đã deploy)
 
-Sau khi hoàn thành GAS-MYSTERY-01 bên dưới, paste **tất cả** file dưới vào GAS Editor → **Edit deployment → New version → Deploy**:
+GAS đã deploy 2026-06-18. Test toàn bộ luồng champion:
 
-| File | Thay đổi quan trọng | Version |
-|---|---|---|
-| `AdminService.gs` | **NEW funcs** — `isChampionForTeam_()` + `submitChampionReview_()` | v3.10.2 |
-| `Code.gs` | Route `?action=next-id` + 5 user endpoints + **`champion-review`** | v3.10.2 |
-| `UserService.gs` | **NEW** — USERS sheet management, normalizeUser_(), validateUserLogin_(), syncUsersFromMasterData_() | v3.10.0 |
-| `UseCaseService.gs` | `_assignUseCaseId_()` + single-read update + cap JSON_Backup | v3.7.1 |
-| `Utils.gs` | `sanitizeStr_` + `toSheetValue_()` + `findRowByField_()` + USERS sheet support | v3.10.0 |
-| `Config.gs` | `SHEETS.USERS` + `USERS_HEADERS` + `ADMIN_EMAILS = ['cuongvm1','tuantt4','dunglq1']` | v3.10.0 |
-| `LookupService.gs` | Rewrite hoàn toàn | v2.x |
-| `DashboardService.gs` | Push `record_id`, `status`, `owner_name` vào `recent_submissions` | v3.5.1 |
+- [ ] Thêm champion vào USERS sheet: `Username=<username>`, `Role=champion`, `Active=TRUE`, `Team=<tên team khớp MASTER_DATA>`
+- [ ] Login champion → verify `navReviewQueue` visible, `navUsers` NOT visible, role label "Champion"
+- [ ] Vào `review-queue.html` → chỉ thấy UC của team mình trong các queue
+- [ ] Click "Review" → slide-in panel mở → UC ID hiển thị đúng
+- [ ] Set Quality=8, BV=7, Innovation=6 → projected score cập nhật đúng
+- [ ] Submit → toast "Review đã được ghi nhận" + queue reload
+- [ ] Kiểm tra MASTER sheet: `Quality_Score=8`, `Business_Value_Score=7`, `Innovation_Score=6`, `Total_Score` recalculated, `Rank_Category` đúng
 
-**Sau khi deploy, chạy 1 lần để khởi tạo USERS sheet:**
+---
+
+## P0 — Khởi tạo USERS sheet (nếu chưa có)
+
 ```
 GAS_URL?action=user-init&admin_email=tuantt4
 ```
-Rồi vào Dashboard → tab "Người dùng" → **Đồng bộ từ UC** → import tất cả owner từ MASTER_DATA.
-
-Test sau deploy:
-- `GAS_URL?action=next-id` → `{"success":true,"data":{"next_id":"AIUS-XXXX"}}`
-- `GAS_URL?action=champion-review` (không có body) → expect error "Thiếu Record_ID", không phải 404
-- Submit 1 UC mới với ký tự đặc biệt trong Prompt_Context → kiểm tra lưu đúng trong sheet
-- Submit UC mới → kiểm tra ID trả về khớp với ID trong sheet
+Sau đó: Dashboard → tab Người dùng → **Đồng bộ từ UC** → import tất cả owners từ MASTER_DATA.
 
 ---
 
-## P0 — [BLOCKING] Tìm đúng GAS project (GAS-MYSTERY-01)
-
-GAS URL đang hoạt động (`AKfycbwe0eo3X3KW...`) không tìm thấy trong deployment history → không biết project nào đang serve, không thể update code GAS.
-
-**Fix:**
-1. Mở `script.google.com` → **My Projects** → duyệt tất cả project
-2. Với mỗi project → **Deploy → Manage deployments** → tìm URL chứa `AKfycbypN8afAl2z`
-3. Khi tìm được: đổi tên project thành `AI Use Case Platform` để không lạc lần sau
-4. Kiểm tra project đó có đúng code không (so với `assets/gas-backend/`)
-
----
-
-## P0 — Verify BUG-GAS-03 (CONFIG sheet ADMIN_EMAILS)
-
-Approve/reject đang hoạt động nhưng chưa rõ vì BUG-GAS-03 đã được fix hay vì GAS project khác không có CONFIG sheet issue.
-
-**Verify:**
-1. Mở Google Sheet gắn với GAS project active
-2. Sheet **CONFIG** → row `Key = ADMIN_EMAILS` → kiểm tra `Value`
-3. Nếu `Value` vẫn là `admin@sptd.vn,...` → đổi thành `admin,tuantt4,manager`
-4. Nếu row không tồn tại → bỏ qua (GAS fallback về `Config.gs`)
-
----
-
-## P1 — End-to-end smoke test sau khi fix P0
+## P1 — End-to-end smoke test toàn hệ thống (regression)
 
 Checklist:
 - [ ] `GAS_URL?action=health` → `{"success":true}`
@@ -129,6 +99,18 @@ Cải tiến: Thêm column `KPI_Exempt` (TRUE/FALSE) vào USERS sheet → `_buil
 - [x] Full UC detail view modal — 4 sections (done 2026-06-02)
 - [ ] Dark mode — tokens sẵn sàng, thêm `@media (prefers-color-scheme: dark)` vào `variables.css`
 - [ ] Logo SVG thay sparkles trong sidebar brand
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-18
+
+- [x] **GAS-MYSTERY-01 CLOSED**: User tìm được đúng GAS project, deploy tất cả 9 files. URL giữ nguyên. GAS đã live với champion-review, user endpoints, UserService.gs, toàn bộ fixes.
+- [x] **Fix champion role không lưu DB (v3.10.3)**: `UserService.gs _buildUserRow_` ternary `admin?'admin':'user'` → `(admin||champion)?normRole:'user'`. `validateUserLogin_` cùng fix cho login path. Root cause: silent downgrade — GAS trả `{success:true}` nhưng ghi 'user' vào sheet.
+- [x] **Sidebar UI sync toàn bộ pages (v3.10.3)**:
+  - `leaderboard.html` + `weekly-update.html`: thêm `navUsers` + `navReviewQueue` vào section Quản lý; xóa `navManagerReview`; thay inline `initAuth()`/`initSidebar()` bằng `AuthService.requireAuth()` + `populateSidebarUser()` + `setupNav()` → champion role hiển thị đúng label
+  - `users.html` + `review-queue.html`: Pattern B → A sidebar brand ("Bình dân hóa AI / TT SPTD"); `nav role="menu"` → `role="menubar"`; thêm section label "Quản lý"; topbar class `topbar-user` → `topbar-user-chip`, `topbar-avatar` → `topbar-user-avatar`, `topbar-username` → `topbar-user-name`
+- [x] **59/59 Playwright tests PASS** — sau tất cả fixes
+- [x] **Commit `c4a53ec`** pushed to main — 5 files changed, 80 insertions/80 deletions
 
 ---
 

@@ -1183,8 +1183,114 @@ Sau khi deploy, chạy 1 lần:
 - `@playwright/test` not installed → added as devDependency
 - ScoringEngine tests hitting auth redirect → fixed with `tests/scoring-test.html` fixture
 
-### Blocker
+### Blocker (session 2026-06-17)
 
 GAS files NOT deployed. `champion-review` route + `isChampionForTeam_()` only exist locally.
 Deploy via "Edit deployment → New version" (NOT New Deployment — keep URL unchanged).
 GAS URL: `AKfycbypN8afAl2zQwpR7K6k1-699g3HAhFAIqAOtDn3qY1nJWzuN1bd8n99bzRUzaV8ZMyTCw`
+
+---
+
+## Session: 2026-06-18
+**Scope:** Sidebar UI đồng bộ toàn bộ pages + fix Champion role không lưu DB + GAS deployed
+**Commit:** `c4a53ec` — 5 files changed, 80 insertions, 80 deletions
+**Tests:** 59/59 Playwright PASS
+**GAS:** ✅ **FULLY DEPLOYED** — GAS-MYSTERY-01 CLOSED. URL giữ nguyên.
+
+---
+
+### Đã hoàn thành
+
+#### Task 1 — Sidebar UI audit + sync (4 files)
+
+| File | Vấn đề | Fix |
+|---|---|---|
+| `leaderboard.html` | Thiếu `navUsers`, `navReviewQueue`; có `navManagerReview` lỗi thời; `initAuth()` thủ công (champion → "Người dùng") | Thêm 2 nav items vào section Quản lý; xóa navManagerReview; thay `initAuth()` bằng `AuthService.requireAuth()` + `populateSidebarUser()` + `setupNav()` |
+| `weekly-update.html` | Thiếu `navUsers`, `navReviewQueue`; có `navManagerReview`; `initSidebar()` thủ công | Cùng fix; thay DOMContentLoaded + initSidebar bằng AuthService calls |
+| `users.html` | Pattern B sidebar (div.sidebar-header + "AI-US-SPTD"); `nav role="menu"`; thiếu section label "Quản lý"; topbar class sai (`topbar-user`, `topbar-avatar`, `topbar-username`) | Pattern B → A; `role="menubar"`; thêm label; `topbar-user-chip` / `topbar-user-avatar` / `topbar-user-name` |
+| `review-queue.html` | Cùng Pattern B issues | Cùng fix |
+
+**Sidebar Pattern A (chuẩn — tất cả sidebar pages):**
+```html
+<aside aria-label="Điều hướng chính">
+  <a href="index.html" class="sidebar-brand">
+    <div class="sidebar-brand-logo"><!-- sparkles SVG --></div>
+    <div class="sidebar-brand-text">
+      <span class="sidebar-brand-name">Bình dân hóa AI</span>
+      <span class="sidebar-brand-sub">TT SPTD</span>
+    </div>
+  </a>
+  <nav role="menubar">
+    <span class="sidebar-section-label">Quản lý</span>
+    <!-- nav items -->
+```
+
+**Nav items chuẩn trong section Quản lý (tất cả sidebar pages phải có):**
+```
+navDashboard      — admin only       — href="dashboard.html"     — style="display:none"
+[Đăng ký UC]      — all users        — href="register.html"
+[Use Case của tôi] — all users        — href="dashboard.html?tab=my"
+navUsers          — admin only       — href="users.html"         — style="display:none"
+navReviewQueue    — admin+champion   — href="review-queue.html"  — style="display:none"
+```
+
+**Inline JS pattern (auth guard + sidebar init):**
+```js
+AuthService.requireAuth();          // hoặc requireAdmin / requireChampionOrAdmin
+AuthService.populateSidebarUser();  // set name + role + avatar từ session
+AuthService.setupNav();             // show/hide nav items theo role
+```
+
+---
+
+#### Task 2 — Champion role không lưu DB (2 fixes trong UserService.gs)
+
+**Root cause:** GAS `_buildUserRow_` ternary chỉ giữ 'admin', downgrade 'champion' → 'user' silently. GAS trả `{success:true}` → api.js resolves → toast "Đã cập nhật" → user không phát hiện. Tương tự, `validateUserLogin_` trả 'user' thay vì 'champion' khi login.
+
+| Hàm | Bug | Fix |
+|---|---|---|
+| `_buildUserRow_` (line 181) | `normRole === 'admin' ? 'admin' : 'user'` | `(normRole === 'admin' \|\| normRole === 'champion') ? normRole : 'user'` |
+| `validateUserLogin_` (line 307) | `_resolvedRole === 'admin' ? 'admin' : 'user'` | `(_resolvedRole === 'admin' \|\| _resolvedRole === 'champion') ? _resolvedRole : 'user'` |
+
+---
+
+### GAS deploy — trạng thái sau session
+
+**GAS-MYSTERY-01: CLOSED** — User tìm được đúng project, deploy thành công. URL giữ nguyên.
+
+Tất cả 9 files đã live:
+`AdminService.gs` · `Code.gs` · `UserService.gs` (+ champion fix) · `Config.gs` · `Utils.gs` · `UseCaseService.gs` · `LookupService.gs` · `DashboardService.gs`
+
+**Quy trình deploy chuẩn (không thay đổi URL):**
+```
+GAS Editor → Deploy → Manage Deployments → Edit (bút chì) → Version: "New version" → Deploy
+```
+
+---
+
+### Recommended next actions (session tiếp theo)
+
+**[P0] Champion E2E test:**
+1. Thêm champion vào USERS sheet: `Role=champion`, `Active=TRUE`, `Team=<tên khớp MASTER_DATA>`
+2. Login champion → verify navReviewQueue visible, role label "Champion"
+3. Review-queue → set sliders → submit → check MASTER sheet scores
+
+**[P0] Khởi tạo USERS sheet (nếu chưa):**
+```
+GAS_URL?action=user-init&admin_email=tuantt4
+```
+Sau đó Dashboard → tab Người dùng → Đồng bộ từ UC.
+
+**[P1] Fix regression risks còn mở:**
+- FILTER-01: `_filterAll.team = teamSel.value` sau render options (`dashboard.js _populateTeamFilter`)
+- PERF-02: `if (_myList.length === 0)` guard trong `_loadTabData('my')` (`dashboard.js`)
+
+**[P1] Smoke test toàn hệ thống sau GAS deploy:**
+- `GAS_URL?action=health` → `{"success":true}`
+- Login → submit UC mới → kiểm tra ID, ký tự đặc biệt, score preview
+- Admin approve → UC xuất hiện ở Explore với score chip
+- Champion review → Total_Score recalculated
+
+**[P2] KPI_EXCLUDED_USERS từ USERS sheet** — thêm column `KPI_Exempt` thay vì hardcode trong env.js
+
+**[P2] BUG-03** — Status="Draft" khi tạo mới: confirm với PO là bug hay intent
