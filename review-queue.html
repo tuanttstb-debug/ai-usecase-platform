@@ -19,20 +19,19 @@
   <div class="app-layout" id="appLayout">
 
     <!-- ── Sidebar ── -->
-    <aside class="app-sidebar" id="appSidebar" role="navigation" aria-label="Menu chính">
-      <div class="sidebar-header">
-        <div class="sidebar-logo" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="22" height="22">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-          </svg>
+    <aside class="app-sidebar" id="appSidebar" role="navigation" aria-label="Điều hướng chính">
+      <a href="index.html" class="sidebar-brand" aria-label="Trang chủ">
+        <div class="sidebar-brand-logo" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/></svg>
         </div>
-        <span class="sidebar-brand">AI-US-SPTD</span>
-        <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Đóng menu">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
-      </div>
+        <div class="sidebar-brand-text">
+          <span class="sidebar-brand-name">Bình dân hóa AI</span>
+          <span class="sidebar-brand-sub">TT SPTD</span>
+        </div>
+      </a>
 
-      <nav class="sidebar-nav" role="menu">
+      <nav class="sidebar-nav" role="menubar">
+        <span class="sidebar-section-label">Quản lý</span>
         <a href="dashboard.html" class="sidebar-nav-item" id="navDashboard" role="menuitem" style="display:none">
           <i class="sidebar-nav-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
@@ -139,9 +138,9 @@
           </svg>
         </button>
         <h1 class="topbar-title">Hàng đợi Review</h1>
-        <div class="topbar-user" id="topbarUserChip" style="display:none">
-          <div class="topbar-avatar" id="topbarAvatar" aria-hidden="true"></div>
-          <span class="topbar-username" id="topbarUserName"></span>
+        <div class="topbar-user-chip" id="topbarUserChip" style="display:none">
+          <div class="topbar-user-avatar" id="topbarAvatar" aria-hidden="true"></div>
+          <span class="topbar-user-name" id="topbarUserName"></span>
         </div>
       </header>
 

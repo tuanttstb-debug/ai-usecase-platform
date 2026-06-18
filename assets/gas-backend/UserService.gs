@@ -177,7 +177,8 @@ function _buildUserRow_(normUsername, data, headers, existing, now, isNew) {
   var rawRole = data.Role !== undefined
     ? data.Role
     : (existing ? (existing[idx['Role']] || 'user') : 'user');
-  row[idx['Role']] = normalizeUser_(rawRole) === 'admin' ? 'admin' : 'user';
+  var normRole = normalizeUser_(rawRole);
+  row[idx['Role']] = (normRole === 'admin' || normRole === 'champion') ? normRole : 'user';
 
   row[idx['Team']]  = sanitizeStr_(
     data.Team  !== undefined ? data.Team  : (existing ? existing[idx['Team']]  || '' : '')
@@ -299,10 +300,11 @@ function validateUserLogin_(username) {
 
   updateLastLogin_(norm);
 
+  var _resolvedRole = normalizeUser_(user.Role);
   return {
     username:    norm,
     displayName: sanitizeStr_(user.Display_Name) || _buildDisplayNameGas_(norm),
-    role:        normalizeUser_(user.Role) === 'admin' ? 'admin' : 'user',
+    role:        (_resolvedRole === 'admin' || _resolvedRole === 'champion') ? _resolvedRole : 'user',
     team:        sanitizeStr_(user.Team  || ''),
     email:       sanitizeStr_(user.Email || '')
   };
