@@ -1294,3 +1294,74 @@ Sau đó Dashboard → tab Người dùng → Đồng bộ từ UC.
 **[P2] KPI_EXCLUDED_USERS từ USERS sheet** — thêm column `KPI_Exempt` thay vì hardcode trong env.js
 
 **[P2] BUG-03** — Status="Draft" khi tạo mới: confirm với PO là bug hay intent
+
+---
+
+## Session: 2026-06-18 (Part 2)
+**Scope:** Scoring Display (KPI + Detail) + Review Queue Filter + Home Page Service Cards + Sidebar Nav Order
+**Commit:** `6f6f774` — 11 files changed, 597 insertions, 97 deletions
+**Version:** 3.10.4
+
+---
+
+### Đã hoàn thành
+
+#### Feature A — Scoring Display (KPI tab + detail popup)
+
+- **`_openKPIScoreList(title, items)`** (`dashboard.js` ~line 1654) — replaces `openListModal` in `_openKPIUserList()`. Popup columns: Mã | Tên | Trạng thái | Điểm Auto | Điểm Champion | Tổng | Rank | Nhận xét | Chi tiết.
+  - No score → "chưa thực hiện chấm điểm" badge in all score columns
+  - Rank chip: `.score-chip` with inline `background:{rank.color}; color:#fff`
+- **`_renderDetailBody()`** — new "★ Đánh giá & Điểm số" IIFE section:
+  - No score → `.not-scored-notice`
+  - Scored → total + rank badge + Auto breakdown (/70) + Champion breakdown grid (chất lượng / giá trị KD / sáng tạo) + reviewer + comment
+  - Guard: `typeof ScoringEngine !== 'undefined'`
+- **`_normalizeFullData()`** — 7 new score field mappings (quality_score, business_value_score, innovation_score, auto_score, manual_score, total_score, rank_category)
+- **`AdminService.gs` `listUseCases_()`** — 5 new fields deployed by user: `review_comment`, `reviewer_email`, `quality_score`, `business_value_score`, `innovation_score`
+- **`dashboard.css`** — ~25 new CSS classes (`.not-scored-notice`, `.score-total-row`, `.score-rank-badge`, `.score-breakdown-grid`, `.score-chip`, etc.)
+
+**Decision (Option A):** Admin does NOT score numerically. Only Auto + Champion scores shown.
+
+#### Feature B — Review Queue Filter
+
+- **`review-queue.html`** — filter bar above `#rqContent`: search input, team dropdown (admin only), section pills (Tất cả/Chờ đánh giá/Đang review/Đã hoàn thành), result counter
+- **`review-queue.js`** — `_filterState`, `_norm()`, `_populateTeamFilter()`, `_applyFilters()`, `_bindFilters()` (250ms debounce); `_render()` now routes through `_applyFilters()`
+- **`dashboard.css`** — `.rq-filter-bar`, `.rq-search-input`, `.rq-team-select`, `.rq-pill`, `.rq-pill.active`, `.rq-result-count`
+
+#### Feature C — Home Page Service Cards + Sidebar Nav Order
+
+- **`index.html`** — PORTAL_SERVICES 2 → 8 items (2 sections); bug fix `role` undefined → `var userRole`; champion added to all non-admin-exclusive roles arrays
+- **Sidebar "Trang chủ" first** — 7 pages updated: dashboard/register/users/review-queue/leaderboard/weekly-update/index. `manager-review.html` NOT updated.
+- **"Hệ thống" section divider + label removed** from all 7 updated pages
+
+#### Bugs fixed this session
+
+| Bug | Fix |
+|---|---|
+| `.score-chip` unreadable on solid rank-color backgrounds | `color: #fff` in CSS rule |
+| Dead code `var k = _cache(uc)` in `_openKPIScoreList` | Removed |
+| PORTAL_SERVICES always empty — `role` undefined | `var userRole = user ? (user.role \|\| 'user') : 'user'` |
+| Champion excluded from portal service cards | `'champion'` added to roles arrays |
+
+#### GAS note
+
+`AdminService.gs` `listUseCases_()` updated with 5 score fields and deployed by user. URL unchanged.
+
+**Pending verification:** `getUseCase` endpoint may not return score sub-components — affects Champion breakdown section in detail popup. KPI list popup uses `_allList` (now has score fields) → works.
+
+---
+
+### Regression risks
+
+- `color:#fff` on `.score-chip` — review-queue uses inline background → white text ✅; KPI list uses inline color override ✅
+- `_openKPIUserList` → `_openKPIScoreList` — graceful: score columns show `—` if GAS fields absent
+- PORTAL_SERVICES fix — blank portal bug fixed; no code relied on broken empty behavior
+- `_render()` → `_applyFilters()` in review-queue — verified consistent with `_group()` logic
+
+---
+
+### Recommended next actions
+
+**[P0]** Champion E2E: review → KPI score list shows correct scores → detail popup shows breakdown (verify getUseCase fields)
+**[P1]** Fix FILTER-01 (`_populateTeamFilter` stale state) and PERF-02 (double-fetch)
+**[P1]** Clean up or gitignore `debug_sidebar.js` (untracked in repo root)
+**[P2]** Update `manager-review.html` sidebar to Pattern A (Trang chủ first, Hệ thống removed)

@@ -1,7 +1,7 @@
 # PROJECT STATE
 
 **Last updated:** 2026-06-18
-**Version:** 3.10.3 (sidebar UI sync + champion DB fix + GAS fully deployed)
+**Version:** 3.10.4 (scoring display KPI/detail + review queue filter + home service cards + sidebar nav order)
 
 ---
 
@@ -101,6 +101,10 @@ env.js → auth.js → [inline portal script]
 | Approval flow | ✅ | Confirmed working; confirm button re-enable fix v3.6.2 |
 | Auto-load on startup | ✅ | NEW v3.3 — _loadStartupData() thay lazy tab-click loading |
 | Sidebar UI sync | ✅ | v3.10.3 (2026-06-18) — Đồng bộ Pattern A sidebar trên toàn bộ pages: leaderboard/weekly-update thêm navUsers+navReviewQueue, xóa navManagerReview, thay inline JS bằng AuthService; users/review-queue Pattern B → A brand, role="menubar", section label Quản lý, topbar CSS class chuẩn |
+| Scoring display (KPI + detail) | ✅ | NEW v3.10.4 (2026-06-18) — KPI tab drill-down shows score columns (Auto/Champion/Tổng/Rank/Nhận xét); unscored UCs get "chưa thực hiện chấm điểm" badge; detail popup has "★ Đánh giá & Điểm số" section with rank badge + champion breakdown |
+| Review queue filter | ✅ | NEW v3.10.4 (2026-06-18) — Filter bar on review-queue.html: search, team dropdown (admin only), section pills, result counter |
+| Home page service cards | ✅ | NEW v3.10.4 (2026-06-18) — PORTAL_SERVICES expanded 2→8 items (2 sections); role-aware; champion included |
+| Sidebar "Trang chủ" first | ✅ | NEW v3.10.4 (2026-06-18) — Trang chủ nav item moved to first position; "Hệ thống" section removed from 7 pages |
 | TPBank sidebar UI | ✅ | Tất cả pages dùng sidebar — consistent layout, Pattern A (sidebar-brand + Bình dân hóa AI) |
 | Heroicons SVG | ✅ | Tất cả emoji → SVG inline (dashboard, register, index) |
 | Chart.js charts | ✅ | doughnut + stacked horizontal bar (Team & Category); CSS fallback nếu CDN fail |
@@ -126,7 +130,7 @@ env.js → auth.js → [inline portal script]
 
 | File | Thay đổi chính | Version |
 |---|---|---|
-| `AdminService.gs` | isChampionForTeam_() + submitChampionReview_() | v3.10.2 |
+| `AdminService.gs` | isChampionForTeam_() + submitChampionReview_() + listUseCases_() returns 5 score fields | v3.10.4 |
 | `Code.gs` | Routes next-id + 5 user endpoints + champion-review | v3.10.2 |
 | `UserService.gs` | USERS sheet, normalizeUser_(), validateUserLogin_(), syncUsersFromMasterData_(); **fix champion role save** | v3.10.3 |
 | `Config.gs` | SHEETS.USERS + USERS_HEADERS + usernames ADMIN_EMAILS | v3.10.0 |

@@ -42,20 +42,9 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
-## GAS-DEBT-01 — GAS local files chưa sync với deployed version (CRITICAL — 7 files pending)
+## ~~GAS-DEBT-01~~ — CLOSED (2026-06-18)
 
-**Mô tả:** 7 file GAS đã sửa/tạo local nhưng chưa deploy lên GAS Editor (blocked by GAS-MYSTERY-01):
-- `UserService.gs` (NEW v3.10.0) — toàn bộ user management
-- `Code.gs` (v3.10.0) — 5 user endpoints + next-id route
-- `Config.gs` (v3.10.0) — SHEETS.USERS + USERS_HEADERS
-- `Utils.gs` (v3.10.0) — sanitizeStr_ + toSheetValue_() + USERS support
-- `UseCaseService.gs` (v3.7.1) — ID collision fix + timeout optimization
-- `LookupService.gs` (v2.x) — rewrite
-- `DashboardService.gs` (v3.5.1) — recent_submissions full fields
-
-**Rủi ro:** Production GAS không có user management, không có formula injection protection, không có ID collision fix.
-
-**Fix:** Resolve GAS-MYSTERY-01 trước. Sau đó paste 7 files → Edit deployment → New version → Deploy.
+All 9 GAS files deployed. GAS-MYSTERY-01 resolved. URL unchanged.
 
 ---
 
@@ -85,25 +74,15 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
-## GAS-MYSTERY-01 — GAS URL active không tìm thấy trong deployment history
+## ~~GAS-MYSTERY-01~~ — CLOSED (2026-06-18)
 
-**Mô tả:** URL `AKfycbwe0eo3X3KWxGdJ8ZWLjAgx3FVvcSOxTA5KVJGYVV3_Skbn0eXAVouzKaZOgDaDcUupew` đang hoạt động nhưng không xuất hiện trong GAS deployment history của user. Có thể thuộc GAS project khác (bị quên hoặc tạo từ lần deploy cũ).
-
-**Rủi ro:** Nếu project đó bị xóa hoặc Google account mất access → toàn bộ backend down không khôi phục được; không thể update GAS code vì không biết project nào.
-
-**Fix:** Duyệt tất cả GAS projects tại `script.google.com` → tìm deployment có URL trên → đổi tên + ghi chú. Xem TODO_NEXT P0.
+User found the correct GAS project. All files deployed. URL unchanged: `AKfycbypN8afAl2zQwpR7K6k1-699g3HAhFAIqAOtDn3qY1nJWzuN1bd8n99bzRUzaV8ZMyTCw`
 
 ---
 
 ---
 
-## GAS-DEBT-03 — `DashboardService.gs` local fix chưa deploy (v3.6, 2026-06-03)
-
-**Mô tả:** `computeDashboardSummary_()` đã được update local để push thêm `record_id`, `status`, `owner_name` vào `recent_submissions`. Chưa deploy vào GAS (vì GAS-MYSTERY-01).
-
-**Ảnh hưởng:** `renderRecentTable` vẫn phải enrich từ `_allList` (FE workaround). Sau khi deploy GAS, FE workaround vẫn hoạt động bình thường (harmless double-key).
-
-**Fix:** Paste `DashboardService.gs` vào GAS Editor sau khi resolve GAS-MYSTERY-01.
+## ~~GAS-DEBT-03~~ — CLOSED (2026-06-18, deployed)
 
 ---
 
@@ -120,13 +99,7 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 
 ---
 
-## GAS-DEBT-04 — `UseCaseService.gs` v3.6.3 chưa deploy (2026-06-03)
-
-**Mô tả:** `_assignUseCaseId_(hint)` và `_ensureCounterAhead_()` — 2 hàm mới xử lý ID hint từ FE trong LockService scope — chỉ tồn tại local. GAS deployed hiện tại vẫn dùng `generateUseCaseId_()` trực tiếp trong `createUseCase_()`, bỏ qua hint.
-
-**Ảnh hưởng:** FE gửi `UseCase_ID` hint trong payload nhưng GAS cũ ignore → fallback về generate server-side (không tệ hơn trước, nhưng chưa đạt full fix race condition).
-
-**Fix:** Paste `UseCaseService.gs` vào GAS Editor sau khi resolve GAS-MYSTERY-01 → deploy new version.
+## ~~GAS-DEBT-04~~ — CLOSED (2026-06-18, deployed)
 
 ---
 
@@ -140,16 +113,7 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 
 ---
 
-## GAS-DEBT-05 — `Utils.gs` + `UseCaseService.gs` v3.7.0 chưa deploy (2026-06-03)
-
-**Mô tả:** 6 bug fixes ký tự đặc biệt (v3.7.0) đã merge vào `Utils.gs` và `UseCaseService.gs` nhưng chưa deploy lên GAS vì GAS-MYSTERY-01 chưa resolved.
-
-**Ảnh hưởng khi chưa deploy:**
-- Formula injection (SPECIAL-02): giá trị bắt đầu `=` có thể bị Sheets interpret làm formula → data corruption
-- Null byte (SPECIAL-03): nếu ai paste text có `\0` → `setValues` fail → save failure
-- JSON_Backup overflow (SPECIAL-05): form fill đầy nhiều field dài → `setValues` throw → save failure
-
-**Fix:** Paste `Utils.gs` và `UseCaseService.gs` (v3.7.0) vào GAS Editor sau khi resolve GAS-MYSTERY-01 → deploy new version.
+## ~~GAS-DEBT-05~~ — CLOSED (2026-06-18, deployed)
 
 ---
 
@@ -267,3 +231,35 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 **Fix khi cần CI/CD:** Dùng `path.resolve(__dirname)` thay hardcoded path; thay `python -m http.server` bằng `npx serve -s . -l 8787` (cross-platform, có proper MIME types).
 
 **File:** `playwright.config.js` — `webServer.cwd` và `webServer.command`.
+
+---
+
+## SCORE-DETAIL-01 — `getUseCase` endpoint chưa verified trả score sub-components (v3.10.4, 2026-06-18)
+
+**Mô tả:** `_renderDetailBody()` đọc `quality_score`, `business_value_score`, `innovation_score` từ kết quả `_fetchFullDetail()` (gọi `getUseCase` endpoint). Chưa xác nhận GAS `getUseCase` trả các field này — nếu không, champion breakdown grid trong detail popup sẽ hiển thị 0/10 cho cả 3 thành phần.
+
+**Note:** Score list popup trong KPI tab dùng `_allList` (từ `listUseCases_`) — đã có 5 score fields mới — nên hiển thị đúng. Chỉ champion breakdown trong detail popup bị ảnh hưởng.
+
+**Fix:** Check `getUseCase` response in GAS. Nếu thiếu → thêm 3 fields vào response object trong `UseCaseService.gs` `getUseCase_()` → deploy new version.
+
+**File:** `assets/gas-backend/UseCaseService.gs` — `getUseCase_()` return object.
+
+---
+
+## NAV-01 — `manager-review.html` sidebar còn "Hệ thống" section + Trang chủ không ở đầu (v3.10.4, 2026-06-18)
+
+**Mô tả:** `manager-review.html` là trang duy nhất chưa được cập nhật theo sidebar Pattern A trong session 2026-06-18 Part 2. Vẫn có "Hệ thống" section divider + label; "Trang chủ" không ở vị trí đầu tiên.
+
+**Rủi ro:** Thấp — trang này ít được truy cập. Nhưng tạo inconsistency.
+
+**Fix:** Áp dụng cùng sidebar pattern như 7 trang khác đã được update.
+
+**File:** `manager-review.html` — `<nav role="menubar">` section.
+
+---
+
+## DEAD-CODE-02 — `debug_sidebar.js` untracked file trong repo root (2026-06-18)
+
+**Mô tả:** File `debug_sidebar.js` tồn tại trong repo root nhưng không được tracked bởi git (untracked). Nội dung không rõ.
+
+**Fix:** Kiểm tra nội dung → nếu là debug/temp script thì xóa hoặc thêm vào `.gitignore`.

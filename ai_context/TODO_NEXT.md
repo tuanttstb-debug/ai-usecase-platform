@@ -4,6 +4,17 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## P0 — Champion scoring E2E test (v3.10.4)
+
+GAS deployed + score display implemented. Verify full cycle:
+
+- [ ] Champion review → set Quality/BV/Innovation sliders → submit
+- [ ] Admin: KPI tab → click user → score list popup → scores show correctly (not "chưa thực hiện")
+- [ ] Admin: detail popup for scored UC → "★ Đánh giá & Điểm số" section shows breakdown (not zeros)
+- [ ] **Verify `getUseCase` returns `Quality_Score`, `Business_Value_Score`, `Innovation_Score`** — if not, champion breakdown in detail popup shows zeros
+
+---
+
 ## P0 — Champion end-to-end test (GAS đã deploy)
 
 GAS đã deploy 2026-06-18. Test toàn bộ luồng champion:
@@ -99,6 +110,18 @@ Cải tiến: Thêm column `KPI_Exempt` (TRUE/FALSE) vào USERS sheet → `_buil
 - [x] Full UC detail view modal — 4 sections (done 2026-06-02)
 - [ ] Dark mode — tokens sẵn sàng, thêm `@media (prefers-color-scheme: dark)` vào `variables.css`
 - [ ] Logo SVG thay sparkles trong sidebar brand
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-18 (Part 2)
+
+- [x] **Scoring display — KPI tab (v3.10.4)**: `_openKPIScoreList()` replaces `openListModal` for KPI user drill-down. Columns: Auto/Champion/Tổng/Rank/Nhận xét. Unscored UCs show "chưa thực hiện chấm điểm". Rank chip with rank-color background. Commit `6f6f774`.
+- [x] **Scoring display — detail popup (v3.10.4)**: `_renderDetailBody()` new "★ Đánh giá & Điểm số" section. Shows rank badge, Auto breakdown, Champion breakdown (chất lượng/giá trị KD/sáng tạo), reviewer, comment. `_normalizeFullData()` maps 7 score fields. Commit `6f6f774`.
+- [x] **GAS listUseCases_ score fields (v3.10.4)**: `AdminService.gs` returns 5 new fields per UC: `review_comment`, `reviewer_email`, `quality_score`, `business_value_score`, `innovation_score`. Deployed by user. URL unchanged. Commit `6f6f774`.
+- [x] **Review queue filter (v3.10.4)**: Filter bar on review-queue.html — search (250ms debounce), team dropdown (admin only), section pills, result counter. `_filterState`, `_applyFilters()`, `_bindFilters()` in review-queue.js. Commit `6f6f774`.
+- [x] **Home page service cards (v3.10.4)**: PORTAL_SERVICES 2→8 items (2 sections); all role-appropriate; champion included in roles arrays; bug fix `role` undefined → `var userRole`. Commit `6f6f774`.
+- [x] **Sidebar nav order (v3.10.4)**: "Trang chủ" first in sidebar on 7 pages; "Hệ thống" section removed. Commit `6f6f774`.
+- [x] **Bugs fixed**: `.score-chip color:#fff`; dead code `var k = _cache(uc)`; PORTAL_SERVICES role bug; champion exclusion from portal. Commit `6f6f774`.
 
 ---
 
