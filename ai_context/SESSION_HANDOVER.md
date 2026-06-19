@@ -1419,3 +1419,71 @@ Không có blocker mới. Tất cả blocker từ session trước còn nguyên 
 **[P1]** Fix FILTER-01 + PERF-02 (1-line fixes, vẫn pending)
 **[P1]** `debug_sidebar.js` — xóa hoặc gitignore
 **[P2]** `manager-review.html` sidebar Pattern A (NAV-01)
+
+---
+
+## Session: 2026-06-19 (Part 2)
+**Scope:** Leaderboard enhancement — score breakdown columns + click-to-detail popup
+**Commit:** `ac50eaf` — 2 files changed, 351 insertions, 17 deletions
+**Version:** no bump (feature addition, không có version scheme update)
+
+---
+
+### Tasks completed
+
+| # | Task | Result |
+|---|------|--------|
+| 1 | **Score columns** — Thay cột "Điểm (100)" + "Giờ tiết kiệm" bằng 3 cột: Auto /70 · Champion /30 · Tổng /100 + cột Comment | ✅ |
+| 2 | **Clickable rows** — Tất cả rows trong Top/Cần cải thiện/Theo Category tabs: cursor pointer + hover tint purple | ✅ |
+| 3 | **UC detail popup** — `#lbDetailModal` tự chứa trong `leaderboard.html`, 4 sections + "★ Đánh giá & Điểm số", read-only. Progressive: render từ cache → `Api.getUseCase()` async → re-render full | ✅ |
+| 4 | **GAS mapItem** — Thêm `review_comment` vào `getLeaderboard_()` mapItem trong `AdminService.gs` | ✅ (local; cần deploy) |
+
+---
+
+### Files changed
+
+| File | Delta |
+|------|-------|
+| `leaderboard.html` | +351/-17 lines: 3 score columns, clickable rows, `#lbDetailModal` HTML, `_lbCache`, `lbOpenDetail()`, `_lbFetchFull()` (async), `_lbNormalize()`, `_lbRenderBody()`, `lbCloseDetail()`, helpers `_lbSection/_lbSubsec/_lbGrid/_lbField/_lbFmtDate`, CSS classes `.lb-score-num/.lb-score-auto/.lb-score-champion/.lb-score-total/.lb-comment-cell/.lb-row-clickable` |
+| `assets/gas-backend/AdminService.gs` | +1 line: `review_comment: uc.Review_Comment \|\| ''` trong `mapItem` của `getLeaderboard_()` |
+
+---
+
+### Decisions made
+
+1. **Self-contained `leaderboard.html`** — `dashboard.js` không được load trong leaderboard (DOM-coupled). Viết inline `_lb*` functions. ~200 lines JS, không cần module riêng.
+2. **`_lbCache[usecase_id]`** — XSS-safe: không JSON trong onclick attribute, giống `_ucCache` pattern trong dashboard.js.
+3. **Score columns thay thế "Điểm (100)" progress bar** — 3 cột số riêng (màu blue/purple/black) dễ đọc hơn progress bar. "Giờ tiết kiệm" bị xóa để nhường chỗ.
+4. **`review_comment` thêm vào GAS mapItem** — Cần 1-line GAS change; không thêm GAS thì cột Comment luôn trống. Decision: change GAS + redeploy (không phải "no GAS changes").
+5. **Read-only, no approve/reject** — Leaderboard là public view. Footer chỉ có "Đóng".
+6. **Category tab: 3 score cols, no Comment** — Layout hẹp hơn, không cần cột Comment vì category table chỉ hiện 5 rows/category.
+
+---
+
+### Blockers
+
+- **Cần redeploy GAS** — `AdminService.gs` có `review_comment` trong local repo. Đến khi deploy: cột Comment trong leaderboard table trống (field không có trong API response), nhưng Comment vẫn hiện trong detail popup (lấy từ `getUseCase`).
+  - Deploy procedure: GAS Editor → Deploy → Manage Deployments → Edit → New version → Deploy
+  - URL không đổi: `AKfycbypN8afAl2zQwpR7K6k1-699g3HAhFAIqAOtDn3qY1nJWzuN1bd8n99bzRUzaV8ZMyTCw`
+
+---
+
+### Regression risks
+
+| Risk | Severity |
+|------|----------|
+| Cột "Giờ tiết kiệm" bị xóa — data vẫn accessible trong detail popup (section Demo & Tái sử dụng) | Low |
+| Comment column blank trước khi redeploy GAS | Low — cosmetic only |
+| `lbOpenDetail(uid)` nếu `_lbCache[uid]` undefined (UC từ category tab không populate cache top/bottom) — hiện đúng vì `_lbCache` populate tại render time trong cả 3 functions | Very low |
+
+---
+
+### Recommended next actions
+
+**[P0]** Redeploy GAS (New version) để `review_comment` xuất hiện trong cột Comment  
+**[P0]** Gửi `HDSD_Champion_AI_USSPTD.docx` cho Champion (vẫn pending từ phiên trước)  
+**[P0]** Champion E2E test — verify scoring E2E, detail popup sub-scores  
+**[P1]** Fix FILTER-01 (`_populateTeamFilter` stale state, 1 line, `dashboard.js`)  
+**[P1]** Fix PERF-02 (`_loadTabData('my')` double-fetch, 1 line, `dashboard.js`)  
+**[P1]** Fix `playwright.config.js` `cwd` → `D:\\Workspace\\Production\\ai-usecase-platform`  
+**[P2]** `manager-review.html` sidebar Pattern A (NAV-01)

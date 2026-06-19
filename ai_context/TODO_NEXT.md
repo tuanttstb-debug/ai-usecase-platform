@@ -4,6 +4,22 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## P0 — Redeploy GAS sau Leaderboard update (2026-06-19 Part 2)
+
+`AdminService.gs` đã có `review_comment` trong local repo (commit `ac50eaf`) nhưng chưa deploy lên GAS Editor.
+
+Đến khi deploy: cột Comment trong Leaderboard table luôn trống. Detail popup vẫn hiện comment đúng (qua `getUseCase` endpoint, không ảnh hưởng).
+
+```
+GAS Editor → Deploy → Manage Deployments → Edit (bút chì) → New version → Deploy
+```
+
+- [ ] Paste `AdminService.gs` mới vào GAS Editor
+- [ ] New version → Deploy (URL không đổi)
+- [ ] Verify cột Comment trong Leaderboard table hiện nội dung
+
+---
+
 ## P0 — Gửi HDSD cho Champion (2026-06-19)
 
 File `HDSD_Champion_AI_USSPTD.docx` (721 KB) đã tạo xong và commit `e0f418a`.
@@ -119,6 +135,12 @@ Cải tiến: Thêm column `KPI_Exempt` (TRUE/FALSE) vào USERS sheet → `_buil
 - [x] Full UC detail view modal — 4 sections (done 2026-06-02)
 - [ ] Dark mode — tokens sẵn sàng, thêm `@media (prefers-color-scheme: dark)` vào `variables.css`
 - [ ] Logo SVG thay sparkles trong sidebar brand
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-19 (Part 2)
+
+- [x] **Leaderboard score columns + click-to-detail**: Thay cột "Điểm (100)" bằng Auto/70 · Champion/30 · Tổng/100 · Comment. Tất cả rows clickable → `#lbDetailModal` self-contained (4 sections + score section, read-only). Category tab rows cũng clickable. `_lbCache` pattern. `review_comment` thêm vào GAS mapItem (cần redeploy). Commit `ac50eaf`.
 
 ---
 

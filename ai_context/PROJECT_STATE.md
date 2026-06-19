@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-19
-**Version:** 3.10.4 — no code change this session (docs/tooling only)
+**Last updated:** 2026-06-19 (Part 2)
+**Version:** 3.10.4 + Leaderboard enhancement (score columns + click-to-detail)
 **Project location:** `D:\Workspace\Production\ai-usecase-platform` (moved from `D:\Công việc\Vibecode\` on 2026-06-19)
 
 ---
@@ -103,6 +103,7 @@ env.js → auth.js → [inline portal script]
 | Auto-load on startup | ✅ | NEW v3.3 — _loadStartupData() thay lazy tab-click loading |
 | Sidebar UI sync | ✅ | v3.10.3 (2026-06-18) — Đồng bộ Pattern A sidebar trên toàn bộ pages: leaderboard/weekly-update thêm navUsers+navReviewQueue, xóa navManagerReview, thay inline JS bằng AuthService; users/review-queue Pattern B → A brand, role="menubar", section label Quản lý, topbar CSS class chuẩn |
 | Scoring display (KPI + detail) | ✅ | NEW v3.10.4 (2026-06-18) — KPI tab drill-down shows score columns (Auto/Champion/Tổng/Rank/Nhận xét); unscored UCs get "chưa thực hiện chấm điểm" badge; detail popup has "★ Đánh giá & Điểm số" section with rank badge + champion breakdown |
+| Leaderboard score columns | ✅ | NEW 2026-06-19 — 3 separate columns Auto/70 · Champion/30 · Tổng/100 + Comment replacing old progress bar; rows clickable → full detail popup (4 sections + score, read-only); Category tab also clickable; `review_comment` added to GAS leaderboard mapItem (pending GAS deploy) |
 | Review queue filter | ✅ | NEW v3.10.4 (2026-06-18) — Filter bar on review-queue.html: search, team dropdown (admin only), section pills, result counter |
 | Home page service cards | ✅ | NEW v3.10.4 (2026-06-18) — PORTAL_SERVICES expanded 2→8 items (2 sections); role-aware; champion included |
 | Sidebar "Trang chủ" first | ✅ | NEW v3.10.4 (2026-06-18) — Trang chủ nav item moved to first position; "Hệ thống" section removed from 7 pages |
@@ -131,7 +132,7 @@ env.js → auth.js → [inline portal script]
 
 | File | Thay đổi chính | Version |
 |---|---|---|
-| `AdminService.gs` | isChampionForTeam_() + submitChampionReview_() + listUseCases_() returns 5 score fields | v3.10.4 |
+| `AdminService.gs` | isChampionForTeam_() + submitChampionReview_() + listUseCases_() returns 5 score fields + **review_comment in leaderboard mapItem (local, needs deploy)** | v3.10.4+ |
 | `Code.gs` | Routes next-id + 5 user endpoints + champion-review | v3.10.2 |
 | `UserService.gs` | USERS sheet, normalizeUser_(), validateUserLogin_(), syncUsersFromMasterData_(); **fix champion role save** | v3.10.3 |
 | `Config.gs` | SHEETS.USERS + USERS_HEADERS + usernames ADMIN_EMAILS | v3.10.0 |

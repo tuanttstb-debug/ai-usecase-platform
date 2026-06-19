@@ -260,6 +260,18 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 
 ---
 
+## LB-GAS-01 — `review_comment` trong Leaderboard chưa deploy (2026-06-19)
+
+**Mô tả:** `AdminService.gs getLeaderboard_()` mapItem đã có `review_comment: uc.Review_Comment || ''` trong local repo (commit `ac50eaf`) nhưng chưa được paste vào GAS Editor + deploy. Cột Comment trong Leaderboard table sẽ trống cho đến khi deploy.
+
+**Rủi ro:** Cosmetic only. Detail popup (dùng `getUseCase`) vẫn hiển thị `review_comment` đúng.
+
+**Fix:** GAS Editor → paste `AdminService.gs` → Edit deployment → New version → Deploy. URL không đổi.
+
+**File:** `assets/gas-backend/AdminService.gs` line 248 — `review_comment: uc.Review_Comment || ''`
+
+---
+
 ## DEAD-CODE-02 — `debug_sidebar.js` untracked file trong repo root (2026-06-18)
 
 **Mô tả:** File `debug_sidebar.js` tồn tại trong repo root nhưng không được tracked bởi git (untracked). Nội dung không rõ.
