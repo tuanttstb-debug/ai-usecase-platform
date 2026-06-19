@@ -244,7 +244,8 @@ function getLeaderboard_(category, team, limit) {
       reward_eligible:    uc.Reward_Eligible    || 'FALSE',
       warning_flag:       uc.Warning_Flag       || 'FALSE',
       hours_saved_actual: safeNum_(uc.Hours_Saved_Actual),
-      current_progress:   safeNum_(uc.Current_Progress)
+      current_progress:   safeNum_(uc.Current_Progress),
+      review_comment:     uc.Review_Comment || ''
     };
   };
 

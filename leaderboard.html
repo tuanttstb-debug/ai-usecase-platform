@@ -80,6 +80,20 @@
     .owner-cell { display: flex; flex-direction: column; }
     .owner-name { font-weight: var(--font-weight-medium); color: var(--color-text); }
     .owner-team { font-size: var(--text-xs); color: var(--color-text-secondary); margin-top: 1px; }
+
+    /* ── Score columns ── */
+    .lb-score-head { text-align: right; white-space: nowrap; min-width: 60px; }
+    .lb-score-num  { text-align: right; font-weight: var(--font-weight-semibold); font-size: var(--text-sm); white-space: nowrap; }
+    .lb-score-auto     { color: #1565C0; }
+    .lb-score-champion { color: #7B2CBF; }
+    .lb-score-total    { color: var(--color-text); }
+
+    /* ── Comment column ── */
+    .lb-comment-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-xs); color: var(--color-text-secondary); }
+
+    /* ── Clickable rows ── */
+    .lb-row-clickable { cursor: pointer; }
+    .lb-row-clickable:hover td { background: rgba(123,44,191,0.04) !important; }
   </style>
 </head>
 <body>
@@ -248,6 +262,26 @@
   </div>
 </div>
 
+<!-- ── Use Case Detail Modal ── -->
+<div id="lbDetailModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="lbDetailTitle">
+  <div class="modal-card modal-card--wide">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:var(--space-3);flex:1;min-width:0">
+        <h3 id="lbDetailTitle" style="margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Chi tiết Use Case</h3>
+        <span id="lbDetailId" class="id-badge" style="flex-shrink:0"></span>
+      </div>
+      <button class="modal-close" onclick="lbCloseDetail()" aria-label="Đóng">&times;</button>
+    </div>
+    <div class="modal-body" id="lbDetailView">
+      <!-- Rendered by JS -->
+    </div>
+    <div class="modal-footer">
+      <div style="flex:1"></div>
+      <button class="btn btn-outline" onclick="lbCloseDetail()">Đóng</button>
+    </div>
+  </div>
+</div>
+
 <script src="config/env.js"></script>
 <script src="config/routes.js"></script>
 <script src="assets/js/constants.js"></script>
@@ -256,8 +290,10 @@
 <script src="assets/js/auth.js"></script>
 
 <script>
-var _lbData   = null;
-var _activeTab = 'top';
+var _lbData      = null;
+var _lbCache     = {};   // usecase_id → leaderboard row object
+var _lbDetailUc  = null; // currently-open UC (merged leaderboard + full data)
+var _activeTab   = 'top';
 
 document.addEventListener('DOMContentLoaded', function() {
   initAuth();
@@ -281,7 +317,13 @@ function initAuth() {
   function closeSidebar() { sidebar.classList.remove('is-open'); overlay.classList.remove('is-visible'); toggle.setAttribute('aria-expanded','false'); }
   if (toggle)  toggle.addEventListener('click', function() { sidebar.classList.contains('is-open') ? closeSidebar() : openSidebar(); });
   if (overlay) overlay.addEventListener('click', closeSidebar);
-  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeSidebar(); });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var modal = document.getElementById('lbDetailModal');
+      if (modal && !modal.classList.contains('hidden')) { lbCloseDetail(); return; }
+      closeSidebar();
+    }
+  });
 }
 
 function loadLeaderboard() {
@@ -292,6 +334,7 @@ function loadLeaderboard() {
   Api.jsonp(API.leaderboard({ category: category, team: team, limit: 20 }), function(res) {
     if (!res || !res.success) { setError('Không tải được dữ liệu'); return; }
     _lbData = res.data;
+    _lbCache = {};
     renderAll(_lbData);
     setLoading(false);
   });
@@ -326,28 +369,43 @@ function renderTable(containerId, items, isBottom) {
     return;
   }
   var rows = items.map(function(uc, i) {
+    _lbCache[uc.usecase_id] = uc;
     var rank  = uc.rank || (i + 1);
     var cls   = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : isBottom ? 'bottom' : 'normal';
-    var score = uc.total_score || 0;
     var rankCat = uc.rank_category || '';
-    var barCls  = rankCat === 'TOP_PERFORMER' ? 'top' : rankCat === 'STRONG_CONTRIBUTOR' ? 'strong' : rankCat === 'AVERAGE' ? 'avg' : 'bottom';
     var pillStyle = RANK_LABELS[rankCat] ? ('background:' + RANK_LABELS[rankCat].bg + ';color:' + RANK_LABELS[rankCat].color) : '';
     var rewardBadge = String(uc.reward_eligible).toUpperCase() === 'TRUE'
       ? '<span style="font-size:10px;background:#E8F5E9;color:#2E7D32;padding:2px 6px;border-radius:10px;margin-left:4px">Khen thưởng</span>' : '';
     var warnBadge = String(uc.warning_flag).toUpperCase() === 'TRUE'
       ? '<span style="font-size:10px;background:#FFEBEE;color:#C62828;padding:2px 6px;border-radius:10px;margin-left:4px">Cảnh báo</span>' : '';
-    return '<tr>' +
+    var autoScore  = uc.auto_score   || 0;
+    var champScore = uc.manual_score || 0;
+    var totalScore = uc.total_score  || 0;
+    var comment    = uc.review_comment || '';
+    var uid = esc(uc.usecase_id).replace(/'/g, '\\\'');
+    return '<tr class="lb-row-clickable" onclick="lbOpenDetail(\'' + uid + '\')">' +
       '<td><div class="rank-num ' + cls + '">' + rank + '</div></td>' +
       '<td><div class="owner-cell"><span class="owner-name">' + esc(uc.name) + rewardBadge + warnBadge + '</span><span class="owner-team">' + esc(uc.usecase_id) + ' · ' + esc(uc.team) + '</span></div></td>' +
       '<td><div class="owner-cell"><span class="owner-name">' + esc(uc.owner_name) + '</span></div></td>' +
-      '<td><span class="rank-pill" style="' + pillStyle + '">' + (RANK_LABELS[rankCat] ? RANK_LABELS[rankCat].label : rankCat) + '</span></td>' +
-      '<td><div class="score-bar-wrap"><div class="score-bar-track"><div class="score-bar-fill ' + barCls + '" style="width:' + score + '%"></div></div><span class="score-val">' + score + '</span></div></td>' +
-      '<td style="color:var(--color-text-secondary);font-size:var(--text-xs)">' + (uc.hours_saved_actual > 0 ? uc.hours_saved_actual + 'h' : '—') + '</td>' +
+      '<td><span class="rank-pill" style="' + pillStyle + '">' + (RANK_LABELS[rankCat] ? RANK_LABELS[rankCat].label : (rankCat || '—')) + '</span></td>' +
+      '<td class="lb-score-num lb-score-auto">' + autoScore + '</td>' +
+      '<td class="lb-score-num lb-score-champion">' + champScore + '</td>' +
+      '<td class="lb-score-num lb-score-total">' + totalScore + '</td>' +
+      '<td><div class="lb-comment-cell" title="' + esc(comment) + '">' + esc(comment) + '</div></td>' +
       '</tr>';
   }).join('');
 
   el.innerHTML = '<table class="rank-table">' +
-    '<thead><tr><th style="width:48px">#</th><th>Use Case</th><th>Người đăng ký</th><th>Hạng</th><th style="min-width:180px">Điểm (100)</th><th>Giờ tiết kiệm</th></tr></thead>' +
+    '<thead><tr>' +
+    '<th style="width:48px">#</th>' +
+    '<th>Use Case</th>' +
+    '<th>Người đăng ký</th>' +
+    '<th>Hạng</th>' +
+    '<th class="lb-score-head">Auto<br><small style="font-weight:400;opacity:.7">/70</small></th>' +
+    '<th class="lb-score-head">Champion<br><small style="font-weight:400;opacity:.7">/30</small></th>' +
+    '<th class="lb-score-head">Tổng<br><small style="font-weight:400;opacity:.7">/100</small></th>' +
+    '<th>Comment</th>' +
+    '</tr></thead>' +
     '<tbody>' + rows + '</tbody></table>';
 }
 
@@ -365,21 +423,296 @@ function renderCategorySection(catRankings) {
     html += '<div class="section-panel" style="margin-bottom:var(--space-5)">';
     html += '<div class="section-panel-header"><span class="section-panel-title">' + label + '</span><span style="font-size:var(--text-xs);color:var(--color-text-secondary)">' + items.length + ' use cases</span></div>';
     html += '<div class="section-panel-body">';
-    // Mini table for category
     var rows = items.slice(0, 5).map(function(uc, i) {
-      var score = uc.total_score || 0;
-      var barCls = score >= 85 ? 'top' : score >= 70 ? 'strong' : score >= 50 ? 'avg' : 'bottom';
-      return '<tr>' +
+      _lbCache[uc.usecase_id] = uc;
+      var uid = esc(uc.usecase_id).replace(/'/g, '\\\'');
+      return '<tr class="lb-row-clickable" onclick="lbOpenDetail(\'' + uid + '\')">' +
         '<td style="width:32px;color:var(--color-text-secondary);font-weight:600">' + (i+1) + '</td>' +
         '<td><span style="font-weight:500">' + esc(uc.name) + '</span><br><span style="font-size:11px;color:var(--color-text-secondary)">' + esc(uc.team) + ' · ' + esc(uc.owner_name) + '</span></td>' +
-        '<td style="min-width:140px"><div class="score-bar-wrap"><div class="score-bar-track"><div class="score-bar-fill ' + barCls + '" style="width:' + score + '%"></div></div><span class="score-val">' + score + '</span></div></td>' +
+        '<td class="lb-score-num lb-score-auto">' + (uc.auto_score   || 0) + '</td>' +
+        '<td class="lb-score-num lb-score-champion">' + (uc.manual_score || 0) + '</td>' +
+        '<td class="lb-score-num lb-score-total">' + (uc.total_score  || 0) + '</td>' +
         '</tr>';
     }).join('');
-    html += '<table class="rank-table"><thead><tr><th>#</th><th>Use Case</th><th>Điểm</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    html += '<table class="rank-table">' +
+      '<thead><tr>' +
+      '<th>#</th><th>Use Case</th>' +
+      '<th class="lb-score-head">Auto<br><small style="font-weight:400;opacity:.7">/70</small></th>' +
+      '<th class="lb-score-head">Champion<br><small style="font-weight:400;opacity:.7">/30</small></th>' +
+      '<th class="lb-score-head">Tổng<br><small style="font-weight:400;opacity:.7">/100</small></th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody></table>';
     html += '</div></div>';
   });
   el.innerHTML = html;
 }
+
+// ── Detail popup ─────────────────────────────────────────────────────
+
+function lbOpenDetail(uid) {
+  var uc = _lbCache[uid];
+  if (!uc) return;
+  _lbDetailUc = uc;
+  document.getElementById('lbDetailTitle').textContent = uc.name || 'Chi tiết Use Case';
+  document.getElementById('lbDetailId').textContent    = uc.usecase_id || '';
+  document.getElementById('lbDetailView').innerHTML    = _lbRenderBody(uc, false);
+  document.getElementById('lbDetailModal').classList.remove('hidden');
+  if (uc.record_id) _lbFetchFull(uc.record_id);
+}
+
+function lbCloseDetail() {
+  document.getElementById('lbDetailModal').classList.add('hidden');
+  _lbDetailUc = null;
+}
+
+async function _lbFetchFull(recordId) {
+  try {
+    var data = await Api.getUseCase(recordId);
+    var full = _lbNormalize(data);
+    if (_lbDetailUc && _lbDetailUc.record_id === recordId) {
+      _lbDetailUc = Object.assign({}, _lbDetailUc, full);
+      document.getElementById('lbDetailView').innerHTML = _lbRenderBody(_lbDetailUc, true);
+    }
+  } catch (_) {
+    // GAS unavailable — partial view already shown
+  }
+}
+
+function _lbNormalize(d) {
+  if (!d) return {};
+  return {
+    record_id:            d.Record_ID              || '',
+    usecase_id:           d.UseCase_ID             || '',
+    name:                 d.UseCase_Name            || '',
+    owner_name:           d.Owner_Name              || '',
+    owner_email:          d.Owner_Email             || '',
+    team:                 d.Team                    || '',
+    category:             d.Business_Category       || '',
+    stage:                d.Current_Stage           || '',
+    status:               d.Status                  || '',
+    submit_date:          d.Submit_Date             || d.Created_At || '',
+    pain_point:           d.Pain_Point              || '',
+    current_process:      d.Current_Process         || '',
+    current_time_min:     d.Current_Time_Min        || '',
+    current_problem:      d.Current_Problem         || '',
+    user_type:            d.User_Type               || '',
+    expected_goals:       d.Expected_Goals          || '',
+    flow_description:     d.Flow_Description        || '',
+    input_types:          d.Input_Types             || '',
+    prompt_role:          d.Prompt_Role             || '',
+    prompt_task:          d.Prompt_Task             || '',
+    prompt_goal:          d.Prompt_Goal             || '',
+    prompt_context:       d.Prompt_Context          || '',
+    prompt_input:         d.Prompt_Input            || '',
+    prompt_steps:         d.Prompt_Steps            || '',
+    prompt_output_format: d.Prompt_Output_Format    || '',
+    prompt_evaluation:    d.Prompt_Evaluation       || '',
+    demo_status:          d.Demo_Status             || '',
+    demo_link:            d.Demo_Link               || '',
+    before_time_min:      d.Before_Time_Min         || '',
+    after_time_min:       d.After_Time_Min          || '',
+    quality_improvement:  d.Quality_Improvement     || '',
+    improvement_note:     d.Improvement_Note        || '',
+    reuse_level:          d.Reuse_Level             || '',
+    reuse_adjustment:     d.Reuse_Adjustment        || '',
+    when_to_use:          d.When_To_Use             || '',
+    usage_steps:          d.Usage_Steps             || '',
+    usage_notes:          d.Usage_Notes             || '',
+    review_comment:       d.Review_Comment          || '',
+    reviewer_email:       d.Reviewer                || d.reviewer_email || '',
+    quality_score:        (parseFloat(d.Quality_Score        || d.quality_score)        || 0),
+    business_value_score: (parseFloat(d.Business_Value_Score || d.business_value_score) || 0),
+    innovation_score:     (parseFloat(d.Innovation_Score     || d.innovation_score)     || 0),
+    auto_score:           (parseFloat(d.Auto_Score           || d.auto_score)           || 0),
+    manual_score:         (parseFloat(d.Manual_Score         || d.manual_score)         || 0),
+    total_score:          (parseFloat(d.Total_Score          || d.total_score)          || 0),
+    rank_category:        d.Rank_Category || d.rank_category || ''
+  };
+}
+
+function _lbRenderBody(uc, isFullData) {
+  var html = '';
+
+  // ── Section 1: Thông tin nghiệp vụ ─────────────────────────────
+  html += _lbSection('1', 'Thông tin nghiệp vụ', [
+    _lbGrid([
+      ['Người đăng ký', uc.owner_name],
+      ['Team',          uc.team],
+      ['Lĩnh vực',      uc.category],
+      ['Giai đoạn',     uc.stage],
+      ['Ngày nộp',      _lbFmtDate(uc.submit_date || uc.submitted_at)]
+    ]),
+    _lbField('Điểm đau nghiệp vụ', uc.pain_point,      true),
+    _lbField('Quy trình hiện tại',  uc.current_process, true),
+    _lbGrid([
+      ['Thời gian xử lý hiện tại', uc.current_time_min ? uc.current_time_min + ' phút' : ''],
+      ['Hệ quả / Rủi ro',          uc.current_problem]
+    ]),
+    _lbField('Đối tượng sử dụng', uc.user_type,      false),
+    _lbField('Mục tiêu kỳ vọng',  uc.expected_goals, false)
+  ]);
+
+  // ── Section 2: Luồng AI & Prompt ────────────────────────────────
+  var s2 = _lbField('Mô tả luồng xử lý AI', uc.flow_description, true) +
+           _lbField('Loại dữ liệu đầu vào',  uc.input_types,      false) +
+           _lbSubsec('Thiết kế Prompt', [
+             _lbField('Vai trò AI (Role)',              uc.prompt_role,          true),
+             _lbField('Nhiệm vụ cụ thể (Task)',         uc.prompt_task,          true),
+             _lbField('Mục tiêu đầu ra (Goal)',         uc.prompt_goal,          true),
+             _lbField('Ngữ cảnh bổ sung (Context)',     uc.prompt_context,       true),
+             _lbField('Mô tả đầu vào (Input)',          uc.prompt_input,         true),
+             _lbField('Các bước xử lý (Steps)',         uc.prompt_steps,         true),
+             _lbField('Định dạng đầu ra (Output)',      uc.prompt_output_format, true),
+             _lbField('Tiêu chí đánh giá (Evaluation)', uc.prompt_evaluation,   true)
+           ]);
+  if (s2.trim()) html += _lbSection('2', 'Luồng AI & Prompt', [s2]);
+
+  // ── Section 3: Demo & Tái sử dụng ───────────────────────────────
+  var timeSaved = '';
+  if (uc.before_time_min && uc.after_time_min) {
+    var before = parseFloat(uc.before_time_min), after = parseFloat(uc.after_time_min);
+    if (before > 0) timeSaved = ' (' + Math.round(((before - after) / before) * 100) + '% tiết kiệm)';
+  }
+  var s3 = _lbGrid([
+             ['Trạng thái demo',           uc.demo_status],
+             ['Link demo / tài liệu',      uc.demo_link],
+             ['Thời gian trước khi có AI', uc.before_time_min ? uc.before_time_min + ' phút' : ''],
+             ['Thời gian sau khi có AI',   uc.after_time_min  ? uc.after_time_min + ' phút' + timeSaved : '']
+           ]) +
+           _lbField('Cải thiện chất lượng',                  uc.quality_improvement, true) +
+           _lbField('Ghi chú thêm về hiệu quả',              uc.improvement_note,    true) +
+           _lbField('Phạm vi tái sử dụng',                   uc.reuse_level,         false) +
+           _lbField('Hướng dẫn điều chỉnh khi tái sử dụng', uc.reuse_adjustment,    true);
+  if (s3.trim()) html += _lbSection('3', 'Demo & Tái sử dụng', [s3]);
+
+  // ── Section 4: Hướng dẫn sử dụng ───────────────────────────────
+  var s4 = _lbField('Khi nào nên dùng use case này?', uc.when_to_use, true) +
+           _lbField('Hướng dẫn thực hiện từng bước',  uc.usage_steps, true) +
+           _lbField('Lưu ý & hạn chế',                uc.usage_notes, true);
+  if (s4.trim()) html += _lbSection('4', 'Hướng dẫn sử dụng', [s4]);
+
+  // ── Section 5: Thông tin phê duyệt ──────────────────────────────
+  var s5 = _lbGrid([['Người duyệt', uc.reviewer_email]]) +
+           _lbField('Nhận xét duyệt', uc.review_comment, true);
+  if (s5.trim()) html += _lbSection('✓', 'Thông tin phê duyệt', [s5], 'detail-section--review');
+
+  // ── Section ★: Đánh giá & Điểm số ──────────────────────────────
+  (function() {
+    var auto   = uc.auto_score           || 0;
+    var manual = uc.manual_score         || 0;
+    var total  = uc.total_score          || (auto + manual);
+    var q      = uc.quality_score        || 0;
+    var bv     = uc.business_value_score || 0;
+    var inn    = uc.innovation_score     || 0;
+    var rkInfo = RANK_LABELS[uc.rank_category] || null;
+    var hasScore = auto > 0 || manual > 0 || q > 0 || bv > 0 || inn > 0;
+
+    var sScore = '';
+    if (!hasScore) {
+      sScore = '<div class="not-scored-notice"><span class="not-scored-icon">⏳</span><span>Chưa thực hiện chấm điểm</span></div>';
+    } else {
+      var rankBadge = (rkInfo && total > 0)
+        ? '<span class="score-rank-badge" style="background:' + rkInfo.color + '20;color:' + rkInfo.color + ';border:1px solid ' + rkInfo.color + '40">' + esc(rkInfo.label) + '</span>'
+        : '';
+      sScore += '<div class="score-total-row">' +
+        '<div class="score-total-num"><span class="score-total-val">' + total + '</span><span class="score-total-max">&nbsp;/100</span><span class="score-total-label">Tổng điểm</span></div>' +
+        rankBadge +
+      '</div>';
+
+      sScore += '<div class="score-subsections">';
+      sScore += '<div class="score-subsection">' +
+        '<div class="score-subsection-title">Điểm Auto <em>(hệ thống)</em>' +
+          '<span class="score-val-badge">' + auto + ' / 70</span>' +
+        '</div>' +
+        '<p class="score-subsection-note">Tính tự động: hiệu quả thời gian · số người dùng · tái sử dụng · tần suất · tài liệu</p>' +
+      '</div>';
+
+      if (manual > 0 || q > 0 || bv > 0 || inn > 0) {
+        sScore += '<div class="score-subsection">' +
+          '<div class="score-subsection-title">Điểm Champion <em>(đánh giá)</em>' +
+            '<span class="score-val-badge score-val-badge--champion">' + manual + ' / 30</span>' +
+          '</div>' +
+          '<div class="score-breakdown-grid">' +
+            '<div class="score-component"><span class="score-comp-label">Chất lượng</span><span class="score-comp-val">' + q + '<span class="score-comp-max">/10</span></span></div>' +
+            '<div class="score-component"><span class="score-comp-label">Giá trị KD</span><span class="score-comp-val">' + bv + '<span class="score-comp-max">/10</span></span></div>' +
+            '<div class="score-component"><span class="score-comp-label">Sáng tạo</span><span class="score-comp-val">' + inn + '<span class="score-comp-max">/10</span></span></div>' +
+          '</div>';
+        if (uc.reviewer_email)  sScore += '<div class="score-reviewer">Người đánh giá: <strong>' + esc(uc.reviewer_email) + '</strong></div>';
+        if (uc.review_comment)  sScore += '<div class="score-comment">' + esc(uc.review_comment) + '</div>';
+        sScore += '</div>';
+      } else {
+        sScore += '<div class="score-subsection">' +
+          '<div class="score-subsection-title">Điểm Champion <em>(đánh giá)</em></div>' +
+          '<div class="not-scored-notice not-scored-notice--sm">Chưa có đánh giá từ Champion</div>' +
+        '</div>';
+      }
+      sScore += '</div>';
+    }
+    html += _lbSection('★', 'Đánh giá & Điểm số', [sScore], 'detail-section--score');
+  })();
+
+  if (!isFullData && uc.record_id) {
+    html += '<div class="detail-loading-hint">Đang tải nội dung chi tiết từ server...</div>';
+  }
+
+  return html || '<p class="empty-state-text" style="padding:var(--space-6)">Không có dữ liệu</p>';
+}
+
+// ── Detail render helpers ────────────────────────────────────────────
+
+function _lbSection(step, title, parts, extra) {
+  var body = parts.join('');
+  if (!body.trim()) return '';
+  return '<div class="detail-section ' + (extra || '') + '">' +
+    '<div class="detail-section-title">' +
+      '<span class="detail-step-badge">' + step + '</span>' +
+      '<span>' + esc(title) + '</span>' +
+    '</div>' +
+    '<div class="detail-section-body">' + body + '</div>' +
+  '</div>';
+}
+
+function _lbSubsec(title, parts) {
+  var body = parts.join('');
+  if (!body.trim()) return '';
+  return '<div class="detail-subsection">' +
+    '<div class="detail-subsection-title">' + esc(title) + '</div>' +
+    '<div class="detail-section-body">' + body + '</div>' +
+  '</div>';
+}
+
+function _lbGrid(pairs) {
+  var cells = pairs.filter(function(p) { return p[1] && String(p[1]).trim(); });
+  if (!cells.length) return '';
+  return '<div class="detail-grid-2col">' +
+    cells.map(function(p) {
+      return '<div class="detail-field">' +
+        '<div class="detail-label">' + esc(p[0]) + '</div>' +
+        '<div class="detail-value">'  + esc(String(p[1])) + '</div>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
+function _lbField(label, value, pre) {
+  if (!value && value !== 0) return '';
+  var val = String(value).trim();
+  if (!val) return '';
+  return '<div class="detail-field detail-field--full">' +
+    '<div class="detail-label">' + esc(label) + '</div>' +
+    '<div class="detail-value' + (pre ? ' detail-value--pre' : '') + '">' + esc(val) + '</div>' +
+  '</div>';
+}
+
+function _lbFmtDate(isoStr) {
+  if (!isoStr) return '--';
+  try {
+    var d = new Date(isoStr);
+    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch (e) { return String(isoStr).substring(0, 10); }
+}
+
+// ── Page utilities ───────────────────────────────────────────────────
 
 function switchTab(tab, el) {
   _activeTab = tab;
