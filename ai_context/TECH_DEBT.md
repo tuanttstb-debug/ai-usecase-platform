@@ -224,11 +224,13 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 
 ## PLAYWRIGHT-01 — Hardcoded Windows path + Python http.server in playwright.config.js (v3.10.2, 2026-06-17)
 
-**Mô tả:** `playwright.config.js` có `cwd: 'D:\\Công việc\\Vibecode\\...'` hardcoded Windows path. `webServer.command` dùng `python -m http.server 8787` (Python 3 only, không HTTPS, không keep-alive headers).
+**Mô tả:** `playwright.config.js` có `cwd: 'D:\\Công việc\\Vibecode\\...'` hardcoded Windows path — **đã lỗi thời sau migration 2026-06-19** (project đã chuyển sang `D:\Workspace\Production\ai-usecase-platform`). `webServer.command` dùng `python -m http.server 8787` (Python 3 only, không HTTPS, không keep-alive headers).
 
-**Rủi ro:** Tests sẽ fail trên bất kỳ máy nào khác (khác user/path), và sẽ fail trong CI/CD environment.
+**Rủi ro:** Tests sẽ fail ngay tại máy hiện tại vì cwd sai. Cần update trước lần chạy Playwright tiếp theo.
 
-**Fix khi cần CI/CD:** Dùng `path.resolve(__dirname)` thay hardcoded path; thay `python -m http.server` bằng `npx serve -s . -l 8787` (cross-platform, có proper MIME types).
+**Fix immediate:** Đổi `cwd` trong `playwright.config.js` thành `'D:\\Workspace\\Production\\ai-usecase-platform'` hoặc dùng `path.resolve(__dirname)`.
+
+**Fix dài hạn khi cần CI/CD:** Dùng `path.resolve(__dirname)`; thay `python -m http.server` bằng `npx serve -s . -l 8787`.
 
 **File:** `playwright.config.js` — `webServer.cwd` và `webServer.command`.
 

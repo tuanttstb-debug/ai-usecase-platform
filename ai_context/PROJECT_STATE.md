@@ -1,7 +1,8 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-18
-**Version:** 3.10.4 (scoring display KPI/detail + review queue filter + home service cards + sidebar nav order)
+**Last updated:** 2026-06-19
+**Version:** 3.10.4 — no code change this session (docs/tooling only)
+**Project location:** `D:\Workspace\Production\ai-usecase-platform` (moved from `D:\Công việc\Vibecode\` on 2026-06-19)
 
 ---
 

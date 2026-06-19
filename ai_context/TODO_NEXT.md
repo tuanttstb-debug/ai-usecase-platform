@@ -4,6 +4,15 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## P0 — Gửi HDSD cho Champion (2026-06-19)
+
+File `HDSD_Champion_AI_USSPTD.docx` (721 KB) đã tạo xong và commit `e0f418a`.
+
+- [ ] Gửi file qua email / Teams cho tất cả Champion
+- [ ] Khi hệ thống thay đổi lớn: chạy lại `python build_champion_guide.py` để rebuild (screenshots tự động qua `node capture_champion_screens.mjs`)
+
+---
+
 ## P0 — Champion scoring E2E test (v3.10.4)
 
 GAS deployed + score display implemented. Verify full cycle:

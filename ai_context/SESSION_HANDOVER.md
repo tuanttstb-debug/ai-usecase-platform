@@ -1365,3 +1365,57 @@ Sau đó Dashboard → tab Người dùng → Đồng bộ từ UC.
 **[P1]** Fix FILTER-01 (`_populateTeamFilter` stale state) and PERF-02 (double-fetch)
 **[P1]** Clean up or gitignore `debug_sidebar.js` (untracked in repo root)
 **[P2]** Update `manager-review.html` sidebar to Pattern A (Trang chủ first, Hệ thống removed)
+
+---
+
+## Session: 2026-06-19
+**Scope:** Folder migration + Champion user guide (HDSD) with production screenshots
+**Commit:** `e0f418a` — 14 files changed, 585 insertions
+**Code changes:** None — documentation/tooling only
+**Version:** 3.10.3 (no version bump — no code change)
+
+---
+
+### Tasks completed
+
+| # | Task | Result |
+|---|------|--------|
+| 1 | **Folder migration** — cả 2 projects di chuyển từ `D:\Công việc\Vibecode\` → `D:\Workspace\Production\`. Memory files cập nhật. Git repos verified sạch tại vị trí mới. | ✅ Done |
+| 2 | **8 screenshots từ production** — Playwright headless Chromium, session injection (không cần GAS login). Pages: login, home-champion, dashboard-my, explore, review-queue (champion), review-queue (admin với data), register form, leaderboard. | ✅ Done |
+| 3 | **`HDSD_Champion_AI_USSPTD.docx`** — Word 721 KB, 8 phần, 7 hình minh họa từ GitHub Pages production. Gửi được ngay cho Champion. | ✅ Done |
+
+### Files changed (non-code)
+
+| File | Mô tả |
+|---|---|
+| `HDSD_Champion_AI_USSPTD.docx` | NEW — Champion user guide, 8 sections, 7 screenshots |
+| `screenshots/*.png` | NEW — 8 production screenshots (01–09, bỏ 08) |
+| `build_champion_guide.py` | NEW — Python/python-docx script tái tạo docx khi cần update |
+| `capture_champion_screens.mjs` | NEW — Playwright script chụp màn hình production |
+| `package.json` / `package-lock.json` | playwright thêm vào devDependencies |
+
+### Decisions made
+
+1. **Session injection thay vì real login** — inject `ai_user_session` JSON vào sessionStorage tại `login.html` (cùng origin), rồi navigate sang target page. Không cần GAS auth live. Reliable và nhanh.
+2. **Admin session cho review queue screenshot** — Champion session (Team Số) cho queue trống 0 UC; Admin session thấy 5 UC "Chờ đánh giá" thực tế → ảnh minh họa có data thật.
+3. **Word (.docx) format** — lựa chọn của người dùng. python-docx (đã cài sẵn). Pandoc không có.
+4. **playwright cài local trong project** — không có global install; thêm vào devDependencies thay vì npx (tránh version drift).
+
+### Blockers
+
+Không có blocker mới. Tất cả blocker từ session trước còn nguyên (xem TODO_NEXT).
+
+### Regression risks
+
+- `capture_champion_screens.mjs` hardcode username `tuantt4` và team `Team Số` — cần cập nhật nếu tài khoản thay đổi role hoặc bị xóa.
+- `build_champion_guide.py`: print() dùng ASCII thay Unicode để tránh cp1252 error trên Windows PowerShell — không ảnh hưởng nội dung docx (python-docx xử lý Unicode đúng).
+- playwright devDependency thêm ~60 MB node_modules khi `npm install` — node_modules đã có trong .gitignore, không ảnh hưởng GitHub Pages deploy.
+
+### Recommended next actions
+
+**[P0]** Gửi `HDSD_Champion_AI_USSPTD.docx` cho các Champion
+**[P0]** Champion E2E test (xem section trước — không thay đổi)
+**[P0]** Verify `getUseCase` trả score sub-components (SCORE-DETAIL-01)
+**[P1]** Fix FILTER-01 + PERF-02 (1-line fixes, vẫn pending)
+**[P1]** `debug_sidebar.js` — xóa hoặc gitignore
+**[P2]** `manager-review.html` sidebar Pattern A (NAV-01)
