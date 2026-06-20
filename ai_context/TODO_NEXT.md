@@ -4,7 +4,9 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
-## P0 — Redeploy GAS sau Leaderboard update (2026-06-19 Part 2)
+## P0 — Redeploy GAS (2 pending changes)
+
+### P0-A — AdminService.gs: `review_comment` trong Leaderboard (LB-GAS-01, 2026-06-19)
 
 `AdminService.gs` đã có `review_comment` trong local repo (commit `ac50eaf`) nhưng chưa deploy lên GAS Editor.
 
@@ -17,6 +19,17 @@ GAS Editor → Deploy → Manage Deployments → Edit (bút chì) → New versio
 - [ ] Paste `AdminService.gs` mới vào GAS Editor
 - [ ] New version → Deploy (URL không đổi)
 - [ ] Verify cột Comment trong Leaderboard table hiện nội dung
+
+### P0-B — UseCaseService.gs: `_getAllUseCaseIds_()` optimization (2026-06-20)
+
+`_getAllUseCaseIds_()` local đã có fix: đọc chỉ cột UseCase_ID (N×1) thay vì toàn bộ sheet (N×99). Giảm ~90% data đọc per createUseCase call.
+
+```
+GAS Editor → Deploy → Manage Deployments → Edit (bút chì) → New version → Deploy
+```
+
+- [ ] Paste `UseCaseService.gs` mới vào GAS Editor (cùng lần deploy với AdminService.gs)
+- [ ] New version → Deploy (URL không đổi)
 
 ---
 
@@ -135,6 +148,16 @@ Cải tiến: Thêm column `KPI_Exempt` (TRUE/FALSE) vào USERS sheet → `_buil
 - [x] Full UC detail view modal — 4 sections (done 2026-06-02)
 - [ ] Dark mode — tokens sẵn sàng, thêm `@media (prefers-color-scheme: dark)` vào `variables.css`
 - [ ] Logo SVG thay sparkles trong sidebar brand
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-20
+
+- [x] **GAS write-ops optimization**: `_getAllUseCaseIds_()` đọc chỉ cột UseCase_ID (N×1 thay vì N×99). Giảm ~90% data read per createUseCase. `appendRowFromObject_()` header-only read đã có sẵn. Commit pending GAS deploy.
+- [x] **FE timeout 90s**: `api.js` `createUseCase`/`updateUseCase` timeout 45s → 90s. Buffer cho GAS cold start (5–15s) + LockService + 2 sheet ops. Commit pushed.
+- [x] **playwright.config.js cwd fixed**: `D:\\Workspace\\Production\\ai-usecase-platform`. PLAYWRIGHT-01 (cwd portion) CLOSED.
+- [x] **New test suite `tests/05-create-write-ops.spec.js`** — 15 tests: payload size guard (A), duplicate check (B), GAS timeout recovery 48s delay (C), create/update full flow mock (D). Fixed 3 root causes during debug: MOCK_LOOKUP keys mismatch, viText undersize, select options race condition.
+- [x] **74/74 Playwright tests pass** — 59 existing (spec 01–04) + 15 new (spec 05).
 
 ---
 

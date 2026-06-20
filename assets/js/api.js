@@ -138,10 +138,10 @@ var Api = {
   health()            { return Api._request(API.health()); },
   getNextId()         { return Api._request(API.nextId()); },
 
-  // Write operations dùng 45s timeout vì GAS phải acquire LockService + đọc/ghi nhiều sheet.
-  // 20s mặc định thường không đủ khi sheet lớn → GAS ghi xong nhưng response chưa về → FE báo lỗi sai.
-  createUseCase(data) { return Api._request(API.create(), data, 45000); },
-  updateUseCase(data) { return Api._request(API.update(), data, 45000); },
+  // Write operations dùng 90s timeout: GAS phải acquire LockService + 2 lần đọc/ghi MASTER_DATA (99 cols).
+  // Cold start V8 runtime có thể thêm 5–15s → tổng thường 15–35s → buffer 90s đủ rộng.
+  createUseCase(data) { return Api._request(API.create(), data, 90000); },
+  updateUseCase(data) { return Api._request(API.update(), data, 90000); },
 
   duplicateCheck(name, pain) {
     return Api._request(API.duplicateCheck(), { UseCase_Name: name, Pain_Point: pain });

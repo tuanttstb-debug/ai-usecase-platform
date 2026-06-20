@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-19 (Part 2)
-**Version:** 3.10.4 + Leaderboard enhancement (score columns + click-to-detail)
+**Last updated:** 2026-06-20
+**Version:** 3.10.4 + Leaderboard enhancement + Write-ops test suite (74/74 pass)
 **Project location:** `D:\Workspace\Production\ai-usecase-platform` (moved from `D:\Công việc\Vibecode\` on 2026-06-19)
 
 ---
@@ -119,7 +119,7 @@ env.js → auth.js → [inline portal script]
 | Scoring preview (register) | ✅ | NEW v3.10.2 (2026-06-17) — Live scoring ring + bars while filling wizard; self-assessment BV + Innovation sliders; Quality shown as 0 (TBD) |
 | Score display (explore) | ✅ | NEW v3.10.2 (2026-06-17) — Score chip on approved UCs in Explore tab; rank color badge |
 | ScoringEngine JS module | ✅ | NEW v3.10.2 (2026-06-17) — assets/js/scoring.js; mirrors GAS ScoringEngine.gs; used by register.html preview + review-queue.html panel |
-| Playwright test suite | ✅ | NEW v3.10.2 (2026-06-17) — 59/59 pass; 4 spec files; JSONP mock via page.route(); session inject via addInitScript() |
+| Playwright test suite | ✅ | 74/74 pass (2026-06-20) — 5 spec files; 59 existing + 15 new write-ops tests (spec 05: payload size guard, duplicate check, GAS timeout recovery, create/update mock). JSONP mock via page.route(); session inject via addInitScript() |
 | KPI week date format | ✅ | fix `91c4a00` — manual `DD/MM` formatter thay `toLocaleDateString` (locale inconsistency trên Chromium/Windows) |
 | Responsive | ✅ | Sidebar collapse 1024px áp dụng toàn bộ pages |
 
@@ -137,7 +137,7 @@ env.js → auth.js → [inline portal script]
 | `UserService.gs` | USERS sheet, normalizeUser_(), validateUserLogin_(), syncUsersFromMasterData_(); **fix champion role save** | v3.10.3 |
 | `Config.gs` | SHEETS.USERS + USERS_HEADERS + usernames ADMIN_EMAILS | v3.10.0 |
 | `Utils.gs` | sanitizeStr_ + toSheetValue_() + findRowByField_() + USERS case | v3.10.0 |
-| `UseCaseService.gs` | _assignUseCaseId_() + single-read update + JSON_Backup cap | v3.7.1 |
+| `UseCaseService.gs` | _assignUseCaseId_() + single-read update + JSON_Backup cap + **_getAllUseCaseIds_() N×1 column read (local, needs deploy)** | v3.7.1+ |
 | `LookupService.gs` | Rewrite hoàn toàn | v2.x |
 | `DashboardService.gs` | record_id + status + owner_name trong recent_submissions | v3.5.1 |
 

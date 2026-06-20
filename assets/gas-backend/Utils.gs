@@ -147,13 +147,15 @@ function readSheetAsObjects_(sheetName) {
 /**
  * Thêm hàng mới vào sheet dựa theo object (key = header).
  * Thứ tự cột theo headers của sheet, không theo thứ tự object.
+ * OPT: Chỉ đọc hàng header (1×lastCol) thay vì toàn bộ data (N×lastCol).
  */
 function appendRowFromObject_(sheetName, obj) {
-  var sheet = getOrCreateSheet_(sheetName);
-  var data  = sheet.getDataRange().getValues();
-  if (data.length === 0) throw new Error('Sheet ' + sheetName + ' không có headers');
+  var sheet   = getOrCreateSheet_(sheetName);
+  var lastCol = sheet.getLastColumn();
+  if (lastCol === 0) throw new Error('Sheet ' + sheetName + ' không có headers');
 
-  var headers = data[0].map(String);
+  // Đọc CHỈ hàng 1 (headers) — tránh đọc N hàng data thừa chỉ để lấy headers
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
   var row = headers.map(function(h) {
     var val = (obj[h] !== undefined && obj[h] !== null) ? obj[h] : '';
     // toSheetValue_: prefix formula-starting strings với ' để tránh Sheets interpret làm formula

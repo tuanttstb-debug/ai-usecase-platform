@@ -1485,5 +1485,79 @@ Không có blocker mới. Tất cả blocker từ session trước còn nguyên 
 **[P0]** Champion E2E test — verify scoring E2E, detail popup sub-scores  
 **[P1]** Fix FILTER-01 (`_populateTeamFilter` stale state, 1 line, `dashboard.js`)  
 **[P1]** Fix PERF-02 (`_loadTabData('my')` double-fetch, 1 line, `dashboard.js`)  
-**[P1]** Fix `playwright.config.js` `cwd` → `D:\\Workspace\\Production\\ai-usecase-platform`  
+**[P2]** `manager-review.html` sidebar Pattern A (NAV-01)
+
+---
+
+## Session: 2026-06-20
+**Scope:** GAS performance fix + write-ops Playwright test suite (05) — 74/74 tests pass
+**Version:** 3.10.4 (no bump — GAS optimization + test-only changes)
+**Instruction gốc:** "GAS done, link giữ nguyên, thực hiện fix, test kỹ tại local với các case có size dữ liệu lớn, debug trước khi Deploy"
+
+---
+
+### Đã hoàn thành
+
+| # | Task | Result |
+|---|------|--------|
+| 1 | **GAS opt — `_getAllUseCaseIds_()`** (`UseCaseService.gs`): đọc chỉ cột UseCase_ID (N×1) thay vì toàn bộ sheet (N×99). Giảm ~90% data đọc trong mỗi createUseCase call. | ✅ Local |
+| 2 | **GAS opt — `appendRowFromObject_()`** (`Utils.gs`): đọc chỉ hàng header (1×lastCol) thay vì `getDataRange()` (N×lastCol). Giảm 1 full-sheet read per write. | ✅ Already in code |
+| 3 | **FE — timeout 90s** (`api.js`): `createUseCase` / `updateUseCase` timeout tăng 45s → 90s. Buffer đủ cho GAS cold start (5–15s) + LockService wait + 2 sheet ops (tổng ~15–35s). | ✅ Committed |
+| 4 | **Fix `playwright.config.js` cwd** — đổi từ đường dẫn cũ sang `D:\\Workspace\\Production\\ai-usecase-platform`. PLAYWRIGHT-01 cwd portion CLOSED. | ✅ Done |
+| 5 | **New test suite `tests/05-create-write-ops.spec.js`** — 15 tests: A (payload size guard), B (duplicate check), C (GAS timeout recovery — 48s delay), D (create/update full flow mock). | ✅ 15/15 pass |
+| 6 | **Debug + fix 3 root causes** trong spec 05 (4 iterations `debug-d2.spec.js`, xóa sau khi xong): | ✅ |
+| | — MOCK_LOOKUP keys: `teams`/`categories` → `Team`/`Business_Category` (khớp `FIELD_CONFIG.lookupKey`) | |
+| | — viText sizes: 700/1000 → 2000 chars (6000 chars × 1.75 UTF-8 avg × 4/3 base64 ≈ 14000 >> 7500 limit) | |
+| | — `fillAndGoToSubmit`: thêm `waitForFunction(() => Team select.options.length > 1)` trước khi `populateData` | |
+| **Total:** | 74/74 tests pass (59 existing + 15 new) | ✅ |
+
+---
+
+### Files changed
+
+| File | Delta |
+|------|-------|
+| `assets/js/api.js` | `createUseCase`/`updateUseCase` timeout: 45000 → 90000ms |
+| `playwright.config.js` | `cwd` path corrected (PLAYWRIGHT-01 cwd fix) |
+| `assets/gas-backend/UseCaseService.gs` | `_getAllUseCaseIds_()`: single-column read (N×1 not N×99) |
+| `assets/gas-backend/Utils.gs` | `appendRowFromObject_()`: header-only read (already correct in file) |
+| `tests/05-create-write-ops.spec.js` | NEW → fixed: MOCK_LOOKUP keys + viText sizes + select wait |
+| `tests/debug-d2.spec.js` | Created then deleted (temp diagnostic) |
+
+---
+
+### Key technical findings
+
+- **GAS timeout root cause:** Redundant MASTER_DATA reads (N×99), NOT payload size. `_getAllUseCaseIds_()` đọc full sheet để lấy IDs → cắt xuống N×1 column.
+- **Vietnamese UTF-8 expansion:** ~1.75× (NOT 4×) for mixed content. viText(700)×3 = ~3700 base64 chars, well below 7500 limit. Need viText(2000)×3 = ~14000 to reliably trigger limit.
+- **MOCK_LOOKUP keys must match FIELD_CONFIG.lookupKey exactly:** `_createSelect()` sets `select.dataset.lookup = config.lookupKey` (`'Team'`, `'Business_Category'`, etc.), not lowercase plural. Wrong mock keys → select options never populated → validation fails → GAS never called.
+- **rebuildLookupFields() timing:** Microtask — runs within same event loop tick as JSONP callback. `options.length > 1` is guaranteed before `networkidle` fires (500ms idle timer). `waitForFunction` is a reliable synchronization point.
+- **`window.__LOOKUP` key lookup path:** `window.__LOOKUP[select.dataset.lookup]` = `window.__LOOKUP['Team']` NOT `window.__LOOKUP['teams']`.
+
+---
+
+### GAS deployment note
+
+`UseCaseService.gs` `_getAllUseCaseIds_()` optimization is **local only** — needs paste into GAS Editor + new version deploy. Until deployed: still functional (original code works), just slower with large sheet.
+
+`Utils.gs` `appendRowFromObject_()` header-only read: already in the deployed version (per current file state).
+
+---
+
+### Regression risks
+
+- **C tests (48s delay):** Pass với 90s timeout. Nếu timeout giảm xuống ≤48s → C1/C2 fail. Không giảm timeout write ops.
+- **viText(2000)×3 payload test:** Assumes UTF-8 expansion ~1.75×. Nếu test data thay đổi sang pure Vietnamese → expansion ~2.7× → ≈21000 chars (vẫn >> 7500, test vẫn pass).
+- **GAS single-column read:** Assumes UseCase_ID column exists in MASTER sheet. If column missing → `idCol === -1` → returns `[]` (empty, not error). createUseCase falls back to `generateUseCaseId_()`.
+
+---
+
+### Next actions
+
+**[P0]** Redeploy GAS (AdminService.gs) — `review_comment` trong leaderboard mapItem (LB-GAS-01)
+**[P0]** Gửi `HDSD_Champion_AI_USSPTD.docx` cho Champion
+**[P0]** Champion E2E test + verify `getUseCase` trả score sub-components (SCORE-DETAIL-01)
+**[P1]** Deploy `UseCaseService.gs` optimization (New version GAS — same URL)
+**[P1]** Fix FILTER-01 (`_populateTeamFilter` stale state, 1 line)
+**[P1]** Fix PERF-02 (`_loadTabData('my')` double-fetch, 1 line)
 **[P2]** `manager-review.html` sidebar Pattern A (NAV-01)

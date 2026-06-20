@@ -25,7 +25,7 @@ module.exports = defineConfig({
 
   webServer: {
     command: 'python -m http.server 8787',
-    cwd: 'D:\\Công việc\\Vibecode\\ai-usecase-platform-main\\ai-usecase-platform-main',
+    cwd: 'D:\\Workspace\\Production\\ai-usecase-platform',
     url: 'http://localhost:8787',
     reuseExistingServer: true,
     timeout: 10000,

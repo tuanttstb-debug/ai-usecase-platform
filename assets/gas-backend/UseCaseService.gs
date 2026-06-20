@@ -6,18 +6,26 @@
 
 /**
  * Lấy tất cả UseCase_ID hiện có từ MASTER_DATA.
+ * OPT: Chỉ đọc cột UseCase_ID thay vì toàn bộ sheet (N×99 cols → N×1 col).
  * @returns {string[]} VD: ['AIUS-0001', 'AIUS-0003']
  */
 function _getAllUseCaseIds_() {
-  var master = getOrCreateSheet_(SHEETS.MASTER);
-  var data   = master.getDataRange().getValues();
-  if (data.length < 2) return [];
-  var headers = data[0].map(String);
-  var idCol   = headers.indexOf('UseCase_ID');
+  var master  = getOrCreateSheet_(SHEETS.MASTER);
+  var lastRow = master.getLastRow();
+  if (lastRow < 2) return [];
+
+  // Tìm index cột UseCase_ID từ header row (1 row × lastCol cols)
+  var lastCol = master.getLastColumn();
+  if (lastCol < 1) return [];
+  var headerRow = master.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  var idCol     = headerRow.indexOf('UseCase_ID');
   if (idCol === -1) return [];
+
+  // Đọc CHỈ cột UseCase_ID — tránh đọc N×99 cells khi chỉ cần N×1
+  var colValues = master.getRange(2, idCol + 1, lastRow - 1, 1).getValues();
   var ids = [];
-  for (var i = 1; i < data.length; i++) {
-    var val = String(data[i][idCol]).trim();
+  for (var i = 0; i < colValues.length; i++) {
+    var val = String(colValues[i][0]).trim();
     if (val && val.indexOf(ID_PREFIX) === 0) ids.push(val);
   }
   return ids;

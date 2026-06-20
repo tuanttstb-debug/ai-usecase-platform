@@ -222,17 +222,13 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 
 ---
 
-## PLAYWRIGHT-01 — Hardcoded Windows path + Python http.server in playwright.config.js (v3.10.2, 2026-06-17)
+## ~~PLAYWRIGHT-01~~ (cwd) — CLOSED (2026-06-20)
 
-**Mô tả:** `playwright.config.js` có `cwd: 'D:\\Công việc\\Vibecode\\...'` hardcoded Windows path — **đã lỗi thời sau migration 2026-06-19** (project đã chuyển sang `D:\Workspace\Production\ai-usecase-platform`). `webServer.command` dùng `python -m http.server 8787` (Python 3 only, không HTTPS, không keep-alive headers).
+`cwd` đã cập nhật thành `'D:\\Workspace\\Production\\ai-usecase-platform'` trong `playwright.config.js`. 74/74 tests pass.
 
-**Rủi ro:** Tests sẽ fail ngay tại máy hiện tại vì cwd sai. Cần update trước lần chạy Playwright tiếp theo.
+**Còn lại (không blocking):** `webServer.command` vẫn dùng `python -m http.server 8787` — Python 3 only, không HTTPS. Nếu cần CI/CD: thay bằng `npx serve -s . -l 8787` + `path.resolve(__dirname)` thay cwd hardcode.
 
-**Fix immediate:** Đổi `cwd` trong `playwright.config.js` thành `'D:\\Workspace\\Production\\ai-usecase-platform'` hoặc dùng `path.resolve(__dirname)`.
-
-**Fix dài hạn khi cần CI/CD:** Dùng `path.resolve(__dirname)`; thay `python -m http.server` bằng `npx serve -s . -l 8787`.
-
-**File:** `playwright.config.js` — `webServer.cwd` và `webServer.command`.
+**File:** `playwright.config.js` — `webServer.command` (cosmetic, không ảnh hưởng local test).
 
 ---
 
@@ -269,6 +265,18 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 **Fix:** GAS Editor → paste `AdminService.gs` → Edit deployment → New version → Deploy. URL không đổi.
 
 **File:** `assets/gas-backend/AdminService.gs` line 248 — `review_comment: uc.Review_Comment || ''`
+
+---
+
+## GAS-OPT-01 — `_getAllUseCaseIds_()` optimization chưa deploy (2026-06-20)
+
+**Mô tả:** `UseCaseService.gs` local đã có `_getAllUseCaseIds_()` đọc chỉ cột UseCase_ID (N×1 thay vì N×99). Chưa deploy lên GAS Editor. Đến khi deploy: mỗi `createUseCase` call vẫn đọc toàn bộ MASTER_DATA để lấy IDs → chậm hơn cần thiết với sheet lớn.
+
+**Rủi ro:** Không có bug — chỉ là performance. GAS vẫn hoạt động đúng. FE timeout 90s đủ buffer.
+
+**Fix:** Deploy `UseCaseService.gs` mới vào GAS (cùng lần với AdminService.gs). Xem TODO_NEXT P0-B.
+
+**File:** `assets/gas-backend/UseCaseService.gs` — `_getAllUseCaseIds_()`.
 
 ---
 
