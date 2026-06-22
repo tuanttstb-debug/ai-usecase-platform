@@ -52,6 +52,8 @@ async function openAndSelectFirstUc(page) {
 
 test.describe('Weekly Update — Feature Tests', () => {
 
+  test.setTimeout(90000); // GAS JSONP real network calls need longer timeout
+
   test.beforeEach(async ({ page }) => {
     await injectSession(page);
   });
