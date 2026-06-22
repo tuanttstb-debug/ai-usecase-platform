@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-20
-**Version:** 3.10.4 + Leaderboard enhancement + Write-ops test suite (74/74 pass)
+**Last updated:** 2026-06-22
+**Version:** 3.11 — Weekly Update governance complete (UC picker modal + stage lifecycle + WEEKLY_LOG)
 **Project location:** `D:\Workspace\Production\ai-usecase-platform` (moved from `D:\Công việc\Vibecode\` on 2026-06-19)
 
 ---
@@ -17,6 +17,7 @@
 | `/dashboard.html` | `dashboard.html` | User+ | Dashboard (admin: all tabs; user: My/Explore/KPI) |
 | `/users.html` | `users.html` | Admin only | Standalone user management page |
 | `/review-queue.html` | `review-queue.html` | Champion+ | Champion review queue — 3 sections + slide-in panel |
+| `/manager-review.html` | `manager-review.html` | Champion+ | Legacy review page — sidebar Pattern A synced (NAV-01 2026-06-22) |
 
 ### Auth Flow
 ```
@@ -103,8 +104,13 @@ env.js → auth.js → [inline portal script]
 | Auto-load on startup | ✅ | NEW v3.3 — _loadStartupData() thay lazy tab-click loading |
 | Sidebar UI sync | ✅ | v3.10.3 (2026-06-18) — Đồng bộ Pattern A sidebar trên toàn bộ pages: leaderboard/weekly-update thêm navUsers+navReviewQueue, xóa navManagerReview, thay inline JS bằng AuthService; users/review-queue Pattern B → A brand, role="menubar", section label Quản lý, topbar CSS class chuẩn |
 | Scoring display (KPI + detail) | ✅ | NEW v3.10.4 (2026-06-18) — KPI tab drill-down shows score columns (Auto/Champion/Tổng/Rank/Nhận xét); unscored UCs get "chưa thực hiện chấm điểm" badge; detail popup has "★ Đánh giá & Điểm số" section with rank badge + champion breakdown |
-| Leaderboard score columns | ✅ | NEW 2026-06-19 — 3 separate columns Auto/70 · Champion/30 · Tổng/100 + Comment replacing old progress bar; rows clickable → full detail popup (4 sections + score, read-only); Category tab also clickable; `review_comment` added to GAS leaderboard mapItem (pending GAS deploy) |
+| Leaderboard score columns | ✅ | NEW 2026-06-19 — 3 separate columns Auto/70 · Champion/30 · Tổng/100 + Comment replacing old progress bar; rows clickable → full detail popup (4 sections + score, read-only); Category tab also clickable; `review_comment` deployed in GAS 2026-06-22 |
 | Review queue filter | ✅ | NEW v3.10.4 (2026-06-18) — Filter bar on review-queue.html: search, team dropdown (admin only), section pills, result counter |
+| UC Picker Modal (weekly-update) | ✅ | NEW v3.11 (2026-06-22) — `weekly-update.html` replaces `<select>` dropdown with full modal table; search + stage filter; role-based: admin=all, champion=own team, user=own email/name; `display:none/flex` pattern for Playwright; `_pickerBuilt` lazy-build flag |
+| Stage lifecycle S1→S4 | ✅ | NEW v3.11 (2026-06-22) — weekly-update.html stage upgrade toggle + checklist gate + S4 special fields (scalePlan, scaleRisks); WEEKLY_LOG sheet append-only history; timeline view after submit |
+| FILTER-01 fix | ✅ | 2026-06-22 — `dashboard.js _populateTeamFilter()`: added `_filterAll.team = teamSel.value` after innerHTML rebuild to sync stale state |
+| PERF-02 fix | ✅ | 2026-06-22 — `dashboard.js _loadTabData('my')`: added `if (_myList.length === 0)` guard; prevents double-fetch after startup |
+| NAV-01 fix | ✅ | 2026-06-22 — `manager-review.html`: full Pattern A sidebar (Trang chủ first, Hệ thống removed, navUsers/navReviewQueue added, sidebarUserRole fixed) |
 | Home page service cards | ✅ | NEW v3.10.4 (2026-06-18) — PORTAL_SERVICES expanded 2→8 items (2 sections); role-aware; champion included |
 | Sidebar "Trang chủ" first | ✅ | NEW v3.10.4 (2026-06-18) — Trang chủ nav item moved to first position; "Hệ thống" section removed from 7 pages |
 | TPBank sidebar UI | ✅ | Tất cả pages dùng sidebar — consistent layout, Pattern A (sidebar-brand + Bình dân hóa AI) |
@@ -119,27 +125,27 @@ env.js → auth.js → [inline portal script]
 | Scoring preview (register) | ✅ | NEW v3.10.2 (2026-06-17) — Live scoring ring + bars while filling wizard; self-assessment BV + Innovation sliders; Quality shown as 0 (TBD) |
 | Score display (explore) | ✅ | NEW v3.10.2 (2026-06-17) — Score chip on approved UCs in Explore tab; rank color badge |
 | ScoringEngine JS module | ✅ | NEW v3.10.2 (2026-06-17) — assets/js/scoring.js; mirrors GAS ScoringEngine.gs; used by register.html preview + review-queue.html panel |
-| Playwright test suite | ✅ | 74/74 pass (2026-06-20) — 5 spec files; 59 existing + 15 new write-ops tests (spec 05: payload size guard, duplicate check, GAS timeout recovery, create/update mock). JSONP mock via page.route(); session inject via addInitScript() |
+| Playwright test suite | ✅ | 85/85 pass (2026-06-22) — 6 spec files; 74 existing + 11 new weekly-update tests (spec 06: T01–T11 real GAS JSONP, `test.setTimeout(90000)`, T09/T11 skip-gracefully when UC at S4 max). JSONP mock via page.route(); session inject via addInitScript() |
 | KPI week date format | ✅ | fix `91c4a00` — manual `DD/MM` formatter thay `toLocaleDateString` (locale inconsistency trên Chromium/Windows) |
 | Responsive | ✅ | Sidebar collapse 1024px áp dụng toàn bộ pages |
 
 ## Backend (GAS) — ✅ Deployed
 
 **Active deployment URL:** `AKfycbypN8afAl2zQwpR7K6k1-699g3HAhFAIqAOtDn3qY1nJWzuN1bd8n99bzRUzaV8ZMyTCw`
-**OAuth:** ✅ Authorized | **GAS code sync:** ✅ Tất cả 9 files đã deploy — GAS-MYSTERY-01 CLOSED (2026-06-18)
+**OAuth:** ✅ Authorized | **GAS code sync:** ✅ Tất cả 9 files đã deploy — GAS-MYSTERY-01 CLOSED (2026-06-18), redeploy 2026-06-22
 
-**Deployed files (2026-06-18):**
+**Last redeploy (2026-06-22):**
 
-| File | Thay đổi chính | Version |
+| File | Thay đổi chính | Deployed |
 |---|---|---|
-| `AdminService.gs` | isChampionForTeam_() + submitChampionReview_() + listUseCases_() returns 5 score fields + **review_comment in leaderboard mapItem (local, needs deploy)** | v3.10.4+ |
-| `Code.gs` | Routes next-id + 5 user endpoints + champion-review | v3.10.2 |
-| `UserService.gs` | USERS sheet, normalizeUser_(), validateUserLogin_(), syncUsersFromMasterData_(); **fix champion role save** | v3.10.3 |
-| `Config.gs` | SHEETS.USERS + USERS_HEADERS + usernames ADMIN_EMAILS | v3.10.0 |
-| `Utils.gs` | sanitizeStr_ + toSheetValue_() + findRowByField_() + USERS case | v3.10.0 |
-| `UseCaseService.gs` | _assignUseCaseId_() + single-read update + JSON_Backup cap + **_getAllUseCaseIds_() N×1 column read (local, needs deploy)** | v3.7.1+ |
-| `LookupService.gs` | Rewrite hoàn toàn | v2.x |
-| `DashboardService.gs` | record_id + status + owner_name trong recent_submissions | v3.5.1 |
+| `AdminService.gs` | isChampionForTeam_() + submitChampionReview_() + listUseCases_() returns 5 score fields + review_comment in leaderboard mapItem + submitWeeklyUpdate_() (numeric fields TEXT/NUM split, WEEKLY_LOG route) | ✅ 2026-06-22 |
+| `Code.gs` | Routes: next-id + 5 user endpoints + champion-review + weekly-update | ✅ 2026-06-18 |
+| `UserService.gs` | USERS sheet, normalizeUser_(), validateUserLogin_(), syncUsersFromMasterData_(); fix champion role save | ✅ 2026-06-18 |
+| `Config.gs` | SHEETS.USERS + USERS_HEADERS + SHEETS.WEEKLY_LOG + usernames ADMIN_EMAILS | ✅ 2026-06-22 |
+| `Utils.gs` | sanitizeStr_ + toSheetValue_() + findRowByField_() + USERS case | ✅ 2026-06-18 |
+| `UseCaseService.gs` | _assignUseCaseId_() + single-read update + JSON_Backup cap + _getAllUseCaseIds_() N×1 column read | ✅ 2026-06-22 |
+| `LookupService.gs` | Rewrite hoàn toàn | ✅ 2026-06-18 |
+| `DashboardService.gs` | record_id + status + owner_name trong recent_submissions | ✅ 2026-06-18 |
 
 **Khởi tạo sau deploy (nếu USERS sheet chưa có):**
 ```
@@ -160,6 +166,7 @@ Rồi Dashboard → tab Người dùng → **Đồng bộ từ UC** → import o
 | dashboard API | ✅ | Live |
 | user-login / users / user-upsert / user-sync | ✅ | Deployed 2026-06-18 |
 | champion-review | ✅ | Deployed 2026-06-18 |
+| weekly-update / weekly-log | ✅ | Deployed 2026-06-22 — submitWeeklyUpdate_ (TEXT/NUM split, WEEKLY_LOG append) + getWeeklyLog_ (timeline history) |
 | Authentication | ❌ | Username-based FE only, no real auth (SEC-01) |
 
 ## Auth Architecture Notes (v3.10.2)
@@ -227,6 +234,7 @@ Key tokens (all in `variables.css`):
 | `review-queue.html` | `.app-layout` → sidebar + topbar | ✅ Yes — Pattern A (fixed v3.10.3) |
 | `leaderboard.html` | `.app-layout` → sidebar + topbar | ✅ Yes — Pattern A |
 | `weekly-update.html` | `.app-layout` → sidebar + topbar | ✅ Yes — Pattern A |
+| `manager-review.html` | `.app-layout` → sidebar + topbar | ✅ Yes — Pattern A (fixed NAV-01 2026-06-22) |
 | `index.html` | `.portal-header` + `.portal-main` | ❌ Top-header only |
 | `register.html` | `.app-header` + `.app-container` | ❌ Top-header only |
 | `login.html` | `.login-page` centered card | ❌ Auth page |

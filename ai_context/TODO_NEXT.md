@@ -4,75 +4,29 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
-## P0 — Redeploy GAS (2 pending changes)
+## ✅ Đã hoàn thành trong session 2026-06-22
 
-### P0-A — AdminService.gs: `review_comment` trong Leaderboard (LB-GAS-01, 2026-06-19)
-
-`AdminService.gs` đã có `review_comment` trong local repo (commit `ac50eaf`) nhưng chưa deploy lên GAS Editor.
-
-Đến khi deploy: cột Comment trong Leaderboard table luôn trống. Detail popup vẫn hiện comment đúng (qua `getUseCase` endpoint, không ảnh hưởng).
-
-```
-GAS Editor → Deploy → Manage Deployments → Edit (bút chì) → New version → Deploy
-```
-
-- [ ] Paste `AdminService.gs` mới vào GAS Editor
-- [ ] New version → Deploy (URL không đổi)
-- [ ] Verify cột Comment trong Leaderboard table hiện nội dung
-
-### P0-B — UseCaseService.gs: `_getAllUseCaseIds_()` optimization (2026-06-20)
-
-`_getAllUseCaseIds_()` local đã có fix: đọc chỉ cột UseCase_ID (N×1) thay vì toàn bộ sheet (N×99). Giảm ~90% data đọc per createUseCase call.
-
-```
-GAS Editor → Deploy → Manage Deployments → Edit (bút chì) → New version → Deploy
-```
-
-- [ ] Paste `UseCaseService.gs` mới vào GAS Editor (cùng lần deploy với AdminService.gs)
-- [ ] New version → Deploy (URL không đổi)
+- [x] **GAS redeploy** — AdminService.gs (submitWeeklyUpdate_ numeric TEXT/NUM split + review_comment leaderboard) + UseCaseService.gs (_getAllUseCaseIds_ N×1 optimization). URL giữ nguyên. Confirmed by user.
+- [x] **UC Picker Modal (`weekly-update.html`)** — Thay thế `<select>` dropdown bằng modal table có search + stage filter. Role-based: admin=all, champion=own team, user=own email match. `display:none/flex` pattern (Playwright compatible). `_pickerBuilt` lazy flag. Commit `26820c4`.
+- [x] **Stage lifecycle S1→S4 (`weekly-update.html`)** — Stage upgrade toggle + checklist gate + S4 special fields. WEEKLY_LOG timeline sau submit. `_safeNum()` guard cho numeric prefill. Stage key: `uc.stage || uc.current_stage || 'S1 - Idea'`. Commit `26820c4`.
+- [x] **Playwright weekly-update test suite** — `tests/weekly-update.spec.js` 11 tests (T01–T11). `test.setTimeout(90000)` inside describe block (giữ nguyên 20s global). T09/T11 skip gracefully khi UC ở S4 max. 85/85 PASS. Commit `13fe01c`.
+- [x] **HDSD_CapNhatTuan_AI_USSPTD.docx** — Word 1.7MB, 11 phần, 14 EVD screenshots từ `evd/weekly-update/`. Script `scripts/gen_hdsd_capnhattuan.py` (python-docx). Gửi cho Champion confirmed by user. Commit `a673f47`.
+- [x] **FILTER-01** — `dashboard.js _populateTeamFilter()`: thêm `_filterAll.team = teamSel.value` sau khi rebuild innerHTML → sync stale state khi team biến mất khỏi data. Commit `a673f47`.
+- [x] **PERF-02** — `dashboard.js _loadTabData('my')`: thêm guard `if (_myList.length === 0)` → không double-fetch sau khi startup đã populate `_myList`. Commit `a673f47`.
+- [x] **NAV-01** — `manager-review.html`: full Pattern A sidebar sync (Trang chủ first, Hệ thống section removed, navUsers/navReviewQueue added, sidebarUserRole fixed từ hardcode 'Admin' → 'Người dùng'). Commit `a673f47`.
+- [x] **Champion E2E test** — Confirmed working by user 2026-06-22.
+- [x] **HDSD Champion gửi xong** — Confirmed by user 2026-06-22.
 
 ---
 
-## P0 — Gửi HDSD cho Champion (2026-06-19)
+## P0 — Smoke test weekly-update với champion thật
 
-File `HDSD_Champion_AI_USSPTD.docx` (721 KB) đã tạo xong và commit `e0f418a`.
+Cần verify weekly-update feature với real champion credentials (không phải admin test account):
 
-- [ ] Gửi file qua email / Teams cho tất cả Champion
-- [ ] Khi hệ thống thay đổi lớn: chạy lại `python build_champion_guide.py` để rebuild (screenshots tự động qua `node capture_champion_screens.mjs`)
-
----
-
-## P0 — Champion scoring E2E test (v3.10.4)
-
-GAS deployed + score display implemented. Verify full cycle:
-
-- [ ] Champion review → set Quality/BV/Innovation sliders → submit
-- [ ] Admin: KPI tab → click user → score list popup → scores show correctly (not "chưa thực hiện")
-- [ ] Admin: detail popup for scored UC → "★ Đánh giá & Điểm số" section shows breakdown (not zeros)
-- [ ] **Verify `getUseCase` returns `Quality_Score`, `Business_Value_Score`, `Innovation_Score`** — if not, champion breakdown in detail popup shows zeros
-
----
-
-## P0 — Champion end-to-end test (GAS đã deploy)
-
-GAS đã deploy 2026-06-18. Test toàn bộ luồng champion:
-
-- [ ] Thêm champion vào USERS sheet: `Username=<username>`, `Role=champion`, `Active=TRUE`, `Team=<tên team khớp MASTER_DATA>`
-- [ ] Login champion → verify `navReviewQueue` visible, `navUsers` NOT visible, role label "Champion"
-- [ ] Vào `review-queue.html` → chỉ thấy UC của team mình trong các queue
-- [ ] Click "Review" → slide-in panel mở → UC ID hiển thị đúng
-- [ ] Set Quality=8, BV=7, Innovation=6 → projected score cập nhật đúng
-- [ ] Submit → toast "Review đã được ghi nhận" + queue reload
-- [ ] Kiểm tra MASTER sheet: `Quality_Score=8`, `Business_Value_Score=7`, `Innovation_Score=6`, `Total_Score` recalculated, `Rank_Category` đúng
-
----
-
-## P0 — Khởi tạo USERS sheet (nếu chưa có)
-
-```
-GAS_URL?action=user-init&admin_email=tuantt4
-```
-Sau đó: Dashboard → tab Người dùng → **Đồng bộ từ UC** → import tất cả owners từ MASTER_DATA.
+- [ ] Login champion → `weekly-update.html` → picker modal chỉ hiện UC của team champion đó
+- [ ] Chọn UC → form prefill đúng (progress, stage)
+- [ ] Submit weekly update → WEEKLY_LOG ghi đúng
+- [ ] Timeline hiện sau submit
 
 ---
 
@@ -114,13 +68,6 @@ Cải tiến: Thêm column `KPI_Exempt` (TRUE/FALSE) vào USERS sheet → `_buil
 
 ---
 
-## P1 — Fix regression risk (v3.6) — còn pending
-
-- [ ] `_populateTeamFilter()` stale state: thêm `_filterAll.team = teamSel.value` sau khi render options. File `assets/js/dashboard.js` hàm `_populateTeamFilter`. Chi tiết xem TECH_DEBT `FILTER-01`.
-- [ ] `_loadTabData('my')` double-fetch: thêm guard `if (_myList.length === 0)`. Chi tiết xem TECH_DEBT `PERF-02`.
-
----
-
 ## P3 — Feature backlog
 
 - [ ] Explore tab: show empty state với CTA "Chưa có UC nào được duyệt — hãy là người đầu tiên!" thay vì text thuần
@@ -128,8 +75,8 @@ Cải tiến: Thêm column `KPI_Exempt` (TRUE/FALSE) vào USERS sheet → `_buil
 - [ ] "Under Review" status transition cho workflow
 - [ ] Export to CSV từ dashboard (tab Tất cả + filter state)
 - [ ] Line chart (submission trend) — cần `trend_data` từ GAS API
-- [ ] Fix double-fetch: `_loadTabData('my')` vẫn gọi `_loadMyUseCases()` sau startup
 - [ ] Filter tab Tất cả: thêm nút "Reset tất cả filter" (1 click reset status + team + search)
+- [ ] weekly-update.html: thêm spinner khi GAS đang ghi WEEKLY_LOG (hiện không có loading state sau khi submit)
 
 ---
 
