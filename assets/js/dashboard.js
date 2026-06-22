@@ -162,7 +162,7 @@
     } else if (tab === 'all' && _isAdmin) {
       if (_allList.length === 0) _loadAllUseCases();
     } else if (tab === 'my') {
-      _loadMyUseCases();
+      if (_myList.length === 0) _loadMyUseCases();
     } else if (tab === 'explore') {
       if (!_exploreList.length) {
         _exploreList = _allList.filter(function (uc) { return uc.status === 'Approved'; });
@@ -850,6 +850,7 @@
       teams.map(function (t) {
         return '<option value="' + esc(t) + '"' + (current === t ? ' selected' : '') + '>' + esc(t) + '</option>';
       }).join('');
+    _filterAll.team = teamSel.value; // sync state: if current was removed from list, reset to ''
   }
 
   function _applyAllTableFilters() {
