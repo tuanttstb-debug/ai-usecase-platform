@@ -16,33 +16,93 @@
   <link rel="stylesheet" href="assets/css/responsive.css">
 
   <style>
-    .wu-container { max-width: 720px; margin: 0 auto; padding: var(--space-8); }
+    /* ── Page layout ── */
+    .wu-container { max-width: 760px; margin: 0 auto; padding: var(--space-8); }
     .wu-page-title { font-size: var(--text-2xl); font-weight: var(--font-weight-bold); color: var(--color-text); margin-bottom: 4px; }
-    .wu-page-sub { font-size: var(--text-sm); color: var(--color-text-secondary); margin-bottom: var(--space-8); }
+    .wu-page-sub   { font-size: var(--text-sm); color: var(--color-text-secondary); margin-bottom: var(--space-8); }
 
-    .uc-picker { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6); }
+    /* ── UC picker ── */
+    .uc-picker { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-5); }
     .uc-picker-label { font-size: var(--text-sm); font-weight: var(--font-weight-semibold); color: var(--color-text); margin-bottom: var(--space-3); display: block; }
 
+    /* ── UC card ── */
     .uc-card { background: var(--color-primary-surface); border: 1px solid var(--color-primary-light); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5); margin-top: var(--space-4); display: none; }
     .uc-card.visible { display: block; }
-    .uc-card-name { font-weight: var(--font-weight-semibold); color: var(--color-text); }
+    .uc-card-name { font-weight: var(--font-weight-semibold); color: var(--color-text); font-size: var(--text-base); }
     .uc-card-meta { font-size: var(--text-xs); color: var(--color-text-secondary); margin-top: 4px; }
-    .uc-card-score { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-3); }
-    .score-chip { padding: 3px 10px; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); }
+    .uc-card-chips { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+    .chip { padding: 3px 10px; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); }
+    .chip--score   { background: var(--color-bg); color: var(--color-text-secondary); border: 1px solid var(--color-border); }
+    .chip--update  { background: var(--color-info-light); color: var(--color-info); }
+    .chip--overdue { background: #FFF3E0; color: #E65100; }
 
-    .wu-form { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-6); }
+    /* ── Overdue warning ── */
+    .overdue-warning { background: var(--color-error-light); border: 1px solid #FFCDD2; border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: var(--color-error); margin-bottom: var(--space-5); display: none; align-items: flex-start; gap: var(--space-2); }
+    .overdue-warning.visible { display: flex; }
+
+    /* ── Form ── */
+    .wu-form { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-6); margin-bottom: var(--space-6); }
     .wu-section { margin-bottom: var(--space-6); }
+    .wu-section:last-child { margin-bottom: 0; }
     .wu-section-title { font-size: var(--text-sm); font-weight: var(--font-weight-semibold); color: var(--color-text); margin-bottom: var(--space-4); padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-border); }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
-    @media(max-width:600px) { .form-row { grid-template-columns: 1fr; } }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+    @media(max-width:600px) { .form-row-2 { grid-template-columns: 1fr; } }
 
+    /* ── Progress slider ── */
     .progress-display { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-2); }
     .progress-track { flex: 1; height: 8px; background: var(--color-border); border-radius: 4px; overflow: hidden; }
-    .progress-fill { height: 100%; background: var(--color-primary); border-radius: 4px; transition: width 0.3s ease; }
-    .progress-label { font-weight: var(--font-weight-semibold); font-size: var(--text-base); color: var(--color-primary); min-width: 40px; }
+    .progress-fill  { height: 100%; background: var(--color-primary); border-radius: 4px; transition: width 0.3s ease; }
+    .progress-label { font-weight: var(--font-weight-semibold); font-size: var(--text-base); color: var(--color-primary); min-width: 44px; }
 
-    .overdue-warning { background: var(--color-error-light); border: 1px solid #FFCDD2; border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: var(--color-error); margin-bottom: var(--space-4); display: none; }
-    .overdue-warning.visible { display: flex; align-items: flex-start; gap: var(--space-2); }
+    /* ── Stage section ── */
+    .stage-section { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-6); margin-bottom: var(--space-5); }
+    .stage-section-title { font-size: var(--text-sm); font-weight: var(--font-weight-semibold); color: var(--color-text); margin-bottom: var(--space-4); display: flex; align-items: center; gap: var(--space-2); }
+    .stage-current-row   { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+    .stage-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: var(--radius-full); font-size: var(--text-sm); font-weight: var(--font-weight-semibold); }
+    .stage-arrow { color: var(--color-text-muted); font-size: 18px; }
+    .stage-upgrade-toggle { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; user-select: none; }
+    .stage-upgrade-toggle input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--color-primary); cursor: pointer; }
+    .stage-upgrade-toggle-label { font-size: var(--text-sm); color: var(--color-primary); font-weight: var(--font-weight-medium); }
+
+    /* Stage upgrade panel */
+    .stage-upgrade-panel { display: none; margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px dashed var(--color-border); }
+    .stage-upgrade-panel.visible { display: block; }
+    .stage-target-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: var(--radius-full); font-size: var(--text-sm); font-weight: var(--font-weight-bold); }
+    .stage-checklist { margin-top: var(--space-4); }
+    .stage-checklist-title { font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: var(--space-3); }
+    .stage-checklist-item { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-bg); }
+    .stage-checklist-item:last-child { border-bottom: none; }
+    .stage-checklist-item input[type=checkbox] { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; accent-color: var(--color-primary); cursor: pointer; }
+    .stage-checklist-item label { font-size: var(--text-sm); color: var(--color-text); cursor: pointer; line-height: 1.5; }
+    .stage-checklist-warn { display: none; font-size: var(--text-xs); color: var(--color-error); margin-top: var(--space-3); padding: var(--space-2) var(--space-3); background: var(--color-error-light); border-radius: var(--radius-md); }
+    .stage-checklist-warn.visible { display: block; }
+    .stage-at-max { font-size: var(--text-sm); color: var(--color-text-secondary); padding: var(--space-3) var(--space-4); background: var(--color-bg); border-radius: var(--radius-md); margin-top: var(--space-4); display: flex; align-items: center; gap: var(--space-2); }
+
+    /* S4 fields */
+    .s4-fields { display: none; margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px dashed var(--color-border); }
+    .s4-fields.visible { display: block; }
+    .s4-fields-title { font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: #7B2CBF; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: var(--space-3); }
+
+    /* ── Timeline ── */
+    .wu-timeline-wrap { margin-top: var(--space-2); }
+    .wu-timeline-title { font-size: var(--text-base); font-weight: var(--font-weight-semibold); color: var(--color-text); margin-bottom: var(--space-4); display: flex; align-items: center; gap: var(--space-2); }
+    .wu-timeline-empty { font-size: var(--text-sm); color: var(--color-text-muted); padding: var(--space-6); text-align: center; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); }
+    .timeline-list { list-style: none; padding: 0; margin: 0; position: relative; }
+    .timeline-list::before { content: ''; position: absolute; left: 15px; top: 0; bottom: 0; width: 2px; background: var(--color-border); }
+    .timeline-item { position: relative; padding: 0 0 var(--space-5) var(--space-10); }
+    .timeline-item:last-child { padding-bottom: 0; }
+    .timeline-dot { position: absolute; left: 7px; top: 5px; width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--color-surface); background: var(--color-border); box-shadow: 0 0 0 2px var(--color-border); }
+    .timeline-dot--stage { background: var(--color-primary); box-shadow: 0 0 0 2px #D8B4FE; }
+    .timeline-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-4); }
+    .timeline-card--stage { border-color: #D8B4FE; background: #FAF5FF; }
+    .timeline-header { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+    .timeline-date  { font-size: var(--text-xs); color: var(--color-text-muted); font-weight: var(--font-weight-medium); }
+    .timeline-progress-pill { padding: 2px 9px; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--font-weight-bold); background: var(--color-primary-surface); color: var(--color-primary); }
+    .timeline-stage-arrow { display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-xs); font-weight: var(--font-weight-semibold); padding: 3px 10px; border-radius: var(--radius-full); background: #F5F0FF; color: var(--color-primary); border: 1px solid #D8B4FE; }
+    .timeline-text { font-size: var(--text-sm); color: var(--color-text); line-height: 1.6; }
+    .timeline-text.muted { color: var(--color-text-muted); }
+    .timeline-metrics { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+    .timeline-metric { font-size: var(--text-xs); color: var(--color-text-secondary); background: var(--color-bg); padding: 2px 8px; border-radius: var(--radius-sm); }
   </style>
 </head>
 <body>
@@ -77,26 +137,14 @@
         <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"/></svg></i>
         <span class="sidebar-nav-label">Use Case của tôi</span>
       </a>
-
-      <!-- admin only: user management -->
       <a href="users.html" class="sidebar-nav-item" id="navUsers" role="menuitem" style="display:none">
-        <i class="sidebar-nav-icon" aria-hidden="true">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-          </svg>
-        </i>
+        <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg></i>
         <span class="sidebar-nav-label">Quản lý người dùng</span>
       </a>
-      <!-- admin + champion: review queue -->
       <a href="review-queue.html" class="sidebar-nav-item" id="navReviewQueue" role="menuitem" style="display:none">
-        <i class="sidebar-nav-icon" aria-hidden="true">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0118 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3l1.5 1.5 3-3.75" />
-          </svg>
-        </i>
+        <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0118 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3l1.5 1.5 3-3.75"/></svg></i>
         <span class="sidebar-nav-label">Hàng đợi Review</span>
       </a>
-
       <div class="sidebar-divider" aria-hidden="true"></div>
       <span class="sidebar-section-label">AI Governance</span>
       <a href="leaderboard.html" class="sidebar-nav-item" role="menuitem">
@@ -107,7 +155,6 @@
         <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg></i>
         <span class="sidebar-nav-label">Cập nhật tuần</span>
       </a>
-
     </nav>
     <div class="sidebar-footer">
       <div class="sidebar-user">
@@ -138,21 +185,21 @@
         </div>
       </div>
     </header>
+
     <div class="wu-container">
       <h1 class="wu-page-title">Cập nhật tiến độ tuần</h1>
-      <p class="wu-page-sub">Báo cáo tiến độ, số liệu sử dụng và rào cản của use case — cập nhật mỗi tuần để duy trì điểm số.</p>
+      <p class="wu-page-sub">Báo cáo tiến độ, số liệu và rào cản — cập nhật mỗi tuần để duy trì điểm số. Có thể đề xuất nâng Stage khi đủ điều kiện.</p>
 
-      <!-- Use case picker -->
+      <!-- UC Picker -->
       <div class="uc-picker">
         <label class="uc-picker-label" for="ucSelect">Chọn Use Case cần cập nhật</label>
-        <select class="form-input" id="ucSelect" onchange="onSelectUseCase()">
+        <select class="form-input" id="ucSelect">
           <option value="">— Chọn use case của bạn —</option>
         </select>
-
         <div class="uc-card" id="ucCard">
           <div class="uc-card-name" id="ucCardName"></div>
           <div class="uc-card-meta" id="ucCardMeta"></div>
-          <div class="uc-card-score" id="ucCardScore"></div>
+          <div class="uc-card-chips" id="ucCardChips"></div>
         </div>
       </div>
 
@@ -162,13 +209,69 @@
         <span id="overdueMsg"></span>
       </div>
 
+      <!-- Stage section -->
+      <div class="stage-section" id="stageSection" style="display:none">
+        <div class="stage-section-title">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+          Giai đoạn (Stage)
+        </div>
+        <div class="stage-current-row">
+          <div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:4px">Giai đoạn hiện tại</div>
+            <span class="stage-badge" id="currentStageBadge"></span>
+          </div>
+          <div id="upgradeToggleWrap" style="display:none">
+            <label class="stage-upgrade-toggle">
+              <input type="checkbox" id="upgradeToggle">
+              <span class="stage-upgrade-toggle-label">Đề xuất nâng stage</span>
+            </label>
+          </div>
+          <div id="stageAtMax" class="stage-at-max" style="display:none">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Use case đã đạt S4 - Scale (giai đoạn cao nhất)
+          </div>
+        </div>
+
+        <!-- Upgrade panel (checklist + S4 fields) -->
+        <div class="stage-upgrade-panel" id="upgradePanel">
+          <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)">
+            <span id="currentStageMini" class="stage-badge" style="font-size:var(--text-xs);padding:3px 10px"></span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="14" height="14" style="color:var(--color-text-muted)"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+            <span id="targetStageBadge" class="stage-badge" style="font-size:var(--text-xs);padding:3px 10px"></span>
+          </div>
+
+          <div class="stage-checklist">
+            <div class="stage-checklist-title">Điều kiện bắt buộc — tick đủ để xác nhận</div>
+            <div id="checklistItems"></div>
+          </div>
+          <div class="stage-checklist-warn" id="checklistWarn">
+            Vui lòng tick tất cả điều kiện trước khi xác nhận nâng stage.
+          </div>
+
+          <!-- S4 extra fields (chỉ hiện khi target = S4) -->
+          <div class="s4-fields" id="s4Fields">
+            <div class="s4-fields-title">Thông tin bắt buộc cho S4 · Scale</div>
+            <div class="form-group">
+              <label class="form-label">Kế hoạch scale-up <span class="form-required">*</span></label>
+              <textarea id="scalePlan" class="form-input" rows="3" placeholder="Kế hoạch mở rộng trong 30–90 ngày tới: team nào, số lượng người dùng mục tiêu, ai phối hợp..."></textarea>
+            </div>
+            <div class="form-group" style="margin-top:var(--space-4)">
+              <label class="form-label">Rủi ro khi scale</label>
+              <textarea id="scaleRisks" class="form-input" rows="2" placeholder="Rủi ro có thể gặp: data privacy, phụ thuộc vendor, chi phí hạ tầng, khả năng dùng sai mục đích..."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Weekly update form -->
       <div class="wu-form" id="wuForm" style="display:none">
+
+        <!-- Tiến độ -->
         <div class="wu-section">
           <div class="wu-section-title">Tiến độ thực hiện</div>
           <div class="form-group">
             <label class="form-label">% Hoàn thành <span class="form-required">*</span></label>
-            <input type="range" id="progressSlider" min="0" max="100" step="5" value="0" class="form-input" oninput="updateProgressDisplay(this.value)" style="accent-color:var(--color-primary)">
+            <input type="range" id="progressSlider" min="0" max="100" step="5" value="0" class="form-input" style="accent-color:var(--color-primary)">
             <div class="progress-display">
               <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
               <span class="progress-label" id="progressLabel">0%</span>
@@ -176,24 +279,25 @@
           </div>
           <div class="form-group" style="margin-top:var(--space-4)">
             <label class="form-label">Cập nhật tuần này <span class="form-required">*</span></label>
-            <textarea id="weeklyUpdate" class="form-input" rows="4" placeholder="Tuần này đã làm gì? Kết quả cụ thể là gì? Số liệu thực tế thay đổi như thế nào?"></textarea>
+            <textarea id="weeklyUpdate" class="form-input" rows="4" placeholder="Tuần này đã làm gì? Kết quả cụ thể? Số liệu thực tế thay đổi như thế nào?"></textarea>
           </div>
           <div class="form-group">
             <label class="form-label">Milestone tiếp theo</label>
-            <input type="text" id="nextMilestone" class="form-input" placeholder="VD: Hoàn thành pilot với 5 người dùng trước 30/6">
+            <input type="text" id="nextMilestone" class="form-input" placeholder="VD: Hoàn thành pilot với 5 người dùng trước 30/7">
           </div>
         </div>
 
+        <!-- Số liệu -->
         <div class="wu-section">
           <div class="wu-section-title">Số liệu thực tế</div>
-          <div class="form-row">
+          <div class="form-row-2">
             <div class="form-group">
               <label class="form-label">Số lần sử dụng trong tháng</label>
-              <input type="number" id="monthlyUsage" class="form-input" min="0" placeholder="0" style="max-width:160px">
+              <input type="number" id="monthlyUsage" class="form-input" min="0" placeholder="0">
             </div>
             <div class="form-group">
               <label class="form-label">Giờ tiết kiệm thực tế (tháng)</label>
-              <input type="number" id="hoursSaved" class="form-input" min="0" step="0.5" placeholder="0" style="max-width:160px">
+              <input type="number" id="hoursSaved" class="form-input" min="0" step="0.5" placeholder="0">
             </div>
           </div>
           <div class="form-group">
@@ -202,6 +306,7 @@
           </div>
         </div>
 
+        <!-- Rào cản -->
         <div class="wu-section">
           <div class="wu-section-title">Rào cản &amp; Hỗ trợ</div>
           <div class="form-group">
@@ -214,7 +319,8 @@
           </div>
         </div>
 
-        <div style="display:flex; gap:var(--space-3); justify-content:flex-end; padding-top:var(--space-4); border-top:1px solid var(--color-border)">
+        <!-- Footer actions -->
+        <div style="display:flex;gap:var(--space-3);justify-content:flex-end;padding-top:var(--space-4);border-top:1px solid var(--color-border)">
           <button type="button" class="btn btn--secondary" onclick="resetForm()">Làm lại</button>
           <button type="button" class="btn btn--primary" id="btnSubmit" onclick="submitWeeklyUpdate()">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
@@ -224,11 +330,21 @@
       </div>
 
       <!-- Success state -->
-      <div id="successState" style="display:none; text-align:center; padding:var(--space-12)">
-        <div style="font-size:48px; margin-bottom:var(--space-4)">✅</div>
-        <div style="font-size:var(--text-xl); font-weight:var(--font-weight-semibold); color:var(--color-text)">Đã cập nhật thành công!</div>
-        <div id="newScore" style="font-size:var(--text-sm); color:var(--color-text-secondary); margin-top:var(--space-2)"></div>
+      <div id="successState" style="display:none;text-align:center;padding:var(--space-12);background:var(--color-surface);border-radius:var(--radius-xl);border:1px solid var(--color-border);margin-bottom:var(--space-6)">
+        <div style="font-size:48px;margin-bottom:var(--space-4)">✅</div>
+        <div style="font-size:var(--text-xl);font-weight:var(--font-weight-semibold);color:var(--color-text)">Đã cập nhật thành công!</div>
+        <div id="successDetail" style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-top:var(--space-2)"></div>
         <button class="btn btn--secondary" style="margin-top:var(--space-6)" onclick="resetAll()">Cập nhật use case khác</button>
+      </div>
+
+      <!-- Timeline -->
+      <div class="wu-timeline-wrap" id="timelineWrap" style="display:none">
+        <div class="wu-timeline-title">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Lịch sử cập nhật
+          <span id="timelineCount" style="font-size:var(--text-xs);font-weight:var(--font-weight-normal);color:var(--color-text-muted)"></span>
+        </div>
+        <div id="timelineContent"></div>
       </div>
 
       <div id="toastArea" style="position:fixed;bottom:24px;right:24px;z-index:999"></div>
@@ -259,6 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.location.href = 'login.html';
   });
 
+  // Sidebar toggle
   var sidebar = document.getElementById('appSidebar');
   var overlay = document.getElementById('sidebarOverlay');
   var toggle  = document.getElementById('sidebarToggle');
@@ -268,16 +385,30 @@ document.addEventListener('DOMContentLoaded', function() {
   if (overlay) overlay.addEventListener('click', closeSidebar);
   document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeSidebar(); });
 
+  // UC select listener
+  document.getElementById('ucSelect').addEventListener('change', onSelectUseCase);
+
+  // Progress slider listener
+  document.getElementById('progressSlider').addEventListener('input', function() {
+    updateProgressDisplay(this.value);
+  });
+
+  // Upgrade toggle listener
+  document.getElementById('upgradeToggle').addEventListener('change', onUpgradeToggle);
+
   loadMyUseCases();
 });
+
+// ── Load UC list ──────────────────────────────────────────────────
 
 function loadMyUseCases() {
   Api.jsonp(API.list({ limit: 200 }), function(res) {
     if (!res || !res.success) return;
-    // Show all use cases owned by current user (or all if admin)
     _myUseCases = (res.data || []).filter(function(uc) {
       if (_currentUser.role === 'admin') return true;
-      return uc.owner_email && uc.owner_email.toLowerCase().indexOf(_currentUser.email.toLowerCase()) !== -1;
+      var email = (_currentUser.email || '').toLowerCase();
+      return (uc.owner_email && uc.owner_email.toLowerCase().indexOf(email) !== -1) ||
+             (uc.owner_name  && uc.owner_name.toLowerCase().indexOf(email) !== -1);
     });
     var sel = document.getElementById('ucSelect');
     _myUseCases.forEach(function(uc) {
@@ -289,68 +420,171 @@ function loadMyUseCases() {
   });
 }
 
+// ── UC select ────────────────────────────────────────────────────
+
 function onSelectUseCase() {
   var rid = document.getElementById('ucSelect').value;
-  if (!rid) {
-    document.getElementById('ucCard').classList.remove('visible');
-    document.getElementById('wuForm').style.display = 'none';
-    return;
-  }
+
+  // Reset everything
+  document.getElementById('ucCard').classList.remove('visible');
+  document.getElementById('wuForm').style.display     = 'none';
+  document.getElementById('stageSection').style.display = 'none';
+  document.getElementById('successState').style.display = 'none';
+  document.getElementById('timelineWrap').style.display  = 'none';
+  document.getElementById('overdueWarn').classList.remove('visible');
+  document.getElementById('upgradeToggle').checked = false;
+  document.getElementById('upgradePanel').classList.remove('visible');
+
+  if (!rid) { _selectedUc = null; return; }
+
   _selectedUc = _myUseCases.find(function(u) { return u.record_id === rid; });
   if (!_selectedUc) return;
 
-  // Render UC card
-  document.getElementById('ucCardName').textContent = _selectedUc.name || '';
-  document.getElementById('ucCardMeta').textContent =
-    (_selectedUc.usecase_id || '') + ' · ' + (_selectedUc.team || '') + ' · ' + (_selectedUc.status || '');
-
-  var scoreHtml = '';
-  if (_selectedUc.total_score > 0) {
-    var rc  = _selectedUc.rank_category || '';
-    var rl  = RANK_LABELS[rc] || {};
-    var bg  = rl.bg    || '#F5F0FF';
-    var clr = rl.color || '#7B2CBF';
-    scoreHtml += '<span class="score-chip" style="background:' + bg + ';color:' + clr + '">' + (rl.label || rc) + '</span>';
-    scoreHtml += '<span class="score-chip" style="background:var(--color-bg);color:var(--color-text-secondary)">Điểm: <strong>' + _selectedUc.total_score + '</strong>/100</span>';
-  }
-  if (_selectedUc.last_weekly_report) {
-    var lastDate = new Date(_selectedUc.last_weekly_report);
-    var daysSince = Math.floor((Date.now() - lastDate) / 86400000);
-    scoreHtml += '<span class="score-chip" style="background:var(--color-info-light);color:var(--color-info)">Cập nhật: ' + daysSince + ' ngày trước</span>';
-  }
-  document.getElementById('ucCardScore').innerHTML = scoreHtml;
-  document.getElementById('ucCard').classList.add('visible');
-
-  // Pre-fill progress
-  var prog = _selectedUc.current_progress || 0;
-  document.getElementById('progressSlider').value = prog;
-  document.getElementById('monthlyUsage').value   = _selectedUc.monthly_usage_count || '';
-  document.getElementById('hoursSaved').value     = _selectedUc.hours_saved_actual  || '';
-  updateProgressDisplay(prog);
-
-  // Overdue check
+  renderUcCard(_selectedUc);
+  renderStageSection(_selectedUc);
+  prefillForm(_selectedUc);
   checkOverdue(_selectedUc);
 
-  document.getElementById('wuForm').style.display = '';
-  document.getElementById('successState').style.display = 'none';
+  document.getElementById('wuForm').style.display       = '';
+  document.getElementById('stageSection').style.display = '';
+
+  // Load timeline in background
+  loadTimeline(_selectedUc.record_id);
 }
 
-function checkOverdue(uc) {
-  var warn = document.getElementById('overdueWarn');
-  var msg  = document.getElementById('overdueMsg');
-  if (!uc.last_weekly_report) {
-    msg.textContent  = 'Use case này chưa có báo cáo tuần nào. Hãy cập nhật ngay để tránh bị đánh dấu "không theo dõi".';
-    warn.classList.add('visible');
-  } else {
-    var lastDate  = new Date(uc.last_weekly_report);
-    var daysSince = Math.floor((Date.now() - lastDate) / 86400000);
-    if (daysSince > 7) {
-      msg.textContent = 'Đã ' + daysSince + ' ngày không cập nhật! Use case này có thể bị đánh dấu overdue trong báo cáo tuần.';
-      warn.classList.add('visible');
-    } else {
-      warn.classList.remove('visible');
-    }
+// ── UC card ──────────────────────────────────────────────────────
+
+function renderUcCard(uc) {
+  document.getElementById('ucCardName').textContent = uc.name || '';
+  document.getElementById('ucCardMeta').textContent =
+    (uc.usecase_id || '') + ' · ' + (uc.team || '') + ' · ' + (uc.status || '');
+
+  var chipsHtml = '';
+
+  // Score chip
+  var scoreVal = uc.total_score || uc.auto_score || 0;
+  if (scoreVal > 0) {
+    chipsHtml += '<span class="chip chip--score">Điểm: <strong>' + scoreVal + '</strong>/100</span>';
   }
+
+  // Stage chip
+  var stage = uc.stage || uc.current_stage || '';
+  if (stage && STAGE_LABELS[stage]) {
+    var sl = STAGE_LABELS[stage];
+    chipsHtml += '<span class="chip" style="background:' + sl.bg + ';color:' + sl.color + '">' + sl.short + '</span>';
+  }
+
+  // Last update chip
+  if (uc.last_weekly_report) {
+    var daysSince = Math.floor((Date.now() - new Date(uc.last_weekly_report)) / 86400000);
+    var chipCls   = daysSince > 7 ? 'chip--overdue' : 'chip--update';
+    chipsHtml += '<span class="chip ' + chipCls + '">Cập nhật: ' + daysSince + ' ngày trước</span>';
+  }
+
+  document.getElementById('ucCardChips').innerHTML = chipsHtml;
+  document.getElementById('ucCard').classList.add('visible');
+}
+
+// ── Stage section ────────────────────────────────────────────────
+
+function renderStageSection(uc) {
+  var stage     = uc.stage || uc.current_stage || 'S1 - Idea';
+  var stageIdx  = STAGE_ORDER.indexOf(stage);
+  var nextStage = stageIdx >= 0 && stageIdx < STAGE_ORDER.length - 1
+                  ? STAGE_ORDER[stageIdx + 1]
+                  : null;
+
+  // Current stage badge
+  var sl = STAGE_LABELS[stage] || { short: stage, color: '#6D6D7A', bg: '#F5F5F7' };
+  document.getElementById('currentStageBadge').innerHTML =
+    '<span style="width:8px;height:8px;border-radius:50%;background:' + sl.color + ';display:inline-block"></span> ' + esc(sl.short);
+  document.getElementById('currentStageBadge').style.cssText =
+    'background:' + sl.bg + ';color:' + sl.color;
+
+  // Mini badge for upgrade panel header
+  document.getElementById('currentStageMini').innerHTML =
+    '<span style="width:6px;height:6px;border-radius:50%;background:' + sl.color + ';display:inline-block"></span> ' + esc(sl.short);
+  document.getElementById('currentStageMini').style.cssText =
+    'background:' + sl.bg + ';color:' + sl.color;
+
+  if (nextStage) {
+    var nsl = STAGE_LABELS[nextStage] || { short: nextStage, color: '#7B2CBF', bg: '#F5F0FF' };
+    document.getElementById('upgradeToggleWrap').style.display = '';
+    document.getElementById('stageAtMax').style.display         = 'none';
+
+    // Target stage badge in panel
+    document.getElementById('targetStageBadge').innerHTML =
+      '<span style="width:6px;height:6px;border-radius:50%;background:' + nsl.color + ';display:inline-block"></span> ' + esc(nsl.short);
+    document.getElementById('targetStageBadge').style.cssText =
+      'background:' + nsl.bg + ';color:' + nsl.color + ';border:1px solid ' + nsl.color + '40';
+
+    // Render checklist
+    var criteria = STAGE_CRITERIA[nextStage] || [];
+    var html = criteria.map(function(c) {
+      return '<div class="stage-checklist-item">' +
+        '<input type="checkbox" id="' + c.id + '" onchange="onChecklistChange()">' +
+        '<label for="' + c.id + '">' + esc(c.text) + '</label>' +
+        '</div>';
+    }).join('');
+    document.getElementById('checklistItems').innerHTML = html;
+
+    // S4 extra fields
+    document.getElementById('s4Fields').classList.toggle('visible', nextStage === 'S4 - Scale');
+
+  } else {
+    document.getElementById('upgradeToggleWrap').style.display = 'none';
+    document.getElementById('stageAtMax').style.display         = '';
+  }
+}
+
+function onUpgradeToggle() {
+  var checked = document.getElementById('upgradeToggle').checked;
+  document.getElementById('upgradePanel').classList.toggle('visible', checked);
+  document.getElementById('checklistWarn').classList.remove('visible');
+}
+
+function onChecklistChange() {
+  document.getElementById('checklistWarn').classList.remove('visible');
+}
+
+function getTargetStage() {
+  var stage    = (_selectedUc && (_selectedUc.stage || _selectedUc.current_stage)) || 'S1 - Idea';
+  var stageIdx = STAGE_ORDER.indexOf(stage);
+  return (stageIdx >= 0 && stageIdx < STAGE_ORDER.length - 1) ? STAGE_ORDER[stageIdx + 1] : null;
+}
+
+function validateChecklist() {
+  var nextStage = getTargetStage();
+  if (!nextStage) return true;
+  var criteria = STAGE_CRITERIA[nextStage] || [];
+  return criteria.every(function(c) {
+    var el = document.getElementById(c.id);
+    return el && el.checked;
+  });
+}
+
+// ── Form prefill + display ────────────────────────────────────────
+
+// Chỉ prefill số nếu giá trị hợp lệ trong phạm vi [0, maxSane].
+// Google Sheets đôi khi trả về Date serial hoặc float bất hợp lệ
+// khi cột bị đổi định dạng — guard này ngăn hiển thị số nhảm lên form.
+function _safeNum(v, maxSane) {
+  var n = parseFloat(v);
+  return (isFinite(n) && n >= 0 && n <= (maxSane || 99999)) ? n : '';
+}
+
+function prefillForm(uc) {
+  var prog = parseInt(uc.current_progress, 10) || 0;
+  if (prog < 0 || prog > 100) prog = 0;
+  document.getElementById('progressSlider').value    = prog;
+  document.getElementById('monthlyUsage').value      = _safeNum(uc.monthly_usage_count, 9999);
+  document.getElementById('hoursSaved').value        = _safeNum(uc.hours_saved_actual,  9999);
+  document.getElementById('weeklyUpdate').value      = '';
+  document.getElementById('nextMilestone').value     = '';
+  document.getElementById('blocker').value           = '';
+  document.getElementById('managerSupport').value    = '';
+  document.getElementById('reuseCount').value        = _safeNum(uc.reuse_count_tracked, 99999);
+  updateProgressDisplay(prog);
 }
 
 function updateProgressDisplay(val) {
@@ -359,74 +593,217 @@ function updateProgressDisplay(val) {
   document.getElementById('progressLabel').textContent = val + '%';
 }
 
+function checkOverdue(uc) {
+  var warn = document.getElementById('overdueWarn');
+  var msg  = document.getElementById('overdueMsg');
+  warn.classList.remove('visible');
+  if (!uc.last_weekly_report) {
+    msg.textContent = 'Use case này chưa có báo cáo tuần nào. Hãy cập nhật ngay!';
+    warn.classList.add('visible');
+  } else {
+    var daysSince = Math.floor((Date.now() - new Date(uc.last_weekly_report)) / 86400000);
+    if (daysSince > 7) {
+      msg.textContent = 'Đã ' + daysSince + ' ngày không cập nhật! Use case có thể bị đánh dấu overdue.';
+      warn.classList.add('visible');
+    }
+  }
+}
+
+// ── Submit ────────────────────────────────────────────────────────
+
 function submitWeeklyUpdate() {
   if (!_selectedUc) { showToast('Vui lòng chọn use case', 'error'); return; }
+
   var weeklyUpdate = document.getElementById('weeklyUpdate').value.trim();
   if (!weeklyUpdate) { showToast('Vui lòng nhập nội dung cập nhật tuần này', 'error'); return; }
 
+  // Stage upgrade validation
+  var wantUpgrade = document.getElementById('upgradeToggle').checked;
+  if (wantUpgrade && !validateChecklist()) {
+    document.getElementById('checklistWarn').classList.add('visible');
+    document.getElementById('upgradePanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+
+  // S4 scale plan required
+  var targetStage = wantUpgrade ? getTargetStage() : null;
+  if (targetStage === 'S4 - Scale') {
+    var scalePlan = document.getElementById('scalePlan').value.trim();
+    if (!scalePlan) {
+      showToast('Vui lòng điền Kế hoạch scale-up (bắt buộc cho S4)', 'error');
+      document.getElementById('scalePlan').focus();
+      return;
+    }
+  }
+
   var payload = {
-    Record_ID:            _selectedUc.record_id,
-    Current_Progress:     parseInt(document.getElementById('progressSlider').value, 10),
-    Weekly_Update:        weeklyUpdate,
-    Next_Milestone:       document.getElementById('nextMilestone').value.trim(),
-    Blocker:              document.getElementById('blocker').value.trim(),
-    Manager_Support:      document.getElementById('managerSupport').value.trim(),
-    Monthly_Usage_Count:  parseInt(document.getElementById('monthlyUsage').value, 10) || 0,
-    Hours_Saved_Actual:   parseFloat(document.getElementById('hoursSaved').value) || 0,
-    Reuse_Count_Tracked:  parseInt(document.getElementById('reuseCount').value, 10) || 0,
-    reporter_email:       _currentUser.email
+    Record_ID:           _selectedUc.record_id,
+    Current_Progress:    parseInt(document.getElementById('progressSlider').value, 10) || 0,
+    Weekly_Update:       weeklyUpdate,
+    Next_Milestone:      document.getElementById('nextMilestone').value.trim(),
+    Blocker:             document.getElementById('blocker').value.trim(),
+    Manager_Support:     document.getElementById('managerSupport').value.trim(),
+    Monthly_Usage_Count: parseInt(document.getElementById('monthlyUsage').value, 10) || 0,
+    Hours_Saved_Actual:  parseFloat(document.getElementById('hoursSaved').value) || 0,
+    Reuse_Count_Tracked: parseInt(document.getElementById('reuseCount').value, 10) || 0,
+    reporter_email:      _currentUser.email
   };
 
-  document.getElementById('btnSubmit').disabled    = true;
-  document.getElementById('btnSubmit').textContent = 'Đang gửi...';
+  if (wantUpgrade && targetStage) {
+    payload.New_Stage   = targetStage;
+    payload.Scale_Plan  = document.getElementById('scalePlan')  ? document.getElementById('scalePlan').value.trim()  : '';
+    payload.Scale_Risks = document.getElementById('scaleRisks') ? document.getElementById('scaleRisks').value.trim() : '';
+  }
 
-  Api.jsonp(API.weeklyUpdate() + '&payload=' + encodePayload(payload), function(res) {
-    document.getElementById('btnSubmit').disabled    = false;
-    document.getElementById('btnSubmit').innerHTML   = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg> Gửi cập nhật';
-    if (res && res.success) {
-      document.getElementById('wuForm').style.display = 'none';
-      document.getElementById('successState').style.display = '';
-      if (res.data && res.data.total_score) {
-        document.getElementById('newScore').textContent = 'Điểm mới: ' + res.data.total_score + '/100';
-      }
-    } else {
-      showToast((res && res.message) || 'Lỗi gửi dữ liệu', 'error');
+  var btn = document.getElementById('btnSubmit');
+  btn.disabled    = true;
+  btn.textContent = 'Đang gửi...';
+
+  Api.submitWeeklyUpdate(payload).then(function(res) {
+    btn.disabled  = false;
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg> Gửi cập nhật';
+
+    var detailParts = [];
+    if (res && res.total_score) detailParts.push('Điểm mới: ' + res.total_score + '/100');
+    if (res && res.stage_changed && res.new_stage) {
+      var nsl = STAGE_LABELS[res.new_stage] || { short: res.new_stage };
+      detailParts.push('Stage mới: ' + nsl.short);
     }
+    document.getElementById('successDetail').textContent = detailParts.join(' · ');
+    document.getElementById('wuForm').style.display       = 'none';
+    document.getElementById('stageSection').style.display = 'none';
+    document.getElementById('successState').style.display = '';
+
+    // Reload timeline to show new entry
+    loadTimeline(_selectedUc.record_id);
+  }).catch(function(err) {
+    btn.disabled  = false;
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg> Gửi cập nhật';
+    showToast((err && err.message) || 'Lỗi gửi dữ liệu', 'error');
   });
 }
 
-function encodePayload(obj) {
-  var json = JSON.stringify(obj);
-  var b64  = btoa(unescape(encodeURIComponent(json)));
-  return b64.replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+// ── Timeline ──────────────────────────────────────────────────────
+
+function loadTimeline(recordId) {
+  document.getElementById('timelineWrap').style.display = 'none';
+  Api.getWeeklyLog(recordId).then(function(logs) {
+    renderTimeline(logs || []);
+  }).catch(function() {
+    renderTimeline([]);
+  });
 }
 
+function renderTimeline(logs) {
+  var wrap = document.getElementById('timelineWrap');
+  var content = document.getElementById('timelineContent');
+  document.getElementById('timelineCount').textContent = logs.length ? '(' + logs.length + ' lần)' : '';
+
+  if (!logs.length) {
+    content.innerHTML = '<div class="wu-timeline-empty">Chưa có lịch sử cập nhật. Hãy gửi báo cáo tuần đầu tiên!</div>';
+    wrap.style.display = '';
+    return;
+  }
+
+  var items = logs.map(function(log) {
+    var isStageChange = log.stage_changed && log.previous_stage !== log.new_stage;
+    var dotClass      = isStageChange ? 'timeline-dot--stage' : '';
+    var cardClass     = isStageChange ? 'timeline-card--stage' : '';
+
+    var dateStr = '';
+    try {
+      var d = new Date(log.log_date);
+      dateStr = d.toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric' }) +
+                ' ' + d.toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' });
+    } catch(e) { dateStr = log.log_date; }
+
+    var headerHtml = '<span class="timeline-date">' + esc(dateStr) + '</span>';
+    headerHtml += '<span class="timeline-progress-pill">' + log.progress + '%</span>';
+
+    if (isStageChange) {
+      var psl = STAGE_LABELS[log.previous_stage] || { short: log.previous_stage, color: '#6D6D7A' };
+      var nsl = STAGE_LABELS[log.new_stage]      || { short: log.new_stage,      color: '#7B2CBF' };
+      headerHtml += '<span class="timeline-stage-arrow">' +
+        '<span style="color:' + psl.color + '">' + esc(psl.short) + '</span>' +
+        ' → ' +
+        '<span style="color:' + nsl.color + ';font-weight:800">' + esc(nsl.short) + '</span>' +
+        '</span>';
+    }
+
+    var textHtml = log.weekly_update
+      ? '<div class="timeline-text">' + esc(log.weekly_update) + '</div>'
+      : '<div class="timeline-text muted">Không có nội dung cập nhật</div>';
+
+    var metrics = [];
+    if (log.monthly_usage_count) metrics.push('Sử dụng: ' + log.monthly_usage_count + ' lần/tháng');
+    if (log.hours_saved_actual)  metrics.push('Tiết kiệm: ' + log.hours_saved_actual + 'h');
+    if (log.reuse_count_tracked) metrics.push('Tái sử dụng: ' + log.reuse_count_tracked + ' lần');
+    var metricsHtml = metrics.length
+      ? '<div class="timeline-metrics">' + metrics.map(function(m) {
+          return '<span class="timeline-metric">' + esc(m) + '</span>';
+        }).join('') + '</div>'
+      : '';
+
+    var blockerHtml = '';
+    if (log.blocker) {
+      blockerHtml = '<div style="margin-top:var(--space-2);font-size:var(--text-xs);color:var(--color-error);background:var(--color-error-light);padding:4px 8px;border-radius:var(--radius-sm)">' +
+        '⚠ ' + esc(log.blocker.substring(0, 150)) + (log.blocker.length > 150 ? '…' : '') +
+        '</div>';
+    }
+
+    return '<li class="timeline-item">' +
+      '<div class="timeline-dot ' + dotClass + '"></div>' +
+      '<div class="timeline-card ' + cardClass + '">' +
+        '<div class="timeline-header">' + headerHtml + '</div>' +
+        textHtml + metricsHtml + blockerHtml +
+      '</div>' +
+      '</li>';
+  }).join('');
+
+  content.innerHTML = '<ul class="timeline-list">' + items + '</ul>';
+  wrap.style.display = '';
+}
+
+// ── Reset ─────────────────────────────────────────────────────────
+
 function resetForm() {
-  document.getElementById('weeklyUpdate').value  = '';
-  document.getElementById('nextMilestone').value = '';
-  document.getElementById('blocker').value       = '';
-  document.getElementById('managerSupport').value= '';
+  document.getElementById('weeklyUpdate').value   = '';
+  document.getElementById('nextMilestone').value  = '';
+  document.getElementById('blocker').value        = '';
+  document.getElementById('managerSupport').value = '';
+  if (document.getElementById('scalePlan'))  document.getElementById('scalePlan').value  = '';
+  if (document.getElementById('scaleRisks')) document.getElementById('scaleRisks').value = '';
+  document.getElementById('upgradeToggle').checked = false;
+  document.getElementById('upgradePanel').classList.remove('visible');
+  document.getElementById('checklistWarn').classList.remove('visible');
 }
 
 function resetAll() {
   document.getElementById('ucSelect').value = '';
   document.getElementById('ucCard').classList.remove('visible');
   document.getElementById('wuForm').style.display       = 'none';
+  document.getElementById('stageSection').style.display = 'none';
   document.getElementById('successState').style.display = 'none';
+  document.getElementById('timelineWrap').style.display = 'none';
   document.getElementById('overdueWarn').classList.remove('visible');
   _selectedUc = null;
   resetForm();
 }
 
+// ── Toast + helpers ───────────────────────────────────────────────
+
 function showToast(msg, type) {
   var el = document.createElement('div');
-  el.style.cssText = 'background:' + (type==='error'?'#F44336':'#4CAF50') + ';color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;margin-top:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15)';
+  el.style.cssText = 'background:' + (type === 'error' ? '#F44336' : '#4CAF50') +
+    ';color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;margin-top:8px;box-shadow:0 4px 12px rgba(0,0,0,.15)';
   el.textContent = msg;
   document.getElementById('toastArea').appendChild(el);
   setTimeout(function() { el.remove(); }, 4000);
 }
 
-function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 </script>
 </body>
 </html>

@@ -51,6 +51,7 @@ var API = {
     return url;
   },
   weeklyUpdate:   () => `${_gasBase}?action=weekly-update`,
+  weeklyLog:      (recordId) => `${_gasBase}?action=weekly-log&record_id=${encodeURIComponent(recordId)}`,
   selfAssessment: () => `${_gasBase}?action=self-assessment`,
   managerReview:  () => `${_gasBase}?action=manager-review`,
   scoreRecalc:    () => `${_gasBase}?action=score-recalc`,

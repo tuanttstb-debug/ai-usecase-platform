@@ -81,6 +81,40 @@ var FIELDS = {
   REVIEW_COMMITTEE_COMMENT:  'Review_Committee_Comment'
 };
 
+// ── Stage constants (S1–S4 lifecycle) ────────────────────────────
+
+var STAGE_ORDER = ['S1 - Idea', 'S2 - Pilot', 'S3 - Standardized', 'S4 - Scale'];
+
+var STAGE_LABELS = {
+  'S1 - Idea':          { short: 'S1 · Ý tưởng',  color: '#6D6D7A', bg: '#F5F5F7' },
+  'S2 - Pilot':         { short: 'S2 · Pilot',     color: '#2196F3', bg: '#E3F2FD' },
+  'S3 - Standardized':  { short: 'S3 · Chuẩn hóa', color: '#4CAF50', bg: '#E8F5E9' },
+  'S4 - Scale':         { short: 'S4 · Scale',     color: '#7B2CBF', bg: '#F5F0FF' }
+};
+
+// Checklist cứng — tất cả items phải được tick trước khi cho phép nâng stage
+// Key = stage ĐÍCH (stage muốn chuyển TỚI)
+var STAGE_CRITERIA = {
+  'S2 - Pilot': [
+    { id: 's2c1', text: 'Đã thử nghiệm thực tế ít nhất 1 lần' },
+    { id: 's2c2', text: '% hoàn thành ≥ 20% (khai báo trong slider bên trên)' },
+    { id: 's2c3', text: 'Đã mô tả rào cản và milestone tiếp theo' },
+    { id: 's2c4', text: 'Đã nhập số lần sử dụng thực tế trong tháng' }
+  ],
+  'S3 - Standardized': [
+    { id: 's3c1', text: 'Đã pilot với ít nhất 3 người trong team' },
+    { id: 's3c2', text: 'Monthly Usage ≥ 5 lần (khai báo trong form bên trên)' },
+    { id: 's3c3', text: 'Đã có quy trình hoặc hướng dẫn bàn giao cho đồng nghiệp' },
+    { id: 's3c4', text: '% hoàn thành ≥ 50% (khai báo trong slider bên trên)' }
+  ],
+  'S4 - Scale': [
+    { id: 's4c1', text: 'Đang được dùng ở ít nhất 1 team ngoài team gốc' },
+    { id: 's4c2', text: 'Monthly Usage ≥ 10 lần (khai báo trong form bên trên)' },
+    { id: 's4c3', text: 'Đã điền Kế hoạch scale-up và Rủi ro khi scale bên dưới' },
+    { id: 's4c4', text: '% hoàn thành ≥ 80% (khai báo trong slider bên trên)' }
+  ]
+};
+
 // ── Governance constants (mirrored from GAS Config.gs) ──────────
 var RANK_LABELS = {
   TOP_PERFORMER:      { label: 'Top Performer',      color: '#4CAF50', bg: '#E8F5E9' },

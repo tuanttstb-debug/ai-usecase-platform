@@ -288,20 +288,38 @@ function submitWeeklyUpdate_(recordId, data) {
   if (!existing) throw new Error('Không tìm thấy use case: ' + recordId);
 
   var now = new Date().toISOString();
-  var ALLOWED_FIELDS = [
-    'Current_Progress', 'Weekly_Update', 'Next_Milestone', 'Blocker',
-    'Manager_Support', 'Monthly_Usage_Count', 'Hours_Saved_Actual',
-    'Reuse_Count_Tracked'
-  ];
 
+  // ── Fields được phép update trong MASTER_DATA ──────────────────
   var updates = { Record_ID: recordId };
-  ALLOWED_FIELDS.forEach(function(field) {
-    if (data[field] !== undefined) updates[field] = data[field];
+  var TEXT_FIELDS = [
+    'Weekly_Update', 'Next_Milestone', 'Blocker', 'Manager_Support'
+  ];
+  var NUM_FIELDS = [
+    'Current_Progress', 'Monthly_Usage_Count', 'Hours_Saved_Actual', 'Reuse_Count_Tracked'
+  ];
+  TEXT_FIELDS.forEach(function(field) {
+    if (data[field] !== undefined) updates[field] = sanitizeStr_(String(data[field]), 2000);
+  });
+  NUM_FIELDS.forEach(function(field) {
+    if (data[field] !== undefined) updates[field] = safeNum_(data[field]);
   });
   updates.Last_Weekly_Report = now;
   updates.Updated_At         = now;
 
-  // Re-score với dữ liệu usage mới
+  // ── Stage transition ───────────────────────────────────────────
+  var prevStage    = sanitizeStr_(existing.Current_Stage || '');
+  var proposedStage = sanitizeStr_(data.New_Stage || '');
+  var validStages  = ['S1 - Idea', 'S2 - Pilot', 'S3 - Standardized', 'S4 - Scale'];
+  var stageChanged = (
+    proposedStage &&
+    proposedStage !== prevStage &&
+    validStages.indexOf(proposedStage) !== -1
+  );
+  if (stageChanged) {
+    updates.Current_Stage = proposedStage;
+  }
+
+  // ── Re-score với dữ liệu mới (kể cả stage mới nếu thay đổi) ──
   var merged = {};
   Object.keys(existing).forEach(function(k) { merged[k] = existing[k]; });
   Object.keys(updates).forEach(function(k) { merged[k] = updates[k]; });
@@ -312,13 +330,97 @@ function submitWeeklyUpdate_(recordId, data) {
     logError_('submitWeeklyUpdate_ scoring', e, { recordId: recordId });
   }
 
+  // ── Ghi MASTER_DATA ───────────────────────────────────────────
   updateRowByRecordId_(SHEETS.MASTER, recordId, updates);
-  logActivity_(existing.UseCase_ID, recordId, 'WEEKLY_UPDATE',
-    'Cập nhật tiến độ tuần: ' + (data.Current_Progress || '?') + '% — ' +
-    String(data.Weekly_Update || '').substring(0, 100),
-    data.reporter_email || existing.Owner_Email, existing.Status, existing.Status);
 
-  return { record_id: recordId, updated_at: now, total_score: updates.Total_Score };
+  // ── Ghi WEEKLY_LOG (1 row / lần submit — giữ toàn bộ lịch sử) ─
+  var logRow = {
+    Record_ID:            recordId,
+    UseCase_ID:           existing.UseCase_ID || '',
+    Log_Date:             now,
+    Previous_Stage:       prevStage,
+    New_Stage:            stageChanged ? proposedStage : prevStage,
+    Stage_Changed:        stageChanged ? 'TRUE' : 'FALSE',
+    Progress:             safeNum_(data.Current_Progress),
+    Weekly_Update:        sanitizeStr_(data.Weekly_Update    || '', 2000),
+    Next_Milestone:       sanitizeStr_(data.Next_Milestone   || '', 500),
+    Blocker:              sanitizeStr_(data.Blocker          || '', 1000),
+    Manager_Support:      sanitizeStr_(data.Manager_Support  || '', 500),
+    Monthly_Usage_Count:  safeNum_(data.Monthly_Usage_Count),
+    Hours_Saved_Actual:   safeNum_(data.Hours_Saved_Actual),
+    Reuse_Count_Tracked:  safeNum_(data.Reuse_Count_Tracked),
+    Scale_Plan:           sanitizeStr_(data.Scale_Plan  || '', 2000),
+    Scale_Risks:          sanitizeStr_(data.Scale_Risks || '', 2000),
+    Reporter:             sanitizeStr_(data.reporter_email || existing.Owner_Email || '', 200)
+  };
+  appendRowFromObject_(SHEETS.WEEKLY_LOG, logRow);
+
+  // ── ACTIVITY_LOG ───────────────────────────────────────────────
+  var actDetails = 'Cập nhật tuần: ' + (data.Current_Progress || '?') + '% — ' +
+    String(data.Weekly_Update || '').substring(0, 80);
+  if (stageChanged) {
+    actDetails = '[STAGE: ' + prevStage + ' → ' + proposedStage + '] ' + actDetails;
+  }
+  logActivity_(existing.UseCase_ID, recordId, 'WEEKLY_UPDATE',
+    actDetails, data.reporter_email || existing.Owner_Email,
+    existing.Status, existing.Status);
+
+  if (stageChanged) {
+    logActivity_(existing.UseCase_ID, recordId, 'STAGE_TRANSITION',
+      'Chuyển giai đoạn: ' + prevStage + ' → ' + proposedStage,
+      data.reporter_email || existing.Owner_Email, prevStage, proposedStage);
+  }
+
+  return {
+    record_id:     recordId,
+    updated_at:    now,
+    total_score:   updates.Total_Score || 0,
+    stage_changed: stageChanged,
+    new_stage:     stageChanged ? proposedStage : prevStage
+  };
+}
+
+/**
+ * Lấy lịch sử weekly update của một UC từ WEEKLY_LOG.
+ * @param {string} recordId
+ * @returns {Object[]} Array of log entries, sorted desc by log_date
+ */
+function getWeeklyLog_(recordId) {
+  var sheet = getOrCreateSheet_(SHEETS.WEEKLY_LOG);
+  var data  = sheet.getDataRange().getValues();
+  if (data.length < 2) return [];
+
+  var headers = data[0].map(String);
+  var ridIdx  = headers.indexOf('Record_ID');
+  if (ridIdx === -1) return [];
+
+  var logs = [];
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][ridIdx]).trim() !== String(recordId).trim()) continue;
+    var row = {};
+    headers.forEach(function(h, j) { row[h] = data[i][j]; });
+    logs.push({
+      log_date:            String(row.Log_Date    || ''),
+      previous_stage:      String(row.Previous_Stage || ''),
+      new_stage:           String(row.New_Stage   || ''),
+      stage_changed:       row.Stage_Changed === 'TRUE',
+      progress:            safeNum_(row.Progress),
+      weekly_update:       String(row.Weekly_Update   || ''),
+      next_milestone:      String(row.Next_Milestone  || ''),
+      blocker:             String(row.Blocker          || ''),
+      monthly_usage_count: safeNum_(row.Monthly_Usage_Count),
+      hours_saved_actual:  safeNum_(row.Hours_Saved_Actual),
+      reuse_count_tracked: safeNum_(row.Reuse_Count_Tracked),
+      scale_plan:          String(row.Scale_Plan  || ''),
+      scale_risks:         String(row.Scale_Risks || ''),
+      reporter:            String(row.Reporter    || '')
+    });
+  }
+
+  logs.sort(function(a, b) {
+    return new Date(b.log_date) - new Date(a.log_date);
+  });
+  return logs;
 }
 
 // ── Governance: Self Assessment ───────────────────────────────────

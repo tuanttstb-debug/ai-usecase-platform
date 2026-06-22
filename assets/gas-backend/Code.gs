@@ -173,6 +173,13 @@ function route_(action, params, body) {
       submitWeeklyUpdate_(wuRecordId, body));
   }
 
+  // ── Governance: Weekly Log (lịch sử update của 1 UC) ──────────
+  if (action === 'weekly-log') {
+    var wlRecordId = params.record_id || body.record_id || '';
+    if (!wlRecordId) return createResponse_(false, 'Thiếu record_id');
+    return createResponse_(true, 'Weekly log', getWeeklyLog_(wlRecordId));
+  }
+
   // ── Governance: Self Assessment ───────────────────────────────
   if (action === 'self-assessment') {
     var saRecordId = body.Record_ID || body.record_id;

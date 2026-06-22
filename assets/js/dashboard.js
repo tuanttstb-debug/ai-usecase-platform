@@ -711,9 +711,16 @@
         scoreHtml = '<span style="color:var(--color-text-muted);font-size:12px">--</span>';
         rankHtml  = '<span style="color:var(--color-text-muted);font-size:11px">Chưa chấm</span>';
       }
+      var stageBadge = '';
+      var stage = uc.current_stage || '';
+      if (stage === 'S3 - Standardized') {
+        stageBadge = '<span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;background:#E8F5E9;color:#4CAF50;border:1px solid #A5D6A7;vertical-align:middle">S3</span>';
+      } else if (stage === 'S4 - Scale') {
+        stageBadge = '<span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;background:#F5F0FF;color:#7B2CBF;border:1px solid #CE93D8;vertical-align:middle">S4</span>';
+      }
       return '<tr style="cursor:pointer" onclick="Dashboard._byKey(\'' + esc(k) + '\')">' +
         '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
-        '<td>' + esc(uc.name       || '') + '</td>' +
+        '<td>' + esc(uc.name || '') + stageBadge + '</td>' +
         '<td>' + esc(uc.team       || '--') + '</td>' +
         '<td>' + esc(uc.owner_name || '--') + '</td>' +
         '<td style="text-align:center">' + scoreHtml + '</td>' +

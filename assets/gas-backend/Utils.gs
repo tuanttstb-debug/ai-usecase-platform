@@ -97,6 +97,10 @@ function getOrCreateSheet_(sheetName) {
       sheet.appendRow(USERS_HEADERS);
       formatHeaderRow_(sheet);
       break;
+    case SHEETS.WEEKLY_LOG:
+      sheet.appendRow(WEEKLY_LOG_HEADERS);
+      formatHeaderRow_(sheet);
+      break;
   }
 
   return sheet;

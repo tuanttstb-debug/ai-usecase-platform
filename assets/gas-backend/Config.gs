@@ -7,12 +7,13 @@ var SPREADSHEET_ID = '1xLMQLTgj2sRf1l9C6s6AHCT5zWJLQOofL375t8Pv_NA';
 
 // ── Sheet Names ───────────────────────────────────────────────────
 var SHEETS = {
-  MASTER:    'MASTER_DATA',    // Bảng chính chứa toàn bộ use case
-  LOOKUP:    'LOOKUP',         // Dropdown options (Field / Value)
-  ACTIVITY:  'ACTIVITY_LOG',   // Audit trail
-  DASHBOARD: 'DASHBOARD_READY',// Pre-aggregated dashboard cache
-  CONFIG:    'CONFIG',         // System config (NEXT_ID counter, v.v.)
-  USERS:     'USERS'           // Danh sách user và phân quyền
+  MASTER:     'MASTER_DATA',    // Bảng chính chứa toàn bộ use case
+  LOOKUP:     'LOOKUP',         // Dropdown options (Field / Value)
+  ACTIVITY:   'ACTIVITY_LOG',   // Audit trail
+  DASHBOARD:  'DASHBOARD_READY',// Pre-aggregated dashboard cache
+  CONFIG:     'CONFIG',         // System config (NEXT_ID counter, v.v.)
+  USERS:      'USERS',          // Danh sách user và phân quyền
+  WEEKLY_LOG: 'WEEKLY_LOG'      // Lịch sử cập nhật tiến độ tuần (1 row/lần submit)
 };
 
 // ── USERS Sheet Column Headers ────────────────────────────────────
@@ -97,6 +98,19 @@ var HEADERS = [
   'Manager_Review_Score',    // Layer 2: quản lý đánh giá (20%)
   'Committee_Review_Score',  // Layer 4: hội đồng đánh giá (10%)
   'Review_Committee_Comment' // Nhận xét hội đồng
+];
+
+// ── WEEKLY_LOG Column Headers ─────────────────────────────────────
+// Mỗi lần user submit weekly-update tạo 1 row mới.
+// MASTER_DATA chỉ giữ giá trị hiện tại (last value); WEEKLY_LOG giữ toàn bộ lịch sử.
+var WEEKLY_LOG_HEADERS = [
+  'Record_ID', 'UseCase_ID', 'Log_Date',
+  'Previous_Stage', 'New_Stage', 'Stage_Changed',
+  'Progress',
+  'Weekly_Update', 'Next_Milestone', 'Blocker', 'Manager_Support',
+  'Monthly_Usage_Count', 'Hours_Saved_Actual', 'Reuse_Count_Tracked',
+  'Scale_Plan', 'Scale_Risks',
+  'Reporter'
 ];
 
 // ── ACTIVITY_LOG Column Headers ───────────────────────────────────
