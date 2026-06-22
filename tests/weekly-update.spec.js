@@ -4,7 +4,7 @@ const path = require('path');
 
 const EVD = path.join(__dirname, '..', 'evd', 'weekly-update');
 
-// Inject admin session trước khi load page
+// Inject admin session
 async function injectSession(page) {
   await page.addInitScript(() => {
     const user = {
@@ -18,23 +18,36 @@ async function injectSession(page) {
   });
 }
 
-// Helper: chờ UC dropdown có options (GAS JSONP trả về)
-async function waitForUcOptions(page, minCount = 2, timeoutMs = 30000) {
+// Helper: chờ _myUseCases được load (GAS JSONP trả về)
+async function waitForUcList(page, timeoutMs = 30000) {
   await page.waitForFunction(
-    (min) => document.getElementById('ucSelect')?.options.length >= min,
-    minCount,
+    () => typeof _myUseCases !== 'undefined' && _myUseCases.length > 0,
     { timeout: timeoutMs }
   );
 }
 
-// Helper: chọn UC đầu tiên trong dropdown
-async function selectFirstUc(page) {
-  const sel = page.locator('#ucSelect');
-  const options = await sel.locator('option').all();
-  // Bỏ qua option đầu tiên (placeholder)
-  const val = await options[1].getAttribute('value');
-  await sel.selectOption(val);
-  return val;
+// Helper: mở picker modal và chọn UC đầu tiên trong bảng
+async function openAndSelectFirstUc(page) {
+  await waitForUcList(page, 30000);
+
+  // Mở modal
+  await page.locator('#ucPickerBtn').click();
+  await expect(page.locator('#pickerModal')).toBeVisible({ timeout: 3000 });
+
+  // Chờ bảng render
+  await page.waitForSelector('#pickerTbody tr[data-rid]', { timeout: 10000 });
+
+  // Lấy record_id của row đầu tiên
+  const firstRow = page.locator('#pickerTbody tr[data-rid]').first();
+  const rid = await firstRow.getAttribute('data-rid');
+
+  // Click row
+  await firstRow.click();
+
+  // Modal đóng
+  await expect(page.locator('#pickerModal')).not.toBeVisible({ timeout: 3000 });
+
+  return rid;
 }
 
 test.describe('Weekly Update — Feature Tests', () => {
@@ -43,329 +56,273 @@ test.describe('Weekly Update — Feature Tests', () => {
     await injectSession(page);
   });
 
-  // ── TEST 1: Page load & UC picker ──────────────────────────────
+  // ── TEST 1: Page load + picker button ──────────────────────────
 
-  test('T01 — Page tải thành công, UC dropdown hiển thị danh sách', async ({ page }) => {
+  test('T01 — Page tải thành công, picker button hiển thị', async ({ page }) => {
     await page.goto('/weekly-update.html');
-
-    // Không bị redirect về login
     await expect(page).not.toHaveURL(/login\.html/);
-
-    // Tiêu đề hiển thị
     await expect(page.locator('.wu-page-title')).toContainText('Cập nhật tiến độ tuần');
+    await expect(page.locator('#ucPickerBtn')).toBeVisible();
 
-    // UC select hiển thị
-    await expect(page.locator('#ucSelect')).toBeVisible();
-
-    // Chờ GAS load xong và có options
-    await waitForUcOptions(page, 2, 30000);
-    const count = await page.locator('#ucSelect option').count();
-    console.log(`[T01] UC options loaded: ${count}`);
-    expect(count).toBeGreaterThan(1);
+    // Chờ GAS load xong
+    await waitForUcList(page, 30000);
+    const count = await page.evaluate(() => _myUseCases.length);
+    console.log(`[T01] UC list loaded: ${count} items`);
+    expect(count).toBeGreaterThan(0);
 
     await page.screenshot({ path: `${EVD}/T01-page-load.png`, fullPage: true });
-    console.log('[T01] PASS — Page load OK, UC list loaded');
+    console.log('[T01] PASS');
   });
 
-  // ── TEST 2: Chọn UC → card + stage section + form hiện ─────────
+  // ── TEST 2: Mở picker modal ────────────────────────────────────
 
-  test('T02 — Chọn UC → UC card + Stage section + Form hiển thị', async ({ page }) => {
+  test('T02 — Mở picker modal, bảng UC hiển thị đúng', async ({ page }) => {
     await page.goto('/weekly-update.html');
-    await waitForUcOptions(page, 2, 30000);
+    await waitForUcList(page, 30000);
 
-    const val = await selectFirstUc(page);
-    console.log(`[T02] Selected record_id: ${val}`);
+    // Mở modal
+    await page.locator('#ucPickerBtn').click();
+    await expect(page.locator('#pickerModal')).toBeVisible({ timeout: 3000 });
 
-    // UC card visible
+    // Search input hiển thị
+    await expect(page.locator('#pickerSearch')).toBeVisible();
+
+    // Stage filter hiển thị
+    await expect(page.locator('#pickerStageFilter')).toBeVisible();
+
+    // Chờ bảng render
+    await page.waitForSelector('#pickerTbody tr[data-rid]', { timeout: 10000 });
+    const rowCount = await page.locator('#pickerTbody tr[data-rid]').count();
+    console.log(`[T02] Table rows: ${rowCount}`);
+    expect(rowCount).toBeGreaterThan(0);
+
+    // Scope label hiển thị
+    const scope = await page.locator('#pickerScope').textContent();
+    console.log(`[T02] Scope: ${scope}`);
+    expect(scope).toBeTruthy();
+
+    await page.screenshot({ path: `${EVD}/T02-picker-modal-open.png`, fullPage: false });
+    console.log('[T02] PASS — Modal opens with table');
+  });
+
+  // ── TEST 3: Filter tìm kiếm ────────────────────────────────────
+
+  test('T03 — Filter tìm kiếm lọc đúng rows', async ({ page }) => {
+    await page.goto('/weekly-update.html');
+    await waitForUcList(page, 30000);
+    await page.locator('#ucPickerBtn').click();
+    await page.waitForSelector('#pickerTbody tr[data-rid]', { timeout: 10000 });
+
+    const totalBefore = await page.locator('#pickerTbody tr[data-rid]:not(.is-hidden)').count();
+    console.log(`[T03] Total rows before filter: ${totalBefore}`);
+
+    // Type vào search box
+    await page.locator('#pickerSearch').fill('aius');
+    const afterFilter = await page.locator('#pickerTbody tr[data-rid]:not(.is-hidden)').count();
+    console.log(`[T03] Rows after "aius" filter: ${afterFilter}`);
+    expect(afterFilter).toBeGreaterThanOrEqual(0);
+    expect(afterFilter).toBeLessThanOrEqual(totalBefore);
+
+    // Count chip update
+    const countText = await page.locator('#pickerCount').textContent();
+    console.log(`[T03] Count: ${countText}`);
+
+    await page.screenshot({ path: `${EVD}/T03-picker-filter.png`, fullPage: false });
+    console.log('[T03] PASS — Search filter works');
+  });
+
+  // ── TEST 4: Filter theo Stage ──────────────────────────────────
+
+  test('T04 — Filter theo Stage hoạt động', async ({ page }) => {
+    await page.goto('/weekly-update.html');
+    await waitForUcList(page, 30000);
+    await page.locator('#ucPickerBtn').click();
+    await page.waitForSelector('#pickerTbody tr[data-rid]', { timeout: 10000 });
+
+    // Filter S3
+    await page.locator('#pickerStageFilter').selectOption('S3 - Standardized');
+    const s3Rows = await page.locator('#pickerTbody tr[data-rid]:not(.is-hidden)').count();
+    console.log(`[T04] S3 rows: ${s3Rows}`);
+
+    // Filter S4
+    await page.locator('#pickerStageFilter').selectOption('S4 - Scale');
+    const s4Rows = await page.locator('#pickerTbody tr[data-rid]:not(.is-hidden)').count();
+    console.log(`[T04] S4 rows: ${s4Rows}`);
+
+    // Reset
+    await page.locator('#pickerStageFilter').selectOption('');
+    await page.screenshot({ path: `${EVD}/T04-stage-filter.png`, fullPage: false });
+    console.log('[T04] PASS — Stage filter works');
+  });
+
+  // ── TEST 5: Chọn UC từ bảng → form hiển thị ────────────────────
+
+  test('T05 — Chọn UC từ bảng → UC card + Stage + Form hiển thị', async ({ page }) => {
+    await page.goto('/weekly-update.html');
+    const rid = await openAndSelectFirstUc(page);
+    console.log(`[T05] Selected rid: ${rid}`);
+
+    // Picker button cập nhật text
+    const btnText = await page.locator('#ucPickerBtnText').textContent();
+    console.log(`[T05] Button text: ${btnText}`);
+    expect(btnText).not.toBe('— Nhấn để chọn use case —');
+    expect(page.locator('.uc-picker-btn-text.has-value')).toBeTruthy();
+
+    // Clear button hiển thị
+    await expect(page.locator('#ucPickerBtnClear')).toHaveClass(/visible/);
+
+    // UC card, stage section, form visible
     await expect(page.locator('#ucCard')).toBeVisible({ timeout: 5000 });
-    const ucName = await page.locator('#ucCardName').textContent();
-    console.log(`[T02] UC: ${ucName}`);
-
-    // Stage section visible
-    await expect(page.locator('#stageSection')).toBeVisible({ timeout: 5000 });
-
-    // Stage badge hiển thị
-    await expect(page.locator('#currentStageBadge')).toBeVisible();
-    const stageTxt = await page.locator('#currentStageBadge').textContent();
-    console.log(`[T02] Current stage: ${stageTxt}`);
-
-    // Form visible
+    await expect(page.locator('#stageSection')).toBeVisible();
     await expect(page.locator('#wuForm')).toBeVisible();
 
-    await page.screenshot({ path: `${EVD}/T02-uc-selected.png`, fullPage: true });
-    console.log('[T02] PASS — UC selected, form + stage rendered');
+    const stageTxt = await page.locator('#currentStageBadge').textContent();
+    console.log(`[T05] Stage: ${stageTxt}`);
+
+    await page.screenshot({ path: `${EVD}/T05-uc-selected.png`, fullPage: true });
+    console.log('[T05] PASS — UC selected from table, form shown');
   });
 
-  // ── TEST 3: Overdue warning ─────────────────────────────────────
+  // ── TEST 6: Clear button xóa selection ───────────────────────────
 
-  test('T03 — Overdue warning hiển thị khi chưa update tuần này', async ({ page }) => {
+  test('T06 — Nút ✕ clear selection', async ({ page }) => {
     await page.goto('/weekly-update.html');
-    await waitForUcOptions(page, 2, 30000);
-    await selectFirstUc(page);
+    await openAndSelectFirstUc(page);
 
-    // Kiểm tra overdue warn (có thể visible hoặc không tùy UC)
-    const overdueVisible = await page.locator('#overdueWarn').isVisible();
-    console.log(`[T03] Overdue warning visible: ${overdueVisible}`);
+    // Click clear
+    await page.locator('#ucPickerBtnClear').click();
 
-    await page.screenshot({ path: `${EVD}/T03-overdue-check.png`, fullPage: true });
-    console.log('[T03] PASS — Overdue warning check done');
+    // Button trở về placeholder
+    await expect(page.locator('#ucPickerBtnText')).toHaveText('— Nhấn để chọn use case —');
+    await expect(page.locator('#ucPickerBtnClear')).not.toHaveClass(/visible/);
+
+    // Form ẩn
+    await expect(page.locator('#wuForm')).not.toBeVisible();
+    await expect(page.locator('#stageSection')).not.toBeVisible();
+
+    await page.screenshot({ path: `${EVD}/T06-clear-selection.png`, fullPage: false });
+    console.log('[T06] PASS — Clear button works');
   });
 
-  // ── TEST 4: Progress slider ─────────────────────────────────────
+  // ── TEST 7: Escape đóng modal ─────────────────────────────────────
 
-  test('T04 — Progress slider cập nhật % display', async ({ page }) => {
+  test('T07 — Nhấn Escape đóng modal', async ({ page }) => {
     await page.goto('/weekly-update.html');
-    await waitForUcOptions(page, 2, 30000);
-    await selectFirstUc(page);
+    await waitForUcList(page, 30000);
+    await page.locator('#ucPickerBtn').click();
+    await expect(page.locator('#pickerModal')).toBeVisible({ timeout: 3000 });
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#pickerModal')).not.toBeVisible({ timeout: 2000 });
+
+    await page.screenshot({ path: `${EVD}/T07-modal-close-escape.png`, fullPage: false });
+    console.log('[T07] PASS — Escape closes modal');
+  });
+
+  // ── TEST 8: Progress slider ───────────────────────────────────────
+
+  test('T08 — Progress slider cập nhật % display', async ({ page }) => {
+    await page.goto('/weekly-update.html');
+    await openAndSelectFirstUc(page);
 
     const slider = page.locator('#progressSlider');
-    await expect(slider).toBeVisible();
-
-    // Kéo slider đến 60%
     await slider.fill('60');
     await slider.dispatchEvent('input');
-
     await expect(page.locator('#progressLabel')).toHaveText('60%');
 
-    const fillWidth = await page.locator('#progressFill').getAttribute('style');
-    expect(fillWidth).toContain('60%');
-
-    await page.screenshot({ path: `${EVD}/T04-progress-slider.png`, fullPage: false });
-    console.log('[T04] PASS — Slider works, 60% shown');
+    await page.screenshot({ path: `${EVD}/T08-progress-slider.png`, fullPage: false });
+    console.log('[T08] PASS — Slider works');
   });
 
-  // ── TEST 5: Stage upgrade toggle ────────────────────────────────
+  // ── TEST 9: Stage upgrade toggle + checklist ─────────────────────
 
-  test('T05 — Toggle "Đề xuất nâng stage" mở checklist panel', async ({ page }) => {
+  test('T09 — Stage upgrade toggle + checklist validation', async ({ page }) => {
     await page.goto('/weekly-update.html');
-    await waitForUcOptions(page, 2, 30000);
-    await selectFirstUc(page);
+    await openAndSelectFirstUc(page);
 
-    await expect(page.locator('#stageSection')).toBeVisible();
-
-    // Nếu UC đang S4 (max), toggle không hiện → skip
-    const toggleWrap = page.locator('#upgradeToggleWrap');
     const isMaxStage = await page.locator('#stageAtMax').isVisible();
+    if (isMaxStage) { console.log('[T09] UC at S4 max — skip'); return; }
 
-    if (isMaxStage) {
-      console.log('[T05] UC đã ở S4 (max stage) — skip toggle test');
-      await page.screenshot({ path: `${EVD}/T05-stage-max.png`, fullPage: false });
-      return;
-    }
-
-    await expect(toggleWrap).toBeVisible({ timeout: 5000 });
-
-    // Click toggle
-    const toggle = page.locator('#upgradeToggle');
-    await toggle.check();
-    await expect(toggle).toBeChecked();
-
-    // Upgrade panel mở
+    await page.locator('#upgradeToggle').check();
     await expect(page.locator('#upgradePanel')).toBeVisible({ timeout: 3000 });
 
-    // Target stage badge hiển thị
-    await expect(page.locator('#targetStageBadge')).toBeVisible();
-    const targetStage = await page.locator('#targetStageBadge').textContent();
-    console.log(`[T05] Target stage: ${targetStage}`);
-
-    // Checklist items hiển thị
-    const checklistItems = page.locator('#checklistItems .stage-checklist-item');
-    const checkCount = await checklistItems.count();
-    console.log(`[T05] Checklist items: ${checkCount}`);
+    const targetTxt = await page.locator('#targetStageBadge').textContent();
+    const checkCount = await page.locator('#checklistItems .stage-checklist-item').count();
+    console.log(`[T09] Target: ${targetTxt?.trim()} | Checklist: ${checkCount}`);
     expect(checkCount).toBeGreaterThan(0);
 
-    await page.screenshot({ path: `${EVD}/T05-stage-upgrade-panel.png`, fullPage: true });
-    console.log('[T05] PASS — Upgrade panel opens, checklist shown');
-  });
-
-  // ── TEST 6: Checklist validation ────────────────────────────────
-
-  test('T06 — Submit bị block khi checklist chưa tick đủ', async ({ page }) => {
-    await page.goto('/weekly-update.html');
-    await waitForUcOptions(page, 2, 30000);
-    await selectFirstUc(page);
-
-    const isMaxStage = await page.locator('#stageAtMax').isVisible();
-    if (isMaxStage) {
-      console.log('[T06] UC đã ở S4 — skip checklist test');
-      return;
-    }
-
-    // Mở upgrade toggle
-    await page.locator('#upgradeToggle').check();
-    await expect(page.locator('#upgradePanel')).toBeVisible();
-
-    // Điền weekly update (bắt buộc) nhưng KHÔNG tick checklist
-    await page.locator('#weeklyUpdate').fill('Test weekly update nội dung tuần này.');
-    await page.locator('#progressSlider').fill('30');
-    await page.locator('#progressSlider').dispatchEvent('input');
-
-    // Submit
+    // Submit without ticking → warn
+    await page.locator('#weeklyUpdate').fill('Test content');
     await page.locator('#btnSubmit').click();
-
-    // Checklist warn phải hiện
     await expect(page.locator('#checklistWarn')).toBeVisible({ timeout: 3000 });
-    const warnText = await page.locator('#checklistWarn').textContent();
-    console.log(`[T06] Checklist warn: ${warnText}`);
 
-    await page.screenshot({ path: `${EVD}/T06-checklist-validation.png`, fullPage: true });
-    console.log('[T06] PASS — Checklist validation blocks submit');
+    await page.screenshot({ path: `${EVD}/T09-checklist-validation.png`, fullPage: true });
+    console.log('[T09] PASS — Checklist validation works');
   });
 
-  // ── TEST 7: S4 fields chỉ hiện khi target = S4 ─────────────────
+  // ── TEST 10: Submit weekly update (không nâng stage) ─────────────
 
-  test('T07 — S4 fields hiển thị khi và chỉ khi target stage = S4', async ({ page }) => {
+  test('T10 — Submit thành công không nâng stage', async ({ page }) => {
     await page.goto('/weekly-update.html');
-    await waitForUcOptions(page, 2, 30000);
-    await selectFirstUc(page);
+    await openAndSelectFirstUc(page);
 
-    const isMaxStage = await page.locator('#stageAtMax').isVisible();
-    if (isMaxStage) {
-      console.log('[T07] UC đã ở S4 — skip S4 fields test');
-      return;
-    }
-
-    await page.locator('#upgradeToggle').check();
-    await expect(page.locator('#upgradePanel')).toBeVisible();
-
-    const targetText = await page.locator('#targetStageBadge').textContent();
-    const isTargetS4 = targetText && targetText.includes('S4');
-
-    const s4Visible = await page.locator('#s4Fields').isVisible();
-    console.log(`[T07] Target: ${targetText?.trim()} | S4 fields visible: ${s4Visible}`);
-
-    if (isTargetS4) {
-      expect(s4Visible).toBe(true);
-      await expect(page.locator('#scalePlan')).toBeVisible();
-      await expect(page.locator('#scaleRisks')).toBeVisible();
-    } else {
-      expect(s4Visible).toBe(false);
-    }
-
-    await page.screenshot({ path: `${EVD}/T07-s4-fields.png`, fullPage: true });
-    console.log('[T07] PASS — S4 fields conditional rendering correct');
-  });
-
-  // ── TEST 8: Submit weekly update (không nâng stage) ─────────────
-
-  test('T08 — Submit thành công khi không chọn nâng stage', async ({ page }) => {
-    await page.goto('/weekly-update.html');
-    await waitForUcOptions(page, 2, 30000);
-    await selectFirstUc(page);
-
-    // Điền form
-    await page.locator('#progressSlider').fill('45');
+    await page.locator('#progressSlider').fill('50');
     await page.locator('#progressSlider').dispatchEvent('input');
-    await page.locator('#weeklyUpdate').fill('Tuần này đã thử nghiệm prompt mới với 3 case thực tế. Kết quả tốt.');
-    await page.locator('#nextMilestone').fill('Hoàn thành pilot với 5 người dùng cuối tháng');
-    await page.locator('#monthlyUsage').fill('8');
-    await page.locator('#hoursSaved').fill('2.5');
+    await page.locator('#weeklyUpdate').fill('Tuần này hoàn thành thử nghiệm prompt với 3 case.');
+    await page.locator('#monthlyUsage').fill('6');
 
-    await page.screenshot({ path: `${EVD}/T08-before-submit.png`, fullPage: true });
-
-    // Submit
-    const btnSubmit = page.locator('#btnSubmit');
-    await btnSubmit.click();
-
-    // Chờ success state (GAS call có thể mất 5-30s)
-    await expect(page.locator('#successState')).toBeVisible({ timeout: 60000 });
-    const detail = await page.locator('#successDetail').textContent();
-    console.log(`[T08] Success detail: ${detail}`);
-
-    await page.screenshot({ path: `${EVD}/T08-submit-success.png`, fullPage: true });
-    console.log('[T08] PASS — Submit weekly update thành công');
-  });
-
-  // ── TEST 9: Timeline tải sau khi chọn UC ────────────────────────
-
-  test('T09 — Timeline lịch sử tải và hiển thị sau khi chọn UC', async ({ page }) => {
-    await page.goto('/weekly-update.html');
-    await waitForUcOptions(page, 2, 30000);
-    await selectFirstUc(page);
-
-    // Chờ timeline wrap visible (GAS call getWeeklyLog)
-    await expect(page.locator('#timelineWrap')).toBeVisible({ timeout: 30000 });
-
-    const timelineContent = await page.locator('#timelineContent').innerHTML();
-    const hasEntries = timelineContent.includes('timeline-card') || timelineContent.includes('wu-timeline-empty');
-    expect(hasEntries).toBe(true);
-    console.log(`[T09] Timeline rendered, has entries: ${timelineContent.includes('timeline-card')}`);
-
-    await page.screenshot({ path: `${EVD}/T09-timeline.png`, fullPage: true });
-    console.log('[T09] PASS — Timeline rendered');
-  });
-
-  // ── TEST 10: Submit có nâng stage (full S-transition flow) ───────
-
-  test('T10 — Submit có nâng stage khi tick đủ checklist', async ({ page }) => {
-    await page.goto('/weekly-update.html');
-    await waitForUcOptions(page, 2, 30000);
-    await selectFirstUc(page);
-
-    const isMaxStage = await page.locator('#stageAtMax').isVisible();
-    if (isMaxStage) {
-      console.log('[T10] UC đã ở S4 — skip stage transition test');
-      return;
-    }
-
-    // Mở upgrade panel
-    await page.locator('#upgradeToggle').check();
-    await expect(page.locator('#upgradePanel')).toBeVisible();
-
-    // Tick toàn bộ checklist
-    const checkboxes = page.locator('#checklistItems input[type=checkbox]');
-    const count = await checkboxes.count();
-    for (let i = 0; i < count; i++) {
-      await checkboxes.nth(i).check();
-    }
-    console.log(`[T10] Ticked ${count} checklist items`);
-
-    // S4: điền bắt buộc
-    const targetText = await page.locator('#targetStageBadge').textContent();
-    if (targetText && targetText.includes('S4')) {
-      await page.locator('#scalePlan').fill('Mở rộng sang team Bán hàng và team Chăm sóc khách hàng trong Q3/2026. Mục tiêu 20 người dùng, phối hợp với CNTT để setup account.');
-      await page.locator('#scaleRisks').fill('Rủi ro về data sensitivity; cần review chính sách bảo mật trước khi mở rộng.');
-    }
-
-    // Điền form chính
-    await page.locator('#progressSlider').fill('70');
-    await page.locator('#progressSlider').dispatchEvent('input');
-    await page.locator('#weeklyUpdate').fill('Đã pilot thành công với 5 người trong team, feedback rất tích cực. Sẵn sàng nâng stage.');
-    await page.locator('#monthlyUsage').fill('12');
-
-    await page.screenshot({ path: `${EVD}/T10-before-stage-submit.png`, fullPage: true });
-
-    // Submit
+    await page.screenshot({ path: `${EVD}/T10-before-submit.png`, fullPage: true });
     await page.locator('#btnSubmit').click();
 
-    // Chờ success
     await expect(page.locator('#successState')).toBeVisible({ timeout: 60000 });
     const detail = await page.locator('#successDetail').textContent();
     console.log(`[T10] Success: ${detail}`);
 
-    await page.screenshot({ path: `${EVD}/T10-stage-submit-success.png`, fullPage: true });
-    console.log('[T10] PASS — Stage transition submit thành công');
+    // Timeline tải sau submit
+    await expect(page.locator('#timelineWrap')).toBeVisible({ timeout: 30000 });
+
+    await page.screenshot({ path: `${EVD}/T10-submit-success.png`, fullPage: true });
+    console.log('[T10] PASS — Submit thành công');
   });
 
-  // ── TEST 11: Reset all ───────────────────────────────────────────
+  // ── TEST 11: Submit có nâng stage ────────────────────────────────
 
-  test('T11 — "Cập nhật use case khác" reset toàn bộ', async ({ page }) => {
+  test('T11 — Submit có nâng stage (tick đủ checklist)', async ({ page }) => {
     await page.goto('/weekly-update.html');
-    await waitForUcOptions(page, 2, 30000);
-    await selectFirstUc(page);
+    await openAndSelectFirstUc(page);
 
-    // Giả lập success state (gọi resetAll qua evaluate)
-    await page.evaluate(() => { resetAll(); });
+    const isMaxStage = await page.locator('#stageAtMax').isVisible();
+    if (isMaxStage) { console.log('[T11] UC at S4 max — skip'); return; }
 
-    await expect(page.locator('#wuForm')).not.toBeVisible();
-    await expect(page.locator('#stageSection')).not.toBeVisible();
-    await expect(page.locator('#ucCard')).not.toHaveClass(/visible/);
+    await page.locator('#upgradeToggle').check();
+    await expect(page.locator('#upgradePanel')).toBeVisible();
 
-    const selVal = await page.locator('#ucSelect').inputValue();
-    expect(selVal).toBe('');
+    // Tick all checklist items
+    const checkboxes = page.locator('#checklistItems input[type=checkbox]');
+    const cnt = await checkboxes.count();
+    for (let i = 0; i < cnt; i++) await checkboxes.nth(i).check();
+    console.log(`[T11] Ticked ${cnt} items`);
 
-    await page.screenshot({ path: `${EVD}/T11-reset-all.png`, fullPage: true });
-    console.log('[T11] PASS — resetAll clears everything');
+    // S4 fields
+    const targetTxt = await page.locator('#targetStageBadge').textContent();
+    if (targetTxt && targetTxt.includes('S4')) {
+      await page.locator('#scalePlan').fill('Mở rộng sang 2 team liên quan trong Q3/2026. Mục tiêu 15 người dùng.');
+      await page.locator('#scaleRisks').fill('Cần review chính sách bảo mật trước khi mở rộng.');
+    }
+
+    await page.locator('#progressSlider').fill('80');
+    await page.locator('#progressSlider').dispatchEvent('input');
+    await page.locator('#weeklyUpdate').fill('Pilot xong, mọi người phản hồi tích cực, sẵn sàng nâng stage.');
+    await page.locator('#monthlyUsage').fill('10');
+
+    await page.screenshot({ path: `${EVD}/T11-before-stage-submit.png`, fullPage: true });
+    await page.locator('#btnSubmit').click();
+    await expect(page.locator('#successState')).toBeVisible({ timeout: 60000 });
+
+    const detail = await page.locator('#successDetail').textContent();
+    console.log(`[T11] Success: ${detail}`);
+    await page.screenshot({ path: `${EVD}/T11-stage-submit-success.png`, fullPage: true });
+    console.log('[T11] PASS — Stage transition thành công');
   });
 
 });

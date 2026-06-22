@@ -83,6 +83,66 @@
     .s4-fields.visible { display: block; }
     .s4-fields-title { font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: #7B2CBF; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: var(--space-3); }
 
+    /* ── UC Picker button ── */
+    .uc-picker-btn { width: 100%; display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--color-bg); border: 1.5px solid var(--color-border); border-radius: var(--radius-lg); cursor: pointer; text-align: left; transition: border-color .15s, box-shadow .15s; min-height: 44px; }
+    .uc-picker-btn:hover { border-color: var(--color-primary-light); }
+    .uc-picker-btn:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(123,44,191,.12); }
+    .uc-picker-btn-icon { flex-shrink: 0; color: var(--color-text-muted); }
+    .uc-picker-btn-text { flex: 1; font-size: var(--text-sm); color: var(--color-text-muted); }
+    .uc-picker-btn-text.has-value { color: var(--color-text); font-weight: var(--font-weight-medium); }
+    .uc-picker-btn-badge { flex-shrink: 0; padding: 2px 8px; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--font-weight-bold); }
+    .uc-picker-btn-clear { flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: var(--color-border); border: none; cursor: pointer; display: none; align-items: center; justify-content: center; color: var(--color-text-secondary); font-size: 12px; line-height: 1; padding: 0; }
+    .uc-picker-btn-clear.visible { display: flex; }
+    .uc-picker-btn-clear:hover { background: var(--color-error-light); color: var(--color-error); }
+    .uc-picker-btn-chevron { flex-shrink: 0; color: var(--color-text-muted); transition: transform .2s; }
+    .uc-picker-btn.open .uc-picker-btn-chevron { transform: rotate(180deg); }
+
+    /* ── Picker modal ── */
+    .picker-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 1000; }
+    .picker-overlay.visible { display: block; }
+    .picker-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(900px, calc(100vw - 32px)); max-height: calc(100vh - 80px); background: var(--color-surface); border-radius: var(--radius-xl); box-shadow: 0 20px 60px rgba(0,0,0,.25); z-index: 1001; flex-direction: column; }
+    .picker-modal.visible { display: flex; animation: pickerIn .18s ease; }
+    @keyframes pickerIn { from { opacity:0; transform:translate(-50%,-53%); } to { opacity:1; transform:translate(-50%,-50%); } }
+    @media(max-width:600px) { .picker-modal { top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 85vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; transform: none; } @keyframes pickerIn { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } } }
+
+    .picker-header { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--color-border); flex-shrink: 0; }
+    .picker-header-title { flex: 1; font-size: var(--text-base); font-weight: var(--font-weight-semibold); color: var(--color-text); }
+    .picker-header-scope { font-size: var(--text-xs); padding: 3px 10px; border-radius: var(--radius-full); background: var(--color-primary-surface); color: var(--color-primary); font-weight: var(--font-weight-semibold); }
+    .picker-close-btn { width: 32px; height: 32px; border-radius: var(--radius-md); border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--color-text-secondary); }
+    .picker-close-btn:hover { background: var(--color-bg); color: var(--color-text); }
+
+    .picker-filters { display: flex; gap: var(--space-3); padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--color-border); flex-shrink: 0; flex-wrap: wrap; }
+    .picker-search-wrap { flex: 1; min-width: 180px; position: relative; }
+    .picker-search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--color-text-muted); pointer-events: none; }
+    .picker-search { width: 100%; padding: 8px 10px 8px 34px; border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: var(--text-sm); background: var(--color-bg); color: var(--color-text); box-sizing: border-box; }
+    .picker-search:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(123,44,191,.1); }
+    .picker-filter-select { padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: var(--text-sm); background: var(--color-bg); color: var(--color-text); cursor: pointer; }
+    .picker-filter-select:focus { outline: none; border-color: var(--color-primary); }
+    .picker-count { align-self: center; font-size: var(--text-xs); color: var(--color-text-muted); white-space: nowrap; }
+
+    /* ── Picker table ── */
+    .picker-table-wrap { flex: 1; overflow-y: auto; min-height: 0; }
+    .picker-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+    .picker-table thead th { position: sticky; top: 0; background: var(--color-bg); padding: var(--space-2) var(--space-4); text-align: left; font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .4px; border-bottom: 1px solid var(--color-border); z-index: 1; white-space: nowrap; }
+    .picker-table tbody tr { cursor: pointer; border-bottom: 1px solid var(--color-bg); transition: background .1s; }
+    .picker-table tbody tr:hover { background: var(--color-primary-surface); }
+    .picker-table tbody tr.is-selected { background: var(--color-primary-surface); }
+    .picker-table tbody tr.is-hidden { display: none; }
+    .picker-table td { padding: var(--space-3) var(--space-4); vertical-align: middle; }
+    .picker-td-id { font-family: monospace; font-size: var(--text-xs); color: var(--color-text-muted); white-space: nowrap; }
+    .picker-td-name { font-weight: var(--font-weight-medium); color: var(--color-text); max-width: 260px; }
+    .picker-td-name small { display: block; font-size: var(--text-xs); font-weight: var(--font-weight-normal); color: var(--color-text-secondary); margin-top: 1px; }
+    .picker-td-team { font-size: var(--text-xs); color: var(--color-text-secondary); white-space: nowrap; }
+    .picker-td-stage .stage-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--font-weight-bold); white-space: nowrap; }
+    .picker-td-prog { min-width: 80px; }
+    .picker-prog-bar { height: 5px; background: var(--color-border); border-radius: 3px; margin-bottom: 2px; overflow: hidden; }
+    .picker-prog-fill { height: 100%; border-radius: 3px; background: var(--color-primary); }
+    .picker-prog-lbl { font-size: var(--text-xs); color: var(--color-text-muted); }
+    .picker-td-upd { font-size: var(--text-xs); white-space: nowrap; }
+    .picker-td-upd.overdue { color: #E65100; font-weight: var(--font-weight-semibold); }
+    .picker-td-upd.fresh   { color: var(--color-success); }
+    .picker-empty { padding: var(--space-10); text-align: center; color: var(--color-text-muted); font-size: var(--text-sm); }
+
     /* ── Timeline ── */
     .wu-timeline-wrap { margin-top: var(--space-2); }
     .wu-timeline-title { font-size: var(--text-base); font-weight: var(--font-weight-semibold); color: var(--color-text); margin-bottom: var(--space-4); display: flex; align-items: center; gap: var(--space-2); }
@@ -192,10 +252,16 @@
 
       <!-- UC Picker -->
       <div class="uc-picker">
-        <label class="uc-picker-label" for="ucSelect">Chọn Use Case cần cập nhật</label>
-        <select class="form-input" id="ucSelect">
-          <option value="">— Chọn use case của bạn —</option>
-        </select>
+        <label class="uc-picker-label">Chọn Use Case cần cập nhật</label>
+        <button type="button" class="uc-picker-btn" id="ucPickerBtn" onclick="openPicker()">
+          <span class="uc-picker-btn-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+          </span>
+          <span class="uc-picker-btn-text" id="ucPickerBtnText">— Nhấn để chọn use case —</span>
+          <span class="uc-picker-btn-badge" id="ucPickerBtnBadge" style="display:none"></span>
+          <button type="button" class="uc-picker-btn-clear" id="ucPickerBtnClear" onclick="clearUcSelection(event)" title="Bỏ chọn">✕</button>
+          <svg class="uc-picker-btn-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+        </button>
         <div class="uc-card" id="ucCard">
           <div class="uc-card-name" id="ucCardName"></div>
           <div class="uc-card-meta" id="ucCardMeta"></div>
@@ -347,8 +413,46 @@
         <div id="timelineContent"></div>
       </div>
 
-      <div id="toastArea" style="position:fixed;bottom:24px;right:24px;z-index:999"></div>
+      <div id="toastArea" style="position:fixed;bottom:24px;right:24px;z-index:9999"></div>
     </div>
+  </div>
+</div>
+
+<!-- UC Picker Modal (outside main layout to avoid overflow issues) -->
+<div class="picker-overlay" id="pickerOverlay" onclick="closePicker()"></div>
+<div class="picker-modal" id="pickerModal" role="dialog" aria-modal="true" aria-label="Chọn Use Case">
+  <div class="picker-header">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18" style="color:var(--color-primary);flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+    <span class="picker-header-title">Chọn Use Case cần cập nhật</span>
+    <span class="picker-header-scope" id="pickerScope"></span>
+    <button type="button" class="picker-close-btn" onclick="closePicker()" title="Đóng">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <div class="picker-filters">
+    <div class="picker-search-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+      <input type="text" class="picker-search" id="pickerSearch" placeholder="Tìm theo tên UC, mã ID, chủ sở hữu..." autocomplete="off" oninput="filterPickerTable()">
+    </div>
+    <select class="picker-filter-select" id="pickerStageFilter" onchange="filterPickerTable()">
+      <option value="">Tất cả Stage</option>
+      <option value="S1 - Idea">S1 · Ý tưởng</option>
+      <option value="S2 - Pilot">S2 · Pilot</option>
+      <option value="S3 - Standardized">S3 · Chuẩn hóa</option>
+      <option value="S4 - Scale">S4 · Scale</option>
+    </select>
+    <select class="picker-filter-select" id="pickerUpdFilter" onchange="filterPickerTable()">
+      <option value="">Tất cả trạng thái</option>
+      <option value="overdue">Quá hạn (&gt;7 ngày)</option>
+      <option value="fresh">Đã cập nhật tuần này</option>
+      <option value="never">Chưa cập nhật lần nào</option>
+    </select>
+    <span class="picker-count" id="pickerCount"></span>
+  </div>
+
+  <div class="picker-table-wrap">
+    <div id="pickerTableContainer"></div>
   </div>
 </div>
 
@@ -383,10 +487,11 @@ document.addEventListener('DOMContentLoaded', function() {
   function closeSidebar() { sidebar.classList.remove('is-open'); overlay.classList.remove('is-visible'); toggle.setAttribute('aria-expanded','false'); }
   if (toggle)  toggle.addEventListener('click', function() { sidebar.classList.contains('is-open') ? closeSidebar() : openSidebar(); });
   if (overlay) overlay.addEventListener('click', closeSidebar);
-  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeSidebar(); });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeSidebar(); closePicker(); }
+  });
 
-  // UC select listener
-  document.getElementById('ucSelect').addEventListener('change', onSelectUseCase);
+  // Picker search focus on open (handled inside openPicker)
 
   // Progress slider listener
   document.getElementById('progressSlider').addEventListener('input', function() {
@@ -401,33 +506,171 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ── Load UC list ──────────────────────────────────────────────────
 
+var _pickerBuilt = false;
+
 function loadMyUseCases() {
-  Api.jsonp(API.list({ limit: 200 }), function(res) {
-    if (!res || !res.success) return;
-    _myUseCases = (res.data || []).filter(function(uc) {
-      if (_currentUser.role === 'admin') return true;
-      var email = (_currentUser.email || '').toLowerCase();
+  var btn = document.getElementById('ucPickerBtn');
+  if (btn) btn.disabled = true;
+
+  Api.jsonp(API.list({ limit: 500 }), function(res) {
+    if (btn) btn.disabled = false;
+    if (!res || !res.success) { showToast('Không tải được danh sách UC', 'error'); return; }
+
+    var all   = res.data || [];
+    var role  = _currentUser.role || 'user';
+    var email = (_currentUser.email || '').toLowerCase();
+    var team  = (_currentUser.team  || '').toLowerCase();
+
+    _myUseCases = all.filter(function(uc) {
+      if (role === 'admin') return true;
+      if (role === 'champion') {
+        // Champion thấy UC của team mình (so sánh không phân biệt hoa thường)
+        return team && (uc.team || '').toLowerCase() === team;
+      }
+      // user: chỉ UC của chính mình
       return (uc.owner_email && uc.owner_email.toLowerCase().indexOf(email) !== -1) ||
-             (uc.owner_name  && uc.owner_name.toLowerCase().indexOf(email) !== -1);
+             (uc.owner_name  && uc.owner_name.toLowerCase().indexOf(email)  !== -1);
     });
-    var sel = document.getElementById('ucSelect');
-    _myUseCases.forEach(function(uc) {
-      var opt = document.createElement('option');
-      opt.value = uc.record_id;
-      opt.textContent = '[' + (uc.usecase_id || '') + '] ' + (uc.name || '');
-      sel.appendChild(opt);
-    });
+
+    // Scope label cho picker header
+    var scopeEl = document.getElementById('pickerScope');
+    if (scopeEl) {
+      if (role === 'admin')          scopeEl.textContent = 'Admin · Toàn bộ';
+      else if (role === 'champion')  scopeEl.textContent = 'Champion · ' + (_currentUser.team || 'Team');
+      else                           scopeEl.textContent = 'Use case của tôi';
+    }
+
+    _pickerBuilt = false; // mark cần render lại
   });
+}
+
+// ── Picker open / close ───────────────────────────────────────────
+
+function openPicker() {
+  document.getElementById('pickerOverlay').classList.add('visible');
+  document.getElementById('pickerModal').classList.add('visible');
+  document.getElementById('ucPickerBtn').classList.add('open');
+
+  if (!_pickerBuilt) {
+    buildPickerTable();
+    _pickerBuilt = true;
+  }
+  // Focus search input
+  setTimeout(function() {
+    var s = document.getElementById('pickerSearch');
+    if (s) { s.value = ''; s.focus(); filterPickerTable(); }
+  }, 50);
+}
+
+function closePicker() {
+  document.getElementById('pickerOverlay').classList.remove('visible');
+  document.getElementById('pickerModal').classList.remove('visible');
+  document.getElementById('ucPickerBtn').classList.remove('open');
+}
+
+// ── Build picker table (once after data loads) ────────────────────
+
+function buildPickerTable() {
+  var role = _currentUser.role || 'user';
+  var showOwner = (role === 'admin' || role === 'champion');
+
+  var html = '<table class="picker-table" id="pickerTable">' +
+    '<thead><tr>' +
+    '<th class="picker-td-id">Mã UC</th>' +
+    '<th>Tên Use Case</th>' +
+    (showOwner ? '<th>Chủ sở hữu</th>' : '') +
+    '<th>Team</th>' +
+    '<th>Stage</th>' +
+    '<th class="picker-td-prog">Tiến độ</th>' +
+    '<th>Cập nhật</th>' +
+    '</tr></thead><tbody id="pickerTbody">';
+
+  if (!_myUseCases.length) {
+    html += '<tr><td colspan="7"><div class="picker-empty">Không có use case nào trong phạm vi quyền của bạn</div></td></tr>';
+  } else {
+    _myUseCases.forEach(function(uc) {
+      var stage    = uc.stage || uc.current_stage || '';
+      var sl       = STAGE_LABELS[stage] || { short: stage || '—', color: '#6D6D7A', bg: '#F5F5F7' };
+      var prog     = parseInt(uc.current_progress, 10) || 0;
+      var daysSince = uc.last_weekly_report
+        ? Math.floor((Date.now() - new Date(uc.last_weekly_report)) / 86400000)
+        : -1;
+      var updTxt  = daysSince < 0  ? 'Chưa có'
+                  : daysSince === 0 ? 'Hôm nay'
+                  : daysSince + ' ngày trước';
+      var updCls  = daysSince < 0  ? '' : daysSince > 7 ? 'overdue' : 'fresh';
+
+      // Searchable text stored in data attrs
+      var searchText = [
+        uc.usecase_id, uc.name, uc.owner_name, uc.owner_email, uc.team
+      ].join(' ').toLowerCase();
+
+      html += '<tr data-rid="' + esc(uc.record_id) + '"' +
+        ' data-search="' + esc(searchText) + '"' +
+        ' data-stage="' + esc(stage) + '"' +
+        ' data-upd="' + (daysSince < 0 ? 'never' : daysSince > 7 ? 'overdue' : 'fresh') + '"' +
+        ' onclick="onPickerRowClick(\'' + esc(uc.record_id) + '\')"' +
+        ((_selectedUc && _selectedUc.record_id === uc.record_id) ? ' class="is-selected"' : '') +
+        '>' +
+        '<td class="picker-td-id">' + esc(uc.usecase_id || '') + '</td>' +
+        '<td class="picker-td-name">' + esc(uc.name || '') +
+          (uc.status ? '<small>' + esc(uc.status) + '</small>' : '') + '</td>' +
+        (showOwner ? '<td class="picker-td-team">' + esc(uc.owner_name || uc.owner_email || '') + '</td>' : '') +
+        '<td class="picker-td-team">' + esc(uc.team || '') + '</td>' +
+        '<td class="picker-td-stage"><span class="stage-pill" style="background:' + sl.bg + ';color:' + sl.color + '">' +
+          '<span style="width:6px;height:6px;border-radius:50%;background:' + sl.color + ';display:inline-block;flex-shrink:0"></span>' +
+          esc(sl.short) + '</span></td>' +
+        '<td class="picker-td-prog">' +
+          '<div class="picker-prog-bar"><div class="picker-prog-fill" style="width:' + prog + '%"></div></div>' +
+          '<div class="picker-prog-lbl">' + prog + '%</div></td>' +
+        '<td class="picker-td-upd ' + updCls + '">' + esc(updTxt) + '</td>' +
+        '</tr>';
+    });
+  }
+
+  html += '</tbody></table>';
+  document.getElementById('pickerTableContainer').innerHTML = html;
+  updatePickerCount();
+}
+
+// ── Filter picker table ───────────────────────────────────────────
+
+function filterPickerTable() {
+  var q     = (document.getElementById('pickerSearch').value || '').toLowerCase().trim();
+  var stage = document.getElementById('pickerStageFilter').value;
+  var upd   = document.getElementById('pickerUpdFilter').value;
+
+  var rows = document.querySelectorAll('#pickerTbody tr[data-rid]');
+  rows.forEach(function(row) {
+    var matchQ     = !q     || row.dataset.search.indexOf(q) !== -1;
+    var matchStage = !stage || row.dataset.stage === stage;
+    var matchUpd   = !upd   || row.dataset.upd   === upd;
+    row.classList.toggle('is-hidden', !(matchQ && matchStage && matchUpd));
+  });
+  updatePickerCount();
+}
+
+function updatePickerCount() {
+  var rows    = document.querySelectorAll('#pickerTbody tr[data-rid]');
+  var visible = 0;
+  rows.forEach(function(r) { if (!r.classList.contains('is-hidden')) visible++; });
+  var countEl = document.getElementById('pickerCount');
+  if (countEl) countEl.textContent = visible + ' / ' + _myUseCases.length + ' use case';
+}
+
+// ── Pick a row ───────────────────────────────────────────────────
+
+function onPickerRowClick(rid) {
+  closePicker();
+  onSelectUseCase(rid);
 }
 
 // ── UC select ────────────────────────────────────────────────────
 
-function onSelectUseCase() {
-  var rid = document.getElementById('ucSelect').value;
-
+function onSelectUseCase(rid) {
   // Reset everything
   document.getElementById('ucCard').classList.remove('visible');
-  document.getElementById('wuForm').style.display     = 'none';
+  document.getElementById('wuForm').style.display       = 'none';
   document.getElementById('stageSection').style.display = 'none';
   document.getElementById('successState').style.display = 'none';
   document.getElementById('timelineWrap').style.display  = 'none';
@@ -435,10 +678,18 @@ function onSelectUseCase() {
   document.getElementById('upgradeToggle').checked = false;
   document.getElementById('upgradePanel').classList.remove('visible');
 
-  if (!rid) { _selectedUc = null; return; }
+  if (!rid) { _selectedUc = null; updatePickerButton(null); return; }
 
   _selectedUc = _myUseCases.find(function(u) { return u.record_id === rid; });
   if (!_selectedUc) return;
+
+  updatePickerButton(_selectedUc);
+
+  // Highlight selected row in table
+  var rows = document.querySelectorAll('#pickerTbody tr[data-rid]');
+  rows.forEach(function(r) {
+    r.classList.toggle('is-selected', r.dataset.rid === rid);
+  });
 
   renderUcCard(_selectedUc);
   renderStageSection(_selectedUc);
@@ -448,8 +699,50 @@ function onSelectUseCase() {
   document.getElementById('wuForm').style.display       = '';
   document.getElementById('stageSection').style.display = '';
 
-  // Load timeline in background
   loadTimeline(_selectedUc.record_id);
+}
+
+// ── Update picker button display ──────────────────────────────────
+
+function updatePickerButton(uc) {
+  var textEl  = document.getElementById('ucPickerBtnText');
+  var badgeEl = document.getElementById('ucPickerBtnBadge');
+  var clearEl = document.getElementById('ucPickerBtnClear');
+
+  if (!uc) {
+    textEl.textContent = '— Nhấn để chọn use case —';
+    textEl.className   = 'uc-picker-btn-text';
+    badgeEl.style.display = 'none';
+    clearEl.classList.remove('visible');
+    return;
+  }
+
+  var stage = uc.stage || uc.current_stage || '';
+  var sl    = STAGE_LABELS[stage];
+  textEl.textContent = '[' + (uc.usecase_id || '') + '] ' + (uc.name || '');
+  textEl.className   = 'uc-picker-btn-text has-value';
+
+  if (sl) {
+    badgeEl.textContent = sl.short;
+    badgeEl.style.cssText = 'display:inline-block;background:' + sl.bg + ';color:' + sl.color;
+  } else {
+    badgeEl.style.display = 'none';
+  }
+  clearEl.classList.add('visible');
+}
+
+function clearUcSelection(e) {
+  e.stopPropagation();
+  _selectedUc = null;
+  updatePickerButton(null);
+  document.getElementById('ucCard').classList.remove('visible');
+  document.getElementById('wuForm').style.display       = 'none';
+  document.getElementById('stageSection').style.display = 'none';
+  document.getElementById('successState').style.display = 'none';
+  document.getElementById('timelineWrap').style.display  = 'none';
+  document.getElementById('overdueWarn').classList.remove('visible');
+  var rows = document.querySelectorAll('#pickerTbody tr');
+  rows.forEach(function(r) { r.classList.remove('is-selected'); });
 }
 
 // ── UC card ──────────────────────────────────────────────────────
@@ -779,15 +1072,20 @@ function resetForm() {
 }
 
 function resetAll() {
-  document.getElementById('ucSelect').value = '';
+  _selectedUc = null;
+  updatePickerButton(null);
   document.getElementById('ucCard').classList.remove('visible');
   document.getElementById('wuForm').style.display       = 'none';
   document.getElementById('stageSection').style.display = 'none';
   document.getElementById('successState').style.display = 'none';
   document.getElementById('timelineWrap').style.display = 'none';
   document.getElementById('overdueWarn').classList.remove('visible');
-  _selectedUc = null;
+  var rows = document.querySelectorAll('#pickerTbody tr');
+  rows.forEach(function(r) { r.classList.remove('is-selected'); });
   resetForm();
+  // Rebuild table to reflect any stage changes from latest submit
+  _pickerBuilt = false;
+  loadMyUseCases();
 }
 
 // ── Toast + helpers ───────────────────────────────────────────────
