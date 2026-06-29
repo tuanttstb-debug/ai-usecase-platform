@@ -1589,13 +1589,19 @@
       if (nKey && nKey !== eKey) addTo(byName, nKey);
     });
 
-    var result  = {};
-    var claimed = {}; // track byEmail keys already linked to a USERS entry
+    var result       = {};
+    var claimed      = {}; // track byEmail keys already linked to a USERS entry
+    var inactiveKeys = {}; // norm keys of deactivated users — must not appear in KPI even if they have old UCs
 
     if (_usersList && _usersList.length) {
       // Step 2a: start from USERS sheet — includes users with 0 UCs
       _usersList.forEach(function (u) {
-        if (u.active === false) return; // skip deactivated
+        if (u.active === false) {
+          // Record both username and display_name so Step 2b can filter out their old UCs
+          var ik = _norm(u.username); if (ik) inactiveKeys[ik] = true;
+          var idk = _norm(u.display_name); if (idk) inactiveKeys[idk] = true;
+          return;
+        }
         var uKey  = _norm(u.username);
         if (excluded.indexOf(uKey) !== -1) return; // skip excluded users (e.g. directors)
         var dnKey = _norm(u.display_name);
@@ -1618,6 +1624,7 @@
       Object.keys(byEmail).forEach(function (eKey) {
         if (claimed[eKey]) return;
         if (excluded.indexOf(eKey) !== -1) return;
+        if (inactiveKeys[eKey]) return; // skip deactivated users who still have old UCs in _allList
         var stats = byEmail[eKey];
         result[eKey] = {
           username: eKey,

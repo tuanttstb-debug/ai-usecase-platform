@@ -1630,3 +1630,45 @@ Không có blocker mới. Tất cả blocker từ session trước còn nguyên 
 **[P2]** SEC-01 auth hardening — Google Sign-In hoặc username whitelist (PO decision needed)  
 **[P2]** KPI_EXCLUDED_USERS từ USERS sheet `KPI_Exempt` column thay vì hardcode env.js  
 **[P3]** Feature backlog: empty state Explore, pagination 200+, Export CSV, weekly-update spinner
+
+---
+
+## Session: 2026-06-29
+**Scope:** Bug fix — KPI tuần theo dõi cả user inactive
+**Version:** v3.11.1
+
+### Root cause
+
+`_buildKPIData()` trong `dashboard.js`:
+- **Step 2a** (dòng ~1598): Khi `u.active === false` → `return` ngay, user **không được thêm vào `claimed`**
+- **Step 2b** (dòng ~1617): Iterate `byEmail` keys — kiểm tra `if (claimed[eKey]) return` nhưng inactive user không có trong `claimed` → UC cũ của họ (Approved UCs trong `_allList`) **bị thêm vào `result`**
+- Kết quả: user đã deactivate vẫn xuất hiện trong bảng KPI tuần
+
+### Fix
+
+**`assets/js/dashboard.js` — `_buildKPIData()`:**
+- Thêm `var inactiveKeys = {}` trước block `if (_usersList ...)`
+- Trong `u.active === false` branch: ghi cả `username` lẫn `display_name` vào `inactiveKeys`
+- Step 2b: thêm `if (inactiveKeys[eKey]) return;` trước khi add vào result
+
+**`assets/tests/test-kpi-data.js`:**
+- Đồng bộ filter sang `status !== 'Approved'` (khớp dashboard.js)
+- Thêm inactive UC vào fixture ALL_LIST → A9 test đúng bug thay vì pass vì lý do sai
+- Thêm Suite F (F1–F5): test inactive với UC, edge case display_name
+
+### Files changed
+
+| File | Delta |
+|------|-------|
+| `assets/js/dashboard.js` | +8/-3 lines: `inactiveKeys` tracking trong Step 2a + filter trong Step 2b |
+| `assets/tests/test-kpi-data.js` | +30 lines: filter update + Suite F (5 tests) + fixture inactive UC |
+| `evd/kpi-inactive-fix/` | 5 EVD screenshots |
+| `scripts/capture_kpi_inactive_fix.mjs` | NEW — EVD capture script |
+
+### Test kết quả
+
+| Check | Kết quả |
+|-------|---------|
+| Unit test `test-kpi-data.js` | **25/25 PASS** (20 existing + 5 new Suite F) |
+| Playwright full suite | **85/85 PASS** (no regression) |
+| EVD screenshots | 5 ảnh tại `evd/kpi-inactive-fix/` |

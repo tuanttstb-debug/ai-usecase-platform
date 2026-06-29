@@ -117,7 +117,7 @@ env.js → auth.js → [inline portal script]
 | Heroicons SVG | ✅ | Tất cả emoji → SVG inline (dashboard, register, index) |
 | Chart.js charts | ✅ | doughnut + stacked horizontal bar (Team & Category); CSS fallback nếu CDN fail |
 | Stacked breakdown charts | ✅ | NEW v3.8.0 — Team & Category bars phân tách màu theo trạng thái UC; click segment → popup lọc đúng group + status |
-| KPI & Tiến độ tab | ✅ | v3.10.2 — Week nav ‹/› xem lại tuần trước; chỉ đếm Approved UCs; `KPI_EXCLUDED_USERS` loại directors (cuongvm1); render ngay không chờ getUsers(); 15/15 Playwright PASS |
+| KPI & Tiến độ tab | ✅ | v3.10.2 — Week nav ‹/› xem lại tuần trước; chỉ đếm Approved UCs; `KPI_EXCLUDED_USERS` loại directors (cuongvm1); render ngay không chờ getUsers(); 15/15 Playwright PASS. BUG FIX 2026-06-29: inactive user (active=false) bị loại kể cả khi có UC cũ trong _allList |
 | User management | ✅ | NEW v3.10.0 — Sheet USERS trong GAS; case-insensitive (normalizeUser_); login async validates GAS; admin tab quản lý users; sync từ MASTER_DATA |
 | Standalone users.html | ✅ | NEW v3.10.2 (2026-06-17) — Separate page (not dashboard tab); admin-only; table + add/edit modal; champion role option |
 | Champion role | ✅ | NEW v3.10.2 (2026-06-17) — New role between admin and user; team-scoped UC review; scores Quality/BV/Innovation 0–10; USERS sheet is source of truth |
@@ -125,7 +125,7 @@ env.js → auth.js → [inline portal script]
 | Scoring preview (register) | ✅ | NEW v3.10.2 (2026-06-17) — Live scoring ring + bars while filling wizard; self-assessment BV + Innovation sliders; Quality shown as 0 (TBD) |
 | Score display (explore) | ✅ | NEW v3.10.2 (2026-06-17) — Score chip on approved UCs in Explore tab; rank color badge |
 | ScoringEngine JS module | ✅ | NEW v3.10.2 (2026-06-17) — assets/js/scoring.js; mirrors GAS ScoringEngine.gs; used by register.html preview + review-queue.html panel |
-| Playwright test suite | ✅ | 85/85 pass (2026-06-22) — 6 spec files; 74 existing + 11 new weekly-update tests (spec 06: T01–T11 real GAS JSONP, `test.setTimeout(90000)`, T09/T11 skip-gracefully when UC at S4 max). JSONP mock via page.route(); session inject via addInitScript() |
+| Playwright test suite | ✅ | 85/85 pass (2026-06-29) — 6 spec files; no regression sau KPI inactive fix |
 | KPI week date format | ✅ | fix `91c4a00` — manual `DD/MM` formatter thay `toLocaleDateString` (locale inconsistency trên Chromium/Windows) |
 | Responsive | ✅ | Sidebar collapse 1024px áp dụng toàn bộ pages |
 

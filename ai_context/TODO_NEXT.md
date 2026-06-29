@@ -4,6 +4,14 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## ✅ Đã hoàn thành trong session 2026-06-29
+
+- [x] **BUG FIX: KPI inactive user** — `dashboard.js _buildKPIData()`: inactive user (active=false) bị skip ở Step 2a mà không vào `claimed` → Step 2b thêm UC của họ từ `byEmail` vào result. Fix: ghi `inactiveKeys` trong Step 2a, filter `if (inactiveKeys[eKey]) return` trong Step 2b. Cả username lẫn display_name đều được ghi vào inactiveKeys. EVD: `evd/kpi-inactive-fix/` (5 screenshots).
+- [x] **Unit test `test-kpi-data.js`** — Cập nhật filter sang `status !== 'Approved'` (đồng bộ dashboard.js). Thêm inactive UC vào fixture ALL_LIST để A9 test đúng bug. Thêm Suite F (5 tests) kiểm tra trực tiếp bug + edge case display_name. **25/25 PASS**.
+- [x] **Playwright regression** — 85/85 PASS, không có regression.
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-06-22
 
 - [x] **GAS redeploy** — AdminService.gs (submitWeeklyUpdate_ numeric TEXT/NUM split + review_comment leaderboard) + UseCaseService.gs (_getAllUseCaseIds_ N×1 optimization). URL giữ nguyên. Confirmed by user.
