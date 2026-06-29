@@ -4,9 +4,17 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
-## ✅ Đã hoàn thành trong session 2026-06-29
+## ✅ Đã hoàn thành trong session 2026-06-29 (Part 2)
 
-- [x] **BUG FIX: KPI inactive user** — `dashboard.js _buildKPIData()`: inactive user (active=false) bị skip ở Step 2a mà không vào `claimed` → Step 2b thêm UC của họ từ `byEmail` vào result. Fix: ghi `inactiveKeys` trong Step 2a, filter `if (inactiveKeys[eKey]) return` trong Step 2b. Cả username lẫn display_name đều được ghi vào inactiveKeys. EVD: `evd/kpi-inactive-fix/` (5 screenshots).
+- [x] **BUG FIX: KPI duplicate user row** (v3.11.2, commit `a5ff7fd`) — `_buildKPIData()` Step 2a chỉ `claimed[uKey]` không `claimed[dnKey]` → byEmail[dnKey] lọt qua Step 2b tạo ghost row thứ 2. Fix: claim cả `dnKey`, merge `byEmail[uKey] + byEmail[dnKey]` qua `mergeKPIStats_()`. Disjoint buckets (một UC có một owner_email) → không double-count. Đây cũng là root cause AIUS-0157 không hiện đúng row.
+- [x] **Unit test `test-kpi-data.js`** — Đồng bộ `buildKPIData` với `mergeKPIStats_` + claim dnKey. Thêm Suite G (G1–G5). **30/30 PASS**.
+- [x] **Playwright regression** — 85/85 PASS, không có regression.
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-06-29 (Part 1)
+
+- [x] **BUG FIX: KPI inactive user** (v3.11.1, commit `158a9e6`) — `dashboard.js _buildKPIData()`: inactive user (active=false) bị skip ở Step 2a mà không vào `claimed` → Step 2b thêm UC của họ từ `byEmail` vào result. Fix: ghi `inactiveKeys` trong Step 2a, filter `if (inactiveKeys[eKey]) return` trong Step 2b. Cả username lẫn display_name đều được ghi vào inactiveKeys. EVD: `evd/kpi-inactive-fix/` (5 screenshots).
 - [x] **Unit test `test-kpi-data.js`** — Cập nhật filter sang `status !== 'Approved'` (đồng bộ dashboard.js). Thêm inactive UC vào fixture ALL_LIST để A9 test đúng bug. Thêm Suite F (5 tests) kiểm tra trực tiếp bug + edge case display_name. **25/25 PASS**.
 - [x] **Playwright regression** — 85/85 PASS, không có regression.
 

@@ -1672,3 +1672,50 @@ Không có blocker mới. Tất cả blocker từ session trước còn nguyên 
 | Unit test `test-kpi-data.js` | **25/25 PASS** (20 existing + 5 new Suite F) |
 | Playwright full suite | **85/85 PASS** (no regression) |
 | EVD screenshots | 5 ảnh tại `evd/kpi-inactive-fix/` |
+
+---
+
+## Session: 2026-06-29 (Part 2)
+**Scope:** Bug fix — KPI hiển thị user 2 lần + AIUS-0157 không xuất hiện ở đúng row
+**Version:** v3.11.2
+**Commits:** `68f4339` (debug temp, removed), `a5ff7fd` (fix)
+
+### Root cause
+
+`_buildKPIData()` — Step 2a chỉ `claimed[uKey]` (username), KHÔNG `claimed[dnKey]` (display_name).
+
+Kịch bản dẫn đến lỗi:
+- User "Nguyễn Phạm Lâm Phương" (`username = "phuongnpl"`) nộp một số UC với `owner_email = "phuongnpl"` (username) và một số UC khác với `owner_email = "Nguyễn Phạm Lâm Phương"` (display_name).
+- Step 1 tạo ra **hai key** trong `byEmail`: `byEmail["phuongnpl"]` (2 UC) và `byEmail["nguyễn phạm lâm phương"]` (N UC gồm AIUS-0157).
+- Step 2a: `stats = byEmail["phuongnpl"]` → found; `claimed["phuongnpl"] = true`; nhưng `byEmail["nguyễn phạm lâm phương"]` **không được claimed**.
+- Step 2b: `"nguyễn phạm lâm phương"` không trong `claimed` → tạo **ghost row thứ 2** tên "Nguyễn Phạm Lâm Phương" với tất cả UC nộp qua display_name.
+
+Kết quả: user xuất hiện **2 lần** trong KPI. Row thật (username key) chỉ có 2 UC, row ghost (display_name key) có đủ UC kể cả AIUS-0157.
+
+Điều này cũng giải thích tại sao AIUS-0157 không hiện ở row của user khi xem tuần 22/06–28/06: AIUS-0157 nằm trong ghost row (được submit với `owner_email = display_name`), không phải trong row user thật (username key chỉ có 2 UC, trong đó tuần đó = 0).
+
+### Fix
+
+**`assets/js/dashboard.js` — `_buildKPIData()`:**
+- Thêm helper `mergeKPIStats_(a, b)` bên trong `_buildKPIData`: merge hai stat bucket bằng cách cộng từng weekKey và total.
+- Step 2a: claim **cả `uKey` lẫn `dnKey`** unconditionally (trước khi tìm stats).
+- Step 2a: merge `byEmail[uKey]` + `byEmail[dnKey]` qua `mergeKPIStats_()` thay vì `||` chain. Hai bucket **disjoint** (một UC chỉ có một `owner_email`) nên merge an toàn không double-count.
+- Fall back sang `byName` chỉ khi byEmail không có gì cho user này.
+
+**`assets/tests/test-kpi-data.js`:**
+- Đồng bộ `buildKPIData()` với logic mới (thêm `mergeKPIStats_`, claim cả dnKey).
+- Thêm **Suite G** (G1–G5): verify user xuất hiện 1 lần, total = sum cả hai bucket, tuần đúng, không ghost row.
+
+### Files changed
+
+| File | Delta |
+|------|-------|
+| `assets/js/dashboard.js` | +20/-8 lines: `mergeKPIStats_` helper + claim dnKey + merge byEmail buckets trong Step 2a; bỏ temp diagnostic |
+| `assets/tests/test-kpi-data.js` | +35 lines: `mergeKPIStats_` + claim dnKey trong `buildKPIData` + Suite G (5 tests) |
+
+### Test kết quả
+
+| Check | Kết quả |
+|-------|---------|
+| Unit test `test-kpi-data.js` | **30/30 PASS** (25 existing + 5 new Suite G) |
+| Playwright full suite | **85/85 PASS** (no regression) |

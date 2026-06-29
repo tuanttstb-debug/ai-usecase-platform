@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-06-22
-**Version:** 3.11 — Weekly Update governance complete (UC picker modal + stage lifecycle + WEEKLY_LOG)
+**Last updated:** 2026-06-29
+**Version:** 3.11.2 — KPI bug fixes: inactive user leak (v3.11.1) + duplicate row khi owner_email = display_name (v3.11.2)
 **Project location:** `D:\Workspace\Production\ai-usecase-platform` (moved from `D:\Công việc\Vibecode\` on 2026-06-19)
 
 ---
