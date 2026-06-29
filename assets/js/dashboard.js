@@ -1589,32 +1589,22 @@
       if (nKey && nKey !== eKey) addTo(byName, nKey);
     });
 
-    // ── TEMP DIAGNOSTIC: trace AIUS-0157 through KPI pipeline (remove after debug) ──
-    var _d157 = _allList.find(function(uc){ return uc.usecase_id === 'AIUS-0157'; });
-    if (_d157) {
-      var _d157eKey = _norm(_d157.owner_email);
-      var _d157nKey = _norm(_d157.owner_name);
-      var _d157date = _d157.submit_date || _d157.submitted_at;
-      console.log('[KPI-DEBUG] AIUS-0157 data:', {
-        status:       _d157.status,
-        submit_date:  _d157.submit_date,
-        dateStr:      _d157date,
-        weekKey:      _d157date ? _getWeekKey(new Date(_d157date)) : null,
-        owner_email:  _d157.owner_email,
-        owner_name:   _d157.owner_name,
-        eKey:         _d157eKey,
-        nKey:         _d157nKey,
-        inByEmail:    !!byEmail[_d157eKey],
-        inByName:     !!byName[_d157nKey]
-      });
-    } else {
-      console.log('[KPI-DEBUG] AIUS-0157 NOT in _allList. Total UCs:', _allList.length);
-    }
-    // ── END DIAGNOSTIC ──
-
     var result       = {};
     var claimed      = {}; // track byEmail keys already linked to a USERS entry
     var inactiveKeys = {}; // norm keys of deactivated users — must not appear in KPI even if they have old UCs
+
+    // Merge two byEmail stat buckets for a single user.
+    // Safe because a UC has exactly one owner_email, so the two buckets are disjoint.
+    function mergeKPIStats_(a, b) {
+      if (!a) return b;
+      if (!b) return a;
+      var m = { team: (a.team !== '--' ? a.team : b.team), rawName: a.rawName || b.rawName, weeks: {}, total: 0 };
+      [a.weeks, b.weeks].forEach(function(w) {
+        Object.keys(w).forEach(function(wk) { m.weeks[wk] = (m.weeks[wk] || 0) + w[wk]; });
+      });
+      m.total = (a.total || 0) + (b.total || 0);
+      return m;
+    }
 
     if (_usersList && _usersList.length) {
       // Step 2a: start from USERS sheet — includes users with 0 UCs
@@ -1630,9 +1620,21 @@
         var dnKey = _norm(u.display_name);
         if (!uKey) return;
 
-        // Match: username → owner_email, then owner_name; display_name → owner_name
-        var stats = byEmail[uKey] || byEmail[dnKey] || byName[uKey] || byName[dnKey] || null;
-        if (stats) claimed[uKey] = true;
+        // Claim BOTH username and display_name keys so Step 2b cannot create duplicate ghost rows
+        // when a user submitted some UCs with owner_email = display_name instead of username.
+        claimed[uKey] = true;
+        if (dnKey) claimed[dnKey] = true;
+
+        // Merge byEmail stats from username key and display_name key — disjoint sets (no double-count).
+        // Fall back to byName only when byEmail has nothing for this user.
+        var eA = byEmail[uKey] || null;
+        var eB = (dnKey && dnKey !== uKey) ? (byEmail[dnKey] || null) : null;
+        var stats;
+        if (eA || eB) {
+          stats = mergeKPIStats_(eA, eB);
+        } else {
+          stats = byName[uKey] || (dnKey && dnKey !== uKey ? byName[dnKey] : null) || null;
+        }
 
         result[uKey] = {
           username: uKey,

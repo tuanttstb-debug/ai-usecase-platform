@@ -5,6 +5,7 @@
  *   - Case-insensitive matching: Tuantt4=TuanTT4=tuantt4
  *   - Fallback về _allList khi _usersList rỗng
  *   - Inactive users (active=false) bị loại kể cả khi có UC cũ trong _allList (BUG FIX 2026-06-29)
+ *   - Duplicate user khi owner_email = display_name thay vì username (BUG FIX 2026-06-29)
  * Chạy: node assets/tests/test-kpi-data.js
  */
 
@@ -60,7 +61,19 @@ function buildKPIData(allList, usersList) {
 
   var result       = {};
   var claimed      = {};
-  var inactiveKeys = {}; // BUG FIX: norm keys của inactive users để filter ở Step 2b
+  var inactiveKeys = {}; // BUG FIX 2026-06-29: norm keys của inactive users để filter ở Step 2b
+
+  // Merge hai byEmail stat buckets — an toàn vì owner_email là single value (không double-count).
+  function mergeKPIStats_(a, b) {
+    if (!a) return b;
+    if (!b) return a;
+    var m = { team: (a.team !== '--' ? a.team : b.team), rawName: a.rawName || b.rawName, weeks: {}, total: 0 };
+    [a.weeks, b.weeks].forEach(function(w) {
+      Object.keys(w).forEach(function(wk) { m.weeks[wk] = (m.weeks[wk] || 0) + w[wk]; });
+    });
+    m.total = (a.total || 0) + (b.total || 0);
+    return m;
+  }
 
   if (usersList && usersList.length) {
     usersList.forEach(function (u) {
@@ -73,8 +86,20 @@ function buildKPIData(allList, usersList) {
       var dnKey = _norm(u.display_name);
       if (!uKey) return;
 
-      var stats = byEmail[uKey] || byEmail[dnKey] || byName[uKey] || byName[dnKey] || null;
-      if (stats) claimed[uKey] = true;
+      // BUG FIX 2026-06-29: claim cả uKey lẫn dnKey để Step 2b không tạo ghost row duplicate.
+      claimed[uKey] = true;
+      if (dnKey) claimed[dnKey] = true;
+
+      // Merge byEmail từ cả username key lẫn display_name key (disjoint — không double-count).
+      // Fall back sang byName chỉ khi byEmail không có gì cho user này.
+      var eA = byEmail[uKey] || null;
+      var eB = (dnKey && dnKey !== uKey) ? (byEmail[dnKey] || null) : null;
+      var stats;
+      if (eA || eB) {
+        stats = mergeKPIStats_(eA, eB);
+      } else {
+        stats = byName[uKey] || (dnKey && dnKey !== uKey ? byName[dnKey] : null) || null;
+      }
 
       result[uKey] = {
         username: uKey,
@@ -249,6 +274,30 @@ var LIST_F2 = [
 ];
 var resF2 = buildKPIData(LIST_F2, USERS_F2);
 assert(resF2['ngoc bui'] === undefined, 'F5: inactive user bị loại theo display_name key');
+
+console.log('\n=== Suite G: BUG FIX — User xuất hiện 2 lần khi owner_email = display_name ===');
+// Kịch bản: user "phuongnpl" nộp 2 UC với owner_email="phuongnpl",
+// nhưng nộp 3 UC khác với owner_email="Nguyen Pham Lam Phuong" (display_name).
+// Trước fix: user xuất hiện 2 row riêng biệt.
+// Sau fix: merge thành 1 row với total=5, không có ghost row.
+
+var USERS_G = [
+  { username: 'phuongnpl', display_name: 'Nguyen Pham Lam Phuong', team: 'OPS', active: true }
+];
+var LIST_G = [
+  { owner_email: 'phuongnpl',              owner_name: 'Nguyen Pham Lam Phuong', team: 'OPS', status: 'Approved', submit_date: TODAY },
+  { owner_email: 'phuongnpl',              owner_name: 'Nguyen Pham Lam Phuong', team: 'OPS', status: 'Approved', submit_date: '2026-05-01' },
+  { owner_email: 'Nguyen Pham Lam Phuong', owner_name: 'Nguyen Pham Lam Phuong', team: 'OPS', status: 'Approved', submit_date: TODAY },
+  { owner_email: 'Nguyen Pham Lam Phuong', owner_name: 'Nguyen Pham Lam Phuong', team: 'OPS', status: 'Approved', submit_date: TODAY },
+  { owner_email: 'Nguyen Pham Lam Phuong', owner_name: 'Nguyen Pham Lam Phuong', team: 'OPS', status: 'Approved', submit_date: '2026-04-15' }
+];
+var resG = buildKPIData(LIST_G, USERS_G);
+
+assert(resG['phuongnpl'] !== undefined,         'G1: entry tồn tại với key username');
+assert(resG['phuongnpl'].total === 5,            'G2: total=5 (2 via username + 3 via display_name — merged)');
+assert((resG['phuongnpl'].weeks[WEEK_THIS] || 0) === 3, 'G3: tuần này = 3 UC (1 username + 2 display_name)');
+assert(resG['nguyen pham lam phuong'] === undefined, 'G4: không có ghost row cho display_name key');
+assert(Object.keys(resG).length === 1,           'G5: chỉ 1 entry — không duplicate');
 
 // ── Summary ───────────────────────────────────────────────────────────
 console.log('\n────────────────────────────────');
