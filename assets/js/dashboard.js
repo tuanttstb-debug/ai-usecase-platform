@@ -1589,6 +1589,29 @@
       if (nKey && nKey !== eKey) addTo(byName, nKey);
     });
 
+    // ── TEMP DIAGNOSTIC: trace AIUS-0157 through KPI pipeline (remove after debug) ──
+    var _d157 = _allList.find(function(uc){ return uc.usecase_id === 'AIUS-0157'; });
+    if (_d157) {
+      var _d157eKey = _norm(_d157.owner_email);
+      var _d157nKey = _norm(_d157.owner_name);
+      var _d157date = _d157.submit_date || _d157.submitted_at;
+      console.log('[KPI-DEBUG] AIUS-0157 data:', {
+        status:       _d157.status,
+        submit_date:  _d157.submit_date,
+        dateStr:      _d157date,
+        weekKey:      _d157date ? _getWeekKey(new Date(_d157date)) : null,
+        owner_email:  _d157.owner_email,
+        owner_name:   _d157.owner_name,
+        eKey:         _d157eKey,
+        nKey:         _d157nKey,
+        inByEmail:    !!byEmail[_d157eKey],
+        inByName:     !!byName[_d157nKey]
+      });
+    } else {
+      console.log('[KPI-DEBUG] AIUS-0157 NOT in _allList. Total UCs:', _allList.length);
+    }
+    // ── END DIAGNOSTIC ──
+
     var result       = {};
     var claimed      = {}; // track byEmail keys already linked to a USERS entry
     var inactiveKeys = {}; // norm keys of deactivated users — must not appear in KPI even if they have old UCs
