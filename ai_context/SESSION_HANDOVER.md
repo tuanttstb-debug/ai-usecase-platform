@@ -1777,7 +1777,16 @@ Hành động khi commit:
 4. **Idempotent** — chạy lại script khi đã migrate xong → 0 changes (phát hiện "BL" đã tồn tại, không tìm thấy BL1/BL2)
 5. **Frontend không cần sửa** — 0 hardcode → data-driven tự cập nhật
 
-### Blockers / Open issues
-- **[USER ACTION NEEDED]** Chạy `migrateTeamsBL_()` trong GAS Editor
-- **[USER ACTION NEEDED]** Champion BL1/BL2 re-login sau migrate
-- **[VERIFY]** Sau migrate: `dashboard.html` → tab Tất cả → team dropdown → xác nhận chỉ còn "BL"
+### Kết quả thực hiện
+
+✅ Migration hoàn tất cùng phiên:
+- `dryRunTeamBL` chạy thành công → preview log đúng
+- `commitTeamBL` chạy thành công → LOOKUP + MASTER_DATA + USERS đã update, DASHBOARD_READY cache cleared
+- Fix GAS private function bug: thêm wrapper `dryRunTeamBL` / `commitTeamBL` (hàm `_` suffix không hiện trong Run menu GAS)
+
+### Commits phiên này
+| Commit | Mô tả |
+|---|---|
+| `7731d64` | feat: add MigrationService.gs |
+| `a1beaa7` | fix: add public wrapper functions for GAS Run menu |
+| `[handover]` | chore: session handover 2026-07-07 |

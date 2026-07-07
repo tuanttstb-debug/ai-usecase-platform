@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-07-07
 **Version:** 3.11.2 — KPI bug fixes: inactive user leak (v3.11.1) + duplicate row khi owner_email = display_name (v3.11.2)
-**Pending migration:** Team BL1 + BL2 → Team BL (MigrationService.gs chờ deploy + run)
+**Data migration:** ✅ Team BL1 + BL2 → Team BL hoàn tất (2026-07-07) — LOOKUP + MASTER_DATA + USERS + DASHBOARD cache cleared
 **Project location:** `D:\Workspace\Production\ai-usecase-platform` (moved from `D:\Công việc\Vibecode\` on 2026-06-19)
 
 ---

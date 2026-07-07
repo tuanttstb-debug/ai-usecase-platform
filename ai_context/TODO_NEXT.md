@@ -4,30 +4,11 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
-## P0 — [USER ACTION] Chạy migration Team BL1+BL2 → BL
-
-Script đã sẵn sàng tại `assets/gas-backend/MigrationService.gs`. Cần chạy trong GAS Editor:
-
-```
-1. Mở GAS Editor → New file → paste MigrationService.gs
-2. Chạy migrateTeamsBL_()  ← mặc định DRY_RUN=true → xem Logs → kiểm tra preview
-3. Đổi dòng: if (typeof dryRun === 'undefined') dryRun = false; → chạy lại để commit
-   Hoặc gọi trực tiếp: migrateTeamsBL_(false);
-4. Kiểm tra Sheets: LOOKUP Team=BL, MASTER_DATA cột Team=BL, USERS cột Team=BL
-5. Mở dashboard → team filter → xác nhận chỉ còn "BL"
-6. Yêu cầu champion BL (nếu có) re-login
-7. Xóa MigrationService.gs khỏi GAS Editor (optional)
-```
-
-> **Lưu ý:** Không cần deploy lại GAS Web App. Script chạy trực tiếp trong Editor.  
-> **Idempotent:** Chạy nhiều lần an toàn — lần 2 sẽ báo "0 changes".
-
----
-
 ## ✅ Đã hoàn thành trong session 2026-07-07
 
 - [x] **Phân tích migration BL1+BL2→BL** — Grep 0 match → không có hardcode → chỉ cần data migration
-- [x] **Viết `MigrationService.gs`** — `migrateTeamsBL_(dryRun)`: update LOOKUP + MASTER_DATA + USERS + clear DASHBOARD cache; batch read/write; idempotent
+- [x] **Viết `MigrationService.gs`** — `migrateTeamsBL_(dryRun)` + public wrappers `dryRunTeamBL` / `commitTeamBL`; batch read/write; idempotent
+- [x] **Chạy migration thành công** — LOOKUP + MASTER_DATA + USERS cột Team: BL1/BL2 → BL; DASHBOARD_READY cache cleared; commit `a1beaa7`
 
 ---
 
