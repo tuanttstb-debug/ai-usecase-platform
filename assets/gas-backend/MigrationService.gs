@@ -3,9 +3,26 @@
 // ─────────────────────────────────────────────────────────────────
 // Cách dùng:
 //   1. Paste file này vào GAS Editor
-//   2. Chạy migrateTeamsBL_() với DRY_RUN = true → xem log preview
-//   3. Xác nhận log đúng → đổi DRY_RUN = false → chạy lại để commit
+//   2. Chọn hàm "dryRunTeamBL" trong dropdown → Run → xem Logs (preview)
+//   3. Xác nhận log đúng → chọn hàm "commitTeamBL" → Run để commit
 //   4. Xóa file khỏi GAS Editor sau khi hoàn thành (optional, harmless)
+//
+// LƯU Ý: Hàm tên có dấu _ ở cuối (vd: migrateTeamsBL_) là private,
+//         không hiển thị trong menu Run của GAS. Dùng 2 hàm dưới đây.
+// ─────────────────────────────────────────────────────────────────
+
+// ── Entry points (hiển thị trong GAS Run menu) ───────────────────
+
+/** Bước 1 — Preview: chỉ log, KHÔNG ghi vào sheet */
+function dryRunTeamBL() {
+  migrateTeamsBL_(true);
+}
+
+/** Bước 2 — Commit: ghi thật vào LOOKUP + MASTER_DATA + USERS + clear cache */
+function commitTeamBL() {
+  migrateTeamsBL_(false);
+}
+
 // ─────────────────────────────────────────────────────────────────
 
 /**
