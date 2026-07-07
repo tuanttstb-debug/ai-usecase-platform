@@ -4,6 +4,33 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## P0 — [USER ACTION] Chạy migration Team BL1+BL2 → BL
+
+Script đã sẵn sàng tại `assets/gas-backend/MigrationService.gs`. Cần chạy trong GAS Editor:
+
+```
+1. Mở GAS Editor → New file → paste MigrationService.gs
+2. Chạy migrateTeamsBL_()  ← mặc định DRY_RUN=true → xem Logs → kiểm tra preview
+3. Đổi dòng: if (typeof dryRun === 'undefined') dryRun = false; → chạy lại để commit
+   Hoặc gọi trực tiếp: migrateTeamsBL_(false);
+4. Kiểm tra Sheets: LOOKUP Team=BL, MASTER_DATA cột Team=BL, USERS cột Team=BL
+5. Mở dashboard → team filter → xác nhận chỉ còn "BL"
+6. Yêu cầu champion BL (nếu có) re-login
+7. Xóa MigrationService.gs khỏi GAS Editor (optional)
+```
+
+> **Lưu ý:** Không cần deploy lại GAS Web App. Script chạy trực tiếp trong Editor.  
+> **Idempotent:** Chạy nhiều lần an toàn — lần 2 sẽ báo "0 changes".
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-07-07
+
+- [x] **Phân tích migration BL1+BL2→BL** — Grep 0 match → không có hardcode → chỉ cần data migration
+- [x] **Viết `MigrationService.gs`** — `migrateTeamsBL_(dryRun)`: update LOOKUP + MASTER_DATA + USERS + clear DASHBOARD cache; batch read/write; idempotent
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-06-29 (Part 2)
 
 - [x] **BUG FIX: KPI duplicate user row** (v3.11.2, commit `a5ff7fd`) — `_buildKPIData()` Step 2a chỉ `claimed[uKey]` không `claimed[dnKey]` → byEmail[dnKey] lọt qua Step 2b tạo ghost row thứ 2. Fix: claim cả `dnKey`, merge `byEmail[uKey] + byEmail[dnKey]` qua `mergeKPIStats_()`. Disjoint buckets (một UC có một owner_email) → không double-count. Đây cũng là root cause AIUS-0157 không hiện đúng row.

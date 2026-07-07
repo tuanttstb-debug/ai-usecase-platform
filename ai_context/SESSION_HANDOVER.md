@@ -1719,3 +1719,65 @@ Kết quả: user xuất hiện **2 lần** trong KPI. Row thật (username key)
 |-------|---------|
 | Unit test `test-kpi-data.js` | **30/30 PASS** (25 existing + 5 new Suite G) |
 | Playwright full suite | **85/85 PASS** (no regression) |
+
+---
+
+## Session: 2026-07-07
+**Scope:** Phân tích + chuẩn bị migrate Team BL1 + BL2 → Team BL
+**Version:** 3.11.2 (không bump — script chờ user deploy + run)
+
+### Yêu cầu
+Toàn bộ Team BL2 gộp vào Team BL1 thành 1 team tên "BL". Cần update: LOOKUP sheet, MASTER_DATA (cột Team), USERS sheet (cột Team), xóa DASHBOARD_READY cache.
+
+### Phân tích
+
+**Phạm vi ảnh hưởng (đã xác minh):**
+- Grep 0 match BL1/BL2 trong toàn bộ codebase JS/HTML/GAS/txt → **không có hardcode**
+- Team name hoàn toàn data-driven từ LOOKUP sheet → **không cần sửa frontend**
+- LOOKUP_DEFAULTS trong LookupService.gs không chứa BL1/BL2 → **không cần sửa code GAS**
+- Test fixtures dùng "Team Số"/"Team ABC" → **85/85 tests không bị ảnh hưởng**
+
+**Chỉ cần:**
+1. Chạy GAS migration script (data-only, không deploy lại)
+2. Re-login cho champion users của BL1/BL2 sau migrate
+
+### File tạo mới
+
+| File | Mô tả |
+|---|---|
+| `assets/gas-backend/MigrationService.gs` | One-time migration: `migrateTeamsBL_(dryRun)` |
+
+### Hàm `migrateTeamsBL_(dryRun)`
+
+**DRY_RUN = true** (mặc định): chỉ log, không ghi sheet.
+**DRY_RUN = false**: thực sự commit.
+
+Hành động khi commit:
+1. **LOOKUP sheet**: đổi row Team=BL1 → "BL"; xóa row Team=BL2 (hoặc ngược lại nếu BL đã tồn tại)
+2. **MASTER_DATA**: đọc cột Team 1 lần (N×1), replace BL1/BL2 → BL, ghi lại 1 lần
+3. **USERS**: cùng pattern với MASTER_DATA
+4. **DASHBOARD_READY**: xóa data rows → cache tự rebuild lần truy cập tiếp theo
+
+### Quy trình thực hiện (cần user action)
+
+```
+1. Mở GAS Editor → tạo file mới → paste MigrationService.gs
+2. Chạy migrateTeamsBL_() (dryRun=true mặc định) → View → Logs → xem preview
+3. Xác nhận log đúng → sửa dòng đầu hàm: dryRun = false → chạy lại
+4. Kiểm tra Google Sheets: LOOKUP Team chỉ còn "BL", MASTER_DATA/USERS đã update
+5. Mở dashboard → team filter → xác nhận chỉ còn "BL"
+6. Yêu cầu champion BL (nếu có) re-login để session lấy team mới từ USERS sheet
+7. (Optional) Xóa MigrationService.gs khỏi GAS Editor sau khi xong
+```
+
+### Decisions chốt
+1. **Không cần deploy GAS** — chỉ cần chạy script trực tiếp trong GAS Editor (Run function). URL GAS giữ nguyên.
+2. **Batch read/write** — đọc cả cột Team 1 lần, ghi lại 1 lần → tối thiểu API calls, tránh timeout
+3. **DRY_RUN mặc định true** — safe by default; user phải chủ động đổi false để commit
+4. **Idempotent** — chạy lại script khi đã migrate xong → 0 changes (phát hiện "BL" đã tồn tại, không tìm thấy BL1/BL2)
+5. **Frontend không cần sửa** — 0 hardcode → data-driven tự cập nhật
+
+### Blockers / Open issues
+- **[USER ACTION NEEDED]** Chạy `migrateTeamsBL_()` trong GAS Editor
+- **[USER ACTION NEEDED]** Champion BL1/BL2 re-login sau migrate
+- **[VERIFY]** Sau migrate: `dashboard.html` → tab Tất cả → team dropdown → xác nhận chỉ còn "BL"
