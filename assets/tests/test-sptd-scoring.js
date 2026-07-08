@@ -5,7 +5,7 @@
 
 // ── Minimal shims — use global so required modules can read them ───
 global.APP_CONFIG = {
-  PROGRAM_START_DATE:   '2026-05-01',
+  PROGRAM_START_DATE:   '2026-06-01',
   SPTD_EXCLUDED_USERS:  ['excluded_user']
 };
 
@@ -31,14 +31,10 @@ function ok(cond, msg) {
   if (!cond) throw new Error(msg || 'assertion failed');
 }
 
-// T0 = 2026-05-01 (Friday) → Monday of that week = 2026-04-27
-// Week 0: 2026-04-27 – 2026-05-03
-// Week 1: 2026-05-04 – 2026-05-10
-// Week 2: 2026-05-11 – 2026-05-17
-
-// Simulate "today" by using dates well after program start.
-// With real system clock we cannot freeze Date, so tests use dates
-// that fall strictly before today (June–July 2026) and verify logic.
+// T0 = 2026-06-01 (Monday) → Monday of that week = 2026-06-01 itself
+// Week 0: 2026-06-01 – 2026-06-07
+// Week 1: 2026-06-08 – 2026-06-14
+// Week 2: 2026-06-15 – 2026-06-21
 
 function makeUC(overrides) {
   return Object.assign({
@@ -49,7 +45,7 @@ function makeUC(overrides) {
     owner_email:           'testuser',
     owner_name:            'Test User',
     team:                  'Team A',
-    submit_date:           '2026-05-05', // week 1
+    submit_date:           '2026-06-09', // week 1 (Mon 06-08)
     total_score:           80,
     auto_score:            60,
     quality_score:         8,
@@ -80,7 +76,7 @@ test('A1: single user with 1 Approved UC returns 1 entry', function () {
 });
 
 test('A2: total score formula is 80-10-10', function () {
-  var uc   = makeUC({ total_score: 100, submit_date: '2026-05-05' });
+  var uc   = makeUC({ total_score: 100, submit_date: '2026-06-09' });
   var user = makeUser();
   var res  = SPTDScoring.computeAllScores([uc], [user]);
   var u    = res[0];
@@ -119,8 +115,8 @@ test('A5: result sorted descending by total', function () {
 
 test('A6: avg_quality = mean of total_scores across Approved UCs', function () {
   var ucs = [
-    makeUC({ total_score: 80, submit_date: '2026-05-05' }),
-    makeUC({ usecase_id: 'AIUS-0002', record_id: 'rec-002', total_score: 60, submit_date: '2026-05-12' })
+    makeUC({ total_score: 80, submit_date: '2026-06-09' }),
+    makeUC({ usecase_id: 'AIUS-0002', record_id: 'rec-002', total_score: 60, submit_date: '2026-06-16' })
   ];
   var res = SPTDScoring.computeAllScores(ucs, [makeUser()]);
   eq(res[0].avg_quality, 70, 'avg of 80 and 60 = 70');
@@ -128,17 +124,16 @@ test('A6: avg_quality = mean of total_scores across Approved UCs', function () {
 });
 
 test('A7: quantity capped at 1 UC/week (max 10pt)', function () {
-  // Submit many UCs in one week
+  // Submit many UCs in one week — min(n/nWeeks, 1) × 10 = 10
   var ucs = [1,2,3,4,5,6,7,8,9,10,11,12].map(function (i) {
-    return makeUC({ usecase_id: 'AIUS-' + i, record_id: 'rec-' + i, submit_date: '2026-05-05' });
+    return makeUC({ usecase_id: 'AIUS-' + i, record_id: 'rec-' + i, submit_date: '2026-06-09' });
   });
   var res = SPTDScoring.computeAllScores(ucs, [makeUser()]);
   eq(res[0].s_quantity, 10, 'capped at 10');
 });
 
-test('A8: UC before T0 (2026-05-01) not counted in n_weeks_hit', function () {
-  var uc = makeUC({ submit_date: '2026-04-01' }); // week -4 (before T0's Monday 04-27)
-  // Actually T0 Monday = 2026-04-27, so 2026-04-01 < 2026-04-27 → wkIdx = -1 → skip
+test('A8: UC before T0 (2026-06-01) not counted', function () {
+  var uc = makeUC({ submit_date: '2026-04-01' }); // before T0 Monday (2026-06-01) → wkIdx = -1
   var res = SPTDScoring.computeAllScores([uc], [makeUser()]);
   eq(res[0].n_approved,  0, 'UC before T0 not counted');
   eq(res[0].n_weeks_hit, 0, 'no week hit');
@@ -146,8 +141,8 @@ test('A8: UC before T0 (2026-05-01) not counted in n_weeks_hit', function () {
 
 test('A9: multiple UCs same week count as 1 week hit', function () {
   var ucs = [
-    makeUC({ usecase_id: 'A', record_id: 'r1', submit_date: '2026-05-05' }),
-    makeUC({ usecase_id: 'B', record_id: 'r2', submit_date: '2026-05-06' })
+    makeUC({ usecase_id: 'A', record_id: 'r1', submit_date: '2026-06-09' }),
+    makeUC({ usecase_id: 'B', record_id: 'r2', submit_date: '2026-06-10' })
   ];
   var res = SPTDScoring.computeAllScores(ucs, [makeUser()]);
   eq(res[0].n_weeks_hit, 1, 'same ISO week counts as 1');
@@ -206,7 +201,7 @@ test('C1: returns correct number of weeks in timeline', function () {
 });
 
 test('C2: week with UC marked as hit', function () {
-  var uc      = makeUC({ submit_date: '2026-05-05' }); // week idx = 1 (Mon 05-04)
+  var uc      = makeUC({ submit_date: '2026-06-09' }); // week 1 (Mon 2026-06-08)
   var details = SPTDScoring.computeUserDetails('testuser', [uc]);
   var hitWeeks = details.weekTimeline.filter(function (w) { return w.hit; });
   ok(hitWeeks.length >= 1, 'at least 1 week marked hit');
@@ -214,7 +209,7 @@ test('C2: week with UC marked as hit', function () {
 });
 
 test('C3: weeks before UC submit are not hit', function () {
-  var uc      = makeUC({ submit_date: '2026-05-12' }); // week idx = 2
+  var uc      = makeUC({ submit_date: '2026-06-16' }); // week 2 (Mon 2026-06-15)
   var details = SPTDScoring.computeUserDetails('testuser', [uc]);
   eq(details.weekTimeline[0].hit, false, 'week 0 (before submit) not hit');
 });
@@ -227,7 +222,7 @@ test('C4: non-Approved UCs not included in user details', function () {
 });
 
 test('C5: owner_name fallback works when owner_email missing', function () {
-  var uc = makeUC({ owner_email: '', owner_name: 'testuser', submit_date: '2026-05-05' });
+  var uc = makeUC({ owner_email: '', owner_name: 'testuser', submit_date: '2026-06-09' });
   var details = SPTDScoring.computeUserDetails('testuser', [uc]);
   eq(details.ucs.length, 1, 'matched via owner_name');
 });
@@ -268,8 +263,8 @@ console.log('\nSuite E: duplicate-key merge');
 
 test('E1: UCs with owner_email=username and owner_email=display_name merge into one row', function () {
   var user = makeUser({ username: 'phuong', display_name: 'Nguyễn Phương' });
-  var uc1  = makeUC({ usecase_id: 'A', record_id: 'r1', owner_email: 'phuong',          submit_date: '2026-05-05' });
-  var uc2  = makeUC({ usecase_id: 'B', record_id: 'r2', owner_email: 'nguyễn phương',   submit_date: '2026-05-12' });
+  var uc1  = makeUC({ usecase_id: 'A', record_id: 'r1', owner_email: 'phuong',        submit_date: '2026-06-09' });
+  var uc2  = makeUC({ usecase_id: 'B', record_id: 'r2', owner_email: 'nguyễn phương', submit_date: '2026-06-16' });
   var res  = SPTDScoring.computeAllScores([uc1, uc2], [user]);
   eq(res.length, 1, 'merged into 1 row');
   eq(res[0].n_approved, 2, 'both UCs counted');
@@ -278,8 +273,8 @@ test('E1: UCs with owner_email=username and owner_email=display_name merge into 
 
 test('E2: no double-count when merging duplicate buckets', function () {
   var user = makeUser({ username: 'phuong', display_name: 'Nguyễn Phương' });
-  var uc1  = makeUC({ usecase_id: 'A', record_id: 'r1', owner_email: 'phuong',        total_score: 80, submit_date: '2026-05-05' });
-  var uc2  = makeUC({ usecase_id: 'B', record_id: 'r2', owner_email: 'nguyễn phương', total_score: 60, submit_date: '2026-05-12' });
+  var uc1  = makeUC({ usecase_id: 'A', record_id: 'r1', owner_email: 'phuong',        total_score: 80, submit_date: '2026-06-09' });
+  var uc2  = makeUC({ usecase_id: 'B', record_id: 'r2', owner_email: 'nguyễn phương', total_score: 60, submit_date: '2026-06-16' });
   var res  = SPTDScoring.computeAllScores([uc1, uc2], [user]);
   eq(res[0].avg_quality, 70, 'avg_quality = (80+60)/2 = 70, no double-count');
 });

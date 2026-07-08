@@ -25,7 +25,7 @@ var APP_CONFIG = {
   USER_SESSION_KEY: 'ai_user_session',
 
   // Ngày bắt đầu chương trình AI Use Case (cố định để tính điểm SPTD)
-  PROGRAM_START_DATE: '2026-05-01',
+  PROGRAM_START_DATE: '2026-06-01',
 
   // Danh sách username bị loại khỏi bảng điểm SPTD (Giám đốc, quản lý cấp cao)
   SPTD_EXCLUDED_USERS: ['cuongvm1']
