@@ -230,6 +230,9 @@
             <button class="dash-tab" data-tab="kpi" role="tab" aria-selected="false" id="tab-btn-kpi">
               KPI &amp; Tiến độ
             </button>
+            <button class="dash-tab" data-tab="sptd" role="tab" aria-selected="false" id="tab-btn-sptd">
+              Điểm SPTD
+            </button>
           </div>
 
           <!-- Tab: Tổng quan (admin only) -->
@@ -350,6 +353,13 @@
           <!-- Tab: KPI & Tiến độ (all users) -->
           <div id="tab-kpi" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-kpi">
             <div id="kpiTabContent">
+              <div class="empty-state"><p class="empty-state-text">Đang tải...</p></div>
+            </div>
+          </div>
+
+          <!-- Tab: Điểm SPTD (all users) -->
+          <div id="tab-sptd" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-sptd">
+            <div id="sptdTabContent">
               <div class="empty-state"><p class="empty-state-text">Đang tải...</p></div>
             </div>
           </div>
@@ -507,6 +517,7 @@
   <script src="assets/js/api.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="assets/js/scoring.js"></script>
+  <script src="assets/js/sptd-scoring.js"></script>
   <script src="assets/js/dashboard.js"></script>
 
   <!-- Sidebar toggle -->

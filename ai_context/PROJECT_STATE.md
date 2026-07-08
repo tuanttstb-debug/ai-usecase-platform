@@ -1,7 +1,7 @@
 # PROJECT STATE
 
-**Last updated:** 2026-07-07
-**Version:** 3.11.2 — KPI bug fixes: inactive user leak (v3.11.1) + duplicate row khi owner_email = display_name (v3.11.2)
+**Last updated:** 2026-07-08
+**Version:** 3.12.0 — Feature: Điểm SPTD tab (80-10-10 gamification scoring, timeline, leaderboard, CSV export)
 **Data migration:** ✅ Team BL1 + BL2 → Team BL hoàn tất (2026-07-07) — LOOKUP + MASTER_DATA + USERS + DASHBOARD cache cleared
 **Project location:** `D:\Workspace\Production\ai-usecase-platform` (moved from `D:\Công việc\Vibecode\` on 2026-06-19)
 
@@ -67,7 +67,7 @@ env.js → auth.js → [requireChampionOrAdmin inline] → routes.js → toast.j
 
 ### Script Load Order (dashboard.html)
 ```
-env.js → auth.js → routes.js → api.js → dashboard.js
+env.js → auth.js → routes.js → api.js → sptd-scoring.js → dashboard.js
 ```
 
 ### Script Load Order (index.html / portal)
@@ -126,7 +126,8 @@ env.js → auth.js → [inline portal script]
 | Scoring preview (register) | ✅ | NEW v3.10.2 (2026-06-17) — Live scoring ring + bars while filling wizard; self-assessment BV + Innovation sliders; Quality shown as 0 (TBD) |
 | Score display (explore) | ✅ | NEW v3.10.2 (2026-06-17) — Score chip on approved UCs in Explore tab; rank color badge |
 | ScoringEngine JS module | ✅ | NEW v3.10.2 (2026-06-17) — assets/js/scoring.js; mirrors GAS ScoringEngine.gs; used by register.html preview + review-queue.html panel |
-| Playwright test suite | ✅ | 85/85 pass (2026-06-29) — 6 spec files; no regression sau KPI inactive fix |
+| Điểm SPTD tab | ✅ | NEW v3.12 (2026-07-08) — Tab "Điểm SPTD" trên dashboard; công thức 80-10-10 (quality avg/qty/weeks); T0=2026-05-01; leaderboard public + my card + formula box + UC list + timeline + CSV export (admin); SPTDScoring IIFE module; 29/29 unit tests + 10/10 Playwright |
+| Playwright test suite | ✅ | 95/95 pass (2026-07-08) — 7 spec files; +10 SPTD tests (06-sptd-tab.spec.js) |
 | KPI week date format | ✅ | fix `91c4a00` — manual `DD/MM` formatter thay `toLocaleDateString` (locale inconsistency trên Chromium/Windows) |
 | Responsive | ✅ | Sidebar collapse 1024px áp dụng toàn bộ pages |
 

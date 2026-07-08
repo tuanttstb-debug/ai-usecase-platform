@@ -1,5 +1,54 @@
 # SESSION HANDOVER
 
+## Session: 2026-07-08
+**Scope:** Feature "Điểm SPTD" — Tính năng chấm điểm hiệu suất user (80-10-10 scoring)
+
+### Tóm tắt
+Implement hoàn chỉnh tab "Điểm SPTD" trên dashboard.html. Công thức 80-10-10:
+- 80% chất lượng = avg(Total_Score) của UC Approved
+- 10% số lượng = min(n_approved/n_weeks, 1) × 10
+- 10% tuần đạt = n_weeks_hit / n_weeks × 10
+
+T0 cố định: 2026-05-01. Tuần = Monday-anchored từ T0's Monday.
+
+### Files đã thay đổi
+| File | Loại | Mô tả |
+|---|---|---|
+| `assets/js/sptd-scoring.js` | NEW | SPTDScoring IIFE module — computeAllScores, computeUserDetails, getRank; conditional module.exports cho Node test compat |
+| `config/env.js` | Modified | Thêm `PROGRAM_START_DATE: '2026-05-01'` và `SPTD_EXCLUDED_USERS: ['cuongvm1']` |
+| `dashboard.html` | Modified | Tab button #tab-btn-sptd, tab panel #tab-sptd, script tag sptd-scoring.js |
+| `assets/js/dashboard.js` | Modified | `_sptdScores` state, `renderSPTDTab()` + 6 sub-render funcs, `_exportSPTDCSV()`, public API export |
+| `assets/css/dashboard.css` | Modified | ~150 lines SPTD CSS (card, breakdown grid, formula box, leaderboard table, UC table, timeline, responsive) |
+| `assets/tests/test-sptd-scoring.js` | NEW | 29 unit tests (5 suites: A basic, B edge cases, C userDetails, D getRank, E merge) — 29/29 PASS |
+| `tests/06-sptd-tab.spec.js` | NEW | 10 Playwright E2E tests — 10/10 PASS |
+
+### Tính năng đã implement
+- **My card**: big score + 3-component breakdown + rank badge + compare với SPTD avg
+- **Formula box**: nguyên tắc chấm + calc breakdown với số thực của user
+- **Leaderboard**: bảng xếp hạng, hàng "tôi" tô nền, huy chương 🥇🥈🥉, rank chip màu theo mức
+- **UC list**: danh sách UC Approved của tôi, sắp xếp theo score giảm, badge ⏳ cho UC chưa có champ review
+- **Timeline**: ô tuần ✓/✗ từ T0 đến nay, label T1/T2/.., tooltip dateRange
+- **CSV export**: admin only, BOM UTF-8, filename ngày
+
+### Kết quả test
+- Unit tests: **29/29 PASS** (`node assets/tests/test-sptd-scoring.js`)
+- Playwright: **95/95 PASS** (85 cũ + 10 mới SPTD)
+
+### Lý do kỹ thuật quan trọng
+- **Phase 0 skipped**: total_score + auto_score đã có sẵn trong listUseCases_ (lines 184-185 AdminService.gs) → không cần redeploy GAS
+- **Duplicate-key merge**: owner_email = display_name pattern được xử lý giống KPI tab (claimed + inactiveKeys pattern)
+- **global.APP_CONFIG**: unit test phải dùng `global.APP_CONFIG` (không phải `var`) để module require() đọc được
+- **module.exports shim**: thêm `if (typeof module !== 'undefined') module.exports = _public` vào cuối sptd-scoring.js
+
+### Commits phiên này
+Chưa commit — cần commit sau khi hoàn tất.
+
+### P0 còn lại
+- Commit toàn bộ files phiên này
+- Champion smoke test (từ TODO_NEXT.md P0 cũ)
+
+---
+
 ## Session: 2026-05-28
 **Scope:** UI/UX Refactor v2.0.0-ui — thiết kế, lập kế hoạch và implement
 

@@ -22,5 +22,11 @@ var APP_CONFIG = {
   ADMIN_SESSION_KEY: 'ai_admin_email',
 
   // sessionStorage key — lưu full user object {email, displayName, role, loginAt}
-  USER_SESSION_KEY: 'ai_user_session'
+  USER_SESSION_KEY: 'ai_user_session',
+
+  // Ngày bắt đầu chương trình AI Use Case (cố định để tính điểm SPTD)
+  PROGRAM_START_DATE: '2026-05-01',
+
+  // Danh sách username bị loại khỏi bảng điểm SPTD (Giám đốc, quản lý cấp cao)
+  SPTD_EXCLUDED_USERS: ['cuongvm1']
 };
