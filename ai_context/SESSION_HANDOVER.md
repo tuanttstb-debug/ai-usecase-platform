@@ -9,13 +9,13 @@ Implement hoàn chỉnh tab "Điểm SPTD" trên dashboard.html. Công thức 80
 - 10% số lượng = min(n_approved/n_weeks, 1) × 10
 - 10% tuần đạt = n_weeks_hit / n_weeks × 10
 
-T0 cố định: 2026-05-01. Tuần = Monday-anchored từ T0's Monday.
+T0 cố định: 2026-06-01 (Monday). Tuần = Monday-anchored từ T0 = 2026-06-01.
 
 ### Files đã thay đổi
 | File | Loại | Mô tả |
 |---|---|---|
 | `assets/js/sptd-scoring.js` | NEW | SPTDScoring IIFE module — computeAllScores, computeUserDetails, getRank; conditional module.exports cho Node test compat |
-| `config/env.js` | Modified | Thêm `PROGRAM_START_DATE: '2026-05-01'` và `SPTD_EXCLUDED_USERS: ['cuongvm1']` |
+| `config/env.js` | Modified | Thêm `PROGRAM_START_DATE: '2026-06-01'` và `SPTD_EXCLUDED_USERS: ['cuongvm1']` |
 | `dashboard.html` | Modified | Tab button #tab-btn-sptd, tab panel #tab-sptd, script tag sptd-scoring.js |
 | `assets/js/dashboard.js` | Modified | `_sptdScores` state, `renderSPTDTab()` + 6 sub-render funcs, `_exportSPTDCSV()`, public API export |
 | `assets/css/dashboard.css` | Modified | ~150 lines SPTD CSS (card, breakdown grid, formula box, leaderboard table, UC table, timeline, responsive) |
@@ -41,10 +41,13 @@ T0 cố định: 2026-05-01. Tuần = Monday-anchored từ T0's Monday.
 - **module.exports shim**: thêm `if (typeof module !== 'undefined') module.exports = _public` vào cuối sptd-scoring.js
 
 ### Commits phiên này
-Chưa commit — cần commit sau khi hoàn tất.
+| Commit | Mô tả |
+|---|---|
+| `fed5d33` | feat: add Điểm SPTD tab with 80-10-10 gamification scoring |
+| `f5436c9` | fix: update SPTD program start date to 2026-06-01 |
+| `[handover]` | chore: session handover 2026-07-08 |
 
 ### P0 còn lại
-- Commit toàn bộ files phiên này
 - Champion smoke test (từ TODO_NEXT.md P0 cũ)
 
 ---

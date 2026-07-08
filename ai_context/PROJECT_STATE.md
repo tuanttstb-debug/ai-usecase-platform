@@ -126,7 +126,7 @@ env.js → auth.js → [inline portal script]
 | Scoring preview (register) | ✅ | NEW v3.10.2 (2026-06-17) — Live scoring ring + bars while filling wizard; self-assessment BV + Innovation sliders; Quality shown as 0 (TBD) |
 | Score display (explore) | ✅ | NEW v3.10.2 (2026-06-17) — Score chip on approved UCs in Explore tab; rank color badge |
 | ScoringEngine JS module | ✅ | NEW v3.10.2 (2026-06-17) — assets/js/scoring.js; mirrors GAS ScoringEngine.gs; used by register.html preview + review-queue.html panel |
-| Điểm SPTD tab | ✅ | NEW v3.12 (2026-07-08) — Tab "Điểm SPTD" trên dashboard; công thức 80-10-10 (quality avg/qty/weeks); T0=2026-05-01; leaderboard public + my card + formula box + UC list + timeline + CSV export (admin); SPTDScoring IIFE module; 29/29 unit tests + 10/10 Playwright |
+| Điểm SPTD tab | ✅ | NEW v3.12 (2026-07-08) — Tab "Điểm SPTD" trên dashboard; công thức 80-10-10 (quality avg/qty/weeks); T0=2026-06-01; leaderboard public + my card + formula box + UC list + timeline + CSV export (admin); SPTDScoring IIFE module; 29/29 unit tests + 10/10 Playwright |
 | Playwright test suite | ✅ | 95/95 pass (2026-07-08) — 7 spec files; +10 SPTD tests (06-sptd-tab.spec.js) |
 | KPI week date format | ✅ | fix `91c4a00` — manual `DD/MM` formatter thay `toLocaleDateString` (locale inconsistency trên Chromium/Windows) |
 | Responsive | ✅ | Sidebar collapse 1024px áp dụng toàn bộ pages |
