@@ -151,6 +151,15 @@ function listUseCases_(filters) {
   var teamFilter   = String(filters.team   || '').trim();
   var limit        = parseInt(filters.limit, 10) || 100;
 
+  // Build username → Display_Name từ USERS sheet để enrich owner info (best-effort)
+  var userDisplayMap = {};
+  try {
+    getAllUsers_().forEach(function(u) {
+      var key = normalizeUser_(u.Username);
+      if (key) userDisplayMap[key] = sanitizeStr_(u.Display_Name) || _buildDisplayNameGas_(key);
+    });
+  } catch (e) { /* không chặn list nếu USERS sheet lỗi */ }
+
   var filtered = all.filter(function(uc) {
     if (filterPreset === 'pending') {
       return uc.Status === STATUS.SUBMITTED || uc.Status === 'Under Review';
@@ -166,12 +175,15 @@ function listUseCases_(filters) {
   });
 
   return filtered.slice(0, limit).map(function(uc) {
+    var ownerLogin = normalizeUser_(uc.Owner_Email || '');
     return {
       record_id:           uc.Record_ID,
       usecase_id:          uc.UseCase_ID,
       name:                uc.UseCase_Name,
       owner_name:          uc.Owner_Name,
       owner_email:         uc.Owner_Email,
+      owner_login:         ownerLogin,
+      owner_display:       userDisplayMap[ownerLogin] || '',
       team:                uc.Team,
       category:            uc.Business_Category,
       usecase_category:    uc.UseCase_Category    || '',

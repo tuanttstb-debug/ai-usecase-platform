@@ -1439,8 +1439,10 @@
       var q = input.value.trim().toLowerCase();
       if (!q) { renderExploreTable(_exploreList); return; }
       renderExploreTable(_exploreList.filter(function (uc) {
-        return String(uc.name       == null ? '' : uc.name).toLowerCase().includes(q)
-            || String(uc.owner_name == null ? '' : uc.owner_name).toLowerCase().includes(q)
+        return String(uc.name          == null ? '' : uc.name).toLowerCase().includes(q)
+            || String(uc.owner_name    == null ? '' : uc.owner_name).toLowerCase().includes(q)
+            || String(uc.owner_login   == null ? '' : uc.owner_login).toLowerCase().includes(q)
+            || String(uc.owner_display == null ? '' : uc.owner_display).toLowerCase().includes(q)
             || (uc.team     || '').toLowerCase().includes(q)
             || (uc.category || '').toLowerCase().includes(q);
       }));
