@@ -153,18 +153,16 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 
 ---
 
-## DATA-LIMIT-01 — `_allList` và `_pendingList` giới hạn 200 records
+## ~~DATA-LIMIT-01~~ — CLOSED (2026-07-27, deployed) — `_allList`/`_pendingList` giới hạn 200 records
 
-**Mô tả:** `listUseCases` default limit=200. `_pendingList` được derive client-side từ `_allList`. Khi tổng số UC > 200:
-- Tab "Chờ duyệt" có thể thiếu UC pending nằm sau row 200
-- Tab "Khám phá" có thể thiếu UC Approved cuối list
-- Box "Từ chối" có thể thiếu rejected UC
+**Đã fix (2026-07-27, commit `3c7463e`, GAS deployed):** Tổng UC đã vượt 200 → cap cắt mất mọi UC cũ hơn UC thứ-200 (≈20/06) TRƯỚC khi lọc owner → nhiều user mất UC cũ dù DB còn. Đây là hiện tượng "Use case của tôi thiếu US nộp trước 20/06".
 
-**Hiện tại:** Chấp nhận được với data volume hiện tại (< 200 UC).
+**Cách sửa:**
+- GAS `listUseCases_`: thêm filter `owner_login`/`owner_name` áp dụng TRƯỚC khi slice (My Cases); `limit<=0` = không cắt (org-wide loads); có owner filter → luôn trả full owner set.
+- FE org-wide loads (`_allList`, pending, review-queue, manager-review) đổi sang `limit:0`; My Cases fetch theo owner ở server (`_myList = all`).
+- Vì `limit:0` trả toàn bộ dataset qua slim view → KPI/SPTD/Khám phá/Tất cả/Chờ duyệt nay đầy đủ.
 
-**Fix dài hạn:** Implement pagination hoặc tăng limit + infinite scroll.
-
-**Note (2026-06-05):** KPI tab (`_buildKPIData`, `_computeStreak`, `_buildMonthlyKPI`) cũng iterate trên `_allList` → weekly stats, streak, ranking sẽ thiếu data của UC nằm ngoài top 200 khi total > 200.
+**Note tương lai (chưa blocking):** `limit:0` tải toàn bộ MASTER mỗi lần → khi data lên nhiều nghìn UC sẽ chậm dần (JSONP response size). Lúc đó mới cần pagination server-side thật (P3 backlog). Data hiện tại vài trăm UC → chấp nhận được.
 
 ---
 

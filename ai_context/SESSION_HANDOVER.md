@@ -1,5 +1,51 @@
 # SESSION HANDOVER
 
+## Session: 2026-07-27
+**Scope:** BUG FIX — "Use case của tôi" (và toàn dashboard) thiếu UC nộp trước ≈20/06
+**Version:** 3.12.2
+
+### Task completed
+Fix triệt để lỗi tab "Use case của tôi" chỉ hiện UC từ ≈20/06, thiếu UC cũ hơn — phát sinh với **nhiều user** dù DB vẫn còn data. Root cause + fix server-side + FE, deploy GAS, push main.
+
+### Root cause (đã xác nhận trong code)
+`listUseCases_` (GAS) sort `Created_At` mới→cũ rồi `slice(0, limit=200)`; FE lọc owner ở **client SAU khi đã cắt**. Khi tổng UC toàn tổ chức >200 → mọi UC cũ hơn UC thứ-200 (≈20/06) bị loại **trước khi** lọc owner → mất UC cũ đồng loạt (cắt theo mốc ngày chung nên mọi user giống nhau). `_allList` (nuôi KPI/SPTD/Khám phá/Tất cả/Chờ duyệt) cũng dính cùng cap. = **TECH_DEBT DATA-LIMIT-01**, nay CLOSED.
+
+### Files changed (commit `3c7463e`)
+| File | Thay đổi | Deploy |
+|---|---|---|
+| `assets/gas-backend/AdminService.gs` | `listUseCases_`: filter `owner_login`/`owner_name` TRƯỚC slice (khớp Owner_Email **và** Owner_Name, case-insensitive + `normalizeUser_`); có owner filter → trả full; `limit<=0` → không cắt | ✅ GAS |
+| `assets/gas-backend/Code.gs` | Route `list` truyền `owner_login`/`owner_name`; giữ `limit='0'` khi FE gửi 0 | ✅ GAS |
+| `config/routes.js` | Thêm 2 param owner; gửi `&limit=` cả khi =0 (`filters.limit != null && !== ''`) | FE tĩnh |
+| `assets/js/dashboard.js` | org loads `limit:0`; My Cases fetch theo owner ở server (`_myList = all`, bỏ double-filter client); pending `limit:0` | FE tĩnh |
+| `assets/js/review-queue.js` | `limit 500→0` | FE tĩnh |
+| `manager-review.html` | `limit 200→0` | FE tĩnh |
+
+### Decision made
+- **Server-side owner filter (đúng nhất)** thay vì chỉ nâng limit ở FE — user chọn, cho phép redeploy GAS. My Cases hỏi GAS đúng owner → server lọc trước khi cắt.
+- **Scope toàn hệ thống:** org-wide loads dùng `limit:0` (= tất cả) vì KPI/SPTD/Khám phá/Tất cả đều derive từ `_allList` → nếu chỉ fix My Cases thì các tab kia vẫn sai số.
+- **Convention `limit:0` = "lấy tất cả"** (không cắt). `routes.js` phải gửi limit cả khi =0; GAS parse `<=0` → full.
+- Match owner theo **cả** login lẫn display name (2 chiều) để chống data `Owner_Name`/`Owner_Email` lệch nhau (liên quan Khám Phá fix 2026-07-09).
+
+### Blocker
+Không còn. GAS đã deploy (URL không đổi), FE đã push `origin/main`.
+
+### Next step
+- **[P0 verify]** Login user có UC nộp trước 20/06 → tab "Use case của tôi" phải thấy đủ UC cũ (đây là bài test đường server-owner-filter mà Playwright mock **không** cover — mock bỏ qua param owner).
+- KPI + Điểm SPTD → số/điểm phản ánh cả UC cũ.
+- P0 cũ vẫn treo: champion smoke test weekly-update.
+
+### Regression risk
+- **Thấp–trung bình.** `limit:0` tải toàn bộ MASTER mỗi lần → chậm dần khi data lên nhiều nghìn UC (JSONP response size). Data hiện tại vài trăm UC → OK. Nếu cần, sau này chuyển pagination server-side (P3).
+- Playwright mock route theo `action` only (bỏ qua `owner_*`/`limit`) → đường My-Cases server-filter **không** được E2E cover. Verify thủ công bước P0 ở trên.
+- Test: 95/95 Playwright + 30/30 KPI + 29/29 SPTD unit PASS (không regression).
+
+### Commit
+| Commit | Mô tả |
+|---|---|
+| `3c7463e` | fix: My Cases + dashboard thiếu UC cũ do global cap 200 cắt trước khi lọc owner |
+
+---
+
 ## Session: 2026-07-08
 **Scope:** Feature "Điểm SPTD" — Tính năng chấm điểm hiệu suất user (80-10-10 scoring)
 

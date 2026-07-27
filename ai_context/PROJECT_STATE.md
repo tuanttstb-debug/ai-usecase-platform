@@ -1,7 +1,8 @@
 # PROJECT STATE
 
-**Last updated:** 2026-07-08
-**Version:** 3.12.0 — Feature: Điểm SPTD tab (80-10-10 gamification scoring, timeline, leaderboard, CSV export)
+**Last updated:** 2026-07-27
+**Version:** 3.12.2 — Bug fix: dashboard/My Cases thiếu UC cũ do global cap 200 (DATA-LIMIT-01 CLOSED) — server-side owner filter + `limit:0` cho org loads
+**Prev:** 3.12.1 (Khám Phá search fix — Owner_Name sync, 2026-07-09) · 3.12.0 (Điểm SPTD tab)
 **Data migration:** ✅ Team BL1 + BL2 → Team BL hoàn tất (2026-07-07) — LOOKUP + MASTER_DATA + USERS + DASHBOARD cache cleared
 **Project location:** `D:\Workspace\Production\ai-usecase-platform` (moved from `D:\Công việc\Vibecode\` on 2026-06-19)
 
@@ -93,7 +94,8 @@ env.js → auth.js → [inline portal script]
 | Unique UseCase ID | ✅ | v3.6.3 — ID fetched fresh tại submit; GAS `_assignUseCaseId_()` validate trong lock; fallback generate nếu collision |
 | Dashboard (admin) | ✅ | Auto-load tất cả tabs khi login; approve/reject confirmed working |
 | Dashboard (user) | ✅ | My Cases + Khám phá tabs |
-| My US feature | ✅ | Tab trong dashboard; case-insensitive filter, cross-compare owner_name/email |
+| My US feature | ✅ | Tab trong dashboard; **v3.12.2 (2026-07-27)**: fetch theo owner ở server (`owner_login`+`owner_name`, GAS lọc TRƯỚC slice) → luôn đủ UC kể cả cũ; hết lệ thuộc global cap 200 |
+| Data completeness (DATA-LIMIT-01) | ✅ | **NEW v3.12.2 (2026-07-27)** — org-wide loads (`_allList`, pending, review-queue, manager-review) dùng `limit:0`=tất cả; GAS `listUseCases_` `limit<=0`→không cắt + owner filter trả full. KPI/SPTD/Khám phá/Tất cả nay đầy đủ data cũ. Commit `3c7463e`, GAS deployed |
 | Explore (Khám phá) | ✅ | NEW v3.3 — All approved UCs from org; searchable; all users |
 | US Detail popup | ✅ | 4-section view; progressive load; approve/reject inline; Copy Prompt button |
 | Drill-down list popup | ✅ | NEW v3.5 — Click KPI cards / chart segments/bars → popup bảng lọc → Chi tiết |
@@ -136,7 +138,9 @@ env.js → auth.js → [inline portal script]
 **Active deployment URL:** `AKfycbypN8afAl2zQwpR7K6k1-699g3HAhFAIqAOtDn3qY1nJWzuN1bd8n99bzRUzaV8ZMyTCw`
 **OAuth:** ✅ Authorized | **GAS code sync:** ✅ Tất cả 9 files đã deploy — GAS-MYSTERY-01 CLOSED (2026-06-18), redeploy 2026-06-22
 
-**Last redeploy (2026-06-22):**
+**Last redeploy (2026-07-27):** `AdminService.gs` (listUseCases_ owner filter + `limit<=0`=full) + `Code.gs` (list route owner params). URL không đổi. Confirmed deployed by user. — commit `3c7463e`
+
+**Prev redeploy (2026-06-22):**
 
 | File | Thay đổi chính | Deployed |
 |---|---|---|
