@@ -196,7 +196,7 @@
     showLoading(true);
     try {
       var results = await Promise.all([
-        Api.listUseCases({ limit: 200 }),
+        Api.listUseCases({ limit: 0 }),   // limit:0 = lấy tất cả (không bị cap 200 cắt UC cũ)
         _isAdmin ? Api.getDashboard() : Promise.resolve(null)
       ]);
       _allList = results[0] || [];
@@ -245,7 +245,7 @@
     try {
       var results = await Promise.all([
         Api.getDashboard(),
-        Api.listUseCases({ filter: 'pending' })
+        Api.listUseCases({ filter: 'pending', limit: 0 })
       ]);
       _dashData    = results[0];
       _pendingList = results[1] || [];
@@ -268,7 +268,7 @@
   async function _loadPending() {
     showLoading(true);
     try {
-      _pendingList = (await Api.listUseCases({ filter: 'pending' })) || [];
+      _pendingList = (await Api.listUseCases({ filter: 'pending', limit: 0 })) || [];
       renderPendingList(_pendingList);
       updatePendingBadge(_pendingList.length);
     } catch (err) {
@@ -282,7 +282,7 @@
   async function _loadAllUseCases() {
     showLoading(true);
     try {
-      _allList = (await Api.listUseCases({ limit: 200 })) || [];
+      _allList = (await Api.listUseCases({ limit: 0 })) || [];   // limit:0 = tất cả
       _populateTeamFilter();
       _applyAllTableFilters();
     } catch (err) {
@@ -296,17 +296,15 @@
   async function _loadMyUseCases() {
     showLoading(true);
     try {
-      var all = (await Api.listUseCases({ limit: 200 })) || [];
-      var userName  = (_user ? (_user.displayName || _user.email || '') : '').toLowerCase().trim();
-      var userEmail = (_user ? (_user.email || '') : '').toLowerCase().trim();
-      _myList = all.filter(function (uc) {
-        var n = String(uc.owner_name  == null ? '' : uc.owner_name).toLowerCase().trim();
-        var e = String(uc.owner_email == null ? '' : uc.owner_email).toLowerCase().trim();
-        return n === userName
-            || n === userEmail
-            || e === userEmail
-            || e === userName;
-      });
+      // Lọc theo owner ở server (trước khi cắt) → luôn nhận đủ UC của mình, kể cả UC cũ.
+      // Truyền cả login (username) lẫn display name để bắt data Owner_Name/Owner_Email lệch nhau.
+      var owner_login = (_user ? (_user.email       || '') : '');
+      var owner_name  = (_user ? (_user.displayName || '') : '');
+      _myList = (await Api.listUseCases({
+        owner_login: owner_login,
+        owner_name:  owner_name,
+        limit:       0
+      })) || [];
       renderMyTable(_myList);
     } catch (err) {
       showToast('Lỗi tải use case của bạn: ' + err.message, 'error');

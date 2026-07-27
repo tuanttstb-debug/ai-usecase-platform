@@ -16,10 +16,14 @@ var API = {
   list: (filters) => {
     var url = _gasBase + '?action=list';
     if (filters) {
-      if (filters.filter) url += '&filter='  + encodeURIComponent(filters.filter);
-      if (filters.status) url += '&status='  + encodeURIComponent(filters.status);
-      if (filters.team)   url += '&team='    + encodeURIComponent(filters.team);
-      if (filters.limit)  url += '&limit='   + encodeURIComponent(filters.limit);
+      if (filters.filter)      url += '&filter='      + encodeURIComponent(filters.filter);
+      if (filters.status)      url += '&status='      + encodeURIComponent(filters.status);
+      if (filters.team)        url += '&team='        + encodeURIComponent(filters.team);
+      if (filters.owner_login) url += '&owner_login=' + encodeURIComponent(filters.owner_login);
+      if (filters.owner_name)  url += '&owner_name='  + encodeURIComponent(filters.owner_name);
+      // gửi limit cả khi =0 (0 = "lấy tất cả", không cắt)
+      if (filters.limit != null && filters.limit !== '')
+        url += '&limit=' + encodeURIComponent(filters.limit);
     }
     return url;
   },

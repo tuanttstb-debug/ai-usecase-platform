@@ -142,11 +142,13 @@ function route_(action, params, body) {
   // ── Dashboard: list use cases (dùng URL params, không phải payload) ──
   if (action === 'list') {
     var listFilters = {
-      filter:   params.filter   || '',
-      status:   params.status   || '',
-      team:     params.team     || '',
-      category: params.category || '',
-      limit:    params.limit    || '100'
+      filter:      params.filter      || '',
+      status:      params.status      || '',
+      team:        params.team        || '',
+      category:    params.category    || '',
+      owner_login: params.owner_login || params.owner || '',
+      owner_name:  params.owner_name  || '',
+      limit:       (params.limit == null || params.limit === '') ? '100' : params.limit
     };
     return createResponse_(true, 'Use case list', listUseCases_(listFilters));
   }

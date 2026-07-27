@@ -134,10 +134,15 @@ function changeUseCaseStatus_(recordId, newStatus, reviewerEmail, comment, logAc
  * Lấy danh sách use cases (slim view — chỉ các field cần cho list/dashboard).
  *
  * filters:
- *   filter  = 'pending' → Submitted + Under Review
- *   status  = 'Approved' → lọc theo status cụ thể
- *   team    = 'CNTT' → lọc theo team
- *   limit   = 100 (default)
+ *   filter      = 'pending' → Submitted + Under Review
+ *   status      = 'Approved' → lọc theo status cụ thể
+ *   team        = 'CNTT' → lọc theo team
+ *   owner_login = username (Owner_Email) → lọc UC của 1 user (My Cases)
+ *   owner_name  = display name (Owner_Name) → khớp thêm để bắt data lệch login/name
+ *   limit       = 100 (default). limit <= 0 → không cắt (trả full).
+ *
+ * LƯU Ý: khi có owner filter, luôn trả FULL set của owner (bỏ qua limit) để
+ * "Use case của tôi" không bị mất UC cũ do global cap cắt trước khi lọc owner.
  *
  * @param {Object} [filters]
  * @returns {Object[]}
@@ -149,7 +154,22 @@ function listUseCases_(filters) {
   var filterPreset = String(filters.filter || '').trim().toLowerCase();
   var statusFilter = String(filters.status || '').trim();
   var teamFilter   = String(filters.team   || '').trim();
-  var limit        = parseInt(filters.limit, 10) || 100;
+
+  // limit: rỗng → 100 (default org-wide); <=0 → không cắt
+  var rawLimit = filters.limit;
+  var limit;
+  if (rawLimit === undefined || rawLimit === null || rawLimit === '') {
+    limit = 100;
+  } else {
+    limit = parseInt(rawLimit, 10);
+    if (isNaN(limit)) limit = 100;
+  }
+
+  // owner filter (My Cases): khớp theo login (Owner_Email) HOẶC display (Owner_Name),
+  // case-insensitive + normalizeUser_ để bắt cả trường hợp Owner_Name/Owner_Email lệch nhau
+  var ownerLoginF = normalizeUser_(filters.owner_login || filters.owner || '');
+  var ownerNameF  = String(filters.owner_name || '').trim().toLowerCase();
+  var hasOwnerF   = !!(ownerLoginF || ownerNameF);
 
   // Build username → Display_Name từ USERS sheet để enrich owner info (best-effort)
   var userDisplayMap = {};
@@ -166,6 +186,15 @@ function listUseCases_(filters) {
     }
     if (statusFilter && uc.Status !== statusFilter) return false;
     if (teamFilter   && uc.Team   !== teamFilter)   return false;
+    if (hasOwnerF) {
+      var ucLogin = normalizeUser_(uc.Owner_Email || '');
+      var ucName  = String(uc.Owner_Name  == null ? '' : uc.Owner_Name).trim().toLowerCase();
+      var ucEmail = String(uc.Owner_Email == null ? '' : uc.Owner_Email).trim().toLowerCase();
+      var ownerMatch =
+        (ownerLoginF && (ucLogin === ownerLoginF || ucName === ownerLoginF || ucEmail === ownerLoginF)) ||
+        (ownerNameF  && (ucName === ownerNameF   || ucEmail === ownerNameF || ucLogin === normalizeUser_(ownerNameF)));
+      if (!ownerMatch) return false;
+    }
     return true;
   });
 
@@ -174,7 +203,10 @@ function listUseCases_(filters) {
     return new Date(b.Created_At || 0) - new Date(a.Created_At || 0);
   });
 
-  return filtered.slice(0, limit).map(function(uc) {
+  // owner filter → full set; ngược lại limit<=0 → full, limit>0 → cắt
+  var out = (hasOwnerF || limit <= 0) ? filtered : filtered.slice(0, limit);
+
+  return out.map(function(uc) {
     var ownerLogin = normalizeUser_(uc.Owner_Email || '');
     return {
       record_id:           uc.Record_ID,

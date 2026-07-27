@@ -228,7 +228,7 @@ function initSidebar() {
 
 function loadPendingList() {
   document.getElementById('pendingList').innerHTML = '<div style="text-align:center;padding:var(--space-12);color:var(--color-text-muted)"><div class="spinner"></div><div style="margin-top:8px">Đang tải...</div></div>';
-  Api.jsonp(API.list({ limit: 200 }), function(res) {
+  Api.jsonp(API.list({ limit: 0 }), function(res) {   // 0 = tất cả (không cắt)
     if (!res || !res.success) { document.getElementById('pendingList').innerHTML = '<div style="text-align:center;padding:var(--space-8);color:var(--color-error)">Lỗi tải dữ liệu</div>'; return; }
     var statusFilter = document.getElementById('filterStatus').value;
     var teamFilter   = document.getElementById('filterTeam2').value;

@@ -189,7 +189,7 @@
     var filterBar = document.getElementById('rqFilterBar');
     if (filterBar) filterBar.style.display = 'none';
     try {
-      var result = await Api.listUseCases({ limit: 500 });
+      var result = await Api.listUseCases({ limit: 0 });   // 0 = tất cả (không cắt)
       _allUcs = Array.isArray(result) ? result : (result.items || result.data || []);
       _populateTeamFilter();
       _render();
