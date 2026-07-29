@@ -30,7 +30,7 @@ Không có. Thuần frontend (1 dòng HTML), không đụng GAS.
 ### Commit
 | Commit | Mô tả |
 |---|---|
-| `[this session]` | fix: sửa tên Trung tâm sai ở trang đăng nhập (Dịch vụ → Giải pháp Tín dụng) |
+| `be211c8` | fix: sửa tên Trung tâm sai ở trang đăng nhập (Dịch vụ → Giải pháp Tín dụng) |
 
 ---
 
