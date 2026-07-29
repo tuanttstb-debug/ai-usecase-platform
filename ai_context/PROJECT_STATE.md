@@ -1,8 +1,9 @@
 # PROJECT STATE
 
-**Last updated:** 2026-07-27
-**Version:** 3.12.2 — Bug fix: dashboard/My Cases thiếu UC cũ do global cap 200 (DATA-LIMIT-01 CLOSED) — server-side owner filter + `limit:0` cho org loads
-**Prev:** 3.12.1 (Khám Phá search fix — Owner_Name sync, 2026-07-09) · 3.12.0 (Điểm SPTD tab)
+**Last updated:** 2026-07-29
+**Version:** 3.12.3 — Wording: sửa tên Trung tâm sai ở trang đăng nhập ("Sản phẩm & Dịch vụ" → "Sản phẩm & Giải pháp Tín dụng"); short form "TT SPTD" giữ nguyên, đồng nhất toàn site
+**Prev:** 3.12.2 (DATA-LIMIT-01 fix — owner filter + `limit:0`, 2026-07-27) · 3.12.1 (Khám Phá search fix, 2026-07-09) · 3.12.0 (Điểm SPTD tab)
+**Org name (chuẩn):** Trung tâm Sản phẩm & Giải pháp Tín dụng — short form hiển thị = "TT SPTD"
 **Data migration:** ✅ Team BL1 + BL2 → Team BL hoàn tất (2026-07-07) — LOOKUP + MASTER_DATA + USERS + DASHBOARD cache cleared
 **Project location:** `D:\Workspace\Production\ai-usecase-platform` (moved from `D:\Công việc\Vibecode\` on 2026-06-19)
 

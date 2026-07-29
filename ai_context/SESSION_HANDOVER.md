@@ -1,5 +1,39 @@
 # SESSION HANDOVER
 
+## Session: 2026-07-29
+**Scope:** WORDING — Rà soát tổng thể tên hiển thị; sửa tên Trung tâm bị sai ở trang đăng nhập
+**Version:** 3.12.3
+
+### Task completed
+Rà soát toàn bộ user-facing wording về tên tổ chức trên tất cả pages. Phát hiện + sửa 1 lỗi: phụ đề trang đăng nhập ghi sai tên Trung tâm. Xác nhận không còn chỗ nào khác spell sai tên; short form "TT SPTD" đồng nhất toàn site.
+
+### Files changed
+| File | Thay đổi | Deploy |
+|---|---|---|
+| `login.html` (dòng 37) | Phụ đề: "Trung tâm Sản phẩm & **Dịch vụ**" → "Trung tâm Sản phẩm & **Giải pháp Tín dụng**" | FE tĩnh |
+
+### Decision made
+- **Tên đầy đủ đúng của Trung tâm = "Trung tâm Sản phẩm & Giải pháp Tín dụng"** (không phải "Sản phẩm & Dịch vụ"). Đây là nơi DUY NHẤT trên site spell tên đầy đủ → chỉ sửa 1 dòng.
+- **Giữ nguyên short form "TT SPTD"** (quyết định của user) — dùng ở ~15 chỗ (sidebar sub-label, title, meta, footer, leaderboard, login note), tất cả đồng nhất & đúng. Không đổi.
+- **Giữ nguyên nhãn tab "Điểm SPTD"** (quyết định của user) — là tên tính năng chấm điểm, không phải tên Trung tâm; tránh đụng code identifier (`sptd-scoring.js`, `SPTD_EXCLUDED_USERS`).
+
+### Blocker
+Không có. Thuần frontend (1 dòng HTML), không đụng GAS.
+
+### Next step
+- P0 cũ vẫn treo (không phát sinh mới phiên này): (1) verify My Cases hiển thị UC cũ sau DATA-LIMIT-01 fix; (2) smoke test weekly-update với champion thật.
+- Tùy chọn (chưa quyết): chuẩn hóa cách viết hoa "Use Case" vs "Use case" giữa sidebar và portal card → xem WORDING-01 trong TECH_DEBT.
+
+### Regression risk
+- **Rất thấp.** Chỉ đổi text hiển thị tĩnh trong `login.html`; không đụng logic, không đụng test, không đụng GAS. Playwright không assert chuỗi này.
+
+### Commit
+| Commit | Mô tả |
+|---|---|
+| `[this session]` | fix: sửa tên Trung tâm sai ở trang đăng nhập (Dịch vụ → Giải pháp Tín dụng) |
+
+---
+
 ## Session: 2026-07-27
 **Scope:** BUG FIX — "Use case của tôi" (và toàn dashboard) thiếu UC nộp trước ≈20/06
 **Version:** 3.12.2

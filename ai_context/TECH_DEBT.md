@@ -283,3 +283,17 @@ _filterAll.team = teamSel.value; // sync state với DOM value sau re-render
 **Mô tả:** File `debug_sidebar.js` tồn tại trong repo root nhưng không được tracked bởi git (untracked). Nội dung không rõ.
 
 **Fix:** Kiểm tra nội dung → nếu là debug/temp script thì xóa hoặc thêm vào `.gitignore`.
+
+---
+
+## WORDING-01 — Viết hoa "Use Case" vs "Use case" không nhất quán (2026-07-29)
+
+**Mô tả:** Nhãn điều hướng lệch cách viết hoa giữa sidebar và portal service card:
+- Sidebar (`index.html` + các trang khác): "**Use Case** của tôi", "Đăng ký **Use Case**"
+- Portal card (`index.html` PORTAL_SERVICES): "**Use case** của tôi", "Đăng ký **AI Use Case**"
+
+**Rủi ro:** Cosmetic only — không sai nghĩa. Thuần vấn đề nhất quán thương hiệu.
+
+**Fix:** Chọn 1 chuẩn ("Use Case" hoặc "Use case") → normalize toàn bộ nhãn hiển thị. User chưa quyết định phiên 2026-07-29 (chỉ yêu cầu sửa tên Trung tâm).
+
+**File:** `index.html` (sidebar nav + PORTAL_SERVICES); kiểm tra thêm sidebar các trang khác nếu chuẩn hóa.

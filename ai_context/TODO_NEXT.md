@@ -4,6 +4,13 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## ✅ Đã hoàn thành trong session 2026-07-29
+
+- [x] **WORDING FIX: tên Trung tâm sai ở trang đăng nhập (v3.12.3)** — `login.html` phụ đề "Trung tâm Sản phẩm & Dịch vụ" → "Trung tâm Sản phẩm & Giải pháp Tín dụng". Rà soát toàn bộ pages: đây là nơi duy nhất spell tên đầy đủ; short form "TT SPTD" đồng nhất & đúng khắp site → giữ nguyên. Nhãn tab "Điểm SPTD" giữ nguyên (tên tính năng). Thuần FE, không đụng GAS/test.
+- [ ] **(Tùy chọn) WORDING-01** — chuẩn hóa viết hoa "Use Case" vs "Use case" giữa sidebar và portal card (xem TECH_DEBT). Chưa quyết định.
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-07-27
 
 - [x] **BUG FIX: dashboard/My Cases thiếu UC cũ (v3.12.2, commit `3c7463e`, GAS deployed)** — Root cause: `listUseCases_` sort `Created_At` mới→cũ rồi `slice(0, 200)`, FE lọc owner ở client SAU khi cắt → tổng UC >200 làm mất mọi UC cũ hơn UC thứ-200 (≈20/06) trước khi lọc owner. Fix: GAS owner filter (`owner_login`+`owner_name`) TRƯỚC slice + `limit<=0`=không cắt; FE org loads dùng `limit:0`, My Cases fetch theo owner ở server. Đóng **DATA-LIMIT-01**. Test 95/95 + 30/30 + 29/29 PASS.
