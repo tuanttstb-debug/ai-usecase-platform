@@ -1,7 +1,7 @@
 # PROJECT STATE
 
 **Last updated:** 2026-07-30
-**Version:** 3.13.0 — Scoring fix: nối `Active_User_Count` (nguồn điểm Adoption) end-to-end (register wizard + cập nhật tuần + GAS). Trước đây Adoption luôn=0 vì không có ô nhập. ⚠️ CẦN REDEPLOY GAS + `recalculateAllScores_()` cho UC cũ
+**Version:** 3.13.0 — Scoring fix: nối `Active_User_Count` (nguồn điểm Adoption) end-to-end (register wizard + cập nhật tuần + GAS). Trước đây Adoption luôn=0 vì không có ô nhập. ✅ GAS đã redeploy (2026-07-30, URL không đổi). ⚠️ Còn: chạy `recalculateAllScores_()` cho UC cũ sau khi có dữ liệu
 **Prev:** 3.12.3 (Wording tên Trung tâm ở login, 2026-07-29) · 3.12.2 (DATA-LIMIT-01 fix — owner filter + `limit:0`, 2026-07-27) · 3.12.1 (Khám Phá search fix, 2026-07-09) · 3.12.0 (Điểm SPTD tab)
 **Org name (chuẩn):** Trung tâm Sản phẩm & Giải pháp Tín dụng — short form hiển thị = "TT SPTD"
 **Data migration:** ✅ Team BL1 + BL2 → Team BL hoàn tất (2026-07-07) — LOOKUP + MASTER_DATA + USERS + DASHBOARD cache cleared
