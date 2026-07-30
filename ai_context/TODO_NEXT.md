@@ -4,6 +4,15 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## ✅ Đã hoàn thành trong session 2026-07-30
+
+- [x] **SCORING FIX: nối `Active_User_Count` end-to-end (v3.13.0)** — Đóng lại task phiên trước bị bỏ dở (chưa commit/deploy/handover). Root cause: Adoption score (max 20đ) lấy từ `Active_User_Count` mà chưa hề có ô nhập → luôn=0. Fix: thêm field "Số người dùng thực tế" vào register wizard (`constants.js`) + form cập nhật tuần (`weekly-update.html`) + GAS đọc/ghi (`AdminService.gs`, `Config.gs`). 95/95 Playwright PASS.
+- [ ] **[P0] Redeploy GAS** — `AdminService.gs` + `Config.gs` (Edit deployment → New version). Cần cho path cập nhật tuần; đường đăng ký mới đã chạy ngay với FE.
+- [ ] **[P0] Backfill + `recalculateAllScores_()`** — UC cũ có `Active_User_Count` rỗng → Adoption vẫn 0 tới khi nhập số thực + chạy recalc.
+- [ ] **[P1] Push origin/main** — commit v3.13.0 chưa push (theo yêu cầu user phiên này).
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-07-29
 
 - [x] **WORDING FIX: tên Trung tâm sai ở trang đăng nhập (v3.12.3)** — `login.html` phụ đề "Trung tâm Sản phẩm & Dịch vụ" → "Trung tâm Sản phẩm & Giải pháp Tín dụng". Rà soát toàn bộ pages: đây là nơi duy nhất spell tên đầy đủ; short form "TT SPTD" đồng nhất & đúng khắp site → giữ nguyên. Nhãn tab "Điểm SPTD" giữ nguyên (tên tính năng). Thuần FE, không đụng GAS/test.

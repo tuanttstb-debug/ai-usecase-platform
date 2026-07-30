@@ -234,6 +234,7 @@ function listUseCases_(filters) {
       reward_eligible:     uc.Reward_Eligible      || 'FALSE',
       warning_flag:        uc.Warning_Flag         || 'FALSE',
       current_progress:    safeNum_(uc.Current_Progress),
+      active_user_count:   safeNum_(uc.Active_User_Count),
       monthly_usage_count: safeNum_(uc.Monthly_Usage_Count),
       hours_saved_actual:  safeNum_(uc.Hours_Saved_Actual),
       blocker:             String(uc.Blocker       || '').substring(0, 200),
@@ -339,7 +340,8 @@ function submitWeeklyUpdate_(recordId, data) {
     'Weekly_Update', 'Next_Milestone', 'Blocker', 'Manager_Support'
   ];
   var NUM_FIELDS = [
-    'Current_Progress', 'Monthly_Usage_Count', 'Hours_Saved_Actual', 'Reuse_Count_Tracked'
+    'Current_Progress', 'Active_User_Count', 'Monthly_Usage_Count',
+    'Hours_Saved_Actual', 'Reuse_Count_Tracked'
   ];
   TEXT_FIELDS.forEach(function(field) {
     if (data[field] !== undefined) updates[field] = sanitizeStr_(String(data[field]), 2000);
@@ -390,6 +392,7 @@ function submitWeeklyUpdate_(recordId, data) {
     Next_Milestone:       sanitizeStr_(data.Next_Milestone   || '', 500),
     Blocker:              sanitizeStr_(data.Blocker          || '', 1000),
     Manager_Support:      sanitizeStr_(data.Manager_Support  || '', 500),
+    Active_User_Count:    safeNum_(data.Active_User_Count),
     Monthly_Usage_Count:  safeNum_(data.Monthly_Usage_Count),
     Hours_Saved_Actual:   safeNum_(data.Hours_Saved_Actual),
     Reuse_Count_Tracked:  safeNum_(data.Reuse_Count_Tracked),

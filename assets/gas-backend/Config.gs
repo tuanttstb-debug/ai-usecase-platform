@@ -108,7 +108,7 @@ var WEEKLY_LOG_HEADERS = [
   'Previous_Stage', 'New_Stage', 'Stage_Changed',
   'Progress',
   'Weekly_Update', 'Next_Milestone', 'Blocker', 'Manager_Support',
-  'Monthly_Usage_Count', 'Hours_Saved_Actual', 'Reuse_Count_Tracked',
+  'Active_User_Count', 'Monthly_Usage_Count', 'Hours_Saved_Actual', 'Reuse_Count_Tracked',
   'Scale_Plan', 'Scale_Risks',
   'Reporter'
 ];

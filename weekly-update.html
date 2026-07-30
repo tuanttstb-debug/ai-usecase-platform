@@ -358,17 +358,23 @@
           <div class="wu-section-title">Số liệu thực tế</div>
           <div class="form-row-2">
             <div class="form-group">
+              <label class="form-label">Số người dùng thực tế</label>
+              <input type="number" id="activeUsers" class="form-input" min="0" placeholder="0">
+            </div>
+            <div class="form-group">
               <label class="form-label">Số lần sử dụng trong tháng</label>
               <input type="number" id="monthlyUsage" class="form-input" min="0" placeholder="0">
             </div>
+          </div>
+          <div class="form-row-2">
             <div class="form-group">
               <label class="form-label">Giờ tiết kiệm thực tế (tháng)</label>
               <input type="number" id="hoursSaved" class="form-input" min="0" step="0.5" placeholder="0">
             </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Số lần tái sử dụng (cộng dồn)</label>
-            <input type="number" id="reuseCount" class="form-input" min="0" placeholder="0" style="max-width:160px">
+            <div class="form-group">
+              <label class="form-label">Số lần tái sử dụng (cộng dồn)</label>
+              <input type="number" id="reuseCount" class="form-input" min="0" placeholder="0">
+            </div>
           </div>
         </div>
 
@@ -870,6 +876,7 @@ function prefillForm(uc) {
   var prog = parseInt(uc.current_progress, 10) || 0;
   if (prog < 0 || prog > 100) prog = 0;
   document.getElementById('progressSlider').value    = prog;
+  document.getElementById('activeUsers').value       = _safeNum(uc.active_user_count,   99999);
   document.getElementById('monthlyUsage').value      = _safeNum(uc.monthly_usage_count, 9999);
   document.getElementById('hoursSaved').value        = _safeNum(uc.hours_saved_actual,  9999);
   document.getElementById('weeklyUpdate').value      = '';
@@ -936,6 +943,7 @@ function submitWeeklyUpdate() {
     Next_Milestone:      document.getElementById('nextMilestone').value.trim(),
     Blocker:             document.getElementById('blocker').value.trim(),
     Manager_Support:     document.getElementById('managerSupport').value.trim(),
+    Active_User_Count:   parseInt(document.getElementById('activeUsers').value, 10) || 0,
     Monthly_Usage_Count: parseInt(document.getElementById('monthlyUsage').value, 10) || 0,
     Hours_Saved_Actual:  parseFloat(document.getElementById('hoursSaved').value) || 0,
     Reuse_Count_Tracked: parseInt(document.getElementById('reuseCount').value, 10) || 0,

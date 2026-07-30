@@ -1,5 +1,51 @@
 # SESSION HANDOVER
 
+## Session: 2026-07-30
+**Scope:** SCORING FIX — Nối trường `Active_User_Count` (nguồn điểm Adoption) end-to-end; đóng lại task phiên trước bị bỏ dở
+**Version:** 3.13.0
+
+### Bối cảnh
+Task phiên trước bị **đóng không đúng cách** (chưa commit, chưa deploy, chưa handover). Rà soát working tree phát hiện 4 file sửa dở: `constants.js`, `weekly-update.html`, `AdminService.gs`, `Config.gs`.
+
+### Root cause (đã xác nhận trong code)
+Mô hình auto-score 70pt có thành phần **Adoption (max 20đ)** lấy từ `Active_User_Count`. `ScoringEngine.gs` + `scoring.js` kỳ vọng trường này **từ v3.0** (cột MASTER `Active_User_Count`+`Adoption_Score` đã có, `createUseCase_` auto-persist + auto-score sẵn), NHƯNG **chưa hề có ô nhập liệu nào** trên UI → `Active_User_Count` luôn rỗng → **Adoption luôn = 0 cho mọi UC**. Đây là "lỗi chấm điểm US".
+
+### Task completed
+Nối `Active_User_Count` end-to-end qua cả 2 đường nhập liệu:
+- **Đăng ký UC mới** — `constants.js`: thêm `FIELDS.ACTIVE_USER_COUNT`, đưa vào `STEPS[3]` (nhóm impact) + `FIELD_CONFIG` ("Số người dùng thực tế"). Input render với `name=Active_User_Count` → tự vào `FormMapper.collectData()` → (a) create payload persist vào MASTER (HEADERS đã có cột) + GAS auto-score ngay; (b) live preview điểm (`app.js` → `ScoringEngine.compute` → Adoption bar).
+- **Cập nhật tuần** — `weekly-update.html`: input `#activeUsers` + prefill từ `active_user_count` + submit `Active_User_Count`; reflow 2 hàng "Số liệu thực tế".
+- **GAS** — `AdminService.gs`: `listUseCases_` trả `active_user_count`; `submitWeeklyUpdate_` thêm vào `NUM_FIELDS` + WEEKLY_LOG row. `Config.gs`: `WEEKLY_LOG_HEADERS` thêm `Active_User_Count`.
+
+### Files changed
+| File | Thay đổi | Deploy |
+|---|---|---|
+| `assets/js/constants.js` | `ACTIVE_USER_COUNT` field + STEPS[3] + FIELD_CONFIG | FE tĩnh |
+| `weekly-update.html` | input `#activeUsers` + prefill + submit; reflow | FE tĩnh |
+| `assets/gas-backend/AdminService.gs` | `listUseCases_` trả `active_user_count`; `submitWeeklyUpdate_` NUM_FIELDS + WEEKLY_LOG | ⚠️ **CẦN REDEPLOY GAS** |
+| `assets/gas-backend/Config.gs` | `WEEKLY_LOG_HEADERS` += `Active_User_Count` | ⚠️ **CẦN REDEPLOY GAS** |
+
+### Decision made
+- **Đường đăng ký UC mới hoạt động ngay chỉ với push FE** (`constants.js`) — GAS live đã có cột + scoring + auto-score từ v3.0, không cần deploy.
+- **Đường cập nhật tuần cần redeploy GAS** — trước redeploy: prefill hiện 0 và weekly submit âm thầm bỏ `Active_User_Count`.
+
+### Test
+- **95/95 Playwright PASS** (full suite, 5.7m). Trọng tâm: `04-scoring-preview` (21) + `weekly-update` (11) = 32 pass sau reflow form. Không regression.
+
+### Next step (BẮT BUỘC để fix có hiệu lực đầy đủ)
+1. **[P0] Redeploy GAS** — Deploy → Manage Deployments → deployment đang dùng → Edit → New version → Deploy (URL giữ nguyên). Cần cho path cập nhật tuần.
+2. **[P0] Backfill + recalc** — UC cũ có `Active_User_Count` rỗng → Adoption vẫn 0. Sau khi nhập số thực (qua Cập nhật tuần hoặc sửa sheet), chạy `recalculateAllScores_()` trong GAS Editor để chấm lại toàn bộ.
+3. **[P1] Push** origin/main (chưa push phiên này theo yêu cầu user).
+
+### Regression risk
+- **Thấp.** FE thêm 1 field optional (không required, không đụng validation). GAS thêm field vào NUM split + append — backward compatible. Reflow `weekly-update.html` không đổi id các input cũ → Playwright không vỡ (32/32 pass).
+
+### Commit
+| Commit | Mô tả |
+|---|---|
+| `[pending]` | fix(scoring): nối Active_User_Count end-to-end — Adoption score hết bằng 0 (v3.13.0) |
+
+---
+
 ## Session: 2026-07-29
 **Scope:** WORDING — Rà soát tổng thể tên hiển thị; sửa tên Trung tâm bị sai ở trang đăng nhập
 **Version:** 3.12.3

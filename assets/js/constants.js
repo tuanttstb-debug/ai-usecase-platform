@@ -63,8 +63,9 @@ var FIELDS = {
   TOTAL_SCORE:         'Total_Score',
   RANK_CATEGORY:       'Rank_Category',
 
-  // ── Governance v3.0 — Performance (read-only for UI) ────────
-  MONTHLY_USAGE_COUNT: 'Monthly_Usage_Count',
+  // ── Governance v3.0 — Performance ───────────────────────────
+  ACTIVE_USER_COUNT:   'Active_User_Count',   // nguồn điểm Adoption
+  MONTHLY_USAGE_COUNT: 'Monthly_Usage_Count', // nguồn điểm Frequency
   HOURS_SAVED_ACTUAL:  'Hours_Saved_Actual',
   REUSE_COUNT_TRACKED: 'Reuse_Count_Tracked',
   DEPT_RANKING:        'Department_Ranking',
@@ -186,6 +187,8 @@ var STEPS = [
       FIELDS.DEMO_LINK,
       FIELDS.BEFORE_TIME_MIN,
       FIELDS.AFTER_TIME_MIN,
+      FIELDS.ACTIVE_USER_COUNT,
+      FIELDS.MONTHLY_USAGE_COUNT,
       FIELDS.QUALITY_IMPROVEMENT,
       FIELDS.IMPROVEMENT_NOTE,
       FIELDS.REUSE_LEVEL,
@@ -430,6 +433,22 @@ var FIELD_CONFIG = {
     placeholder: '10',
     suffix: 'phút',
     helper: 'Hệ thống sẽ tự tính % tiết kiệm thời gian',
+    group: 'impact'
+  },
+  Active_User_Count: {
+    label: 'Số người dùng thực tế',
+    type: 'number',
+    placeholder: '0',
+    suffix: 'người',
+    helper: 'Số người đang thực sự dùng use case này. Điền ước lượng khi đăng ký; cập nhật số thực qua "Cập nhật tuần". Dùng để chấm điểm Adoption (Người dùng).',
+    group: 'impact'
+  },
+  Monthly_Usage_Count: {
+    label: 'Tần suất sử dụng',
+    type: 'number',
+    placeholder: '0',
+    suffix: 'lần/tháng',
+    helper: 'Số lần use case được dùng mỗi tháng. Điền ước lượng khi đăng ký; cập nhật số thực qua "Cập nhật tuần". Dùng để chấm điểm Frequency (Tần suất).',
     group: 'impact'
   },
   Quality_Improvement: {
