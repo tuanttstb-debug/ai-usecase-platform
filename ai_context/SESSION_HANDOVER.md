@@ -21,8 +21,9 @@ Nối `Active_User_Count` end-to-end qua cả 2 đường nhập liệu:
 |---|---|---|
 | `assets/js/constants.js` | `ACTIVE_USER_COUNT` field + STEPS[3] + FIELD_CONFIG | FE tĩnh |
 | `weekly-update.html` | input `#activeUsers` + prefill + submit; reflow | FE tĩnh |
-| `assets/gas-backend/AdminService.gs` | `listUseCases_` trả `active_user_count`; `submitWeeklyUpdate_` NUM_FIELDS + WEEKLY_LOG | ⚠️ **CẦN REDEPLOY GAS** |
-| `assets/gas-backend/Config.gs` | `WEEKLY_LOG_HEADERS` += `Active_User_Count` | ⚠️ **CẦN REDEPLOY GAS** |
+| `assets/gas-backend/AdminService.gs` | `listUseCases_` trả `active_user_count`; `submitWeeklyUpdate_` NUM_FIELDS + WEEKLY_LOG | ✅ GAS (2026-07-30) |
+| `assets/gas-backend/Config.gs` | `WEEKLY_LOG_HEADERS` += `Active_User_Count` | ✅ GAS (2026-07-30) |
+| `ai_context/*.md` | Handover + PROJECT_STATE + TODO_NEXT + TECH_DEBT (SCORE-BACKFILL-01) | — |
 
 ### Decision made
 - **Đường đăng ký UC mới hoạt động ngay chỉ với push FE** (`constants.js`) — GAS live đã có cột + scoring + auto-score từ v3.0, không cần deploy.
@@ -31,18 +32,24 @@ Nối `Active_User_Count` end-to-end qua cả 2 đường nhập liệu:
 ### Test
 - **95/95 Playwright PASS** (full suite, 5.7m). Trọng tâm: `04-scoring-preview` (21) + `weekly-update` (11) = 32 pass sau reflow form. Không regression.
 
-### Next step (BẮT BUỘC để fix có hiệu lực đầy đủ)
-1. **[P0] Redeploy GAS** — Deploy → Manage Deployments → deployment đang dùng → Edit → New version → Deploy (URL giữ nguyên). Cần cho path cập nhật tuần.
-2. **[P0] Backfill + recalc** — UC cũ có `Active_User_Count` rỗng → Adoption vẫn 0. Sau khi nhập số thực (qua Cập nhật tuần hoặc sửa sheet), chạy `recalculateAllScores_()` trong GAS Editor để chấm lại toàn bộ.
-3. **[P1] Push** origin/main (chưa push phiên này theo yêu cầu user).
+### Blocker
+- **Không có blocker code.** Fix đã live cả FE lẫn GAS (deployed 2026-07-30, URL không đổi, confirmed by user).
+- **Điều kiện dữ liệu còn tồn (không chặn code):** UC lịch sử có `Active_User_Count` rỗng → Adoption của chúng vẫn = 0 cho tới khi nhập số thực + chạy recalc. Đã log **SCORE-BACKFILL-01** trong TECH_DEBT.
+
+### Next step
+1. **[P0] Backfill + recalc** — Nhập `Active_User_Count` thực cho UC cũ (qua "Cập nhật tuần" hoặc sửa sheet), rồi chạy `recalculateAllScores_()` trong GAS Editor để chấm lại toàn bộ. UC tạo/cập nhật từ 2026-07-30 trở đi đã tự chấm đúng.
+2. **[P1] Verify sau recalc** — Mở 1 UC có nhiều người dùng → detail popup + leaderboard phản ánh Adoption > 0 và Total_Score tăng tương ứng.
 
 ### Regression risk
-- **Thấp.** FE thêm 1 field optional (không required, không đụng validation). GAS thêm field vào NUM split + append — backward compatible. Reflow `weekly-update.html` không đổi id các input cũ → Playwright không vỡ (32/32 pass).
+- **Thấp.** FE thêm 1 field optional (không required, không đụng validation). GAS thêm field vào NUM split + append — backward compatible. Reflow `weekly-update.html` không đổi id các input cũ → Playwright không vỡ (95/95 pass full suite).
+- **Lưu ý recalc:** `recalculateAllScores_()` ghi lại scoring fields cho **toàn bộ** MASTER. Với UC đã có champion review, Total_Score sẽ tính lại từ auto (đã đổi nhờ Adoption) + manual hiện có — số điểm một số UC sẽ **tăng**, đúng ý đồ nhưng cần thông báo nếu ai đó theo dõi con số cũ.
 
 ### Commit
 | Commit | Mô tả |
 |---|---|
-| `[pending]` | fix(scoring): nối Active_User_Count end-to-end — Adoption score hết bằng 0 (v3.13.0) |
+| `b2dcdb2` | fix(scoring): nối Active_User_Count end-to-end — Adoption score hết bằng 0 (v3.13.0) |
+| `baad847` | docs: đánh dấu GAS redeploy + push xong cho v3.13.0 |
+| `[handover]` | chore: session handover 2026-07-30 |
 
 ---
 

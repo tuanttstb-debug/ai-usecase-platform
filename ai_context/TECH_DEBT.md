@@ -4,6 +4,18 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
+## SCORE-BACKFILL-01 — UC cũ có Adoption = 0 tới khi recalc (v3.13.0, 2026-07-30)
+
+**Mô tả:** v3.13.0 nối trường `Active_User_Count` (nguồn điểm Adoption, max 20đ) vào UI. Từ nay UC tạo/cập nhật đều tự chấm Adoption đúng. Nhưng UC **lịch sử** (tạo trước 2026-07-30) có `Active_User_Count` rỗng → Adoption của chúng vẫn = 0 và Total_Score bị thấp hơn thực tế.
+
+**Rủi ro:** Data — leaderboard/KPI/Điểm SPTD của UC cũ thấp hơn đúng cho tới khi backfill. Không phải bug code.
+
+**Fix:** (1) Nhập `Active_User_Count` thực cho UC cũ qua "Cập nhật tuần" hoặc sửa trực tiếp MASTER sheet; (2) GAS Editor → Run `recalculateAllScores_()` → chấm lại toàn bộ. Lưu ý: recalc ghi lại scoring fields cho **toàn bộ** MASTER (auto + manual hiện có) → một số Total_Score sẽ tăng.
+
+**File:** `assets/gas-backend/ScoringEngine.gs` — `recalculateAllScores_()`.
+
+---
+
 ## SEC-01 — Không có xác thực thật (CRITICAL)
 
 **Mô tả:** Login bằng username tự nhập, không verify. Bất kỳ ai biết username admin đều có thể login với role admin.
