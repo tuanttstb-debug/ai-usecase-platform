@@ -3,7 +3,7 @@
 ## Session: 2026-07-31
 **Scope:** FEATURE — Milestone cập nhật tuần → KPI (có phê duyệt Admin). Update US ở "Cập nhật tuần" khi **chuyển Stage hoặc nâng điểm** được ghi nhận như 1 US mới ở KPI, **bắt buộc Admin duyệt** mới áp Stage/điểm + tính KPI.
 **Version:** 3.14.0
-**Status:** ✅ Code xong + test local PASS. ⚠️ **CHƯA push, CHƯA deploy GAS.**
+**Status:** ✅ **DONE** — GAS deployed (URL không đổi) + `migrateWeeklyLogSchema()` chạy xong + FE pushed (`8a786a4`). Verified live: milestone hiển thị đúng ở tab "Chờ duyệt".
 
 ### Flow mới (đã chốt với user)
 | Cập nhật tuần | Ghi UC ngay | Cần Admin duyệt | Tính KPI |
@@ -35,14 +35,28 @@
 - Playwright mocked: 01–07 = **91/91** (gồm 5 mới). Live read-only weekly-update T01/T05/T09 = **3/3**.
 - weekly-update.html backward-compatible với GAS cũ (pending_milestone undefined → success thường).
 
-### ⚠️ Deploy steps CÒN LẠI (bắt buộc, theo thứ tự)
-1. **GAS**: paste `Config.gs`, `Utils.gs`, `AdminService.gs`, `Code.gs` → Deploy → Manage Deployments → Edit → New version (URL không đổi).
-2. **GAS Editor**: chạy `migrateWeeklyLogSchema()` 1 lần (thêm cột vào WEEKLY_LOG cũ; submit cũng tự self-heal).
-3. **Push FE** lên main (GitHub Pages). *FE đẩy trước GAS vẫn an toàn: milestone endpoints trả rỗng → tính năng "ngủ", weekly-update giữ hành vi cũ (apply ngay) tới khi GAS deploy.*
+### Deploy — ĐÃ HOÀN THÀNH (2026-07-31)
+1. ✅ **GAS** deployed: `Config.gs`, `Utils.gs`, `AdminService.gs`, `Code.gs` (Edit → New version, URL không đổi).
+2. ✅ **`migrateWeeklyLogSchema()`** chạy xong — log thêm cột: `Log_ID, Active_User_Count, Is_Milestone, Milestone_Type, Previous_Total_Score, Proposed_Total_Score, Approval_Status, Approved_By, Approved_At, Milestone_Comment`.
+3. ✅ **FE pushed** `8a786a4` lên main.
+
+### Phát hiện phụ khi migrate (→ TECH_DEBT WEEKLYLOG-COL-01)
+Migration cũng phải thêm **`Active_User_Count`** vào WEEKLY_LOG → tức sheet prod **thiếu cột này từ trước**. Nghĩa là các lần "Cập nhật tuần" từ v3.13.0 ghi `Active_User_Count` vào WEEKLY_LOG đã bị **âm thầm rớt** (`appendRowFromObject_` map theo header). Nay đã đúng. **Không** ảnh hưởng Adoption score ở MASTER (cột MASTER vẫn OK); chỉ lịch sử WEEKLY_LOG trước đây không lưu số người dùng.
+
+### Debug phiên này (đã đóng, không phải bug)
+User báo milestone submit xong nhưng không thấy ở màn "Chờ duyệt". Kiểm tra: (1) curl live GAS `milestone-list?filter=pending` → trả đúng milestone; (2) GitHub Pages đã serve dashboard.js/html mới; (3) `_isAdmin` set trước `_loadStartupData`. Kết luận: **code đúng end-to-end, chỉ do GitHub Pages/cache lên chậm.** User xác nhận đã thấy sau khi cache cập nhật.
+
+### Blocker
+- **Không có.** Live hoạt động.
+
+### Next step
+- **[P1] Smoke test trọn vòng duyệt:** bấm ✓ Duyệt milestone AIUS-0301 → verify UC lên S3, điểm 70, KPI Owner "Trần Thế Tuân" +1 tuần 31/07. Thử ✕ Từ chối (có lý do) → UC không đổi.
+- **[P2]** Cân nhắc ngưỡng "nâng điểm" (hiện mọi mức tăng điểm đều thành milestone cần duyệt) — xem TECH_DEBT MILESTONE-THRESH-01.
 
 ### Regression risk
 - **Hành vi v3.13.0 đổi có chủ đích:** weekly-update milestone (stage/nâng điểm) KHÔNG còn apply ngay — chờ Admin duyệt. Update thường vẫn apply ngay.
 - KPI có thể tăng khi milestone được duyệt (cộng dồn) — thông báo người theo dõi số cũ.
+- Reject milestone dùng `window.prompt` (xem TECH_DEBT MILESTONE-PROMPT-01) — hoạt động nhưng không đồng bộ UX modal.
 
 ---
 

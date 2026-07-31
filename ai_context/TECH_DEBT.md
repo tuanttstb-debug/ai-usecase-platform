@@ -4,6 +4,40 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
+## WEEKLYLOG-COL-01 — WEEKLY_LOG thiếu Active_User_Count từ v3.13.0 (phát hiện 2026-07-31)
+
+**Mô tả:** Khi chạy `migrateWeeklyLogSchema()` (v3.14.0), migration phải thêm cả cột `Active_User_Count` → chứng tỏ sheet WEEKLY_LOG prod **chưa từng có cột này**. Do đó từ v3.13.0, `submitWeeklyUpdate_` ghi `Active_User_Count` vào WEEKLY_LOG đã bị `appendRowFromObject_` **âm thầm rớt** (map theo header, header không tồn tại → bỏ).
+
+**Rủi ro:** Chỉ lịch sử — các dòng WEEKLY_LOG tạo giữa v3.13.0 và v3.14.0 không lưu số người dùng thực tế tại thời điểm đó. **KHÔNG** ảnh hưởng Adoption score ở MASTER_DATA (cột MASTER riêng, vẫn ghi đúng). Nay cột đã có → các submit mới ghi đúng.
+
+**Fix:** Đã tự khắc phục bởi migration (cột đã thêm). Không cần hành động thêm. Bài học: sheet tạo trước khi thêm header mới cần chạy `ensureSheetColumns_` — nay submitWeeklyUpdate_ tự gọi mỗi lần.
+
+---
+
+## MILESTONE-THRESH-01 — Mọi mức nâng điểm đều thành milestone cần duyệt (v3.14.0)
+
+**Mô tả:** `submitWeeklyUpdate_` coi bất kỳ `proposedScore > prevScore` là milestone → cần Admin duyệt. Usage tăng nhẹ (vd Active_User_Count 1→2) cũng tạo milestone chờ duyệt → có thể tạo nhiều milestone vụn cho Admin.
+
+**Rủi ro:** UX/workload — Admin có thể phải duyệt nhiều milestone điểm tăng nhỏ.
+
+**Fix đề xuất (chưa quyết):** Thêm ngưỡng (vd chỉ pending khi Δđiểm ≥ N, hoặc chỉ khi đổi bậc Rank), hoặc chỉ gate stage-change còn score tăng thì auto-apply. Cần PO xác nhận policy.
+
+**File:** `assets/gas-backend/AdminService.gs` — `submitWeeklyUpdate_` (`scoreRaised`).
+
+---
+
+## MILESTONE-PROMPT-01 — Reject milestone dùng window.prompt (v3.14.0)
+
+**Mô tả:** `dashboard.js _rejectMilestone()` lấy lý do từ chối qua `window.prompt()` — khác pattern modal của reject UC (textarea trong detail modal).
+
+**Rủi ro:** Thấp — UX không đồng bộ; `window.prompt` bị chặn nếu browser tắt dialog; Playwright cần `page.on('dialog')`.
+
+**Fix đề xuất:** Thay bằng modal inline giống reject UC (comment area + confirm button).
+
+**File:** `assets/js/dashboard.js` — `_rejectMilestone`.
+
+---
+
 ## SCORE-BACKFILL-01 — UC cũ có Adoption = 0 tới khi recalc (v3.13.0, 2026-07-30)
 
 **Mô tả:** v3.13.0 nối trường `Active_User_Count` (nguồn điểm Adoption, max 20đ) vào UI. Từ nay UC tạo/cập nhật đều tự chấm Adoption đúng. Nhưng UC **lịch sử** (tạo trước 2026-07-30) có `Active_User_Count` rỗng → Adoption của chúng vẫn = 0 và Total_Score bị thấp hơn thực tế.

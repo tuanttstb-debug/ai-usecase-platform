@@ -4,13 +4,12 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
-## 🔴 P0 — Deploy v3.14.0 (Milestone → KPI có phê duyệt Admin)
+## ✅ Đã hoàn thành trong session 2026-07-31
 
-Code xong + test local PASS (session 2026-07-31). **CHƯA push, CHƯA deploy GAS.** Thứ tự:
-- [ ] **GAS deploy**: paste `Config.gs`, `Utils.gs`, `AdminService.gs`, `Code.gs` → Edit deployment → New version (URL không đổi).
-- [ ] **GAS Editor**: chạy `migrateWeeklyLogSchema()` 1 lần (thêm 8 cột milestone vào WEEKLY_LOG cũ). Submit cũng tự `ensureSheetColumns_` self-heal.
-- [ ] **Push FE** lên main. (FE trước GAS an toàn: endpoint milestone rỗng → tính năng ngủ, weekly-update giữ hành vi cũ tới khi GAS live.)
-- [ ] **Verify sau deploy**: (1) weekly-update chuyển Stage/nâng điểm → thông báo "chờ Admin duyệt", UC chưa đổi Stage/điểm; (2) admin dashboard tab "Chờ duyệt" → milestone hiện → Duyệt → UC áp Stage/điểm + KPI Owner +1 ở tuần đó; (3) Từ chối → không áp gì.
+- [x] **FEATURE: Milestone cập nhật tuần → KPI có phê duyệt Admin (v3.14.0, commit `8a786a4`)** — weekly-update chuyển Stage/nâng điểm = milestone → giữ pending; Admin duyệt ở tab "Chờ duyệt" mới áp Stage/điểm + tính KPI (+1 Owner tuần Log_Date, cộng dồn). GAS: WEEKLY_LOG +8 cột + submitWeeklyUpdate_ gate + listMilestones_/approve/reject; FE: dashboard queue + `_buildKPIData`/`sptd-scoring.js` cộng milestone; weekly-update pending messaging. Test: SPTD 34/34 + KPI 38/38 unit + Playwright 91/91 (5 mới).
+- [x] **GAS deploy + `migrateWeeklyLogSchema()`** — 2026-07-31, URL không đổi. Migration cũng thêm `Active_User_Count` (thiếu từ v3.13.0 → WEEKLYLOG-COL-01).
+- [x] **Push FE** `8a786a4`. Verified live (milestone hiển thị ở "Chờ duyệt"; sự cố "không thấy" chỉ do GitHub Pages/cache lên chậm).
+- [ ] **[P1] Smoke test trọn vòng duyệt** — bấm ✓ Duyệt AIUS-0301 → UC lên S3, điểm 70, KPI Owner +1 tuần 31/07. Thử ✕ Từ chối (có lý do) → UC không đổi.
 
 ---
 

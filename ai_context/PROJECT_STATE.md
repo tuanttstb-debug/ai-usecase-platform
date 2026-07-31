@@ -1,7 +1,7 @@
 # PROJECT STATE
 
 **Last updated:** 2026-07-31
-**Version:** 3.14.0 — Feature: Milestone cập nhật tuần → KPI (có phê duyệt Admin). Update US ở "Cập nhật tuần" khi chuyển Stage/nâng điểm ghi nhận như 1 US mới ở KPI, bắt buộc Admin duyệt mới áp Stage/điểm + tính KPI (cộng dồn theo tuần Log_Date, credit Owner). ✅ Code + test local PASS. ⚠️ CHƯA push, CHƯA deploy GAS (chạy `migrateWeeklyLogSchema()` sau deploy)
+**Version:** 3.14.0 — Feature: Milestone cập nhật tuần → KPI (có phê duyệt Admin). Update US ở "Cập nhật tuần" khi chuyển Stage/nâng điểm ghi nhận như 1 US mới ở KPI, bắt buộc Admin duyệt mới áp Stage/điểm + tính KPI (cộng dồn theo tuần Log_Date, credit Owner). ✅ **LIVE** — GAS deployed + `migrateWeeklyLogSchema()` xong + FE pushed (`8a786a4`), verified. URL GAS không đổi.
 **Prev:** 3.13.0 — Scoring fix: nối `Active_User_Count` (Adoption) end-to-end (2026-07-30, GAS deployed) · 3.12.3 (Wording tên Trung tâm ở login, 2026-07-29) · 3.12.2 (DATA-LIMIT-01 fix — owner filter + `limit:0`, 2026-07-27) · 3.12.1 (Khám Phá search fix, 2026-07-09) · 3.12.0 (Điểm SPTD tab)
 **Org name (chuẩn):** Trung tâm Sản phẩm & Giải pháp Tín dụng — short form hiển thị = "TT SPTD"
 **Data migration:** ✅ Team BL1 + BL2 → Team BL hoàn tất (2026-07-07) — LOOKUP + MASTER_DATA + USERS + DASHBOARD cache cleared
@@ -130,6 +130,7 @@ env.js → auth.js → [inline portal script]
 | Score display (explore) | ✅ | NEW v3.10.2 (2026-06-17) — Score chip on approved UCs in Explore tab; rank color badge |
 | ScoringEngine JS module | ✅ | NEW v3.10.2 (2026-06-17) — assets/js/scoring.js; mirrors GAS ScoringEngine.gs; used by register.html preview + review-queue.html panel |
 | Adoption scoring input | ✅ | NEW v3.13.0 (2026-07-30) — trường `Active_User_Count` ("Số người dùng thực tế") nối end-to-end: register wizard + cập nhật tuần → nguồn điểm Adoption (max 20đ). Trước đây không có ô nhập → Adoption luôn=0. GAS deployed. UC cũ cần `recalculateAllScores_()` (SCORE-BACKFILL-01) |
+| Milestone cập nhật tuần → KPI | ✅ | NEW v3.14.0 (2026-07-31) — weekly-update chuyển Stage/nâng điểm = "milestone" → giữ pending, Admin duyệt ở tab "Chờ duyệt" (section riêng) mới áp Stage/điểm + tính KPI (+1 Owner ở tuần Log_Date, cộng dồn). SPTD cộng số lượng + tuần đạt. `_buildKPIData` + `sptd-scoring.js` cộng milestone đã duyệt. 13 unit test + 5 E2E mới |
 | Điểm SPTD tab | ✅ | NEW v3.12 (2026-07-08) — Tab "Điểm SPTD" trên dashboard; công thức 80-10-10 (quality avg/qty/weeks); T0=2026-06-01; leaderboard public + my card + formula box + UC list + timeline + CSV export (admin); SPTDScoring IIFE module; 29/29 unit tests + 10/10 Playwright |
 | Playwright test suite | ✅ | 95/95 pass (2026-07-08) — 7 spec files; +10 SPTD tests (06-sptd-tab.spec.js) |
 | KPI week date format | ✅ | fix `91c4a00` — manual `DD/MM` formatter thay `toLocaleDateString` (locale inconsistency trên Chromium/Windows) |
@@ -140,7 +141,9 @@ env.js → auth.js → [inline portal script]
 **Active deployment URL:** `AKfycbypN8afAl2zQwpR7K6k1-699g3HAhFAIqAOtDn3qY1nJWzuN1bd8n99bzRUzaV8ZMyTCw`
 **OAuth:** ✅ Authorized | **GAS code sync:** ✅ Tất cả 9 files đã deploy — GAS-MYSTERY-01 CLOSED (2026-06-18), redeploy 2026-06-22
 
-**Last redeploy (2026-07-27):** `AdminService.gs` (listUseCases_ owner filter + `limit<=0`=full) + `Code.gs` (list route owner params). URL không đổi. Confirmed deployed by user. — commit `3c7463e`
+**Last redeploy (2026-07-31, v3.14.0):** `Config.gs` (WEEKLY_LOG +8 cột milestone + MILESTONE_STATUS), `Utils.gs` (ensureSheetColumns_ + updateRowByField_), `AdminService.gs` (submitWeeklyUpdate_ milestone gate + listMilestones_/approveMilestone_/rejectMilestone_ + migrateWeeklyLogSchema()), `Code.gs` (routes milestone-list/approve/reject). URL không đổi. `migrateWeeklyLogSchema()` đã chạy. — commit `8a786a4`
+
+**Prev redeploy (2026-07-27):** `AdminService.gs` (listUseCases_ owner filter + `limit<=0`=full) + `Code.gs` (list route owner params). URL không đổi. Confirmed deployed by user. — commit `3c7463e`
 
 **Prev redeploy (2026-06-22):**
 
@@ -174,7 +177,8 @@ Rồi Dashboard → tab Người dùng → **Đồng bộ từ UC** → import o
 | dashboard API | ✅ | Live |
 | user-login / users / user-upsert / user-sync | ✅ | Deployed 2026-06-18 |
 | champion-review | ✅ | Deployed 2026-06-18 |
-| weekly-update / weekly-log | ✅ | Deployed 2026-06-22 — submitWeeklyUpdate_ (TEXT/NUM split, WEEKLY_LOG append) + getWeeklyLog_ (timeline history) |
+| weekly-update / weekly-log | ✅ | Deployed 2026-06-22 — submitWeeklyUpdate_ (TEXT/NUM split, WEEKLY_LOG append) + getWeeklyLog_ (timeline history). **v3.14.0 (2026-07-31):** submitWeeklyUpdate_ phát hiện milestone (stage/nâng điểm) → gate Stage/điểm pending |
+| milestone-list / approve / reject | ✅ | NEW v3.14.0 (2026-07-31) — listMilestones_(filter) join owner/team; approveMilestone_ áp Stage/điểm + re-score; rejectMilestone_ (bắt buộc lý do). Admin-only |
 | Authentication | ❌ | Username-based FE only, no real auth (SEC-01) |
 
 ## Auth Architecture Notes (v3.10.2)
