@@ -164,6 +164,11 @@ var Api = {
   getWeeklyReport(weekStart)    { return Api._request(API.weeklyReport(weekStart)); },
   submitWeeklyUpdate(data)      { return Api._request(API.weeklyUpdate(),   data, 45000); },
   getWeeklyLog(recordId)        { return Api._request(API.weeklyLog(recordId)); },
+
+  // Milestone approval (v3.14.0)
+  listMilestones(filter)        { return Api._request(API.milestoneList(filter)); },
+  approveMilestone(data)        { return Api._request(API.milestoneApprove(), data, 45000); },
+  rejectMilestone(data)         { return Api._request(API.milestoneReject(),  data, 45000); },
   submitSelfAssessment(data)    { return Api._request(API.selfAssessment(), data, 30000); },
   submitManagerReview(data)     { return Api._request(API.managerReview(),  data, 30000); },
   submitChampionReview(data)    { return Api._request(API.championReview(), data, 30000); },

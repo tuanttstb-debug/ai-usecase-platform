@@ -328,59 +328,83 @@ function getLeaderboard_(category, team, limit) {
  */
 function submitWeeklyUpdate_(recordId, data) {
   if (!recordId) throw new Error('Record_ID là bắt buộc');
+  ensureSheetColumns_(SHEETS.WEEKLY_LOG, WEEKLY_LOG_HEADERS); // self-heal schema milestone
 
   var existing = findObjectByField_(SHEETS.MASTER, 'Record_ID', recordId);
   if (!existing) throw new Error('Không tìm thấy use case: ' + recordId);
 
   var now = new Date().toISOString();
 
-  // ── Fields được phép update trong MASTER_DATA ──────────────────
-  var updates = { Record_ID: recordId };
-  var TEXT_FIELDS = [
-    'Weekly_Update', 'Next_Milestone', 'Blocker', 'Manager_Support'
+  // Ghi chú/tiến độ — luôn ghi ngay, không cần duyệt, không tính KPI.
+  var TEXT_FIELDS = ['Weekly_Update', 'Next_Milestone', 'Blocker', 'Manager_Support'];
+  // Số-liệu-điểm — chỉ ghi ngay khi KHÔNG phải milestone; nếu milestone thì giữ pending.
+  var SCORE_NUM_FIELDS = [
+    'Active_User_Count', 'Monthly_Usage_Count', 'Hours_Saved_Actual', 'Reuse_Count_Tracked'
   ];
-  var NUM_FIELDS = [
-    'Current_Progress', 'Active_User_Count', 'Monthly_Usage_Count',
-    'Hours_Saved_Actual', 'Reuse_Count_Tracked'
-  ];
-  TEXT_FIELDS.forEach(function(field) {
-    if (data[field] !== undefined) updates[field] = sanitizeStr_(String(data[field]), 2000);
-  });
-  NUM_FIELDS.forEach(function(field) {
-    if (data[field] !== undefined) updates[field] = safeNum_(data[field]);
-  });
-  updates.Last_Weekly_Report = now;
-  updates.Updated_At         = now;
 
-  // ── Stage transition ───────────────────────────────────────────
-  var prevStage    = sanitizeStr_(existing.Current_Stage || '');
+  // ── Stage transition đề xuất ───────────────────────────────────
+  var prevStage     = sanitizeStr_(existing.Current_Stage || '');
   var proposedStage = sanitizeStr_(data.New_Stage || '');
-  var validStages  = ['S1 - Idea', 'S2 - Pilot', 'S3 - Standardized', 'S4 - Scale'];
-  var stageChanged = (
+  var validStages   = ['S1 - Idea', 'S2 - Pilot', 'S3 - Standardized', 'S4 - Scale'];
+  var stageChanged  = (
     proposedStage &&
     proposedStage !== prevStage &&
     validStages.indexOf(proposedStage) !== -1
   );
-  if (stageChanged) {
-    updates.Current_Stage = proposedStage;
-  }
 
-  // ── Re-score với dữ liệu mới (kể cả stage mới nếu thay đổi) ──
-  var merged = {};
-  Object.keys(existing).forEach(function(k) { merged[k] = existing[k]; });
-  Object.keys(updates).forEach(function(k) { merged[k] = updates[k]; });
+  // ── Probe: tính điểm đề xuất để phát hiện "nâng điểm" ──────────
+  // Ghép existing + toàn bộ dữ liệu đề xuất (text + số liệu + stage) rồi score thử.
+  var prevScore = safeNum_(existing.Total_Score);
+  var probe = {};
+  Object.keys(existing).forEach(function(k) { probe[k] = existing[k]; });
+  TEXT_FIELDS.forEach(function(f) {
+    if (data[f] !== undefined) probe[f] = sanitizeStr_(String(data[f]), 2000);
+  });
+  SCORE_NUM_FIELDS.forEach(function(f) {
+    if (data[f] !== undefined) probe[f] = safeNum_(data[f]);
+  });
+  if (data.Current_Progress !== undefined) probe.Current_Progress = safeNum_(data.Current_Progress);
+  if (stageChanged) probe.Current_Stage = proposedStage;
+
+  var proposedScore = prevScore;
   try {
-    var scores = scoreUseCase_(merged);
-    Object.keys(scores).forEach(function(k) { updates[k] = scores[k]; });
+    proposedScore = safeNum_(scoreUseCase_(probe).Total_Score);
   } catch (e) {
-    logError_('submitWeeklyUpdate_ scoring', e, { recordId: recordId });
+    logError_('submitWeeklyUpdate_ probe-score', e, { recordId: recordId });
   }
+  var scoreRaised = proposedScore > prevScore;
+
+  // ── Milestone = chuyển Stage HOẶC nâng điểm → cần Admin duyệt ──
+  var isMilestone   = stageChanged || scoreRaised;
+  var milestoneType = (stageChanged && scoreRaised) ? 'STAGE+SCORE'
+                    : (stageChanged ? 'STAGE' : (scoreRaised ? 'SCORE' : ''));
 
   // ── Ghi MASTER_DATA ───────────────────────────────────────────
+  // Luôn ghi: ghi chú + tiến độ. Chỉ ghi số-liệu-điểm/stage/điểm khi KHÔNG milestone.
+  var updates = { Record_ID: recordId, Last_Weekly_Report: now, Updated_At: now };
+  TEXT_FIELDS.forEach(function(f) {
+    if (data[f] !== undefined) updates[f] = sanitizeStr_(String(data[f]), 2000);
+  });
+  if (data.Current_Progress !== undefined) updates.Current_Progress = safeNum_(data.Current_Progress);
+
+  if (!isMilestone) {
+    SCORE_NUM_FIELDS.forEach(function(f) {
+      if (data[f] !== undefined) updates[f] = safeNum_(data[f]);
+    });
+    try {
+      var scores = scoreUseCase_(probe);
+      Object.keys(scores).forEach(function(k) { updates[k] = scores[k]; });
+    } catch (e) {
+      logError_('submitWeeklyUpdate_ scoring', e, { recordId: recordId });
+    }
+  }
+  // Nếu isMilestone: KHÔNG ghi Current_Stage/score/số-liệu-điểm → chờ approveMilestone_.
   updateRowByRecordId_(SHEETS.MASTER, recordId, updates);
 
   // ── Ghi WEEKLY_LOG (1 row / lần submit — giữ toàn bộ lịch sử) ─
+  var logId  = Utilities.getUuid();
   var logRow = {
+    Log_ID:               logId,
     Record_ID:            recordId,
     UseCase_ID:           existing.UseCase_ID || '',
     Log_Date:             now,
@@ -398,32 +422,43 @@ function submitWeeklyUpdate_(recordId, data) {
     Reuse_Count_Tracked:  safeNum_(data.Reuse_Count_Tracked),
     Scale_Plan:           sanitizeStr_(data.Scale_Plan  || '', 2000),
     Scale_Risks:          sanitizeStr_(data.Scale_Risks || '', 2000),
-    Reporter:             sanitizeStr_(data.reporter_email || existing.Owner_Email || '', 200)
+    Reporter:             sanitizeStr_(data.reporter_email || existing.Owner_Email || '', 200),
+    Is_Milestone:         isMilestone ? 'TRUE' : 'FALSE',
+    Milestone_Type:       milestoneType,
+    Previous_Total_Score: prevScore,
+    Proposed_Total_Score: proposedScore,
+    Approval_Status:      isMilestone ? MILESTONE_STATUS.PENDING : MILESTONE_STATUS.NA,
+    Approved_By:          '',
+    Approved_At:          '',
+    Milestone_Comment:    ''
   };
   appendRowFromObject_(SHEETS.WEEKLY_LOG, logRow);
 
   // ── ACTIVITY_LOG ───────────────────────────────────────────────
   var actDetails = 'Cập nhật tuần: ' + (data.Current_Progress || '?') + '% — ' +
     String(data.Weekly_Update || '').substring(0, 80);
-  if (stageChanged) {
-    actDetails = '[STAGE: ' + prevStage + ' → ' + proposedStage + '] ' + actDetails;
+  if (isMilestone) {
+    actDetails = '[MILESTONE ' + milestoneType + ' — chờ Admin duyệt] ' + actDetails;
   }
   logActivity_(existing.UseCase_ID, recordId, 'WEEKLY_UPDATE',
     actDetails, data.reporter_email || existing.Owner_Email,
     existing.Status, existing.Status);
-
-  if (stageChanged) {
-    logActivity_(existing.UseCase_ID, recordId, 'STAGE_TRANSITION',
-      'Chuyển giai đoạn: ' + prevStage + ' → ' + proposedStage,
-      data.reporter_email || existing.Owner_Email, prevStage, proposedStage);
-  }
+  // Lưu ý: STAGE_TRANSITION chỉ log khi Admin duyệt milestone (xem approveMilestone_).
 
   return {
-    record_id:     recordId,
-    updated_at:    now,
-    total_score:   updates.Total_Score || 0,
-    stage_changed: stageChanged,
-    new_stage:     stageChanged ? proposedStage : prevStage
+    record_id:            recordId,
+    updated_at:           now,
+    log_id:               logId,
+    is_milestone:         isMilestone,
+    milestone_type:       milestoneType,
+    pending_milestone:    isMilestone,          // FE hiển thị "chờ Admin duyệt"
+    prev_total_score:     prevScore,
+    proposed_total_score: proposedScore,
+    // Milestone: điểm/stage CHƯA áp → trả giá trị hiện tại để FE không hiển thị nhầm.
+    total_score:          isMilestone ? prevScore : (safeNum_(updates.Total_Score) || prevScore),
+    stage_changed:        isMilestone ? false : stageChanged,
+    new_stage:            isMilestone ? prevStage : (stageChanged ? proposedStage : prevStage),
+    proposed_stage:       stageChanged ? proposedStage : ''
   };
 }
 
@@ -460,7 +495,13 @@ function getWeeklyLog_(recordId) {
       reuse_count_tracked: safeNum_(row.Reuse_Count_Tracked),
       scale_plan:          String(row.Scale_Plan  || ''),
       scale_risks:         String(row.Scale_Risks || ''),
-      reporter:            String(row.Reporter    || '')
+      reporter:            String(row.Reporter    || ''),
+      log_id:              String(row.Log_ID      || ''),
+      is_milestone:        row.Is_Milestone === 'TRUE' || row.Is_Milestone === true,
+      milestone_type:      String(row.Milestone_Type || ''),
+      previous_total_score:safeNum_(row.Previous_Total_Score),
+      proposed_total_score:safeNum_(row.Proposed_Total_Score),
+      approval_status:     String(row.Approval_Status || 'N/A')
     });
   }
 
@@ -468,6 +509,185 @@ function getWeeklyLog_(recordId) {
     return new Date(b.log_date) - new Date(a.log_date);
   });
   return logs;
+}
+
+// ── Milestone Approval (v3.14.0) ──────────────────────────────────
+// Milestone = dòng WEEKLY_LOG có chuyển Stage hoặc nâng điểm. Phải Admin duyệt
+// mới áp Stage/điểm lên MASTER và mới +1 KPI cho Owner (tuần Log_Date).
+
+/**
+ * Liệt kê milestone theo trạng thái duyệt, join thông tin UC (owner/team/name).
+ * @param {string} filter - 'pending' | 'approved' | 'rejected' | 'all' (mặc định pending)
+ * @returns {Object[]} sorted desc theo log_date
+ */
+function listMilestones_(filter) {
+  ensureSheetColumns_(SHEETS.WEEKLY_LOG, WEEKLY_LOG_HEADERS);
+  var want = String(filter || 'pending').toLowerCase();
+  var logs = readSheetAsObjects_(SHEETS.WEEKLY_LOG);
+
+  // Đọc MASTER 1 lần → map theo Record_ID để join owner/name/team
+  var byRid = {};
+  readSheetAsObjects_(SHEETS.MASTER).forEach(function(uc) {
+    byRid[String(uc.Record_ID)] = uc;
+  });
+
+  var out = [];
+  logs.forEach(function(row) {
+    if (!(row.Is_Milestone === 'TRUE' || row.Is_Milestone === true)) return;
+    var st = String(row.Approval_Status || '').toLowerCase();
+    if (want !== 'all' && st !== want) return;
+    var uc = byRid[String(row.Record_ID)] || {};
+    out.push({
+      log_id:               String(row.Log_ID || ''),
+      record_id:            String(row.Record_ID || ''),
+      usecase_id:           String(row.UseCase_ID || uc.UseCase_ID || ''),
+      name:                 String(uc.UseCase_Name || ''),
+      owner_name:           String(uc.Owner_Name || ''),
+      owner_email:          String(uc.Owner_Email || ''),
+      team:                 String(uc.Team || ''),
+      log_date:             String(row.Log_Date || ''),
+      previous_stage:       String(row.Previous_Stage || ''),
+      new_stage:            String(row.New_Stage || ''),
+      stage_changed:        row.Stage_Changed === 'TRUE' || row.Stage_Changed === true,
+      milestone_type:       String(row.Milestone_Type || ''),
+      previous_total_score: safeNum_(row.Previous_Total_Score),
+      proposed_total_score: safeNum_(row.Proposed_Total_Score),
+      progress:             safeNum_(row.Progress),
+      weekly_update:        String(row.Weekly_Update || ''),
+      active_user_count:    safeNum_(row.Active_User_Count),
+      monthly_usage_count:  safeNum_(row.Monthly_Usage_Count),
+      hours_saved_actual:   safeNum_(row.Hours_Saved_Actual),
+      reuse_count_tracked:  safeNum_(row.Reuse_Count_Tracked),
+      approval_status:      String(row.Approval_Status || 'N/A'),
+      approved_by:          String(row.Approved_By || ''),
+      approved_at:          String(row.Approved_At || ''),
+      reporter:             String(row.Reporter || '')
+    });
+  });
+
+  out.sort(function(a, b) { return new Date(b.log_date) - new Date(a.log_date); });
+  return out;
+}
+
+/**
+ * Admin duyệt một milestone → áp Stage + số-liệu-điểm lên MASTER, re-score.
+ * Sau khi Approved, milestone được tính +1 KPI (client-side) cho Owner ở tuần Log_Date.
+ * @param {string} logId
+ * @param {string} adminEmail
+ * @param {string} [comment]
+ */
+function approveMilestone_(logId, adminEmail, comment) {
+  if (!logId) throw new Error('Thiếu log_id');
+  if (!isAdminEmail_(adminEmail)) throw new Error('Không có quyền duyệt milestone: ' + adminEmail);
+  ensureSheetColumns_(SHEETS.WEEKLY_LOG, WEEKLY_LOG_HEADERS);
+
+  var logRow = findObjectByField_(SHEETS.WEEKLY_LOG, 'Log_ID', logId);
+  if (!logRow) throw new Error('Không tìm thấy milestone: ' + logId);
+  if (String(logRow.Approval_Status || '') !== MILESTONE_STATUS.PENDING) {
+    throw new Error('Milestone không ở trạng thái chờ duyệt (hiện tại: ' + logRow.Approval_Status + ')');
+  }
+
+  var recordId = String(logRow.Record_ID);
+  var existing = findObjectByField_(SHEETS.MASTER, 'Record_ID', recordId);
+  if (!existing) throw new Error('Không tìm thấy use case: ' + recordId);
+
+  var now       = new Date().toISOString();
+  var prevStage = String(existing.Current_Stage || '');
+
+  // Áp số-liệu-điểm đã đề xuất + stage (nếu có)
+  var updates = { Record_ID: recordId, Updated_At: now };
+  ['Active_User_Count', 'Monthly_Usage_Count', 'Hours_Saved_Actual', 'Reuse_Count_Tracked']
+    .forEach(function(f) { updates[f] = safeNum_(logRow[f]); });
+  var stageChanged = (logRow.Stage_Changed === 'TRUE' || logRow.Stage_Changed === true);
+  if (stageChanged && logRow.New_Stage) updates.Current_Stage = String(logRow.New_Stage);
+
+  // Re-score với dữ liệu đã áp
+  var merged = {};
+  Object.keys(existing).forEach(function(k) { merged[k] = existing[k]; });
+  Object.keys(updates).forEach(function(k) { merged[k] = updates[k]; });
+  try {
+    var scores = scoreUseCase_(merged);
+    Object.keys(scores).forEach(function(k) { updates[k] = scores[k]; });
+  } catch (e) {
+    logError_('approveMilestone_ scoring', e, { logId: logId });
+  }
+
+  updateRowByRecordId_(SHEETS.MASTER, recordId, updates);
+
+  updateRowByField_(SHEETS.WEEKLY_LOG, 'Log_ID', logId, {
+    Approval_Status:      MILESTONE_STATUS.APPROVED,
+    Approved_By:          adminEmail,
+    Approved_At:          now,
+    Proposed_Total_Score: safeNum_(updates.Total_Score),
+    Milestone_Comment:    sanitizeStr_(comment || '', 500)
+  });
+
+  logActivity_(existing.UseCase_ID, recordId, 'MILESTONE_APPROVED',
+    'Duyệt milestone ' + String(logRow.Milestone_Type || '') + ' bởi ' + adminEmail +
+      ' — điểm: ' + safeNum_(logRow.Previous_Total_Score) + ' → ' + safeNum_(updates.Total_Score),
+    adminEmail, existing.Status, existing.Status);
+  if (stageChanged && logRow.New_Stage) {
+    logActivity_(existing.UseCase_ID, recordId, 'STAGE_TRANSITION',
+      'Chuyển giai đoạn (đã duyệt): ' + prevStage + ' → ' + String(logRow.New_Stage),
+      adminEmail, prevStage, String(logRow.New_Stage));
+  }
+
+  return {
+    log_id:          logId,
+    record_id:       recordId,
+    approval_status: MILESTONE_STATUS.APPROVED,
+    total_score:     safeNum_(updates.Total_Score),
+    new_stage:       stageChanged ? String(logRow.New_Stage) : prevStage
+  };
+}
+
+/**
+ * Admin từ chối một milestone → KHÔNG áp gì, đánh dấu Rejected. Bắt buộc có lý do.
+ * @param {string} logId
+ * @param {string} adminEmail
+ * @param {string} comment - lý do (bắt buộc)
+ */
+function rejectMilestone_(logId, adminEmail, comment) {
+  if (!logId) throw new Error('Thiếu log_id');
+  if (!isAdminEmail_(adminEmail)) throw new Error('Không có quyền từ chối milestone: ' + adminEmail);
+  if (!comment || String(comment).trim() === '') throw new Error('Lý do từ chối là bắt buộc');
+  ensureSheetColumns_(SHEETS.WEEKLY_LOG, WEEKLY_LOG_HEADERS);
+
+  var logRow = findObjectByField_(SHEETS.WEEKLY_LOG, 'Log_ID', logId);
+  if (!logRow) throw new Error('Không tìm thấy milestone: ' + logId);
+  if (String(logRow.Approval_Status || '') !== MILESTONE_STATUS.PENDING) {
+    throw new Error('Milestone không ở trạng thái chờ duyệt (hiện tại: ' + logRow.Approval_Status + ')');
+  }
+
+  var now = new Date().toISOString();
+  updateRowByField_(SHEETS.WEEKLY_LOG, 'Log_ID', logId, {
+    Approval_Status:   MILESTONE_STATUS.REJECTED,
+    Approved_By:       adminEmail,
+    Approved_At:       now,
+    Milestone_Comment: sanitizeStr_(comment, 500)
+  });
+
+  logActivity_(String(logRow.UseCase_ID || ''), String(logRow.Record_ID || ''), 'MILESTONE_REJECTED',
+    'Từ chối milestone bởi ' + adminEmail + ': ' + String(comment).substring(0, 200),
+    adminEmail, '', '');
+
+  return {
+    log_id:          logId,
+    record_id:       String(logRow.Record_ID || ''),
+    approval_status: MILESTONE_STATUS.REJECTED
+  };
+}
+
+/**
+ * PUBLIC (chạy trong GAS Editor một lần sau khi deploy):
+ * Thêm các cột milestone vào sheet WEEKLY_LOG hiện có mà không mất dữ liệu cũ.
+ * An toàn để chạy nhiều lần (idempotent). submitWeeklyUpdate_/listMilestones_ cũng
+ * tự gọi ensureSheetColumns_ nên bước này chỉ là chủ động.
+ */
+function migrateWeeklyLogSchema() {
+  var added = ensureSheetColumns_(SHEETS.WEEKLY_LOG, WEEKLY_LOG_HEADERS);
+  Logger.log('WEEKLY_LOG migrate — cột thêm: ' + (added.length ? added.join(', ') : '(đã đủ)'));
+  return { added: added };
 }
 
 // ── Governance: Self Assessment ───────────────────────────────────

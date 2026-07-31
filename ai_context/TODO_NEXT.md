@@ -4,6 +4,16 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🔴 P0 — Deploy v3.14.0 (Milestone → KPI có phê duyệt Admin)
+
+Code xong + test local PASS (session 2026-07-31). **CHƯA push, CHƯA deploy GAS.** Thứ tự:
+- [ ] **GAS deploy**: paste `Config.gs`, `Utils.gs`, `AdminService.gs`, `Code.gs` → Edit deployment → New version (URL không đổi).
+- [ ] **GAS Editor**: chạy `migrateWeeklyLogSchema()` 1 lần (thêm 8 cột milestone vào WEEKLY_LOG cũ). Submit cũng tự `ensureSheetColumns_` self-heal.
+- [ ] **Push FE** lên main. (FE trước GAS an toàn: endpoint milestone rỗng → tính năng ngủ, weekly-update giữ hành vi cũ tới khi GAS live.)
+- [ ] **Verify sau deploy**: (1) weekly-update chuyển Stage/nâng điểm → thông báo "chờ Admin duyệt", UC chưa đổi Stage/điểm; (2) admin dashboard tab "Chờ duyệt" → milestone hiện → Duyệt → UC áp Stage/điểm + KPI Owner +1 ở tuần đó; (3) Từ chối → không áp gì.
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-07-30
 
 - [x] **SCORING FIX: nối `Active_User_Count` end-to-end (v3.13.0)** — Đóng lại task phiên trước bị bỏ dở (chưa commit/deploy/handover). Root cause: Adoption score (max 20đ) lấy từ `Active_User_Count` mà chưa hề có ô nhập → luôn=0. Fix: thêm field "Số người dùng thực tế" vào register wizard (`constants.js`) + form cập nhật tuần (`weekly-update.html`) + GAS đọc/ghi (`AdminService.gs`, `Config.gs`). 95/95 Playwright PASS.

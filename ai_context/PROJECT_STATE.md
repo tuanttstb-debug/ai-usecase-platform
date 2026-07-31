@@ -1,8 +1,8 @@
 # PROJECT STATE
 
-**Last updated:** 2026-07-30
-**Version:** 3.13.0 — Scoring fix: nối `Active_User_Count` (nguồn điểm Adoption) end-to-end (register wizard + cập nhật tuần + GAS). Trước đây Adoption luôn=0 vì không có ô nhập. ✅ GAS đã redeploy (2026-07-30, URL không đổi). ⚠️ Còn: chạy `recalculateAllScores_()` cho UC cũ sau khi có dữ liệu
-**Prev:** 3.12.3 (Wording tên Trung tâm ở login, 2026-07-29) · 3.12.2 (DATA-LIMIT-01 fix — owner filter + `limit:0`, 2026-07-27) · 3.12.1 (Khám Phá search fix, 2026-07-09) · 3.12.0 (Điểm SPTD tab)
+**Last updated:** 2026-07-31
+**Version:** 3.14.0 — Feature: Milestone cập nhật tuần → KPI (có phê duyệt Admin). Update US ở "Cập nhật tuần" khi chuyển Stage/nâng điểm ghi nhận như 1 US mới ở KPI, bắt buộc Admin duyệt mới áp Stage/điểm + tính KPI (cộng dồn theo tuần Log_Date, credit Owner). ✅ Code + test local PASS. ⚠️ CHƯA push, CHƯA deploy GAS (chạy `migrateWeeklyLogSchema()` sau deploy)
+**Prev:** 3.13.0 — Scoring fix: nối `Active_User_Count` (Adoption) end-to-end (2026-07-30, GAS deployed) · 3.12.3 (Wording tên Trung tâm ở login, 2026-07-29) · 3.12.2 (DATA-LIMIT-01 fix — owner filter + `limit:0`, 2026-07-27) · 3.12.1 (Khám Phá search fix, 2026-07-09) · 3.12.0 (Điểm SPTD tab)
 **Org name (chuẩn):** Trung tâm Sản phẩm & Giải pháp Tín dụng — short form hiển thị = "TT SPTD"
 **Data migration:** ✅ Team BL1 + BL2 → Team BL hoàn tất (2026-07-07) — LOOKUP + MASTER_DATA + USERS + DASHBOARD cache cleared
 **Project location:** `D:\Workspace\Production\ai-usecase-platform` (moved from `D:\Công việc\Vibecode\` on 2026-06-19)

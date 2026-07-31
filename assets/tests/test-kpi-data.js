@@ -33,9 +33,16 @@ function _getWeekKey(date) {
 
 // ── Core function under test (extracted from dashboard.js IIFE) ──────
 
-function buildKPIData(allList, usersList) {
+function buildKPIData(allList, usersList, milestonesApproved) {
   var byEmail = {};
   var byName  = {};
+
+  function _accWeek(map, key, weekKey, team, rawName) {
+    if (!key) return;
+    if (!map[key]) map[key] = { team: team, weeks: {}, total: 0, rawName: rawName || key };
+    map[key].weeks[weekKey] = (map[key].weeks[weekKey] || 0) + 1;
+    map[key].total++;
+  }
 
   allList.forEach(function (uc) {
     if (uc.status !== 'Approved') return; // chỉ đếm UC được duyệt
@@ -49,14 +56,25 @@ function buildKPIData(allList, usersList) {
     var team = uc.team || '--';
     var rawName = String(uc.owner_name == null ? '' : uc.owner_name).trim();
 
-    function addTo(map, key) {
-      if (!key) return;
-      if (!map[key]) map[key] = { team: team, weeks: {}, total: 0, rawName: rawName || key };
-      map[key].weeks[weekKey] = (map[key].weeks[weekKey] || 0) + 1;
-      map[key].total++;
-    }
-    if (eKey) addTo(byEmail, eKey);
-    if (nKey && nKey !== eKey) addTo(byName, nKey);
+    if (eKey) _accWeek(byEmail, eKey, weekKey, team, rawName);
+    if (nKey && nKey !== eKey) _accWeek(byName, nKey, weekKey, team, rawName);
+  });
+
+  // Milestone đã duyệt = +1 KPI cho Owner ở tuần Log_Date (v3.14.0)
+  (milestonesApproved || []).forEach(function (m) {
+    if (String(m.approval_status || 'Approved') !== 'Approved') return;
+    var dateStr = m.log_date;
+    if (!dateStr) return;
+    var weekKey = _getWeekKey(new Date(dateStr));
+    if (!weekKey) return;
+
+    var eKey = _norm(m.owner_email);
+    var nKey = _norm(m.owner_name);
+    var team = m.team || '--';
+    var rawName = String(m.owner_name == null ? '' : m.owner_name).trim();
+
+    if (eKey) _accWeek(byEmail, eKey, weekKey, team, rawName);
+    if (nKey && nKey !== eKey) _accWeek(byName, nKey, weekKey, team, rawName);
   });
 
   var result       = {};
@@ -298,6 +316,54 @@ assert(resG['phuongnpl'].total === 5,            'G2: total=5 (2 via username + 
 assert((resG['phuongnpl'].weeks[WEEK_THIS] || 0) === 3, 'G3: tuần này = 3 UC (1 username + 2 display_name)');
 assert(resG['nguyen pham lam phuong'] === undefined, 'G4: không có ghost row cho display_name key');
 assert(Object.keys(resG).length === 1,           'G5: chỉ 1 entry — không duplicate');
+
+console.log('\n=== Suite H: Milestone đã duyệt cộng KPI (v3.14.0) ===');
+// Milestone đã duyệt cộng +1 KPI cho Owner ở tuần Log_Date; credit UC gốc vẫn giữ.
+var USERS_H = [
+  { username: 'milo', display_name: 'Milo Owner', team: 'CV2', active: true }
+];
+var LIST_H = [
+  { owner_email: 'milo', owner_name: 'Milo Owner', team: 'CV2', status: 'Approved', submit_date: TODAY }
+];
+// 2 milestone đã duyệt: 1 tuần này, 1 tuần cũ
+var MS_H = [
+  { owner_email: 'milo', owner_name: 'Milo Owner', team: 'CV2', log_date: TODAY,        approval_status: 'Approved' },
+  { owner_email: 'milo', owner_name: 'Milo Owner', team: 'CV2', log_date: '2026-05-04', approval_status: 'Approved' }
+];
+var resH = buildKPIData(LIST_H, USERS_H, MS_H);
+assert(resH['milo'] !== undefined,               'H1: owner entry tồn tại');
+assert(resH['milo'].total === 3,                 'H2: total=3 (1 UC gốc + 2 milestone đã duyệt)');
+assert(resH['milo'].weeks[WEEK_THIS] === 2,      'H3: tuần này = 2 (UC gốc + milestone tuần này)');
+
+// Milestone chưa duyệt (Pending) hoặc bị từ chối KHÔNG được cộng
+var MS_H2 = [
+  { owner_email: 'milo', owner_name: 'Milo Owner', team: 'CV2', log_date: TODAY, approval_status: 'Pending'  },
+  { owner_email: 'milo', owner_name: 'Milo Owner', team: 'CV2', log_date: TODAY, approval_status: 'Rejected' }
+];
+var resH2 = buildKPIData(LIST_H, USERS_H, MS_H2);
+assert(resH2['milo'].total === 1,                'H4: milestone Pending/Rejected không cộng KPI (chỉ UC gốc=1)');
+
+// Milestone của owner chưa có trong USERS sheet vẫn được cộng qua fallback
+var MS_H3 = [
+  { owner_email: 'freelancer', owner_name: 'Free Lancer', team: 'IT', log_date: TODAY, approval_status: 'Approved' }
+];
+var resH3 = buildKPIData([], [], MS_H3);
+assert(resH3['freelancer'] !== undefined,        'H5: owner chỉ có milestone (không UC) vẫn xuất hiện');
+assert(resH3['freelancer'].total === 1,          'H6: total=1 từ milestone');
+
+// Milestone owner_email khác display_name (giống pattern owner_email=display_name) — không double count
+var USERS_H4 = [
+  { username: 'lan', display_name: 'Lan Pham', team: 'OPS', active: true }
+];
+var LIST_H4 = [
+  { owner_email: 'lan', owner_name: 'Lan Pham', team: 'OPS', status: 'Approved', submit_date: TODAY }
+];
+var MS_H4 = [
+  { owner_email: 'Lan Pham', owner_name: 'Lan Pham', team: 'OPS', log_date: TODAY, approval_status: 'Approved' }
+];
+var resH4 = buildKPIData(LIST_H4, USERS_H4, MS_H4);
+assert(Object.keys(resH4).length === 1,          'H7: chỉ 1 entry (milestone qua display_name key merge)');
+assert(resH4['lan'].total === 2,                 'H8: total=2 (UC gốc + milestone), không ghost row');
 
 // ── Summary ───────────────────────────────────────────────────────────
 console.log('\n────────────────────────────────');

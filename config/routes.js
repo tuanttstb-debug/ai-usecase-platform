@@ -56,6 +56,11 @@ var API = {
   },
   weeklyUpdate:   () => `${_gasBase}?action=weekly-update`,
   weeklyLog:      (recordId) => `${_gasBase}?action=weekly-log&record_id=${encodeURIComponent(recordId)}`,
+
+  // Milestone approval endpoints (v3.14.0)
+  milestoneList:   (filter) => `${_gasBase}?action=milestone-list&filter=${encodeURIComponent(filter || 'pending')}`,
+  milestoneApprove:() => `${_gasBase}?action=milestone-approve`,
+  milestoneReject: () => `${_gasBase}?action=milestone-reject`,
   selfAssessment: () => `${_gasBase}?action=self-assessment`,
   managerReview:  () => `${_gasBase}?action=manager-review`,
   scoreRecalc:    () => `${_gasBase}?action=score-recalc`,

@@ -1,5 +1,51 @@
 # SESSION HANDOVER
 
+## Session: 2026-07-31
+**Scope:** FEATURE — Milestone cập nhật tuần → KPI (có phê duyệt Admin). Update US ở "Cập nhật tuần" khi **chuyển Stage hoặc nâng điểm** được ghi nhận như 1 US mới ở KPI, **bắt buộc Admin duyệt** mới áp Stage/điểm + tính KPI.
+**Version:** 3.14.0
+**Status:** ✅ Code xong + test local PASS. ⚠️ **CHƯA push, CHƯA deploy GAS.**
+
+### Flow mới (đã chốt với user)
+| Cập nhật tuần | Ghi UC ngay | Cần Admin duyệt | Tính KPI |
+|---|---|---|---|
+| Chỉ ghi chú/tiến độ | ✅ | ❌ | ❌ |
+| **Milestone** = chuyển Stage **hoặc** nâng điểm | Chỉ ghi chú; **giữ Stage/điểm/số-liệu-điểm** pending | ✅ | ✅ sau duyệt: +1 vào **tuần Log_Date**, credit **Owner**, **cộng dồn** nhiều tuần |
+
+- Admin duyệt tại **tab "Chờ duyệt"** dashboard (section riêng "Milestone cập nhật tuần chờ duyệt").
+- SPTD: milestone cộng **số lượng + tuần đạt** (KHÔNG cộng quality avg).
+
+### Files changed
+| File | Thay đổi |
+|---|---|
+| `Config.gs` | `WEEKLY_LOG_HEADERS` +8 cột milestone (Log_ID, Is_Milestone, Milestone_Type, Previous/Proposed_Total_Score, Approval_Status, Approved_By/At, Milestone_Comment); `MILESTONE_STATUS` const |
+| `Utils.gs` | `ensureSheetColumns_()` (self-heal schema), `updateRowByField_()` (update theo Log_ID) |
+| `AdminService.gs` | `submitWeeklyUpdate_` rewrite (probe-score phát hiện milestone, gate Stage/điểm khi pending); `listMilestones_/approveMilestone_/rejectMilestone_`; `getWeeklyLog_` trả milestone fields; `migrateWeeklyLogSchema()` public |
+| `Code.gs` | routes `milestone-list/approve/reject` |
+| `routes.js`+`api.js` | `milestoneList/Approve/Reject` |
+| `weekly-update.html` | submit xử lý `res.pending_milestone` → thông báo "chờ Admin duyệt"; timeline badge trạng thái duyệt |
+| `dashboard.js` | `_milestonePending/_milestoneApproved/_msCache`; `_loadMilestones` (approved cho mọi user, pending queue chỉ admin); `renderPendingMilestones`+approve/reject; `_buildKPIData` cộng milestone đã duyệt |
+| `dashboard.html` | section "Milestone cập nhật tuần chờ duyệt" trong tab-pending |
+| `sptd-scoring.js` | bucket tách `qty` (quantity+milestone) khỏi `ucs` (quality); `computeAllScores/computeUserDetails` nhận `milestones` |
+| `test-kpi-data.js` | Suite H (8) milestone KPI |
+| `test-sptd-scoring.js` | Suite F (5) milestone SPTD |
+| `tests/07-milestone-approval.spec.js` | NEW — 5 E2E duyệt milestone (mocked) |
+
+### Test (local, PASS)
+- Unit: SPTD **34/34**, KPI **38/38**.
+- Playwright mocked: 01–07 = **91/91** (gồm 5 mới). Live read-only weekly-update T01/T05/T09 = **3/3**.
+- weekly-update.html backward-compatible với GAS cũ (pending_milestone undefined → success thường).
+
+### ⚠️ Deploy steps CÒN LẠI (bắt buộc, theo thứ tự)
+1. **GAS**: paste `Config.gs`, `Utils.gs`, `AdminService.gs`, `Code.gs` → Deploy → Manage Deployments → Edit → New version (URL không đổi).
+2. **GAS Editor**: chạy `migrateWeeklyLogSchema()` 1 lần (thêm cột vào WEEKLY_LOG cũ; submit cũng tự self-heal).
+3. **Push FE** lên main (GitHub Pages). *FE đẩy trước GAS vẫn an toàn: milestone endpoints trả rỗng → tính năng "ngủ", weekly-update giữ hành vi cũ (apply ngay) tới khi GAS deploy.*
+
+### Regression risk
+- **Hành vi v3.13.0 đổi có chủ đích:** weekly-update milestone (stage/nâng điểm) KHÔNG còn apply ngay — chờ Admin duyệt. Update thường vẫn apply ngay.
+- KPI có thể tăng khi milestone được duyệt (cộng dồn) — thông báo người theo dõi số cũ.
+
+---
+
 ## Session: 2026-07-30
 **Scope:** SCORING FIX — Nối trường `Active_User_Count` (nguồn điểm Adoption) end-to-end; đóng lại task phiên trước bị bỏ dở
 **Version:** 3.13.0

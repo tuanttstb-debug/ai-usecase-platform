@@ -21,6 +21,9 @@
   var _detailAction = null; // 'approve' | 'reject'
   var _ucCache      = {}; // key → uc object (safe alternative to inline JSON)
   var _rejectedList = [];
+  var _milestonePending  = []; // milestone cập nhật tuần chờ Admin duyệt (v3.14.0)
+  var _milestoneApproved = []; // milestone đã duyệt — feed KPI/SPTD
+  var _msCache      = {}; // key(log_id) → milestone object
   var _filterAll    = { statuses: [], team: '' }; // multi-status + single-team filter for "all" tab
   var _usersList    = []; // cache user list for Users tab
   var _kpiViewedWeek = null; // null = current week; updated by week navigation buttons
@@ -213,6 +216,8 @@
       renderMyTable(_myList);
       renderExploreTable(_exploreList);
 
+      _loadMilestones(); // async, non-blocking — approved feed KPI/SPTD (all users) + admin queue
+
       if (_isAdmin) {
         _dashData     = results[1] || {};
         _pendingList  = _allList.filter(function (uc) {
@@ -271,6 +276,7 @@
       _pendingList = (await Api.listUseCases({ filter: 'pending', limit: 0 })) || [];
       renderPendingList(_pendingList);
       updatePendingBadge(_pendingList.length);
+      await _loadMilestones();
     } catch (err) {
       showToast('Lỗi tải danh sách chờ duyệt: ' + err.message, 'error');
     } finally {
@@ -655,6 +661,138 @@
         '</div>' +
       '</div>';
     }).join('');
+  }
+
+  // ── Milestone approval (v3.14.0) ──────────────────────────────────
+  function _cacheMilestone(m) {
+    var k = m.log_id || ('ms_' + Object.keys(_msCache).length);
+    _msCache[k] = m;
+    return k;
+  }
+
+  function _refreshPendingBadge() {
+    updatePendingBadge(_pendingList.length + _milestonePending.length);
+    var mb = document.getElementById('milestoneBadge');
+    if (mb) mb.textContent = _milestonePending.length ? String(_milestonePending.length) : '';
+  }
+
+  // Load milestone lists. Approved feed KPI/SPTD cho MỌI user; pending queue chỉ admin.
+  // Non-blocking + fail-safe: endpoint có thể chưa deploy → giữ mảng rỗng.
+  async function _loadMilestones() {
+    try {
+      _milestoneApproved = (await Api.listMilestones('approved')) || [];
+    } catch (e) {
+      _milestoneApproved = [];
+    }
+    if (_isAdmin) {
+      try {
+        _milestonePending = (await Api.listMilestones('pending')) || [];
+      } catch (e) {
+        _milestonePending = [];
+      }
+      renderPendingMilestones(_milestonePending);
+      _refreshPendingBadge();
+    }
+    // KPI/SPTD phụ thuộc milestone đã duyệt → làm mới cache + re-render nếu đang mở
+    _sptdScores = null;
+    _rerenderIfActive('tab-kpi',  renderKPITab);
+    _rerenderIfActive('tab-sptd', renderSPTDTab);
+  }
+
+  function _rerenderIfActive(panelId, renderFn) {
+    var el = document.getElementById(panelId);
+    if (el && !el.classList.contains('hidden')) {
+      try { renderFn(); } catch (e) { /* ignore */ }
+    }
+  }
+
+  function renderPendingMilestones(items) {
+    var section   = document.getElementById('pendingMilestoneSection');
+    var container = document.getElementById('pendingMilestoneList');
+    if (!container) return;
+    if (!items || !items.length) {
+      if (section) section.style.display = 'none';
+      container.innerHTML = '';
+      return;
+    }
+    if (section) section.style.display = '';
+    container.innerHTML = items.map(function (m) {
+      var typeLabel = m.milestone_type === 'STAGE' ? 'Chuyển giai đoạn'
+                    : m.milestone_type === 'SCORE' ? 'Nâng điểm'
+                    : 'Chuyển giai đoạn + Nâng điểm';
+      var stageBit = m.stage_changed
+        ? '<span>Stage: ' + esc(m.previous_stage || '--') + ' → <strong>' + esc(m.new_stage || '--') + '</strong></span>'
+        : '';
+      var scoreBit = (m.proposed_total_score > m.previous_total_score)
+        ? '<span>Điểm: ' + m.previous_total_score + ' → <strong>' + m.proposed_total_score + '</strong>/100</span>'
+        : '';
+      var k = _cacheMilestone(m);
+      var excerpt = m.weekly_update
+        ? '<div class="pending-card-excerpt">' + esc(m.weekly_update.substring(0, 150)) + (m.weekly_update.length > 150 ? '…' : '') + '</div>'
+        : '';
+      return '<div class="pending-card">' +
+        '<div class="pending-card-header">' +
+          '<span class="id-badge">' + esc(m.usecase_id || '--') + '</span>' +
+          '<span class="status-badge" style="background:#7B2CBF20;color:#7B2CBF;border:1px solid #7B2CBF40">Milestone · ' + esc(typeLabel) + '</span>' +
+        '</div>' +
+        '<div class="pending-card-title">' + esc(m.name || 'Không có tên') + '</div>' +
+        '<div class="pending-card-meta">' +
+          '<span>' + esc(m.owner_name || '--') + '</span>' +
+          '<span>' + esc(m.team || '--') + '</span>' +
+          '<span>' + fmtDate(m.log_date) + '</span>' +
+        '</div>' +
+        '<div class="pending-card-meta">' + stageBit + scoreBit + '</div>' +
+        excerpt +
+        '<div class="pending-card-actions">' +
+          '<button class="btn btn-sm btn-success" onclick="Dashboard._approveMilestone(\'' + esc(k) + '\')">✓ Duyệt milestone</button>' +
+          '<button class="btn btn-sm btn-danger" onclick="Dashboard._rejectMilestone(\'' + esc(k) + '\')">✕ Từ chối</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  async function _approveMilestone(key) {
+    var m = _msCache[key];
+    if (!m) return;
+    showLoading(true);
+    try {
+      await Api.approveMilestone({
+        log_id:         m.log_id,
+        reviewer_email: _user ? _user.email : '',
+        comment:        ''
+      });
+      showToast('Đã duyệt milestone — đã áp Stage/điểm và ghi nhận KPI', 'success');
+      _allList = []; _dashData = null;
+      await _loadStartupData();  // reload UC + milestone + KPI
+    } catch (err) {
+      showToast('Lỗi duyệt milestone: ' + (err && err.message), 'error');
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  async function _rejectMilestone(key) {
+    var m = _msCache[key];
+    if (!m) return;
+    var reason = window.prompt('Lý do từ chối milestone (bắt buộc):', '');
+    if (reason === null) return;            // user hủy
+    reason = String(reason).trim();
+    if (!reason) { showToast('Lý do từ chối là bắt buộc', 'error'); return; }
+    showLoading(true);
+    try {
+      await Api.rejectMilestone({
+        log_id:         m.log_id,
+        reviewer_email: _user ? _user.email : '',
+        comment:        reason
+      });
+      showToast('Đã từ chối milestone', 'info');
+      _allList = []; _dashData = null;
+      await _loadStartupData();
+    } catch (err) {
+      showToast('Lỗi từ chối milestone: ' + (err && err.message), 'error');
+    } finally {
+      showLoading(false);
+    }
   }
 
   // ── All Use Cases Table ───────────────────────────────────────────
@@ -1576,6 +1714,13 @@
     var byEmail = {}; // norm(owner_email) → {team, weeks, total, rawName}
     var byName  = {}; // norm(owner_name)  → same (secondary index)
 
+    function _accWeek(map, key, weekKey, team, rawName) {
+      if (!key) return;
+      if (!map[key]) map[key] = { team: team, weeks: {}, total: 0, rawName: rawName || key };
+      map[key].weeks[weekKey] = (map[key].weeks[weekKey] || 0) + 1;
+      map[key].total++;
+    }
+
     _allList.forEach(function (uc) {
       if (uc.status !== 'Approved') return;
       var dateStr = uc.submit_date || uc.submitted_at;
@@ -1588,14 +1733,26 @@
       var team = uc.team || '--';
       var rawName = String(uc.owner_name == null ? '' : uc.owner_name).trim();
 
-      function addTo(map, key) {
-        if (!key) return;
-        if (!map[key]) map[key] = { team: team, weeks: {}, total: 0, rawName: rawName || key };
-        map[key].weeks[weekKey] = (map[key].weeks[weekKey] || 0) + 1;
-        map[key].total++;
-      }
-      if (eKey) addTo(byEmail, eKey);
-      if (nKey && nKey !== eKey) addTo(byName, nKey);
+      if (eKey) _accWeek(byEmail, eKey, weekKey, team, rawName);
+      if (nKey && nKey !== eKey) _accWeek(byName, nKey, weekKey, team, rawName);
+    });
+
+    // Milestone cập nhật tuần đã duyệt = +1 KPI cho Owner ở tuần Log_Date (v3.14.0).
+    // Đi qua cùng byEmail/byName buckets nên hưởng chung logic merge với USERS sheet.
+    (_milestoneApproved || []).forEach(function (m) {
+      if (String(m.approval_status || 'Approved') !== 'Approved') return;
+      var dateStr = m.log_date;
+      if (!dateStr) return;
+      var weekKey = _getWeekKey(new Date(dateStr));
+      if (!weekKey) return;
+
+      var eKey = _norm(m.owner_email);
+      var nKey = _norm(m.owner_name);
+      var team = m.team || '--';
+      var rawName = String(m.owner_name == null ? '' : m.owner_name).trim();
+
+      if (eKey) _accWeek(byEmail, eKey, weekKey, team, rawName);
+      if (nKey && nKey !== eKey) _accWeek(byName, nKey, weekKey, team, rawName);
     });
 
     var result       = {};
@@ -2188,7 +2345,7 @@
     }
 
     if (!_sptdScores) {
-      _sptdScores = SPTDScoring.computeAllScores(_allList, _usersList);
+      _sptdScores = SPTDScoring.computeAllScores(_allList, _usersList, _milestoneApproved);
     }
 
     var curKey  = _norm(_user ? (_user.email || _user.displayName || '') : '');
@@ -2200,7 +2357,7 @@
     var totalUsers = _sptdScores.length;
     var avgScore   = totalUsers ? _r1(_sptdScores.reduce(function (s, u) { return s + u.total; }, 0) / totalUsers) : 0;
 
-    var myDetails  = myScore ? SPTDScoring.computeUserDetails(curKey, _allList) : null;
+    var myDetails  = myScore ? SPTDScoring.computeUserDetails(curKey, _allList, _milestoneApproved) : null;
 
     var html = '';
     html += _renderSPTDMyCard(myScore, myRank, totalUsers, avgScore);
@@ -2412,6 +2569,9 @@
     _rejectByKey: function (key) {
       var uc = _ucCache[key]; if (uc) { openDetail(uc); _showActionArea('reject'); }
     },
+    // Milestone approval (v3.14.0)
+    _approveMilestone: _approveMilestone,
+    _rejectMilestone:  _rejectMilestone,
     // List modal helpers (used by CSS fallback chart onclick)
     _openListByStatus: function (status) {
       var cfg   = STATUS_CFG[status] || { label: status };

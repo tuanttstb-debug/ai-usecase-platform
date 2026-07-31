@@ -279,6 +279,63 @@ test('E2: no double-count when merging duplicate buckets', function () {
   eq(res[0].avg_quality, 70, 'avg_quality = (80+60)/2 = 70, no double-count');
 });
 
+// ── Suite F: milestone đã duyệt (v3.14.0) ──────────────────────────
+console.log('\nSuite F: approved milestones feed quantity + weeks');
+
+function makeMs(overrides) {
+  return Object.assign({
+    owner_email:     'testuser',
+    owner_name:      'Test User',
+    team:            'Team A',
+    log_date:        '2026-06-16', // week 2
+    approval_status: 'Approved'
+  }, overrides);
+}
+
+test('F1: milestone cộng vào quantity + weeks nhưng KHÔNG đổi avg_quality', function () {
+  var uc  = makeUC({ total_score: 80, submit_date: '2026-06-09' }); // week 1
+  var ms  = makeMs({ log_date: '2026-06-16' });                     // week 2
+  var res = SPTDScoring.computeAllScores([uc], [makeUser()], [ms]);
+  eq(res[0].n_approved,  2, 'n_approved = 1 UC + 1 milestone');
+  eq(res[0].n_weeks_hit, 2, 'week1 (UC) + week2 (milestone)');
+  eq(res[0].avg_quality, 80, 'avg_quality vẫn = 80 (milestone không tính quality)');
+});
+
+test('F2: milestone Pending/Rejected bị bỏ qua', function () {
+  var uc  = makeUC({ submit_date: '2026-06-09' });
+  var res = SPTDScoring.computeAllScores([uc], [makeUser()], [
+    makeMs({ approval_status: 'Pending'  }),
+    makeMs({ approval_status: 'Rejected' })
+  ]);
+  eq(res[0].n_approved, 1, 'chỉ UC gốc, milestone chưa duyệt không tính');
+});
+
+test('F3: user chỉ có milestone (không UC Approved) vẫn có quantity + weeks, quality=0', function () {
+  var user = makeUser({ username: 'msonly', display_name: 'Ms Only' });
+  var ms   = makeMs({ owner_email: 'msonly', owner_name: 'Ms Only', log_date: '2026-06-16' });
+  var res  = SPTDScoring.computeAllScores([], [user], [ms]);
+  eq(res[0].n_approved,  1, 'quantity từ milestone');
+  eq(res[0].n_weeks_hit, 1, 'week hit từ milestone');
+  eq(res[0].avg_quality, 0, 'không có UC → quality avg = 0');
+});
+
+test('F4: nhiều milestone cùng tuần = 1 week hit (nhưng quantity cộng dồn)', function () {
+  var uc  = makeUC({ submit_date: '2026-06-09' }); // week 1
+  var res = SPTDScoring.computeAllScores([uc], [makeUser()], [
+    makeMs({ log_date: '2026-06-16' }), // week 2
+    makeMs({ log_date: '2026-06-17' })  // week 2 (cùng tuần)
+  ]);
+  eq(res[0].n_approved,  3, '1 UC + 2 milestone');
+  eq(res[0].n_weeks_hit, 2, 'week1 + week2 (2 milestone cùng week2 = 1 hit)');
+});
+
+test('F5: computeUserDetails đánh dấu tuần milestone trên timeline', function () {
+  var uc      = makeUC({ submit_date: '2026-06-09' }); // week 1
+  var ms      = makeMs({ log_date: '2026-06-16' });    // week 2
+  var details = SPTDScoring.computeUserDetails('testuser', [uc], [ms]);
+  eq(details.weekTimeline[1].hit, true, 'week 2 (index 1) được đánh dấu hit do milestone');
+});
+
 // ── Summary ────────────────────────────────────────────────────────
 console.log('\n────────────────────────────────');
 console.log('Results: ' + passed + '/' + (passed + failed) + ' PASS' + (failed ? '  (' + failed + ' FAIL)' : ''));

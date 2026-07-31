@@ -62,19 +62,21 @@ var SPTDScoring = (function () {
   function _computeScore(bucket, nWeeks) {
     var zero = { n_approved: 0, avg_quality: 0, n_weeks_hit: 0,
                  s_quality: 0, s_quantity: 0, s_weeks: 0, total: 0 };
-    if (!bucket || !bucket.ucs.length) return zero;
-    var ucs = bucket.ucs;
-    var n   = ucs.length;
+    if (!bucket) return zero;
+    var ucs = bucket.ucs || [];
+    // qty = số lượng (UC Approved + milestone đã duyệt). Quality avg CHỈ tính từ UC.
+    var qty = (bucket.qty != null) ? bucket.qty : ucs.length;
+    if (!qty) return zero;
     var sum = 0;
     ucs.forEach(function (uc) { sum += (uc.total_score || 0); });
-    var avg_q      = sum / n;
+    var avg_q      = ucs.length ? (sum / ucs.length) : 0;
     var n_wh       = Object.keys(bucket.wkHit).length;
     var s_quality  = (avg_q / 100) * 80;
-    var s_quantity = Math.min(n / nWeeks, 1) * 10;
+    var s_quantity = Math.min(qty / nWeeks, 1) * 10;
     var s_weeks    = (n_wh / nWeeks) * 10;
     var total      = s_quality + s_quantity + s_weeks;
     return {
-      n_approved:  n,
+      n_approved:  qty,
       avg_quality: _r1(avg_q),
       n_weeks_hit: n_wh,
       s_quality:   _r1(s_quality),
@@ -90,15 +92,21 @@ var SPTDScoring = (function () {
     if (!b) return a;
     return {
       ucs:     a.ucs.concat(b.ucs),
+      qty:     ((a.qty != null) ? a.qty : a.ucs.length) + ((b.qty != null) ? b.qty : b.ucs.length),
       wkHit:   Object.assign({}, a.wkHit, b.wkHit),
       rawName: a.rawName || b.rawName,
       team:    a.team !== '--' ? a.team : b.team
     };
   }
 
-  // Build per-user UC buckets indexed by norm(owner_email) and norm(owner_name)
-  function _buildBuckets(allList, t0mon) {
+  // Build per-user buckets indexed by norm(owner_email) and norm(owner_name).
+  // milestones (đã duyệt) cộng vào qty + weeks-hit, KHÔNG cộng vào ucs (quality avg). v3.14.0
+  function _buildBuckets(allList, t0mon, milestones) {
     var byEmail = {}, byName = {};
+    function ensure(map, key, rawName, team) {
+      if (!map[key]) map[key] = { ucs: [], qty: 0, wkHit: {}, rawName: rawName, team: team };
+      return map[key];
+    }
     allList.forEach(function (uc) {
       if (uc.status !== 'Approved') return;
       var ds = uc.submit_date || uc.submitted_at;
@@ -107,15 +115,39 @@ var SPTDScoring = (function () {
       if (wi < 0) return; // before program start
       var eKey = _norm(uc.owner_email);
       var nKey = _norm(uc.owner_name);
+      var rawName = String(uc.owner_name || '').trim();
+      var team = uc.team || '--';
       function addTo(map, key) {
         if (!key) return;
-        if (!map[key]) map[key] = { ucs: [], wkHit: {}, rawName: String(uc.owner_name || '').trim(), team: uc.team || '--' };
-        map[key].ucs.push(uc);
-        map[key].wkHit[wi] = true;
+        var b = ensure(map, key, rawName, team);
+        b.ucs.push(uc);
+        b.qty++;
+        b.wkHit[wi] = true;
       }
       if (eKey) addTo(byEmail, eKey);
       if (nKey && nKey !== eKey) addTo(byName, nKey);
     });
+
+    (milestones || []).forEach(function (m) {
+      if (String(m.approval_status || 'Approved') !== 'Approved') return;
+      var ds = m.log_date;
+      if (!ds) return;
+      var wi = _weekIdx(new Date(ds), t0mon);
+      if (wi < 0) return;
+      var eKey = _norm(m.owner_email);
+      var nKey = _norm(m.owner_name);
+      var rawName = String(m.owner_name || '').trim();
+      var team = m.team || '--';
+      function addMs(map, key) {
+        if (!key) return;
+        var b = ensure(map, key, rawName, team);
+        b.qty++;
+        b.wkHit[wi] = true;
+      }
+      if (eKey) addMs(byEmail, eKey);
+      if (nKey && nKey !== eKey) addMs(byName, nKey);
+    });
+
     return { byEmail: byEmail, byName: byName };
   }
 
@@ -146,13 +178,14 @@ var SPTDScoring = (function () {
    * Build SPTD performance scores for all active users.
    * @param {Array} allList   — UC list from listUseCases API
    * @param {Array} usersList — User list from USERS sheet (may be empty)
+   * @param {Array} [milestones] — Milestone đã duyệt (feed quantity + weeks-hit)
    * @returns {Array} sorted descending by total score
    */
-  function computeAllScores(allList, usersList) {
+  function computeAllScores(allList, usersList, milestones) {
     var t0mon = _getMonday(_getT0());
     var nW    = Math.max(_totalWeeks(t0mon), 1);
     var excl  = ((typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.SPTD_EXCLUDED_USERS : null) || []).map(_norm);
-    var idx   = _buildBuckets(allList, t0mon);
+    var idx   = _buildBuckets(allList, t0mon, milestones);
     var bE    = idx.byEmail, bN = idx.byName;
     var res   = {}, claimed = {}, inactiveKeys = {};
 
@@ -203,7 +236,7 @@ var SPTDScoring = (function () {
    * @param {Array}  allList
    * @returns {{ ucs, weekTimeline, nWeeks }}
    */
-  function computeUserDetails(username, allList) {
+  function computeUserDetails(username, allList, milestones) {
     var t0mon = _getMonday(_getT0());
     var nW    = Math.max(_totalWeeks(t0mon), 1);
     var uKey  = _norm(username);
@@ -216,6 +249,16 @@ var SPTDScoring = (function () {
     var wkHit = {};
     myUCs.forEach(function (uc) {
       var ds = uc.submit_date || uc.submitted_at;
+      if (!ds) return;
+      var wi = _weekIdx(new Date(ds), t0mon);
+      if (wi >= 0) wkHit[wi] = (wkHit[wi] || 0) + 1;
+    });
+
+    // Milestone đã duyệt của user → cũng đánh dấu tuần đạt trên timeline (v3.14.0)
+    (milestones || []).forEach(function (m) {
+      if (String(m.approval_status || 'Approved') !== 'Approved') return;
+      if (_norm(m.owner_email) !== uKey && _norm(m.owner_name) !== uKey) return;
+      var ds = m.log_date;
       if (!ds) return;
       var wi = _weekIdx(new Date(ds), t0mon);
       if (wi >= 0) wkHit[wi] = (wkHit[wi] || 0) + 1;

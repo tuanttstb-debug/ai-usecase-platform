@@ -104,13 +104,18 @@ var HEADERS = [
 // Mỗi lần user submit weekly-update tạo 1 row mới.
 // MASTER_DATA chỉ giữ giá trị hiện tại (last value); WEEKLY_LOG giữ toàn bộ lịch sử.
 var WEEKLY_LOG_HEADERS = [
-  'Record_ID', 'UseCase_ID', 'Log_Date',
+  'Log_ID', 'Record_ID', 'UseCase_ID', 'Log_Date',
   'Previous_Stage', 'New_Stage', 'Stage_Changed',
   'Progress',
   'Weekly_Update', 'Next_Milestone', 'Blocker', 'Manager_Support',
   'Active_User_Count', 'Monthly_Usage_Count', 'Hours_Saved_Actual', 'Reuse_Count_Tracked',
   'Scale_Plan', 'Scale_Risks',
-  'Reporter'
+  'Reporter',
+  // ── Milestone approval (v3.14.0) ──────────────────────────────────
+  // Một dòng WEEKLY_LOG là "milestone" khi có chuyển Stage hoặc nâng điểm.
+  // Milestone phải được Admin duyệt mới áp Stage/điểm lên MASTER + tính KPI.
+  'Is_Milestone', 'Milestone_Type', 'Previous_Total_Score', 'Proposed_Total_Score',
+  'Approval_Status', 'Approved_By', 'Approved_At', 'Milestone_Comment'
 ];
 
 // ── ACTIVITY_LOG Column Headers ───────────────────────────────────
@@ -196,6 +201,19 @@ var REVIEW_STATUS = {
   MANAGER:    'Manager_Review',
   COMMITTEE:  'Committee_Review',
   FINALIZED:  'Finalized'
+};
+
+// ── Milestone Approval Status (v3.14.0) ───────────────────────────
+// Trạng thái duyệt của một milestone cập nhật tuần (dòng WEEKLY_LOG).
+// N/A     — dòng cập nhật thường (không milestone), không cần duyệt, không tính KPI.
+// Pending — milestone chờ Admin duyệt; Stage/điểm đề xuất CHƯA áp lên MASTER.
+// Approved— Admin đã duyệt; Stage/điểm đã áp; +1 KPI cho Owner ở tuần Log_Date.
+// Rejected— Admin từ chối; không áp gì.
+var MILESTONE_STATUS = {
+  NA:       'N/A',
+  PENDING:  'Pending',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected'
 };
 
 // ── Governance v3.0 — Rank Categories ────────────────────────────

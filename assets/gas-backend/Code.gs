@@ -182,6 +182,34 @@ function route_(action, params, body) {
     return createResponse_(true, 'Weekly log', getWeeklyLog_(wlRecordId));
   }
 
+  // ── Milestone: danh sách milestone cập nhật tuần theo trạng thái ─
+  if (action === 'milestone-list') {
+    var mlFilter = params.filter || body.filter || 'pending';
+    return createResponse_(true, 'Milestone list', listMilestones_(mlFilter));
+  }
+
+  // ── Milestone: Admin duyệt milestone ──────────────────────────
+  if (action === 'milestone-approve') {
+    var maLogId = body.log_id || body.Log_ID;
+    var maEmail = body.reviewer_email || body.Reviewer || body.admin_email;
+    var maComment = body.comment || body.Milestone_Comment || '';
+    if (!maLogId) return createResponse_(false, 'Thiếu log_id');
+    if (!maEmail) return createResponse_(false, 'Thiếu reviewer_email');
+    return createResponse_(true, 'Milestone đã được duyệt',
+      approveMilestone_(maLogId, maEmail, maComment));
+  }
+
+  // ── Milestone: Admin từ chối milestone ────────────────────────
+  if (action === 'milestone-reject') {
+    var mrLogId = body.log_id || body.Log_ID;
+    var mrEmail = body.reviewer_email || body.Reviewer || body.admin_email;
+    var mrComment = body.comment || body.Milestone_Comment || '';
+    if (!mrLogId) return createResponse_(false, 'Thiếu log_id');
+    if (!mrEmail) return createResponse_(false, 'Thiếu reviewer_email');
+    return createResponse_(true, 'Milestone đã bị từ chối',
+      rejectMilestone_(mrLogId, mrEmail, mrComment));
+  }
+
   // ── Governance: Self Assessment ───────────────────────────────
   if (action === 'self-assessment') {
     var saRecordId = body.Record_ID || body.record_id;

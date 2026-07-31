@@ -107,6 +107,32 @@ function getOrCreateSheet_(sheetName) {
 }
 
 /**
+ * Đảm bảo sheet có đủ các cột trong `wantHeaders`.
+ * Thêm cột còn thiếu vào CUỐI hàng header (không đụng data cũ, không đổi thứ tự cột cũ).
+ * Idempotent — chỉ ghi khi thực sự thiếu cột. Dùng để migrate schema tại chỗ.
+ *
+ * @param {string}   sheetName
+ * @param {string[]} wantHeaders  Danh sách header mong muốn (vd WEEKLY_LOG_HEADERS)
+ * @returns {string[]} Các cột vừa được thêm (rỗng nếu đã đủ)
+ */
+function ensureSheetColumns_(sheetName, wantHeaders) {
+  var sheet   = getOrCreateSheet_(sheetName);
+  var lastCol = sheet.getLastColumn();
+  if (lastCol === 0) {
+    sheet.appendRow(wantHeaders);
+    formatHeaderRow_(sheet);
+    return wantHeaders.slice();
+  }
+  var existing = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  var missing  = wantHeaders.filter(function(h) { return existing.indexOf(h) === -1; });
+  if (missing.length === 0) return [];
+
+  sheet.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]);
+  formatHeaderRow_(sheet);
+  return missing;
+}
+
+/**
  * Format hàng header: bold, freeze, background.
  */
 function formatHeaderRow_(sheet) {
@@ -193,6 +219,33 @@ function updateRowByRecordId_(sheetName, recordId, obj) {
     }
   }
   throw new Error('Không tìm thấy Record_ID: ' + recordId);
+}
+
+/**
+ * Cập nhật hàng đầu tiên khớp `field = value` trong sheet bất kỳ.
+ * Ghi toàn bộ hàng (merge obj lên giá trị cũ). Dùng cho WEEKLY_LOG (khóa = Log_ID).
+ * @returns {boolean} true nếu tìm thấy & cập nhật
+ */
+function updateRowByField_(sheetName, field, value, obj) {
+  var sheet = getOrCreateSheet_(sheetName);
+  var data  = sheet.getDataRange().getValues();
+  if (data.length < 2) return false;
+
+  var headers = data[0].map(String);
+  var keyCol  = headers.indexOf(field);
+  if (keyCol === -1) throw new Error('Cột ' + field + ' không tìm thấy trong sheet ' + sheetName);
+
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][keyCol]) === String(value)) {
+      var row = headers.map(function(h, j) {
+        var val = (obj[h] !== undefined && obj[h] !== null) ? obj[h] : data[i][j];
+        return toSheetValue_(val);
+      });
+      sheet.getRange(i + 1, 1, 1, headers.length).setValues([row]);
+      return true;
+    }
+  }
+  return false;
 }
 
 /**

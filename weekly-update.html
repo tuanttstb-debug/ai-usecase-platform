@@ -403,8 +403,8 @@
 
       <!-- Success state -->
       <div id="successState" style="display:none;text-align:center;padding:var(--space-12);background:var(--color-surface);border-radius:var(--radius-xl);border:1px solid var(--color-border);margin-bottom:var(--space-6)">
-        <div style="font-size:48px;margin-bottom:var(--space-4)">✅</div>
-        <div style="font-size:var(--text-xl);font-weight:var(--font-weight-semibold);color:var(--color-text)">Đã cập nhật thành công!</div>
+        <div id="successIcon" style="font-size:48px;margin-bottom:var(--space-4)">✅</div>
+        <div id="successTitle" style="font-size:var(--text-xl);font-weight:var(--font-weight-semibold);color:var(--color-text)">Đã cập nhật thành công!</div>
         <div id="successDetail" style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-top:var(--space-2)"></div>
         <button class="btn btn--secondary" style="margin-top:var(--space-6)" onclick="resetAll()">Cập nhật use case khác</button>
       </div>
@@ -964,13 +964,34 @@ function submitWeeklyUpdate() {
     btn.disabled  = false;
     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg> Gửi cập nhật';
 
-    var detailParts = [];
-    if (res && res.total_score) detailParts.push('Điểm mới: ' + res.total_score + '/100');
-    if (res && res.stage_changed && res.new_stage) {
-      var nsl = STAGE_LABELS[res.new_stage] || { short: res.new_stage };
-      detailParts.push('Stage mới: ' + nsl.short);
+    var successIcon  = document.getElementById('successIcon');
+    var successTitle = document.getElementById('successTitle');
+
+    if (res && res.pending_milestone) {
+      // Milestone (chuyển Stage / nâng điểm) — chờ Admin duyệt mới áp & tính KPI
+      successIcon.textContent  = '⏳';
+      successTitle.textContent = 'Đã gửi — chờ Admin duyệt';
+      var mParts = [];
+      if (res.proposed_stage) {
+        var psl = STAGE_LABELS[res.proposed_stage] || { short: res.proposed_stage };
+        mParts.push('Đề xuất chuyển Stage → ' + psl.short);
+      }
+      if (res.proposed_total_score > res.prev_total_score) {
+        mParts.push('Đề xuất nâng điểm ' + res.prev_total_score + ' → ' + res.proposed_total_score + '/100');
+      }
+      mParts.push('Sẽ ghi nhận vào KPI sau khi Admin duyệt.');
+      document.getElementById('successDetail').textContent = mParts.join(' · ');
+    } else {
+      successIcon.textContent  = '✅';
+      successTitle.textContent = 'Đã cập nhật thành công!';
+      var detailParts = [];
+      if (res && res.total_score) detailParts.push('Điểm mới: ' + res.total_score + '/100');
+      if (res && res.stage_changed && res.new_stage) {
+        var nsl = STAGE_LABELS[res.new_stage] || { short: res.new_stage };
+        detailParts.push('Stage mới: ' + nsl.short);
+      }
+      document.getElementById('successDetail').textContent = detailParts.join(' · ');
     }
-    document.getElementById('successDetail').textContent = detailParts.join(' · ');
     document.getElementById('wuForm').style.display       = 'none';
     document.getElementById('stageSection').style.display = 'none';
     document.getElementById('successState').style.display = '';
@@ -1020,6 +1041,16 @@ function renderTimeline(logs) {
 
     var headerHtml = '<span class="timeline-date">' + esc(dateStr) + '</span>';
     headerHtml += '<span class="timeline-progress-pill">' + log.progress + '%</span>';
+
+    // Milestone approval badge (v3.14.0)
+    if (log.is_milestone) {
+      var ap = String(log.approval_status || 'Pending');
+      var badge = { text: '⏳ Chờ Admin duyệt', bg: '#FFF4D6', fg: '#946200' };
+      if (ap === 'Approved') badge = { text: '✓ Đã duyệt (tính KPI)', bg: '#E6F4EA', fg: '#1E7B34' };
+      else if (ap === 'Rejected') badge = { text: '✕ Bị từ chối', bg: '#FDECEC', fg: '#B3261E' };
+      headerHtml += '<span style="margin-left:6px;font-size:var(--text-xs);font-weight:700;padding:2px 8px;' +
+        'border-radius:999px;background:' + badge.bg + ';color:' + badge.fg + '">' + badge.text + '</span>';
+    }
 
     if (isStageChange) {
       var psl = STAGE_LABELS[log.previous_stage] || { short: log.previous_stage, color: '#6D6D7A' };

@@ -286,6 +286,21 @@
 
           <!-- Tab: Chờ duyệt (admin only) -->
           <div id="tab-pending" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-pending">
+
+            <!-- Milestone cập nhật tuần chờ duyệt (v3.14.0) -->
+            <div id="pendingMilestoneSection" style="display:none;margin-bottom:var(--space-6)">
+              <div class="dash-card-header" style="margin-bottom:var(--space-3)">
+                <h3>⏳ Milestone cập nhật tuần chờ duyệt
+                  <span class="tab-badge tab-badge--danger" id="milestoneBadge"></span>
+                </h3>
+                <p class="section-hint" style="margin:0;font-size:var(--text-xs);color:var(--color-text-secondary)">
+                  Duyệt để áp Stage/điểm mới lên use case và ghi nhận vào KPI của người sở hữu.
+                </p>
+              </div>
+              <div id="pendingMilestoneList"></div>
+            </div>
+
+            <h3 style="margin:0 0 var(--space-3)">Use case chờ duyệt</h3>
             <div id="pendingList">
               <div class="empty-state"><p class="empty-state-text">Đang tải...</p></div>
             </div>
