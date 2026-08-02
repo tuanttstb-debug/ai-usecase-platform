@@ -1,7 +1,7 @@
 # PROJECT STATE
 
 **Last updated:** 2026-08-02
-**Version:** 3.15.0 — (1) Duyệt milestone dùng chung modal chi tiết US 4 section + khối "Nội dung điều chỉnh" trước khi duyệt; (2) Link demo bấm được + Copy trong mọi popup duyệt/chi tiết US; (3) Fix triệt để lỗi link demo dài (ổ chung) làm hỏng create — chuyển create/update sang **hidden-iframe POST + verify** (bỏ giới hạn URL ~8KB). ⚠️ **CODE DONE, chưa deploy** — cần redeploy 3 file GAS (`Code.gs`/`UseCaseService.gs`/`AdminService.gs`) **TRƯỚC** khi push FE.
+**Version:** 3.15.0 — (1) Duyệt milestone dùng chung modal chi tiết US 4 section + khối "Nội dung điều chỉnh" trước khi duyệt; (2) Link demo bấm được + Copy trong mọi popup duyệt/chi tiết US; (3) Fix triệt để lỗi link demo dài (ổ chung) làm hỏng create — chuyển create/update sang **hidden-iframe POST + verify** (bỏ giới hạn URL ~8KB). ✅ **LIVE** — GAS deployed 3 file (URL không đổi) + FE pushed `main` (`fc894b5`). Chờ smoke test live.
 **Prev:** 3.14.0 — Milestone cập nhật tuần → KPI có phê duyệt Admin (2026-07-31, LIVE `8a786a4`) · 3.13.0 — nối `Active_User_Count` (Adoption) end-to-end (2026-07-30) · 3.12.3 (Wording login, 2026-07-29) · 3.12.2 (DATA-LIMIT-01, 2026-07-27) · 3.12.0 (Điểm SPTD tab)
 **Org name (chuẩn):** Trung tâm Sản phẩm & Giải pháp Tín dụng — short form hiển thị = "TT SPTD"
 **Data migration:** ✅ Team BL1 + BL2 → Team BL hoàn tất (2026-07-07) — LOOKUP + MASTER_DATA + USERS + DASHBOARD cache cleared
@@ -142,9 +142,9 @@ env.js → auth.js → [inline portal script]
 ## Backend (GAS) — ✅ Deployed
 
 **Active deployment URL:** `AKfycbypN8afAl2zQwpR7K6k1-699g3HAhFAIqAOtDn3qY1nJWzuN1bd8n99bzRUzaV8ZMyTCw`
-**OAuth:** ✅ Authorized | **GAS code sync:** ⚠️ **PENDING v3.15.0** — 3 file GAS đã sửa local (`Code.gs`, `UseCaseService.gs`, `AdminService.gs`) **CHƯA deploy**. Phải deploy TRƯỚC khi push FE (create/update POST cần `doPost` mới).
+**OAuth:** ✅ Authorized | **GAS code sync:** ✅ Đã deploy đủ — v3.15.0 deployed 2026-08-02, URL không đổi.
 
-**Pending redeploy (v3.15.0, 2026-08-02):** `Code.gs` (`doPost` decode `payload` base64url form field — nhận create/update từ FE iframe POST), `UseCaseService.gs` (`getUseCaseById_` fallback tra `UseCase_ID` — verify create), `AdminService.gs` (`listUseCases_` trả `demo_status`+`demo_link`). Edit deployment → New version, URL không đổi. **Thứ tự: deploy GAS → push FE.**
+**Last redeploy (v3.15.0, 2026-08-02):** `Code.gs` (`doPost` decode `payload` base64url form field — nhận create/update từ FE iframe POST), `UseCaseService.gs` (`getUseCaseById_` fallback tra `UseCase_ID` — verify create), `AdminService.gs` (`listUseCases_` trả `demo_status`+`demo_link`). Edit deployment → New version, URL không đổi. FE pushed `main` `fc894b5`.
 
 **Last redeploy (2026-07-31, v3.14.0):** `Config.gs` (WEEKLY_LOG +8 cột milestone + MILESTONE_STATUS), `Utils.gs` (ensureSheetColumns_ + updateRowByField_), `AdminService.gs` (submitWeeklyUpdate_ milestone gate + listMilestones_/approveMilestone_/rejectMilestone_ + migrateWeeklyLogSchema()), `Code.gs` (routes milestone-list/approve/reject). URL không đổi. `migrateWeeklyLogSchema()` đã chạy. — commit `8a786a4`
 

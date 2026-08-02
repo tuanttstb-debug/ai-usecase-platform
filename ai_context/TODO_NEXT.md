@@ -4,11 +4,11 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
-## ⚠️ P0 — Deploy v3.15.0 (BẮT BUỘC đúng thứ tự)
+## ✅ Deploy v3.15.0 — HOÀN THÀNH (2026-08-02)
 
-- [ ] **Deploy 3 file GAS TRƯỚC** — `Code.gs` (doPost decode payload), `UseCaseService.gs` (getUseCaseById_ fallback UseCase_ID), `AdminService.gs` (list demo fields). Edit deployment → New version (URL không đổi).
-- [ ] **Rồi mới push FE.** ⛔ Push FE trước khi deploy GAS = **vỡ tạo/sửa US toàn hệ thống** (create/update POST tới doPost cũ chỉ parse JSON body → fail).
-- [ ] **Verify live:** (1) tạo US mới với link demo ổ chung dài → lưu OK; (2) tab Chờ duyệt → "Xem chi tiết & Duyệt" milestone → khối "Nội dung điều chỉnh" hiển thị → duyệt áp Stage/điểm; (3) bấm link demo trong 4 popup; (4) mắt thường Leaderboard (chưa có test tự động).
+- [x] **Deploy 3 file GAS** — `Code.gs` (doPost decode payload), `UseCaseService.gs` (getUseCaseById_ fallback UseCase_ID), `AdminService.gs` (list demo fields). Edit deployment → New version, URL không đổi.
+- [x] **Push FE** — merged `main` (`fc894b5`), branch đã xóa.
+- [ ] **[P1] Smoke test live** (hard-refresh vì GitHub Pages cache): (1) tạo US mới với link demo ổ chung dài → lưu OK; (2) tab Chờ duyệt → "Xem chi tiết & Duyệt" milestone → khối "Nội dung điều chỉnh" → duyệt áp Stage/điểm; (3) bấm/Copy link demo trong 4 popup; (4) mắt thường Leaderboard (LEADERBOARD-DEMO-NOTEST-01).
 
 ---
 

@@ -3,7 +3,12 @@
 ## Session: 2026-08-02
 **Scope:** (1) Đồng bộ duyệt milestone với duyệt US — xem chi tiết toàn cảnh trước khi duyệt; (2) Link demo bấm được trong mọi popup duyệt/chi tiết US; (3) Fix triệt để lỗi link demo dài (ổ chung) làm hỏng tạo US.
 **Version:** 3.15.0
-**Status:** ✅ **CODE DONE + tested.** ⚠️ **CHƯA deploy GAS, CHƯA push FE** (chờ user). **Deploy GAS TRƯỚC rồi mới push FE** — nếu ngược lại sẽ vỡ create/update toàn hệ thống.
+**Status:** ✅ **LIVE** — GAS deployed (URL không đổi), FE pushed `main` (`fc894b5`), feature branch merged + deleted. Đúng thứ tự GAS→FE. Chờ smoke test live.
+
+### Deploy — HOÀN THÀNH (2026-08-02)
+1. ✅ **GAS** deployed 3 file (`Code.gs` doPost decode payload, `UseCaseService.gs` getUseCaseById_ fallback UseCase_ID, `AdminService.gs` list demo fields) — Edit deployment → New version, **URL không đổi** (user xác nhận).
+2. ✅ **FE** merged `feat/v3.15.0-milestone-demolink-post` → `main` (fast-forward) + pushed `origin/main` (`fc894b5`). Branch đã xóa.
+3. ⏳ **Smoke test live** chưa chạy (xem Next step).
 
 ### Task completed
 1. **Milestone dùng chung modal chi tiết US** — Card milestone (tab Chờ duyệt) bỏ 2 nút duyệt/từ chối tại chỗ, thay bằng 1 nút **"🔍 Xem chi tiết & Duyệt"** → mở `openDetail(uc, milestone)` = đúng modal 4 section của US + chèn khối **"Nội dung điều chỉnh chờ duyệt"** (Stage cũ→mới, Điểm cũ→mới, tuần Log_Date, ghi chú tuần). Duyệt/Từ chối **inline trong modal** (relabel nút thành "Duyệt/Từ chối milestone"); từ chối bắt buộc lý do qua ô comment (bỏ `window.prompt` → đóng MILESTONE-PROMPT-01).
@@ -34,12 +39,11 @@
 4. **Verify create khớp owner** — chống false-positive khi hint UseCase_ID trùng UC có sẵn của người khác (hiếm).
 
 ### Blocker
-- **Không có blocker code.** Chờ user: redeploy 3 file GAS **rồi** push FE (thứ tự bắt buộc).
+- **Không có.** Đã deploy GAS + push FE đúng thứ tự.
 
 ### Next step
-1. **[P0] Deploy GAS 3 file** (`Code.gs`, `UseCaseService.gs`, `AdminService.gs`) → Edit deployment → New version (URL không đổi) → **sau đó** push FE. Nếu push FE trước, create/update POST tới doPost cũ (parse JSON body) sẽ fail → tạo US hỏng.
-2. **[P1] Verify live:** tạo US mới với link demo ổ chung dài → lưu OK; mở milestone tab → "Xem chi tiết & Duyệt" → khối điều chỉnh hiển thị → duyệt áp Stage/điểm; bấm link demo trong các popup.
-3. **[P2] Mắt thường Leaderboard** — link demo mirror dashboard nhưng chưa có test tự động.
+1. **[P1] Smoke test live** (GitHub Pages có thể cache vài phút → hard-refresh): (a) tạo US mới với link demo ổ chung dài → lưu OK (hết HTTP 400); (b) tab Chờ duyệt → "🔍 Xem chi tiết & Duyệt" milestone → khối "Nội dung điều chỉnh" hiển thị → duyệt áp Stage/điểm; (c) bấm/Copy link demo trong 4 popup; (d) mắt thường Leaderboard (LEADERBOARD-DEMO-NOTEST-01).
+2. **[P2]** Cân nhắc CREATE-VALIDATION-MSG-01 / UPDATE-VERIFY-01 (client_nonce) nếu gặp lỗi validate GAS không rõ message khi tạo US.
 
 ### Regression risk
 - **Write-path đổi lớn:** create/update không còn JSONP GET. **Bắt buộc GAS mới** (doPost decode payload). Deploy sai thứ tự = vỡ tạo/sửa US.
