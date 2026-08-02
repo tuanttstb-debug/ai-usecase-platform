@@ -1,5 +1,54 @@
 # SESSION HANDOVER
 
+## Session: 2026-08-02
+**Scope:** (1) Đồng bộ duyệt milestone với duyệt US — xem chi tiết toàn cảnh trước khi duyệt; (2) Link demo bấm được trong mọi popup duyệt/chi tiết US; (3) Fix triệt để lỗi link demo dài (ổ chung) làm hỏng tạo US.
+**Version:** 3.15.0
+**Status:** ✅ **CODE DONE + tested.** ⚠️ **CHƯA deploy GAS, CHƯA push FE** (chờ user). **Deploy GAS TRƯỚC rồi mới push FE** — nếu ngược lại sẽ vỡ create/update toàn hệ thống.
+
+### Task completed
+1. **Milestone dùng chung modal chi tiết US** — Card milestone (tab Chờ duyệt) bỏ 2 nút duyệt/từ chối tại chỗ, thay bằng 1 nút **"🔍 Xem chi tiết & Duyệt"** → mở `openDetail(uc, milestone)` = đúng modal 4 section của US + chèn khối **"Nội dung điều chỉnh chờ duyệt"** (Stage cũ→mới, Điểm cũ→mới, tuần Log_Date, ghi chú tuần). Duyệt/Từ chối **inline trong modal** (relabel nút thành "Duyệt/Từ chối milestone"); từ chối bắt buộc lý do qua ô comment (bỏ `window.prompt` → đóng MILESTONE-PROMPT-01).
+2. **Link demo bấm được + Copy** — 4 popup: modal chi tiết US, popup duyệt milestone (dùng chung), modal chi tiết Leaderboard, cột **Demo** mới trong list drill-down. `http(s)` → `<a target=_blank>` (href qua `encodeURI` an toàn); link ổ chung/UNC/`file://` → text + nút Copy (browser không mở được UNC). Copy truyền URL qua base64 trong onclick.
+3. **Fix triệt để link demo dài làm hỏng create (POST iframe)** — Root cause: create/update nhét payload vào URL GET, giới hạn ~8KB của GAS → link ổ chung dài + nhiều field Việt vượt ngưỡng → HTTP 400. Nay create/update đi **hidden-iframe FORM POST** (không giới hạn body, không vướng CORS vì không đọc response iframe) + **verify bằng `getUseCase`**. Bỏ ngưỡng 7500 cho write (vẫn giữ cho đường GET nhỏ: duplicate-check…). Verify create hardening: khớp owner để tránh nhận nhầm UC có sẵn khi hint ID trùng.
+
+### Files changed
+| File | Thay đổi | Deploy |
+|---|---|---|
+| `assets/js/dashboard.js` | `_detailMilestone` state; `openDetail(uc, milestone)`; `_openMilestoneDetail`; `_renderMilestoneChangeBlock`; `_confirmDetailAction` nhánh milestone; footer relabel; `_demoLinkHtml`/`_demoField`/`_copyText`/`_copyB64`; Section 3 dùng `_demoField`; cột Demo trong `openListModal`; public API `_openMilestoneDetail`,`_copyB64` | FE tĩnh |
+| `assets/css/dashboard.css` | `.detail-section--milestone`, `.demo-link`, `.demo-link--nonweb`, `.demo-copy-btn`, `.detail-value--demo` | FE tĩnh |
+| `leaderboard.html` | `_lbDemoLinkHtml`/`_lbDemoField`/`lbCopyB64`/`_lbFallbackCopy`; Section 3 dùng demo field | FE tĩnh |
+| `assets/js/api.js` | `_encodePayload` (tách encode); `_submitViaPost` (iframe POST + verify + poll); `_writeTimeout` (seam test); `createUseCase`/`updateUseCase` → POST+verify; 7500 chỉ còn cho GET-path | FE tĩnh |
+| `assets/gas-backend/Code.gs` | `doPost` decode `payload` (base64url form field) như doGet + hỗ trợ callback | ⚠️ **CẦN redeploy** |
+| `assets/gas-backend/UseCaseService.gs` | `getUseCaseById_` fallback tra theo `UseCase_ID` (verify create) | ⚠️ **CẦN redeploy** |
+| `assets/gas-backend/AdminService.gs` | `listUseCases_` trả `demo_status`+`demo_link` (cột Demo list popup) | ⚠️ **CẦN redeploy** |
+| `tests/05-create-write-ops.spec.js` | Viết lại cho transport POST+verify (A encode/GET-limit, B success, C timeout seam, D full-UI) | — |
+| `tests/07-milestone-approval.spec.js` | T03/T04 → flow modal; +T06 link demo hyperlink | — |
+
+### Test (local, PASS)
+- **Playwright 98/98** (thêm T06 demo-link). **Unit: SPTD 34/34 · KPI 38/38 · ID 14/14.**
+- Test seam: `window.__API_WRITE_TIMEOUT__` rút ngắn timeout write để test path timeout nhanh (mặc định 90s).
+
+### Decision made
+1. **Milestone tái dùng `openDetail`** (không modal riêng) — user chọn: xem toàn cảnh US 4 section + khối diff, đồng nhất tuyệt đối với duyệt US.
+2. **Fix item 3 = POST iframe + verify** (user chọn, chấp nhận redeploy GAS) thay vì chỉ cảnh báo FE — bỏ hẳn giới hạn độ dài.
+3. **POST giữ `?action=` trên query, chỉ `payload` vào body** — GAS `e.parameter` gộp query+form field → mock Playwright (đọc action từ query) vẫn chạy.
+4. **Verify create khớp owner** — chống false-positive khi hint UseCase_ID trùng UC có sẵn của người khác (hiếm).
+
+### Blocker
+- **Không có blocker code.** Chờ user: redeploy 3 file GAS **rồi** push FE (thứ tự bắt buộc).
+
+### Next step
+1. **[P0] Deploy GAS 3 file** (`Code.gs`, `UseCaseService.gs`, `AdminService.gs`) → Edit deployment → New version (URL không đổi) → **sau đó** push FE. Nếu push FE trước, create/update POST tới doPost cũ (parse JSON body) sẽ fail → tạo US hỏng.
+2. **[P1] Verify live:** tạo US mới với link demo ổ chung dài → lưu OK; mở milestone tab → "Xem chi tiết & Duyệt" → khối điều chỉnh hiển thị → duyệt áp Stage/điểm; bấm link demo trong các popup.
+3. **[P2] Mắt thường Leaderboard** — link demo mirror dashboard nhưng chưa có test tự động.
+
+### Regression risk
+- **Write-path đổi lớn:** create/update không còn JSONP GET. **Bắt buộc GAS mới** (doPost decode payload). Deploy sai thứ tự = vỡ tạo/sửa US.
+- **Lỗi validate GAS khi create không đọc được message cụ thể** (iframe không đọc response) → hiện cảnh báo chung sau timeout. Validator client-side chặn phần lớn trước khi gửi. Xem CREATE-VALIDATION-MSG-01.
+- **Update verify chỉ xác nhận record tồn tại**, không chắc chắn write đã áp (xem UPDATE-VERIFY-01). Rủi ro false-positive chỉ khi POST rớt giữa chừng (hiếm).
+- **openDetail thêm tham số thứ 2 (optional)** — mọi caller cũ gọi 1 tham số vẫn chạy (milestone=null). 98/98 Playwright xác nhận không regression.
+
+---
+
 ## Session: 2026-07-31
 **Scope:** FEATURE — Milestone cập nhật tuần → KPI (có phê duyệt Admin). Update US ở "Cập nhật tuần" khi **chuyển Stage hoặc nâng điểm** được ghi nhận như 1 US mới ở KPI, **bắt buộc Admin duyệt** mới áp Stage/điểm + tính KPI.
 **Version:** 3.14.0

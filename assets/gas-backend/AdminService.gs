@@ -221,6 +221,8 @@ function listUseCases_(filters) {
       usecase_category:    uc.UseCase_Category    || '',
       status:              uc.Status,
       stage:               uc.Current_Stage,
+      demo_status:         uc.Demo_Status         || '',
+      demo_link:           uc.Demo_Link           || '',
       review_status:       uc.Review_Status       || '',
       submit_date:         uc.Submit_Date,
       created_at:          uc.Created_At,

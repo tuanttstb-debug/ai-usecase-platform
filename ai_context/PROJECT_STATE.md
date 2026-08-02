@@ -1,8 +1,8 @@
 # PROJECT STATE
 
-**Last updated:** 2026-07-31
-**Version:** 3.14.0 — Feature: Milestone cập nhật tuần → KPI (có phê duyệt Admin). Update US ở "Cập nhật tuần" khi chuyển Stage/nâng điểm ghi nhận như 1 US mới ở KPI, bắt buộc Admin duyệt mới áp Stage/điểm + tính KPI (cộng dồn theo tuần Log_Date, credit Owner). ✅ **LIVE** — GAS deployed + `migrateWeeklyLogSchema()` xong + FE pushed (`8a786a4`), verified. URL GAS không đổi.
-**Prev:** 3.13.0 — Scoring fix: nối `Active_User_Count` (Adoption) end-to-end (2026-07-30, GAS deployed) · 3.12.3 (Wording tên Trung tâm ở login, 2026-07-29) · 3.12.2 (DATA-LIMIT-01 fix — owner filter + `limit:0`, 2026-07-27) · 3.12.1 (Khám Phá search fix, 2026-07-09) · 3.12.0 (Điểm SPTD tab)
+**Last updated:** 2026-08-02
+**Version:** 3.15.0 — (1) Duyệt milestone dùng chung modal chi tiết US 4 section + khối "Nội dung điều chỉnh" trước khi duyệt; (2) Link demo bấm được + Copy trong mọi popup duyệt/chi tiết US; (3) Fix triệt để lỗi link demo dài (ổ chung) làm hỏng create — chuyển create/update sang **hidden-iframe POST + verify** (bỏ giới hạn URL ~8KB). ⚠️ **CODE DONE, chưa deploy** — cần redeploy 3 file GAS (`Code.gs`/`UseCaseService.gs`/`AdminService.gs`) **TRƯỚC** khi push FE.
+**Prev:** 3.14.0 — Milestone cập nhật tuần → KPI có phê duyệt Admin (2026-07-31, LIVE `8a786a4`) · 3.13.0 — nối `Active_User_Count` (Adoption) end-to-end (2026-07-30) · 3.12.3 (Wording login, 2026-07-29) · 3.12.2 (DATA-LIMIT-01, 2026-07-27) · 3.12.0 (Điểm SPTD tab)
 **Org name (chuẩn):** Trung tâm Sản phẩm & Giải pháp Tín dụng — short form hiển thị = "TT SPTD"
 **Data migration:** ✅ Team BL1 + BL2 → Team BL hoàn tất (2026-07-07) — LOOKUP + MASTER_DATA + USERS + DASHBOARD cache cleared
 **Project location:** `D:\Workspace\Production\ai-usecase-platform` (moved from `D:\Công việc\Vibecode\` on 2026-06-19)
@@ -131,6 +131,9 @@ env.js → auth.js → [inline portal script]
 | ScoringEngine JS module | ✅ | NEW v3.10.2 (2026-06-17) — assets/js/scoring.js; mirrors GAS ScoringEngine.gs; used by register.html preview + review-queue.html panel |
 | Adoption scoring input | ✅ | NEW v3.13.0 (2026-07-30) — trường `Active_User_Count` ("Số người dùng thực tế") nối end-to-end: register wizard + cập nhật tuần → nguồn điểm Adoption (max 20đ). Trước đây không có ô nhập → Adoption luôn=0. GAS deployed. UC cũ cần `recalculateAllScores_()` (SCORE-BACKFILL-01) |
 | Milestone cập nhật tuần → KPI | ✅ | NEW v3.14.0 (2026-07-31) — weekly-update chuyển Stage/nâng điểm = "milestone" → giữ pending, Admin duyệt ở tab "Chờ duyệt" (section riêng) mới áp Stage/điểm + tính KPI (+1 Owner ở tuần Log_Date, cộng dồn). SPTD cộng số lượng + tuần đạt. `_buildKPIData` + `sptd-scoring.js` cộng milestone đã duyệt. 13 unit test + 5 E2E mới |
+| Duyệt milestone = xem chi tiết US | ✅ | NEW v3.15.0 (2026-08-02) — card milestone → 1 nút "Xem chi tiết & Duyệt" mở `openDetail(uc, milestone)` = modal 4 section US + khối "Nội dung điều chỉnh chờ duyệt" (Stage/Điểm cũ→mới, ghi chú tuần). Duyệt/Từ chối inline (bỏ `window.prompt`). Đóng MILESTONE-PROMPT-01 |
+| Link demo bấm được + Copy | ✅ | NEW v3.15.0 (2026-08-02) — modal chi tiết US, popup duyệt milestone, leaderboard detail, cột Demo list drill-down. `http(s)` → `<a target=_blank>`; ổ chung/UNC/`file://` → text + Copy (base64 onclick). `_demoLinkHtml`/`_demoField` (dashboard) + `_lbDemoField` (leaderboard) |
+| Write transport (create/update) | ✅ | CHANGED v3.15.0 (2026-08-02) — create/update chuyển từ JSONP GET (giới hạn URL ~8KB) sang **hidden-iframe FORM POST + verify `getUseCase`**. Fix triệt để lỗi link demo dài (ổ chung) → HTTP 400. Bỏ ngưỡng 7500 cho write (giữ cho GET nhỏ). ⚠️ Cần GAS `doPost` mới (decode payload field) |
 | Điểm SPTD tab | ✅ | NEW v3.12 (2026-07-08) — Tab "Điểm SPTD" trên dashboard; công thức 80-10-10 (quality avg/qty/weeks); T0=2026-06-01; leaderboard public + my card + formula box + UC list + timeline + CSV export (admin); SPTDScoring IIFE module; 29/29 unit tests + 10/10 Playwright |
 | Playwright test suite | ✅ | 95/95 pass (2026-07-08) — 7 spec files; +10 SPTD tests (06-sptd-tab.spec.js) |
 | KPI week date format | ✅ | fix `91c4a00` — manual `DD/MM` formatter thay `toLocaleDateString` (locale inconsistency trên Chromium/Windows) |
@@ -139,7 +142,9 @@ env.js → auth.js → [inline portal script]
 ## Backend (GAS) — ✅ Deployed
 
 **Active deployment URL:** `AKfycbypN8afAl2zQwpR7K6k1-699g3HAhFAIqAOtDn3qY1nJWzuN1bd8n99bzRUzaV8ZMyTCw`
-**OAuth:** ✅ Authorized | **GAS code sync:** ✅ Tất cả 9 files đã deploy — GAS-MYSTERY-01 CLOSED (2026-06-18), redeploy 2026-06-22
+**OAuth:** ✅ Authorized | **GAS code sync:** ⚠️ **PENDING v3.15.0** — 3 file GAS đã sửa local (`Code.gs`, `UseCaseService.gs`, `AdminService.gs`) **CHƯA deploy**. Phải deploy TRƯỚC khi push FE (create/update POST cần `doPost` mới).
+
+**Pending redeploy (v3.15.0, 2026-08-02):** `Code.gs` (`doPost` decode `payload` base64url form field — nhận create/update từ FE iframe POST), `UseCaseService.gs` (`getUseCaseById_` fallback tra `UseCase_ID` — verify create), `AdminService.gs` (`listUseCases_` trả `demo_status`+`demo_link`). Edit deployment → New version, URL không đổi. **Thứ tự: deploy GAS → push FE.**
 
 **Last redeploy (2026-07-31, v3.14.0):** `Config.gs` (WEEKLY_LOG +8 cột milestone + MILESTONE_STATUS), `Utils.gs` (ensureSheetColumns_ + updateRowByField_), `AdminService.gs` (submitWeeklyUpdate_ milestone gate + listMilestones_/approveMilestone_/rejectMilestone_ + migrateWeeklyLogSchema()), `Code.gs` (routes milestone-list/approve/reject). URL không đổi. `migrateWeeklyLogSchema()` đã chạy. — commit `8a786a4`
 

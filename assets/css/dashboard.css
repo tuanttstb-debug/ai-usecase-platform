@@ -512,6 +512,36 @@
 }
 .detail-section--review .detail-step-badge { background: var(--color-success); }
 
+/* Milestone change block (v3.15.0) — highlight nội dung điều chỉnh chờ duyệt */
+.detail-section--milestone {
+  border: 1px solid #7B2CBF40;
+  border-radius: var(--radius-lg, 16px);
+  background: #7B2CBF08;
+  padding: var(--space-4);
+}
+.detail-section--milestone .detail-step-badge { background: #7B2CBF; }
+
+/* Link demo bấm được + nút Copy (v3.15.0) */
+.detail-value--demo { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
+.demo-link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  word-break: break-all;
+}
+.demo-link--nonweb { color: var(--color-text); text-decoration: none; cursor: default; }
+.demo-copy-btn {
+  flex-shrink: 0;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md);
+  padding: 2px 8px;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  line-height: 1.6;
+}
+.demo-copy-btn:hover { background: var(--color-bg); color: var(--color-primary); border-color: var(--color-primary); }
+
 .detail-section-body {
   display: flex;
   flex-direction: column;

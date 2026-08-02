@@ -96,37 +96,69 @@ test('T02: section hidden when no pending milestones', async ({ page }) => {
   await expect(page.locator('#milestoneBadge')).toHaveText('');
 });
 
-test('T03: Approve milestone fires milestone-approve with log_id', async ({ page }) => {
+test('T03: Xem chi tiết milestone → modal mở với khối "Nội dung điều chỉnh" + Duyệt', async ({ page }) => {
   await setSession(page, ADMIN_USER);
   const calls = await mockMilestoneGAS(page);
   await gotoPendingTab(page);
 
   await expect(page.locator('#pendingMilestoneSection')).toBeVisible({ timeout: 8000 });
-  await page.locator('#pendingMilestoneList .pending-card button.btn-success').click();
+  // v3.15.0: 1 nút mở modal chi tiết US (4 section) thay vì duyệt thẳng trên card
+  await page.locator('#pendingMilestoneList .pending-card button').click();
+
+  const modal = page.locator('#usDetailModal');
+  await expect(modal).toBeVisible({ timeout: 5000 });
+  await expect(modal).toContainText('Nội dung điều chỉnh chờ duyệt');
+  await expect(modal).toContainText('S3 - Standardized');
+
+  // Duyệt milestone inline trong modal
+  await page.click('#detailApproveBtn');
+  await page.click('#detailActionConfirmBtn');
 
   await page.waitForFunction(
     () => !!document.querySelector('.toast, #toast, [class*="toast"]'),
     { timeout: 5000 }
-  ).catch(() => {}); // toast optional
+  ).catch(() => {});
 
   const approve = calls.find((c) => c.action === 'milestone-approve');
   expect(approve, 'milestone-approve request fired').toBeTruthy();
   expect(approve.url).toContain('milestone-approve');
 });
 
-test('T04: Reject milestone prompts for reason then fires milestone-reject', async ({ page }) => {
+test('T04: Từ chối milestone trong modal (nhập lý do) → fires milestone-reject', async ({ page }) => {
   await setSession(page, ADMIN_USER);
   const calls = await mockMilestoneGAS(page);
 
-  page.on('dialog', (dialog) => dialog.accept('Chưa đủ bằng chứng'));
-
   await gotoPendingTab(page);
   await expect(page.locator('#pendingMilestoneSection')).toBeVisible({ timeout: 8000 });
-  await page.locator('#pendingMilestoneList .pending-card button.btn-danger').click();
+  await page.locator('#pendingMilestoneList .pending-card button').click();
+
+  await expect(page.locator('#usDetailModal')).toBeVisible({ timeout: 5000 });
+  await page.click('#detailRejectBtn');
+  await page.fill('#detailActionComment', 'Chưa đủ bằng chứng');
+  await page.click('#detailActionConfirmBtn');
 
   await page.waitForTimeout(1000);
   const reject = calls.find((c) => c.action === 'milestone-reject');
   expect(reject, 'milestone-reject request fired').toBeTruthy();
+});
+
+test('T06: Link demo render thành hyperlink bấm được + nút Copy trong modal chi tiết', async ({ page }) => {
+  await setSession(page, ADMIN_USER);
+  await mockMilestoneGAS(page);
+  await page.goto('/dashboard.html');
+  await page.waitForLoadState('networkidle');
+
+  // Mở modal chi tiết với UC có demo_link http (list-data, không cần full fetch)
+  await page.evaluate(() => Dashboard._openDetail({
+    usecase_id: 'AIUS-DEMO', name: 'UC demo', status: 'Approved',
+    demo_status: 'Đã có demo', demo_link: 'https://demo.example.com/video?id=1',
+  }));
+
+  const link = page.locator('#usDetailModal .demo-link');
+  await expect(link).toBeVisible();
+  await expect(link).toHaveAttribute('href', 'https://demo.example.com/video?id=1');
+  await expect(link).toHaveAttribute('target', '_blank');
+  await expect(page.locator('#usDetailModal .demo-copy-btn')).toBeVisible();
 });
 
 test('T05: regular user does not load the milestone approval queue', async ({ page }) => {

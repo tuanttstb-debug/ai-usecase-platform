@@ -383,8 +383,10 @@ function updateUseCase_(recordId, data) {
 // ── Read ──────────────────────────────────────────────────────────
 
 /**
- * Lấy chi tiết một use case theo Record_ID.
- * @param {string} recordId
+ * Lấy chi tiết một use case theo Record_ID (UUID) hoặc UseCase_ID (AIUS-NNNN).
+ * Fallback UseCase_ID phục vụ verify sau khi create qua POST-iframe (v3.15.0):
+ * FE chỉ có UseCase_ID đã gán client-side, chưa biết Record_ID.
+ * @param {string} recordId - Record_ID hoặc UseCase_ID
  * @returns {Object} Use case object (không bao gồm JSON_Backup)
  */
 function getUseCaseById_(recordId) {
@@ -392,7 +394,9 @@ function getUseCaseById_(recordId) {
     throw new Error('Record_ID không được để trống');
   }
   var obj = findObjectByField_(SHEETS.MASTER, 'Record_ID', recordId);
-  if (!obj) throw new Error('Không tìm thấy use case với Record_ID: ' + recordId);
+  // Fallback: nếu id có dạng AIUS-… (hoặc không khớp Record_ID) → thử tra theo UseCase_ID
+  if (!obj) obj = findObjectByField_(SHEETS.MASTER, 'UseCase_ID', recordId);
+  if (!obj) throw new Error('Không tìm thấy use case với id: ' + recordId);
 
   // Ẩn JSON_Backup trong response (quá lớn, không cần thiết cho edit mode)
   var result = {};

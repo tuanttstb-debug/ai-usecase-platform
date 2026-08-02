@@ -53,29 +53,43 @@ function doGet(e) {
   return sendJson_(response);
 }
 
-// Giữ lại doPost để tương thích nếu có request cũ,
-// nhưng convert sang GET handler bằng cách đọc body
+// doPost — dùng cho write ops LỚN (create/update) gửi qua hidden-iframe form POST (v3.15.0).
+// FE POST form-urlencoded với field: action + payload(base64url). POST body không giới hạn
+// độ dài như GET URL → fix triệt để lỗi link demo dài (ổ chung) làm vỡ URL → HTTP 400.
+// Cũng chấp nhận raw JSON body (backward compat).
 function doPost(e) {
   var params = e.parameter || {};
   var action = String(params.action || '').trim();
   var body   = {};
 
-  if (e.postData && e.postData.contents) {
+  if (params.payload) {
+    // Đường chính: payload base64url trong form field (giống doGet)
+    body = decodePayload_(params.payload);
+  } else if (e.postData && e.postData.contents) {
+    // Backward compat: raw JSON body
     try { body = JSON.parse(e.postData.contents); }
     catch (ex) {
-      return sendJson_(createResponse_(false, 'Request body không phải JSON: ' + ex.message));
+      return sendJson_(createResponse_(false, 'Request body không hợp lệ: ' + ex.message));
     }
   }
 
   if (!action && body.action) action = String(body.action).trim();
   if (!action && e.pathInfo)  action = String(e.pathInfo).replace(/^\/+/, '').trim();
 
+  var callback = String(params.callback || '').trim();
+  var response;
   try {
-    return sendJson_(route_(action, params, body));
+    response = route_(action, params, body);
   } catch (err) {
-    logError_('doPost action=' + action, err, { body: body });
-    return sendJson_(createResponse_(false, err.message || 'Lỗi server nội bộ'));
+    logError_('doPost action=' + action, err, { action: action });
+    response = createResponse_(false, err.message || 'Lỗi server nội bộ');
   }
+
+  // FE iframe POST không đọc response, nhưng hỗ trợ JSONP callback nếu có (test/tương thích).
+  if (callback && /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(callback)) {
+    return sendJsonP_(response, callback);
+  }
+  return sendJson_(response);
 }
 
 // ─────────────────────────────────────────────────────────────────

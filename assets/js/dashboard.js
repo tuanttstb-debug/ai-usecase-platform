@@ -17,8 +17,9 @@
   var _myList      = [];
   var _exploreList = [];
   var _charts       = {};
-  var _detailUc     = null;
-  var _detailAction = null; // 'approve' | 'reject'
+  var _detailUc        = null;
+  var _detailAction    = null; // 'approve' | 'reject'
+  var _detailMilestone = null; // khi mở modal chi tiết ở chế độ duyệt milestone (v3.15.0)
   var _ucCache      = {}; // key → uc object (safe alternative to inline JSON)
   var _rejectedList = [];
   var _milestonePending  = []; // milestone cập nhật tuần chờ Admin duyệt (v3.14.0)
@@ -744,8 +745,7 @@
         '<div class="pending-card-meta">' + stageBit + scoreBit + '</div>' +
         excerpt +
         '<div class="pending-card-actions">' +
-          '<button class="btn btn-sm btn-success" onclick="Dashboard._approveMilestone(\'' + esc(k) + '\')">✓ Duyệt milestone</button>' +
-          '<button class="btn btn-sm btn-danger" onclick="Dashboard._rejectMilestone(\'' + esc(k) + '\')">✕ Từ chối</button>' +
+          '<button class="btn btn-sm btn-primary" onclick="Dashboard._openMilestoneDetail(\'' + esc(k) + '\')">🔍 Xem chi tiết &amp; Duyệt</button>' +
         '</div>' +
       '</div>';
     }).join('');
@@ -793,6 +793,44 @@
     } finally {
       showLoading(false);
     }
+  }
+
+  // Mở modal chi tiết US (4 section) ở chế độ duyệt milestone — v3.15.0.
+  // Tái sử dụng openDetail() để xem toàn cảnh US + khối "Nội dung điều chỉnh".
+  function _openMilestoneDetail(key) {
+    var m = _msCache[key];
+    if (!m) return;
+    var uc = null;
+    for (var i = 0; i < _allList.length; i++) {
+      if (_allList[i].usecase_id === m.usecase_id) { uc = _allList[i]; break; }
+    }
+    if (!uc) {
+      // UC không có trong _allList (hiếm) — dựng bản tối thiểu từ milestone
+      uc = {
+        usecase_id: m.usecase_id, name: m.name, owner_name: m.owner_name,
+        team: m.team, status: '', stage: m.new_stage || m.previous_stage || ''
+      };
+    }
+    openDetail(uc, m);
+  }
+
+  // Khối "Nội dung điều chỉnh chờ duyệt" — chèn đầu modal khi duyệt milestone.
+  function _renderMilestoneChangeBlock(m) {
+    if (!m) return '';
+    var typeLabel = m.milestone_type === 'STAGE' ? 'Chuyển giai đoạn'
+                  : m.milestone_type === 'SCORE' ? 'Nâng điểm'
+                  : 'Chuyển giai đoạn + Nâng điểm';
+    var rows = [['Loại milestone', typeLabel]];
+    if (m.stage_changed) {
+      rows.push(['Chuyển giai đoạn', (m.previous_stage || '--') + '  →  ' + (m.new_stage || '--')]);
+    }
+    if (Number(m.proposed_total_score) > Number(m.previous_total_score)) {
+      rows.push(['Nâng điểm', m.previous_total_score + '  →  ' + m.proposed_total_score + ' /100']);
+    }
+    rows.push(['Tuần cập nhật', fmtDate(m.log_date)]);
+    rows.push(['Người thực hiện', m.owner_name || '--']);
+    var parts = [_dgrid(rows), _dfield('Ghi chú cập nhật tuần', m.weekly_update, true)];
+    return _dsection('!', 'Nội dung điều chỉnh chờ duyệt', parts, 'detail-section--milestone');
   }
 
   // ── All Use Cases Table ───────────────────────────────────────────
@@ -898,12 +936,13 @@
           '<td>' + esc(uc.owner_name || '--') + '</td>' +
           '<td>' + esc(uc.team || '--') + '</td>' +
           '<td><span class="status-badge" style="background:' + cfg.color + '20;color:' + cfg.color + '">' + cfg.label + '</span></td>' +
+          '<td onclick="event.stopPropagation()">' + (_demoLinkHtml(uc.demo_link) || '<span style="color:var(--color-text-muted)">—</span>') + '</td>' +
           '<td>' + _btnDetail(uc, 'Chi tiết') + '</td>' +
         '</tr>';
       }).join('');
       body.innerHTML =
         '<table class="dash-table" style="margin:0">' +
-          '<thead><tr><th>Mã</th><th>Tên Use Case</th><th>Người đăng ký</th><th>Team</th><th>Trạng thái</th><th></th></tr></thead>' +
+          '<thead><tr><th>Mã</th><th>Tên Use Case</th><th>Người đăng ký</th><th>Team</th><th>Trạng thái</th><th>Demo</th><th></th></tr></thead>' +
           '<tbody>' + rows + '</tbody>' +
         '</table>';
     }
@@ -1086,7 +1125,7 @@
   }
 
   // ── US Detail Modal ───────────────────────────────────────────────
-  function openDetail(uc) {
+  function openDetail(uc, milestone) {
     // Safety net: nếu UC thiếu record_id (vd: từ recent_submissions chưa enrich),
     // tìm bản đầy đủ trong _allList theo usecase_id.
     if (!uc.record_id && uc.usecase_id && _allList.length) {
@@ -1098,8 +1137,9 @@
       }
     }
 
-    _detailUc     = uc;
-    _detailAction = null;
+    _detailUc        = uc;
+    _detailAction    = null;
+    _detailMilestone = milestone || null;
 
     // Header
     document.getElementById('detailModalTitle').textContent = uc.name || 'Chi tiết Use Case';
@@ -1121,10 +1161,23 @@
       editBtn.href = 'register.html?edit=' + encodeURIComponent(uc.record_id || uc.usecase_id || '');
     }
 
-    // Approve/Reject buttons: admin only, on eligible statuses
-    var canApprove = _isAdmin && ['Submitted', 'Under Review'].includes(uc.status);
-    document.getElementById('detailApproveBtn').style.display = canApprove ? '' : 'none';
-    document.getElementById('detailRejectBtn').style.display  = canApprove ? '' : 'none';
+    // Approve/Reject buttons.
+    // - Milestone mode: admin duyệt/từ chối milestone bất kể status US (thường đã Approved).
+    // - US mode: admin only, trên status hợp lệ.
+    var apBtn = document.getElementById('detailApproveBtn');
+    var rjBtn = document.getElementById('detailRejectBtn');
+    if (_detailMilestone) {
+      apBtn.style.display = _isAdmin ? '' : 'none';
+      rjBtn.style.display = _isAdmin ? '' : 'none';
+      apBtn.textContent = '✓ Duyệt milestone';
+      rjBtn.textContent = '✕ Từ chối milestone';
+    } else {
+      var canApprove = _isAdmin && ['Submitted', 'Under Review'].includes(uc.status);
+      apBtn.style.display = canApprove ? '' : 'none';
+      rjBtn.style.display = canApprove ? '' : 'none';
+      apBtn.textContent = '✓ Duyệt';
+      rjBtn.textContent = '✕ Từ chối';
+    }
 
     // Copy prompt button: visible when prompt data exists
     var copyBtn = document.getElementById('detailCopyPromptBtn');
@@ -1212,6 +1265,9 @@
   function _renderDetailBody(uc, isFullData) {
     var html = '';
 
+    // Khối "Nội dung điều chỉnh" khi mở ở chế độ duyệt milestone (v3.15.0)
+    if (_detailMilestone) html += _renderMilestoneChangeBlock(_detailMilestone);
+
     // ── Section 1: Thông tin nghiệp vụ ──────────────────────────────
     html += _dsection('1', 'Thông tin nghiệp vụ', [
       _dgrid([
@@ -1254,10 +1310,10 @@
     }
     var s3 = _dgrid([
                ['Trạng thái demo',           uc.demo_status],
-               ['Link demo / tài liệu',      uc.demo_link],
                ['Thời gian trước khi có AI', uc.before_time_min ? uc.before_time_min + ' phút' : ''],
                ['Thời gian sau khi có AI',   uc.after_time_min  ? uc.after_time_min  + ' phút' + timeSaved : ''],
              ]) +
+             _demoField('Link demo / tài liệu', uc.demo_link) +
              _dfield('Cải thiện chất lượng',                  uc.quality_improvement, true) +
              _dfield('Ghi chú thêm về hiệu quả',              uc.improvement_note,    true) +
              _dfield('Phạm vi tái sử dụng',                   uc.reuse_level,         false) +
@@ -1383,6 +1439,50 @@
     '</div>';
   }
 
+  // Render link demo bấm được + nút Copy (v3.15.0).
+  // - http(s): hyperlink mở tab mới (href qua encodeURI → an toàn với dấu nháy/space).
+  // - link nội bộ/ổ chung (UNC \\server, file://): browser không mở được → hiện text + Copy.
+  // Text copy truyền qua base64 trong onclick để tránh vỡ cú pháp với ký tự đặc biệt.
+  function _demoLinkHtml(url) {
+    var raw = String(url == null ? '' : url).trim();
+    if (!raw) return '';
+    var b64 = '';
+    try { b64 = btoa(unescape(encodeURIComponent(raw))); } catch (_e) { b64 = ''; }
+    var body;
+    if (/^https?:\/\//i.test(raw)) {
+      body = '<a href="' + encodeURI(raw) + '" target="_blank" rel="noopener noreferrer" class="demo-link">' + esc(raw) + ' ↗</a>';
+    } else {
+      body = '<span class="demo-link demo-link--nonweb" title="Link nội bộ / ổ chung — bấm Copy rồi mở bằng File Explorer">' + esc(raw) + '</span>';
+    }
+    var copyBtn = b64 ? ' <button type="button" class="demo-copy-btn" onclick="Dashboard._copyB64(\'' + b64 + '\')">📋 Copy</button>' : '';
+    return body + copyBtn;
+  }
+
+  function _demoField(label, url) {
+    var inner = _demoLinkHtml(url);
+    if (!inner) return '';
+    return '<div class="detail-field detail-field--full">' +
+      '<div class="detail-label">' + esc(label) + '</div>' +
+      '<div class="detail-value detail-value--demo">' + inner + '</div>' +
+    '</div>';
+  }
+
+  function _copyText(text) {
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(function () { showToast('Đã copy link', 'success'); })
+        .catch(function () { _fallbackCopy(text); });
+    } else {
+      _fallbackCopy(text);
+    }
+  }
+
+  function _copyB64(b64) {
+    try { _copyText(decodeURIComponent(escape(atob(b64)))); }
+    catch (_e) { showToast('Không copy được link', 'error'); }
+  }
+
   function _hasPromptData(uc) {
     return !!(uc && (uc.prompt_role || uc.prompt_task || uc.prompt_goal || uc.prompt_context ||
                      uc.prompt_input || uc.prompt_steps || uc.prompt_output_format || uc.prompt_evaluation));
@@ -1475,17 +1575,33 @@
     confirmBtn.textContent = 'Đang xử lý...';
     showLoading(true);
     try {
-      var payload = {
-        record_id:      _detailUc.record_id,
-        reviewer_email: _user ? _user.email : '',
-        comment:        comment
-      };
-      if (_detailAction === 'approve') {
-        await Api.approveUseCase(payload);
-        showToast('Đã duyệt use case thành công', 'success');
+      if (_detailMilestone) {
+        // ── Chế độ duyệt milestone (v3.15.0) ──
+        var mp = {
+          log_id:         _detailMilestone.log_id,
+          reviewer_email: _user ? _user.email : '',
+          comment:        comment
+        };
+        if (_detailAction === 'approve') {
+          await Api.approveMilestone(mp);
+          showToast('Đã duyệt milestone — đã áp Stage/điểm và ghi nhận KPI', 'success');
+        } else {
+          await Api.rejectMilestone(mp);
+          showToast('Đã từ chối milestone', 'info');
+        }
       } else {
-        await Api.rejectUseCase(payload);
-        showToast('Đã từ chối use case', 'info');
+        var payload = {
+          record_id:      _detailUc.record_id,
+          reviewer_email: _user ? _user.email : '',
+          comment:        comment
+        };
+        if (_detailAction === 'approve') {
+          await Api.approveUseCase(payload);
+          showToast('Đã duyệt use case thành công', 'success');
+        } else {
+          await Api.rejectUseCase(payload);
+          showToast('Đã từ chối use case', 'info');
+        }
       }
       _closeDetail();
       _allList = []; _pendingList = []; _dashData = null;
@@ -1501,8 +1617,9 @@
 
   function _closeDetail() {
     document.getElementById('usDetailModal').classList.add('hidden');
-    _detailUc     = null;
-    _detailAction = null;
+    _detailUc        = null;
+    _detailAction    = null;
+    _detailMilestone = null;
   }
 
   // ── Legacy Approval Modal (kept for backward compat) ──────────────
@@ -2569,9 +2686,12 @@
     _rejectByKey: function (key) {
       var uc = _ucCache[key]; if (uc) { openDetail(uc); _showActionArea('reject'); }
     },
-    // Milestone approval (v3.14.0)
-    _approveMilestone: _approveMilestone,
-    _rejectMilestone:  _rejectMilestone,
+    // Milestone approval (v3.14.0; v3.15.0: xem chi tiết trước khi duyệt)
+    _approveMilestone:    _approveMilestone,
+    _rejectMilestone:     _rejectMilestone,
+    _openMilestoneDetail: _openMilestoneDetail,
+    // Copy link demo (v3.15.0)
+    _copyB64: _copyB64,
     // List modal helpers (used by CSS fallback chart onclick)
     _openListByStatus: function (status) {
       var cfg   = STATUS_CFG[status] || { label: status };

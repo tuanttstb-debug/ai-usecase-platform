@@ -4,6 +4,42 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
+## CREATE-VALIDATION-MSG-01 — Lỗi validate GAS khi create không hiện message cụ thể (v3.15.0, 2026-08-02)
+
+**Mô tả:** Create/update chuyển sang hidden-iframe FORM POST (fix link demo dài). FE **không đọc được response iframe** (cross-origin) → nếu GAS trả `success:false` (vd validate thiếu field), FE không lấy được message; thay vào đó verify `getUseCase` không xác nhận → sau timeout (90s) hiện cảnh báo chung "Dữ liệu CÓ THỂ đã lưu — kiểm tra dashboard".
+
+**Rủi ro:** UX — user không thấy lý do lỗi chính xác từ server; phải chờ tới timeout. `Validator.all()` client-side đã chặn phần lớn lỗi validate trước khi gửi nên ít gặp.
+
+**Fix đề xuất (chưa quyết):** (a) GAS ghi kết quả create/update ra 1 sheet/cache theo `client_nonce` FE gửi kèm, verify đọc nonce để lấy cả trạng thái lỗi + message; hoặc (b) rút ngắn timeout khi verify liên tiếp trả record-không-đổi. Cần cân nhắc.
+
+**File:** `assets/js/api.js` (`_submitViaPost`), `assets/js/app.js` (`_handleSubmitError`).
+
+---
+
+## UPDATE-VERIFY-01 — Verify update chỉ xác nhận record tồn tại, không chắc write đã áp (v3.15.0, 2026-08-02)
+
+**Mô tả:** `updateUseCase` (POST iframe) verify bằng `getUseCase(Record_ID)`. Vì record đã tồn tại từ trước, verify resolve ngay cả khi bản update chưa/không được ghi (vd POST rớt giữa chừng) → false-positive "thành công".
+
+**Rủi ro:** Thấp — GAS thực thi write đồng bộ trước khi trả response; chỉ rủi ro khi POST rớt mạng giữa chừng (hiếm). Create không dính (verify theo UseCase_ID mới + khớp owner).
+
+**Fix đề xuất:** So khớp `Updated_At` trả về với mốc client gửi kèm (cần xử lý lệch giờ), hoặc dùng `client_nonce` như CREATE-VALIDATION-MSG-01.
+
+**File:** `assets/js/api.js` — `updateUseCase` verifyFn.
+
+---
+
+## LEADERBOARD-DEMO-NOTEST-01 — Link demo leaderboard chưa có test tự động (v3.15.0, 2026-08-02)
+
+**Mô tả:** `leaderboard.html` thêm `_lbDemoLinkHtml`/`_lbDemoField`/`lbCopyB64` mirror y hệt dashboard.js nhưng không có spec Playwright cho leaderboard trong suite. Dashboard đã có T06.
+
+**Rủi ro:** Thấp — logic copy-paste từ dashboard (đã test). Nên xác nhận mắt thường sau deploy.
+
+**Fix đề xuất:** Thêm spec leaderboard hoặc test đơn vị cho `_lbDemoLinkHtml`.
+
+**File:** `leaderboard.html`.
+
+---
+
 ## WEEKLYLOG-COL-01 — WEEKLY_LOG thiếu Active_User_Count từ v3.13.0 (phát hiện 2026-07-31)
 
 **Mô tả:** Khi chạy `migrateWeeklyLogSchema()` (v3.14.0), migration phải thêm cả cột `Active_User_Count` → chứng tỏ sheet WEEKLY_LOG prod **chưa từng có cột này**. Do đó từ v3.13.0, `submitWeeklyUpdate_` ghi `Active_User_Count` vào WEEKLY_LOG đã bị `appendRowFromObject_` **âm thầm rớt** (map theo header, header không tồn tại → bỏ).
@@ -26,15 +62,9 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
-## MILESTONE-PROMPT-01 — Reject milestone dùng window.prompt (v3.14.0)
+## ~~MILESTONE-PROMPT-01~~ — Reject milestone dùng window.prompt ✅ RESOLVED (v3.15.0, 2026-08-02)
 
-**Mô tả:** `dashboard.js _rejectMilestone()` lấy lý do từ chối qua `window.prompt()` — khác pattern modal của reject UC (textarea trong detail modal).
-
-**Rủi ro:** Thấp — UX không đồng bộ; `window.prompt` bị chặn nếu browser tắt dialog; Playwright cần `page.on('dialog')`.
-
-**Fix đề xuất:** Thay bằng modal inline giống reject UC (comment area + confirm button).
-
-**File:** `assets/js/dashboard.js` — `_rejectMilestone`.
+**Đã đóng:** Duyệt/từ chối milestone nay dùng modal chi tiết US inline (ô comment `#detailActionComment` + confirm) qua `_confirmDetailAction` nhánh milestone. Không còn `window.prompt`. `_rejectMilestone` cũ vẫn tồn tại (không dùng trên UI, giữ làm fallback).
 
 ---
 

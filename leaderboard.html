@@ -575,10 +575,10 @@ function _lbRenderBody(uc, isFullData) {
   }
   var s3 = _lbGrid([
              ['Trạng thái demo',           uc.demo_status],
-             ['Link demo / tài liệu',      uc.demo_link],
              ['Thời gian trước khi có AI', uc.before_time_min ? uc.before_time_min + ' phút' : ''],
              ['Thời gian sau khi có AI',   uc.after_time_min  ? uc.after_time_min + ' phút' + timeSaved : '']
            ]) +
+           _lbDemoField('Link demo / tài liệu', uc.demo_link) +
            _lbField('Cải thiện chất lượng',                  uc.quality_improvement, true) +
            _lbField('Ghi chú thêm về hiệu quả',              uc.improvement_note,    true) +
            _lbField('Phạm vi tái sử dụng',                   uc.reuse_level,         false) +
@@ -702,6 +702,51 @@ function _lbField(label, value, pre) {
     '<div class="detail-label">' + esc(label) + '</div>' +
     '<div class="detail-value' + (pre ? ' detail-value--pre' : '') + '">' + esc(val) + '</div>' +
   '</div>';
+}
+
+// Link demo bấm được + Copy (v3.15.0) — mirror của dashboard.js
+function _lbDemoLinkHtml(url) {
+  var raw = String(url == null ? '' : url).trim();
+  if (!raw) return '';
+  var b64 = '';
+  try { b64 = btoa(unescape(encodeURIComponent(raw))); } catch (_e) { b64 = ''; }
+  var body;
+  if (/^https?:\/\//i.test(raw)) {
+    body = '<a href="' + encodeURI(raw) + '" target="_blank" rel="noopener noreferrer" class="demo-link">' + esc(raw) + ' ↗</a>';
+  } else {
+    body = '<span class="demo-link demo-link--nonweb" title="Link nội bộ / ổ chung — bấm Copy rồi mở bằng File Explorer">' + esc(raw) + '</span>';
+  }
+  var copyBtn = b64 ? ' <button type="button" class="demo-copy-btn" onclick="lbCopyB64(\'' + b64 + '\')">📋 Copy</button>' : '';
+  return body + copyBtn;
+}
+
+function _lbDemoField(label, url) {
+  var inner = _lbDemoLinkHtml(url);
+  if (!inner) return '';
+  return '<div class="detail-field detail-field--full">' +
+    '<div class="detail-label">' + esc(label) + '</div>' +
+    '<div class="detail-value detail-value--demo">' + inner + '</div>' +
+  '</div>';
+}
+
+function lbCopyB64(b64) {
+  var text;
+  try { text = decodeURIComponent(escape(atob(b64))); } catch (_e) { return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(function () { _lbFallbackCopy(text); });
+  } else {
+    _lbFallbackCopy(text);
+  }
+}
+
+function _lbFallbackCopy(text) {
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  } catch (_e) { /* ignore */ }
 }
 
 function _lbFmtDate(isoStr) {

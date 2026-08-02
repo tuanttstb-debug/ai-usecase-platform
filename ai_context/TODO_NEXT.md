@@ -4,6 +4,23 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## ⚠️ P0 — Deploy v3.15.0 (BẮT BUỘC đúng thứ tự)
+
+- [ ] **Deploy 3 file GAS TRƯỚC** — `Code.gs` (doPost decode payload), `UseCaseService.gs` (getUseCaseById_ fallback UseCase_ID), `AdminService.gs` (list demo fields). Edit deployment → New version (URL không đổi).
+- [ ] **Rồi mới push FE.** ⛔ Push FE trước khi deploy GAS = **vỡ tạo/sửa US toàn hệ thống** (create/update POST tới doPost cũ chỉ parse JSON body → fail).
+- [ ] **Verify live:** (1) tạo US mới với link demo ổ chung dài → lưu OK; (2) tab Chờ duyệt → "Xem chi tiết & Duyệt" milestone → khối "Nội dung điều chỉnh" hiển thị → duyệt áp Stage/điểm; (3) bấm link demo trong 4 popup; (4) mắt thường Leaderboard (chưa có test tự động).
+
+---
+
+## ✅ Đã hoàn thành trong session 2026-08-02 (v3.15.0)
+
+- [x] **Item 1 — Duyệt milestone dùng chung modal chi tiết US** — card → nút "🔍 Xem chi tiết & Duyệt" mở `openDetail(uc, milestone)` (4 section US) + khối "Nội dung điều chỉnh chờ duyệt" (Stage/Điểm cũ→mới, ghi chú tuần). Duyệt/Từ chối inline; từ chối qua ô comment (bỏ `window.prompt`) → đóng **MILESTONE-PROMPT-01**.
+- [x] **Item 2 — Link demo bấm được + Copy** — 4 popup (chi tiết US, duyệt milestone, leaderboard detail, cột Demo list drill-down). `http(s)`→hyperlink; ổ chung/UNC→text+Copy.
+- [x] **Item 3 — Fix triệt để link demo dài làm hỏng create** — create/update → hidden-iframe FORM POST + verify `getUseCase` (bỏ giới hạn URL ~8KB). Verify create khớp owner chống nhận nhầm. GAS `doPost` decode payload field. Cần redeploy GAS (xem P0 trên).
+- [x] **Test** — Playwright 98/98 (spec 05 viết lại POST+verify, spec 07 flow modal + T06 demo-link); Unit SPTD 34/34 · KPI 38/38 · ID 14/14.
+
+---
+
 ## ✅ Đã hoàn thành trong session 2026-07-31
 
 - [x] **FEATURE: Milestone cập nhật tuần → KPI có phê duyệt Admin (v3.14.0, commit `8a786a4`)** — weekly-update chuyển Stage/nâng điểm = milestone → giữ pending; Admin duyệt ở tab "Chờ duyệt" mới áp Stage/điểm + tính KPI (+1 Owner tuần Log_Date, cộng dồn). GAS: WEEKLY_LOG +8 cột + submitWeeklyUpdate_ gate + listMilestones_/approve/reject; FE: dashboard queue + `_buildKPIData`/`sptd-scoring.js` cộng milestone; weekly-update pending messaging. Test: SPTD 34/34 + KPI 38/38 unit + Playwright 91/91 (5 mới).
