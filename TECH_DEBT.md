@@ -6,7 +6,7 @@ Mức độ ưu tiên: 🔴 Critical / 🟠 High / 🟡 Medium / 🟢 Low
 
 ## ✅ RESOLVED in v2.1.0 (2026-05-28 Part 2)
 
-BUG-A, BUG-B, BUG-C, BUG-04, SMELL-03, SMELL-04 — xem `ai_context/SESSION_HANDOVER.md` (Part 2) để biết chi tiết.
+BUG-A, BUG-B, BUG-C, BUG-04, SMELL-03, SMELL-04 — xem `AI_CONTEXT/SESSION_HANDOVER.md` (Part 2) để biết chi tiết.
 
 ---
 
@@ -52,7 +52,7 @@ Wizard.init();                  // ← form mới được render ở đây
 
 **Cần làm rõ:** Đây là design intent (Draft → Submitted là bước riêng) hay là bug? Nếu là bug, xóa dòng override trong UseCaseService.gs.
 
-> ⏳ **Pending clarification:** Cần xác nhận với PO — xem `ai_context/TODO_NEXT.md` P2.
+> ⏳ **Pending clarification:** Cần xác nhận với PO — xem `AI_CONTEXT/TODO_NEXT.md` P2.
 
 ---
 
