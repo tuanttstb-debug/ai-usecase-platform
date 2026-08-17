@@ -47,9 +47,9 @@
         ? '<span class="status-badge" style="background:rgba(76,175,80,.12);color:#388e3c">Active</span>'
         : '<span class="status-badge" style="background:rgba(244,67,54,.1);color:#c62828">Inactive</span>';
 
-      var roleColor = { admin: '#7B2CBF', champion: '#1565C0', user: '#6D6D7A' }[u.role] || '#6D6D7A';
-      var roleBg    = { admin: 'rgba(123,44,191,.12)', champion: 'rgba(21,101,192,.12)', user: 'rgba(164,164,178,.15)' }[u.role] || 'rgba(164,164,178,.15)';
-      var roleLabel = { admin: 'Admin', champion: 'Champion', user: 'User' }[u.role] || esc(u.role);
+      var roleColor = { admin: '#7B2CBF', teamlead: '#1565C0', champion: '#1565C0', user: '#6D6D7A' }[u.role] || '#6D6D7A';
+      var roleBg    = { admin: 'rgba(123,44,191,.12)', teamlead: 'rgba(21,101,192,.12)', champion: 'rgba(21,101,192,.12)', user: 'rgba(164,164,178,.15)' }[u.role] || 'rgba(164,164,178,.15)';
+      var roleLabel = { admin: 'Admin', teamlead: 'Teamlead', champion: 'Teamlead', user: 'User' }[u.role] || esc(u.role);
       var roleHtml  = '<span class="status-badge" style="background:' + roleBg + ';color:' + roleColor + '">' + roleLabel + '</span>';
 
       var lastLogin = u.last_login ? u.last_login.split('T')[0] : '—';
@@ -88,9 +88,25 @@
     document.getElementById('umUsername').readOnly = isEdit;
     document.getElementById('umDisplayName').value = isEdit ? (userData.display_name || '') : '';
     document.getElementById('umEmail').value       = isEdit ? (userData.email || '') : '';
-    document.getElementById('umRole').value        = isEdit ? (userData.role || 'user') : 'user';
+    // Role: map champion (dữ liệu cũ) → teamlead cho dropdown
+    var roleVal = isEdit ? (userData.role || 'user') : 'user';
+    if (roleVal === 'champion') roleVal = 'teamlead';
+    document.getElementById('umRole').value        = roleVal;
     document.getElementById('umTeam').value        = isEdit ? (userData.team || '') : '';
     document.getElementById('umActive').checked    = isEdit ? !!userData.active : true;
+
+    // Mật khẩu: tạo mới = bắt buộc; sửa = đặt lại (để trống nếu không đổi)
+    var passEl = document.getElementById('umPassword');
+    if (passEl) passEl.value = '';
+    var passLabel = document.getElementById('umPasswordLabel');
+    var passReq   = document.getElementById('umPasswordReq');
+    var passHint  = document.getElementById('umPasswordHint');
+    if (passLabel) passLabel.textContent = isEdit ? 'Đặt lại mật khẩu' : 'Mật khẩu';
+    if (passReq)   passReq.style.display  = isEdit ? 'none' : '';
+    if (passHint)  passHint.textContent   = isEdit
+      ? 'Để trống nếu không đổi mật khẩu.'
+      : 'Tối thiểu 6 ký tự. Mặc định nên đặt = username.';
+
     modal.classList.remove('hidden');
   }
 
@@ -106,6 +122,15 @@
     var uname = (document.getElementById('umUsername').value || '').trim();
     if (!uname) { showToast('Vui lòng nhập tên đăng nhập', 'error'); return; }
 
+    var isEdit = document.getElementById('umUsername').readOnly;
+    var pass   = (document.getElementById('umPassword').value || '');
+    if (!isEdit && pass.length < 6) {
+      showToast('Vui lòng nhập mật khẩu (tối thiểu 6 ký tự) cho user mới', 'error'); return;
+    }
+    if (pass && pass.length < 6) {
+      showToast('Mật khẩu mới phải có ít nhất 6 ký tự', 'error'); return;
+    }
+
     var saveBtn = document.getElementById('userModalSaveBtn');
     saveBtn.disabled = true;
     saveBtn.textContent = 'Đang lưu…';
@@ -120,7 +145,12 @@
         Active:         document.getElementById('umActive').checked,
         reviewer_email: user.email
       };
+      if (!isEdit) payload.Password = pass;   // tạo mới cần mật khẩu
       var res = await Api.upsertUser(payload);
+      // Sửa + có nhập mật khẩu mới → đặt lại mật khẩu riêng
+      if (isEdit && pass) {
+        await Api.resetUserPassword({ Username: uname, new_password: pass, reviewer_email: user.email });
+      }
       showToast(res.created ? 'Đã thêm user "' + uname + '"' : 'Đã cập nhật user "' + uname + '"', 'success');
       _closeModal();
       await _loadUsers();

@@ -85,6 +85,12 @@ var AuthService = (function () {
       } catch (e) { return null; }
     },
 
+    // Token HMAC dùng chung SHTD (H2) — đính vào payload các thao tác nhạy cảm.
+    getToken: function () {
+      var u = this.getUser();
+      return (u && u.token) ? u.token : '';
+    },
+
     isLoggedIn: function () { return !!this.getUser(); },
 
     isAdmin: function () {
@@ -92,14 +98,28 @@ var AuthService = (function () {
       return !!(u && u.role === 'admin');
     },
 
-    isChampion: function () {
+    // Teamlead (H2) — thay thế 'champion'. Chấp nhận cả 'champion' (phiên/dữ liệu cũ).
+    isTeamlead: function () {
       var u = this.getUser();
-      return !!(u && u.role === 'champion');
+      return !!(u && (u.role === 'teamlead' || u.role === 'champion'));
     },
 
-    isChampionOrAdmin: function () {
-      return this.isAdmin() || this.isChampion();
+    isTeamleadOrAdmin: function () {
+      return this.isAdmin() || this.isTeamlead();
     },
+
+    // Hội đồng chấm điểm US (H2) — 4 teamlead. Nguồn: APP_CONFIG.COUNCIL_USERS.
+    isCouncil: function () {
+      var u = this.getUser();
+      if (!u) return false;
+      var list = ((typeof APP_CONFIG !== 'undefined' && APP_CONFIG.COUNCIL_USERS) || [])
+        .map(function (e) { return String(e).toLowerCase().trim(); });
+      return list.indexOf(String(u.email || '').toLowerCase().trim()) !== -1;
+    },
+
+    // ── Alias champion → teamlead (tương thích code cũ chưa migrate) ──
+    isChampion: function () { return this.isTeamlead(); },
+    isChampionOrAdmin: function () { return this.isTeamleadOrAdmin(); },
 
     requireAuth: function () {
       if (!this.isLoggedIn()) {
@@ -121,14 +141,16 @@ var AuthService = (function () {
       return true;
     },
 
-    requireChampionOrAdmin: function () {
+    requireTeamleadOrAdmin: function () {
       if (!this.requireAuth()) return false;
-      if (!this.isChampionOrAdmin()) {
+      if (!this.isTeamleadOrAdmin()) {
         window.location.replace('index.html');
         return false;
       }
       return true;
     },
+    // Alias tương thích ngược
+    requireChampionOrAdmin: function () { return this.requireTeamleadOrAdmin(); },
 
     /**
      * Store a user object from GAS validateUserLogin response.
@@ -137,7 +159,8 @@ var AuthService = (function () {
     storeUser: function(userData) {
       if (!userData || !userData.email) return;
       var role = String(userData.role || 'user').toLowerCase().trim();
-      if (role !== 'admin' && role !== 'champion') role = 'user';
+      if (role === 'champion') role = 'teamlead';
+      if (role !== 'admin' && role !== 'teamlead') role = 'user';
       var user = {
         email:       String(userData.email).trim().toLowerCase(),
         displayName: userData.displayName || _buildDisplayName(userData.email),
@@ -149,6 +172,27 @@ var AuthService = (function () {
     },
 
     /**
+     * Lưu phiên từ response GAS auth-login (H2): { token, user:{username,displayName,role,team,email} }.
+     */
+    storeAuth: function(authResp) {
+      if (!authResp || !authResp.user) return null;
+      var src  = authResp.user;
+      var role = String(src.role || 'user').toLowerCase().trim();
+      if (role === 'champion') role = 'teamlead';
+      if (role !== 'admin' && role !== 'teamlead') role = 'user';
+      var user = {
+        email:       String(src.username || src.email || '').trim().toLowerCase(),
+        displayName: src.displayName || _buildDisplayName(src.username || ''),
+        role:        role,
+        team:        src.team || '',
+        token:       authResp.token || '',
+        loginAt:     new Date().toISOString()
+      };
+      _save(user);
+      return user;
+    },
+
+    /**
      * Show/hide sidebar nav items based on current user role.
      * Call once after DOM is ready. Safe to call multiple times.
      */
@@ -156,7 +200,7 @@ var AuthService = (function () {
       var user  = this.getUser();
       var role  = user ? (user.role || 'user') : 'user';
       var isAdm = role === 'admin';
-      var isChm = role === 'champion';
+      var isTl  = role === 'teamlead' || role === 'champion';
 
       function show(id) {
         var el = document.getElementById(id);
@@ -166,7 +210,7 @@ var AuthService = (function () {
         show('navDashboard');
         show('navUsers');
         show('navReviewQueue');
-      } else if (isChm) {
+      } else if (isTl) {
         show('navReviewQueue');
       }
     },
@@ -179,7 +223,7 @@ var AuthService = (function () {
       var user = this.getUser();
       if (!user) return;
       var initials = (user.displayName || user.email || '?').charAt(0).toUpperCase();
-      var roleLabels = { admin: 'Admin', champion: 'Champion', user: 'Người dùng' };
+      var roleLabels = { admin: 'Admin', teamlead: 'Teamlead', champion: 'Teamlead', user: 'Người dùng' };
       var roleLabel  = roleLabels[user.role] || 'Người dùng';
 
       function setEl(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }

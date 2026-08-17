@@ -11,9 +11,13 @@ var APP_CONFIG = {
   // Lưu ý: kiểm tra phía frontend (UI-level). Backend GAS có validation riêng.
   ADMIN_EMAILS: ['cuongvm1', 'tuantt4', 'dunglq1'],
 
-  // Danh sách username được cấp quyền champion (review UC của team mình)
-  // Nguồn chính là USERS sheet (Role=champion). List này là fallback FE-only.
+  // Danh sách username được cấp quyền teamlead (review UC của team mình)
+  // Nguồn chính là User_Master dùng chung (Role=Teamlead). List này là fallback FE-only.
   CHAMPION_USERS: [],
+
+  // Hội đồng chấm điểm US (H2) — 4 teamlead. Điểm US = bình quân điểm hội đồng.
+  // GAS đối chiếu song song qua Script Property COUNCIL_USERS.
+  COUNCIL_USERS: ['tuantt4', 'maittt7', 'tutv3', 'quynhnny'],
 
   // Danh sách username bị loại khỏi theo dõi KPI (VD: Giám đốc, quản lý cấp cao)
   KPI_EXCLUDED_USERS: ['cuongvm1'],

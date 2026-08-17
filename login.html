@@ -58,6 +58,23 @@
               aria-required="true"
               aria-describedby="loginEmailError"
             >
+          </div>
+
+          <div class="login-field">
+            <label class="login-label" for="loginPassword">
+              Mật khẩu
+              <span style="color:var(--color-error)" aria-label="bắt buộc">*</span>
+            </label>
+            <input
+              type="password"
+              id="loginPassword"
+              name="password"
+              class="login-input"
+              placeholder="Nhập mật khẩu"
+              autocomplete="current-password"
+              aria-required="true"
+              aria-describedby="loginEmailError"
+            >
             <p id="loginEmailError" class="login-field-error" role="alert" aria-live="polite">
               <span aria-hidden="true">✕</span>
               <span id="loginEmailErrorMsg"></span>
@@ -72,8 +89,8 @@
         </form>
 
         <p class="login-note">
-          Nhập tên đăng nhập nội bộ TT SPTD.<br>
-          Liên hệ quản trị nếu cần hỗ trợ quyền truy cập.
+          Đăng nhập bằng tài khoản dùng chung với Dashboard SHTD.<br>
+          Liên hệ quản trị nếu cần cấp lại mật khẩu.
         </p>
       </div>
 
@@ -105,6 +122,7 @@
       }
 
       var emailEl  = document.getElementById('loginEmail');
+      var passEl   = document.getElementById('loginPassword');
       var errorEl  = document.getElementById('loginEmailError');
       var errorMsg = document.getElementById('loginEmailErrorMsg');
       var loginBtn = document.getElementById('loginBtn');
@@ -113,16 +131,15 @@
         errorMsg.textContent = msg;
         errorEl.classList.add('visible');
         emailEl.classList.add('has-error');
-        emailEl.setAttribute('aria-invalid', 'true');
+        passEl.classList.add('has-error');
         loginBtn.classList.remove('is-loading');
         loginBtn.disabled = false;
-        emailEl.focus();
       }
 
       function clearError() {
         errorEl.classList.remove('visible');
         emailEl.classList.remove('has-error');
-        emailEl.removeAttribute('aria-invalid');
+        passEl.classList.remove('has-error');
       }
 
       function setLoading(on) {
@@ -136,41 +153,31 @@
       }
 
       emailEl.addEventListener('input', clearError);
+      passEl.addEventListener('input', clearError);
 
       document.getElementById('loginForm').addEventListener('submit', function (e) {
         e.preventDefault();
         clearError();
 
         var uname = (emailEl.value || '').trim();
-        if (!uname) { showError('Vui lòng nhập tên đăng nhập'); return; }
+        var pass  = passEl.value || '';
+        if (!uname) { showError('Vui lòng nhập tên đăng nhập'); emailEl.focus(); return; }
+        if (!pass)  { showError('Vui lòng nhập mật khẩu'); passEl.focus(); return; }
 
         setLoading(true);
 
-        // Validate với GAS USERS sheet — lấy role chính xác từ server
-        Api.validateUser(uname)
-          .then(function(data) {
-            // GAS trả về { username, displayName, role, team, email }
-            AuthService.storeUser({
-              email:       data.username,
-              displayName: data.displayName,
-              role:        data.role,
-              team:        data.team || '',
-              loginAt:     new Date().toISOString()
-            });
+        // Đăng nhập bằng tài khoản dùng chung SHTD (username + password → token).
+        // KHÔNG fallback local: auth có mật khẩu, không được bypass khi lỗi mạng.
+        Api.authLogin(uname, pass)
+          .then(function(resp) {
+            // GAS trả { token, user:{username, displayName, role, team, email} }
+            AuthService.storeAuth(resp);
             doRedirect();
           })
           .catch(function(err) {
-            // GAS không khả dụng hoặc lỗi mạng → fallback về local session
-            var msg = String(err && err.message || '');
-            // Nếu GAS trả lỗi rõ ràng (tài khoản bị khóa) → hiện lỗi
-            if (msg.indexOf('vô hiệu hóa') !== -1 || msg.indexOf('chưa được cấp phép') !== -1) {
-              showError(msg);
-              return;
-            }
-            // Trường hợp còn lại (timeout, mất mạng) → local login
-            var result = AuthService.login(uname);
-            if (!result.success) { showError(result.error); return; }
-            doRedirect();
+            var msg = String(err && err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+            showError(msg);
+            passEl.focus();
           });
       });
     })();

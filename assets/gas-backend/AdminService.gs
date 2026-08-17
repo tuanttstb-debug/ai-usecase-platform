@@ -21,7 +21,13 @@
  *   3. Config.gs ADMIN_EMAILS — hardcoded fallback cuối cùng
  */
 function getAdminEmails_() {
-  // Priority 1: USERS sheet
+  // Priority 1: User_Master dùng chung với SHTD (H2 — nguồn user duy nhất)
+  try {
+    var fromMaster = getAdminUsernamesFromMaster_();
+    if (fromMaster.length > 0) return fromMaster;
+  } catch(e) { /* Fallback */ }
+
+  // Priority 1b: USERS sheet nội bộ (legacy — giữ tạm cho tương thích ngược)
   try {
     var fromSheet = getAdminUsernamesFromSheet_();
     if (fromSheet.length > 0) return fromSheet;

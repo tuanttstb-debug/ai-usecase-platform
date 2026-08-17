@@ -95,27 +95,27 @@ test.describe('users.html — User Management Page', () => {
     await expect(page.locator('#umUsername')).toHaveValue('tuantt4');
   });
 
-  test('Champion role option exists in modal', async ({ page }) => {
+  test('Teamlead role option exists in modal', async ({ page }) => {
     await setSession(page, ADMIN_USER);
     await mockGAS(page, { users: MOCK_USER_LIST });
     await page.goto('/users.html');
     await page.waitForLoadState('networkidle');
 
     await page.click('#addUserBtn');
-    const championOption = page.locator('#umRole option[value="champion"]');
-    await expect(championOption).toHaveCount(1);
-    await expect(championOption).toHaveText('Champion');
+    const teamleadOption = page.locator('#umRole option[value="teamlead"]');
+    await expect(teamleadOption).toHaveCount(1);
+    await expect(teamleadOption).toHaveText('Teamlead');
   });
 
-  test('Role badges show correct colors (champion = blue)', async ({ page }) => {
+  test('Role badges show correct colors (teamlead = blue)', async ({ page }) => {
     await setSession(page, ADMIN_USER);
     await mockGAS(page, { users: MOCK_USER_LIST });
     await page.goto('/users.html');
     await page.waitForLoadState('networkidle');
 
-    // Second row should be champion
+    // Second row (champion in fixture) renders as Teamlead
     const secondRow = page.locator('#usersTableWrap table tbody tr:nth-child(2) td:nth-child(3) span');
-    await expect(secondRow).toHaveText('Champion');
+    await expect(secondRow).toHaveText('Teamlead');
   });
 
 });

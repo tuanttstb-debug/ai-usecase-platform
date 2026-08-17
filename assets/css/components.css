@@ -411,6 +411,18 @@
   min-height: 0;
   overflow-y: auto;
 }
+/* Modal quản lý user: giới hạn chiều cao + cuộn thân khi form dài (H2: thêm ô mật khẩu) */
+#userModal .modal-card {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#userModal .modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
 @keyframes modalIn {
   from { opacity: 0; transform: translateY(-12px) scale(0.97); }
   to   { opacity: 1; transform: translateY(0) scale(1); }

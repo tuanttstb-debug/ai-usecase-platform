@@ -258,10 +258,17 @@ var Api = {
   approveUseCase(data)  { return Api._request(API.approve(), data); },
   rejectUseCase(data)   { return Api._request(API.reject(),  data); },
 
+  // Auth dùng chung SHTD (H2) — username + password → { token, user }
+  authLogin(username, password) { return Api._request(API.authLogin(), { username: username, password: password }); },
+  changePassword(token, oldPassword, newPassword) {
+    return Api._request(API.authChangePassword(), { token: token, old_password: oldPassword, new_password: newPassword });
+  },
+
   // User management
   validateUser(username)        { return Api._request(API.userLogin(username)); },
   getUsers()                    { return Api._request(API.users()); },
   upsertUser(data)              { return Api._request(API.userUpsert(), data); },
+  resetUserPassword(data)       { return Api._request(API.userResetPassword(), data); },
   syncUsers(adminEmail)         { return Api._request(API.userSync(),  { reviewer_email: adminEmail }); },
   initUsersSheet(adminEmail)    { return Api._request(API.userInit(),  { reviewer_email: adminEmail }); },
 

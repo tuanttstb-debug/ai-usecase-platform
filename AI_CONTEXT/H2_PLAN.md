@@ -1,0 +1,252 @@
+# KẾ HOẠCH TRIỂN KHAI H2 — AI USE CASE PLATFORM
+
+**Ngày lập:** 2026-08-17
+**Người lập:** AI pair (theo yêu cầu TuanTT4)
+**Trạng thái:** ✅ APPROVED — mọi quyết định đã chốt (§0 + §6). Bắt đầu Giai đoạn 1 (auth).
+**Phạm vi:** 3 hạng mục lớn của H2 — (1) Nhập liệu theo Workflow, (2) Dùng chung user/mật khẩu với SHTD-Dashboard, (3) Đổi mô hình chấm điểm.
+
+---
+
+## 0. Quyết định đã chốt (2026-08-17)
+
+| # | Quyết định | Chọn |
+|---|---|---|
+| Q1 | Cơ chế auth chung | **Dùng chung 1 sheet `User_Master`** của SHTD (spreadsheet `1cpg1p…`), token HMAC-SHA256, `AUTH_SECRET` chia sẻ |
+| Q2 | Hội đồng chấm điểm US | **Cả 4**: TuanTT4, MaiTTT7, TuTV3, QuynhNNY → điểm cuối = bình quân người đã chấm |
+| Q3 | Lọc droplist Workflow | **Theo Team/chức năng user** — ai cũng thấy "Workflow chung" + workflow của Nhóm mình (cần bảng map Team→Nhóm) |
+| Q4 | Phạm vi hệ điểm mới | **Thay thế hoàn toàn** auto-score (70đ) + SPTD 80-10-10 |
+
+---
+
+## 1. Hiện trạng kỹ thuật (đã xác minh trong code)
+
+### 1.1 Nhập liệu
+- `register.html` = wizard 4 bước; dựng field từ `assets/js/constants.js` (`STEPS`, `FIELD_CONFIG`) qua `FieldBuilder` (`wizard.js`).
+- `UseCase_Name` hiện là **text tự do** (Step 1, group `identity`).
+- `Team`, `Business_Category` = `select` lookup từ sheet `LOOKUP` (`lookupKey`).
+- Chưa có khái niệm Workflow ở bất kỳ đâu.
+
+### 1.2 Auth
+- Login **chỉ username, không mật khẩu** — `login.html` chỉ có ô `#loginEmail`.
+- `assets/js/auth.js` (IIFE `AuthService`): login đồng bộ, resolve role từ `APP_CONFIG.ADMIN_EMAILS`/`CHAMPION_USERS`, lưu plain object vào `sessionStorage['ai_user_session']`. Không token.
+- GAS AI US: sheet `USERS` (spreadsheet **`1xLMQLTgj2sRf1l9C6s6AHCT5zWJLQOofL375t8Pv_NA`**), `UserService.gs` — headers: `Username | Display_Name | Role | Team | Email | Active | Created_At | Last_Login`. Role: `admin | champion | user`.
+
+### 1.3 Scoring
+- `ScoringEngine.gs` (GAS) + `assets/js/scoring.js` (mirror FE): **70đ auto** (Efficiency 20 + Adoption 20 + Reuse 20 + Frequency 15 + Documentation 5) + **30đ manual** (Quality/Business_Value/Innovation, do champion chấm qua `submitChampionReview_`).
+- `assets/js/sptd-scoring.js`: điểm cá nhân **SPTD 80-10-10** (80% avg quality UC Approved + 10% số lượng + 10% tuần đạt).
+- Hiển thị: tab KPI, tab Điểm SPTD (`dashboard.js`), `leaderboard.html`, `review-queue.html`.
+- MASTER_DATA (`Config.gs` `HEADERS`) đã có sẵn nhiều cột scoring cũ (`Auto_Score`, `Manual_Score`, `Total_Score`, `Rank_Category`, `Committee_Review_Score`, `Self_Assessment_Score`…).
+
+### 1.4 SHTD-Dashboard (nguồn auth dùng chung)
+- `backend/AuthService.gs`: `authLogin(username,password)` → verify **SHA-256** hash trong sheet `User_Master`, trả `{token, user}`. Token = `base64url(payload).HMAC-SHA256-hex(payload, AUTH_SECRET)`, payload `{u,dn,r,t,exp}`, hết hạn 24h. `AUTH_SECRET` trong Script Properties.
+- Sheet `User_Master` (spreadsheet **`1cpg1p_8TGGbvZNNWZmjsKANqHW1tQijbiQBFLYn56Hk`**): `Username | Display_Name | Role | Team | Email | Active | Created_At | Last_Login | Password_Hash`. Role: **`Admin | User | Teamlead`**.
+- `backend/UserService.gs`: `userList/userCreate/userUpdate/userResetPassword` (admin-only).
+- **Điểm khớp quan trọng:** SHTD đã có role `Teamlead` — dùng chung sẽ mang sẵn role teamlead sang AI US, phục vụ item 3.
+
+### 1.5 Dữ liệu nguồn item 1
+`H2/Template nhập Workflow và Use case.xlsx` (sheet "Ý kiến team"):
+- **3 Nhóm** → **23 Workflow lớn** → **69 Use case** đề xuất (3 US/workflow).
+- Nhóm: `1. Workflow chung` (7 WF) · `2. Workflow đặc thù PO` (8 WF) · `3. Workflow PTKD & QLDM` (8 WF).
+- Cột: `STT | Nhóm | Workflow lớn | Use case bổ sung`.
+
+---
+
+## 2. ITEM 2 — Dùng chung user/mật khẩu với SHTD (LÀM TRƯỚC — nền tảng)
+
+> Làm trước vì item 1 (lọc WF theo role/team) và item 3 (teamlead + hội đồng chấm) đều phụ thuộc model user & role.
+
+### 2.1 Kiến trúc chọn (Q1 = shared sheet)
+- AI US GAS **đọc/ghi trực tiếp** sheet `User_Master` trên spreadsheet SHTD `1cpg1p…` (không đổi `SPREADSHEET_ID` chính của AI US — cột này vẫn giữ MASTER_DATA).
+- Thêm hằng số riêng: `USER_SPREADSHEET_ID = '1cpg1p_8TGGbvZNNWZmjsKANqHW1tQijbiQBFLYn56Hk'`, `USER_SHEET_NAME = 'User_Master'`.
+- `AUTH_SECRET` (Script Property) đặt **giống hệt** ở cả 2 GAS project → token cấp bởi bên nào cũng verify được.
+
+### 2.2 Backend (GAS AI US)
+- **Port** từ SHTD: `_sha256Hex`, `_hmacHex`, `_makeToken`, `validateToken`, `authLogin`, `changePassword` (đặt trong file mới `AuthTokenService.gs`).
+- Route mới trong `Code.gs`: `?action=auth-login` (username+password → {token,user}), `?action=auth-change-password`.
+- **Role normalize:** `Admin→admin`, `Teamlead→teamlead`, `User→user`. Bỏ khái niệm `champion`, thay bằng `teamlead` toàn hệ thống.
+- **Repoint** mọi chỗ AI US đang đọc sheet `USERS` nội bộ (KPI, user-list, role resolution) sang `User_Master` dùng chung. Sheet `USERS` cũ ngừng dùng cho auth (giữ lại tạm để đối chiếu, không xóa vội).
+- **Hardening (khuyến nghị):** các thao tác nhạy cảm (approve/reject, chấm điểm hội đồng, chấm điểm cá nhân) verify `token` server-side thay vì tin `reviewer_email` trong payload.
+
+### 2.3 Frontend
+- `login.html`: thêm ô **mật khẩu** (`type=password`), đổi nhãn/luồng submit.
+- `auth.js`: `login()` → **async** gọi `?action=auth-login`; lưu `{token, user:{email,displayName,role,team}}` vào `sessionStorage`. `requireAuth()` kiểm tra token còn hạn (giải mã exp client-side, không cần verify chữ ký ở FE). Thêm `getToken()`; đính token vào payload các call ghi.
+- Thay `isChampion*` → `isTeamlead*`; `requireChampionOrAdmin` → `requireTeamleadOrAdmin`. Cập nhật `setupNav`, nhãn role ("Champion"→"Teamlead").
+- `config/env.js`: bỏ phụ thuộc `ADMIN_EMAILS`/`CHAMPION_USERS` cho auth (role nay lấy từ `User_Master`); giữ lại làm fallback offline nếu cần.
+
+### 2.4 Dữ liệu/migration
+- Đảm bảo `User_Master` có đủ: 4 teamlead (`TuanTT4, MaiTTT7, TuTV3, QuynhNNY` — Role=Teamlead hoặc Admin), toàn bộ owner đang có UC (Role=User), admin hệ thống.
+- Mật khẩu mặc định = Username (theo `setupInitialUsers` của SHTD) hoặc do admin đặt; user đổi qua `auth-change-password`.
+- Owner cũ trong MASTER_DATA nhưng chưa có trong `User_Master` → chạy sync (tương tự `syncUsersFromMasterData_`, nhưng ghi vào `User_Master`).
+
+### 2.5 Test & rủi ro
+- Test: login đúng/sai mật khẩu; tài khoản Active=FALSE bị chặn; token hết hạn; role teamlead thấy đúng nav; admin thấy đủ tab.
+- Rủi ro: **2 project ghi chung 1 sheet** → cần cẩn trọng concurrency (LockService khi ghi). Đổi mật khẩu ở AI US phản ánh sang SHTD (đúng ý đồ). AUTH_SECRET lệch = token vô hiệu.
+
+---
+
+## 3. ITEM 1 — Nhập liệu theo Workflow
+
+### 3.1 Mô hình dữ liệu
+- Sheet mới `WORKFLOW_CATALOG` (trên spreadsheet AI US): `Nhom | Workflow | UseCase | Active`. Import 69 dòng từ `H2/Template nhập Workflow và Use case.xlsx`.
+- Bảng map role → nhóm: `TEAM_GROUP_MAP` (`Team | Nhom`) — **cần bạn cung cấp** (xem §6.1). Quy tắc: mọi user luôn thấy Nhóm `1. Workflow chung`; cộng thêm Nhóm ứng với Team của mình.
+
+### 3.2 Flow mới (Step 1 wizard)
+1. **B1 — Chọn Workflow**: select `Workflow`, options = các workflow user được phép thấy (theo Team→Nhóm + "Workflow chung").
+2. **B2 — Chọn Use Case**: select `UseCase_Name` (thay text tự do), options = danh sách US của Workflow vừa chọn (dependent dropdown).
+3. Các field còn lại (Team, Business_Category, Pain_Point…) và Step 2/3/4 **giữ nguyên**.
+
+### 3.3 Backend
+- `Code.gs`: route `?action=workflow-catalog&team=<team>` → trả cây `{ nhom, workflows:[{ name, usecases:[...] }] }` đã lọc theo Team.
+- Hàm import 1 lần: `importWorkflowCatalog_()` đọc dữ liệu (paste cứng hoặc từ CSV) ghi vào `WORKFLOW_CATALOG`.
+- `HEADERS` (MASTER_DATA): thêm cột `Workflow` (+ tùy chọn `Workflow_Group`) để lưu lựa chọn. **Lưu ý:** thêm cột phải đúng cuối bảng + chạy `ensureSheetColumns_` (đã có ở `Utils.gs`) để self-heal.
+
+### 3.4 Frontend
+- `constants.js`: thêm `FIELDS.WORKFLOW`; chèn vào `STEPS[0].fields` trước `USE_CASE_NAME`; thêm `FIELD_CONFIG.Workflow` (select) và đổi `FIELD_CONFIG.UseCase_Name` từ `text` → `select` (dependent).
+- `wizard.js` `FieldBuilder`: hỗ trợ **dependent select** (chọn Workflow → nạp lại options UseCase_Name). Cần cơ chế onchange cascade (hiện chưa có).
+- `app.js`: nạp `workflow-catalog` theo team user khi vào register (song song `loadNextIdPreview`).
+- Nếu cho phép US ngoài danh mục (§6.2): thêm option "Khác — nhập tự do" → hiện lại ô text.
+
+### 3.5 Test & rủi ro
+- Test: user Nhóm PO chỉ thấy WF chung + PO; chọn WF → US đúng; submit lưu `Workflow` + `UseCase_Name`.
+- Rủi ro: user không map được Team → chỉ thấy "Workflow chung" (fallback an toàn). 69 US là backlog cố định — nếu chặn hoàn toàn free-text sẽ không đăng ký được US mới ngoài backlog (→ quyết định §6.2).
+
+---
+
+## 4. ITEM 3 — Mô hình chấm điểm mới (thay thế hoàn toàn)
+
+### 4.1 Điểm US (hội đồng chấm, mỗi UC)
+| Tiêu chí | Trọng số |
+|---|---|
+| Tiết kiệm thời gian | 30% |
+| Mức độ tự động hóa | 40% |
+| Tính sáng tạo | 30% |
+
+- Mỗi thành viên hội đồng chấm 3 tiêu chí (0–100 hoặc 0–10, chuẩn hóa) → **điểm thành viên** = Σ(tiêu chí × trọng số), tối đa 100.
+- **Điểm US cuối = bình quân điểm các thành viên hội đồng đã chấm** (Q2 = cả 4 người).
+- Sheet mới `UC_COUNCIL_SCORE`: `Score_ID | Record_ID | UseCase_ID | Reviewer | Time_Saving | Automation | Creativity | Member_Score | Comment | Scored_At`. Điểm cuối tính từ các dòng (không ghi đè, giữ lịch sử + cho phép sửa).
+
+### 4.2 Điểm cá nhân (teamlead chấm, 1 lần cuối kỳ)
+| Tiêu chí | Trọng số |
+|---|---|
+| Mức độ đa dạng | 30% |
+| Thành thạo ứng dụng AI | 20% |
+| Chất lượng sản phẩm | 30% |
+| Số lượng đủ theo yêu cầu | 20% |
+
+- Teamlead chấm 4 tiêu chí cho từng thành viên team mình, **mỗi tiêu chí nhập 0–10**, **chấm 1 lần cuối kỳ** (hạn **31/12/2026**). Không chấm theo tháng.
+- Điểm cá nhân = Σ(tiêu chí/10 × trọng số) × 100, tối đa 100.
+- Tiêu chí **"Số lượng đủ theo yêu cầu"**: giữ định mức KPI **như cũ** (1 UC được duyệt/người/tuần) làm tham chiếu; luồng **"Cập nhật tuần"** giữ nguyên để theo dõi số lượng. Teamlead tự đánh giá 0–10 cho tiêu chí này dựa trên mức đạt định mức đó.
+- Sheet mới `PERSONAL_SCORE`: `Score_ID | Username | Display_Name | Team | Diversity | AI_Proficiency | Product_Quality | Quantity_Met | Final_Score | Scored_By | Comment | Scored_At`.
+
+### 4.3 Backend
+- File mới `ScoringServiceH2.gs`: `submitCouncilScore_`, `listCouncilScores_`, `computeUcFinalScore_` (bình quân); `submitPersonalScore_`, `listPersonalScores_`, `computePersonalFinal_` (bình quân tháng).
+- Chỉ **hội đồng** (4 username) được ghi `UC_COUNCIL_SCORE`; chỉ **teamlead của đúng team** (hoặc admin) được ghi `PERSONAL_SCORE`.
+- Routes trong `Code.gs`: `council-score-submit/list`, `personal-score-submit/list`.
+- **Ngưng dùng** `ScoringEngine.gs` auto-score + `submitChampionReview_` (giữ file, không route). Không chạy `recalculateAllScores_` nữa.
+
+### 4.4 Frontend
+- `review-queue.html`: chuyển từ "1 champion chấm" → **hội đồng chấm độc lập**. Mỗi thành viên nhập 3 tiêu chí (0–10), thấy điểm mình + điểm bình quân hội đồng + ai đã/chưa chấm. Điểm US **công khai** trên leaderboard.
+- Trang/tab mới **Chấm điểm cá nhân** (teamlead): danh sách thành viên team mình, nhập 4 tiêu chí (0–10), 1 lần cuối kỳ (hạn 31/12/2026).
+- **Bỏ** tab "Điểm SPTD" (80-10-10) và mọi hiển thị auto-score/breakdown 70-30. Rebuild **Leaderboard** quanh: Điểm US (bình quân hội đồng) + Điểm cá nhân (bình quân tháng).
+- `scoring.js` (preview auto khi đăng ký) — **gỡ bỏ** (không còn auto-score). `sptd-scoring.js` — thay bằng module tổng hợp điểm cá nhân mới.
+- `constants.js`: hằng số tiêu chí + trọng số mới; bỏ `RANK`/threshold cũ hoặc định nghĩa lại theo thang 100 mới.
+
+### 4.5 Test & rủi ro
+- Test: 4 thành viên chấm 1 UC → điểm cuối = bình quân; chấm thiếu người → bình quân theo số đã chấm; teamlead chỉ chấm được team mình; điểm cá nhân bình quân đúng theo tháng.
+- Rủi ro: **đây là thay đổi lớn nhất** — đụng toàn bộ leaderboard/KPI/review. Cần giữ nhánh riêng, test kỹ trước khi bỏ code cũ. Dữ liệu điểm cũ trong MASTER (Total_Score…) sẽ không còn ý nghĩa hiển thị.
+
+---
+
+## 5. Trình tự & phụ thuộc
+
+```
+Giai đoạn 1: ITEM 2 (auth dùng chung + champion→teamlead)   ← nền tảng, chặn 1 & 3
+        │
+        ├── Giai đoạn 2: ITEM 1 (workflow catalog + nhập liệu)   ← cần Team→Nhóm map
+        │
+        └── Giai đoạn 3: ITEM 3 (scoring mới + hội đồng + leaderboard)  ← cần role teamlead ổn định
+```
+
+Mỗi giai đoạn theo quy trình: **GAS trước → FE sau → test (Playwright + unit) → deploy** ("Edit deployment → New version", URL không đổi). Làm trên feature branch riêng, không đụng `main` tới khi test xong.
+
+---
+
+## 6. Quyết định chi tiết (đã chốt 2026-08-17)
+
+### 6.1 Bảng map Team → Nhóm (item 1)
+| Team | Nhóm hiển thị (ngoài "Workflow chung") |
+|---|---|
+| Số | 2. Workflow đặc thù PO |
+| CV | 2. Workflow đặc thù PO |
+| BL | 2. Workflow đặc thù PO |
+| PTKD MB | 3. Workflow PTKD & QLDM |
+| PTKD MN | 3. Workflow PTKD & QLDM |
+| QLDM | (flow riêng — tạm map "3. Workflow PTKD & QLDM"; sửa được trong sheet TEAM_GROUP_MAP; nếu muốn tách riêng/chỉ "Workflow chung" → cập nhật sau) |
+
+- Mọi user luôn thấy Nhóm `1. Workflow chung`.
+- Bảng lưu trong sheet `TEAM_GROUP_MAP` để admin tự sửa, không hardcode.
+
+### 6.2 US ngoài danh mục — **CHO PHÉP**
+- UseCase_Name = select từ danh mục theo Workflow; **kèm option "Khác — nhập tự do"** → hiện lại ô text để đăng ký US mới ngoài 69 backlog.
+
+### 6.3 "Số lượng đủ theo yêu cầu" — **giữ định mức như cũ**
+- Định mức KPI cũ: **1 UC được duyệt / người / tuần**. Giữ nguyên luồng "Cập nhật tuần".
+- Chỉ **reset cách tính điểm** (bỏ SPTD 80-10-10). Teamlead chấm tiêu chí này 0–10 dựa mức đạt định mức.
+
+### 6.4 Kỳ điểm cá nhân — **1 lần cuối kỳ**
+- Teamlead chấm **1 lần**, hạn **31/12/2026**. Không chấm theo tháng, không bình quân tháng.
+
+### 6.5 Thang nhập tiêu chí — **0–10**
+- Mọi tiêu chí (cả điểm US lẫn điểm cá nhân) nhập **0–10**, quy đổi về thang 100 qua trọng số.
+
+### 6.6 Quyền xem điểm — **công khai**
+- Điểm US (bình quân hội đồng) + điểm cá nhân hiển thị công khai trên leaderboard (như hiện tại).
+
+---
+
+## 7. Ước lượng sơ bộ (tham khảo)
+
+| Hạng mục | Độ lớn | Ghi chú |
+|---|---|---|
+| Item 2 — auth chung | Trung bình | Port sẵn từ SHTD; rủi ro ở repoint role + concurrency |
+| Item 1 — workflow input | Nhỏ–Trung bình | Chủ yếu data + dependent dropdown; cần Team→Nhóm |
+| Item 3 — scoring mới | **Lớn** | Rewrite scoring + review + leaderboard + KPI; nhiều test |
+
+---
+
+---
+
+## 8. Nhật ký triển khai
+
+### Giai đoạn 1 — Auth dùng chung (đang làm, branch `feat/h2-shared-auth`)
+
+**Code đã xong (chưa deploy):**
+- GAS `AuthTokenService.gs` (mới): `authLogin_`, `validateToken_`, `authChangePassword_`, `getAllUsersFromMaster_`, `getAdminUsernamesFromMaster_`, `getCouncilUsernames_`. Đọc/ghi `User_Master` trên spreadsheet SHTD `1cpg1p…`.
+- GAS `Code.gs`: routes mới `auth-login`, `auth-change-password`; route `users` repoint sang `getAllUsersFromMaster_()`; `user-login` cũ giữ làm legacy.
+- GAS `AdminService.gs`: `getAdminEmails_()` Priority 1 → `getAdminUsernamesFromMaster_()` (User_Master), USERS nội bộ xuống 1b.
+- FE `config/routes.js`: `authLogin`, `authChangePassword`. `config/env.js`: thêm `COUNCIL_USERS`.
+- FE `assets/js/api.js`: `authLogin(u,p)`, `changePassword(...)`.
+- FE `assets/js/auth.js`: `getToken`, `storeAuth`, `isTeamlead/isTeamleadOrAdmin/requireTeamleadOrAdmin`, `isCouncil`; alias champion→teamlead (chấp nhận cả 2); role label Teamlead.
+- FE `login.html`: thêm ô mật khẩu; submit gọi `Api.authLogin` → `storeAuth`; **bỏ fallback local** (không bypass mật khẩu).
+
+**⚠️ Việc THỦ CÔNG bạn phải làm để chạy được (trong GAS Editor của AI US project):**
+1. **Script Properties → `AUTH_SECRET`** = đúng giá trị AUTH_SECRET đang dùng ở GAS SHTD.
+2. (tùy chọn) Script Properties → `COUNCIL_USERS` = `tuantt4,maittt7,tutv3,quynhnny`.
+3. Mở/authorize quyền truy cập spreadsheet SHTD `1cpg1p…` cho tài khoản chạy GAS AI US (chạy thử `authLogin_('x','y')` 1 lần để hiện prompt authorize).
+4. Đảm bảo `User_Master` có: 4 teamlead (Role=Teamlead), admin, và toàn bộ owner đang có UC (Role=User) + mật khẩu.
+5. Deploy: **Edit deployment → New version** (URL không đổi).
+
+**Bổ sung phương án A (đã xong 2026-08-17):**
+- ✅ User management repoint sang `User_Master`: GAS `userUpsertInMaster_` (create cần password / update), `userResetPasswordInMaster_`, `syncUsersToMaster_`; routes `user-upsert`/`user-reset-password`/`user-sync` repoint. FE `users.html` thêm ô mật khẩu (tạo=bắt buộc, sửa=đặt lại tùy chọn), role option `teamlead`; `users.js` gửi Password + reset password; `dashboard.js` role label Teamlead. CSS `#userModal` giới hạn chiều cao + cuộn.
+- ✅ Trang đổi mật khẩu `change-password.html` (dùng `Api.changePassword` + token).
+- ✅ `routes.js`/`api.js`: `userResetPassword`/`resetUserPassword`.
+- ✅ Test: sửa assertion champion→teamlead (spec 01, 02). **Local PASS: Playwright 98/98 · SPTD 34/34 · KPI 38/38 · ID 14/14.**
+
+**GAS:** user xác nhận đã deploy (AUTH_SECRET + authorize + User_Master), URL không đổi (2026-08-17).
+
+**Còn nợ (không chặn) → xử lý ở Item 3 / sau:**
+- `review-queue.js` vẫn dùng thuật ngữ `champion` nội bộ (chạy được nhờ alias) — dọn khi rewrite scoring.
+- `tests/helpers.js` fixtures vẫn để role `champion` (auth nhận như teamlead) — đổi khi tiện.
+- Sheet `USERS` nội bộ cũ: ngừng dùng cho auth, giữ lại đối chiếu.
+
+*Cập nhật lần cuối nhật ký: 2026-08-17.*

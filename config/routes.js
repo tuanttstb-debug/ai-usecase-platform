@@ -32,10 +32,15 @@ var API = {
   approve: () => `${_gasBase}?action=approve`,
   reject:  () => `${_gasBase}?action=reject`,
 
+  // Auth dùng chung với SHTD (H2) — username + password, trả token HMAC
+  authLogin:          () => `${_gasBase}?action=auth-login`,
+  authChangePassword: () => `${_gasBase}?action=auth-change-password`,
+
   // User management endpoints
   userLogin:  (username) => `${_gasBase}?action=user-login&username=${encodeURIComponent(username)}`,
   users:      ()         => `${_gasBase}?action=users`,
   userUpsert: ()         => `${_gasBase}?action=user-upsert`,
+  userResetPassword: ()  => `${_gasBase}?action=user-reset-password`,
   userSync:   ()         => `${_gasBase}?action=user-sync`,
   userInit:   ()         => `${_gasBase}?action=user-init`,
 

@@ -114,7 +114,7 @@
   function _populateSidebar() {
     if (!_user) return;
     var initials = (_user.displayName || _user.email || '?').charAt(0).toUpperCase();
-    var roleLabels = { admin: 'Admin', champion: 'Champion', user: 'Người dùng' };
+    var roleLabels = { admin: 'Admin', teamlead: 'Teamlead', champion: 'Teamlead', user: 'Người dùng' };
     var roleLabel  = roleLabels[_user.role] || 'Người dùng';
     function setEl(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
     setEl('sidebarAvatar',   initials);

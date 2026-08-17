@@ -188,11 +188,18 @@
           <label class="form-label" for="umEmail">Email</label>
           <input type="email" id="umEmail" class="form-control" placeholder="nguyenvana@bank.vn">
         </div>
+        <div class="form-group" id="umPasswordGroup">
+          <label class="form-label" for="umPassword">
+            <span id="umPasswordLabel">Mật khẩu</span> <span id="umPasswordReq" style="color:var(--color-error)">*</span>
+          </label>
+          <input type="password" id="umPassword" class="form-control" placeholder="Tối thiểu 6 ký tự" autocomplete="new-password">
+          <p id="umPasswordHint" style="font-size:var(--text-xs);color:var(--color-text-muted);margin:4px 0 0"></p>
+        </div>
         <div class="form-group">
           <label class="form-label" for="umRole">Vai trò</label>
           <select id="umRole" class="form-control">
             <option value="user">User</option>
-            <option value="champion">Champion</option>
+            <option value="teamlead">Teamlead</option>
             <option value="admin">Admin</option>
           </select>
         </div>

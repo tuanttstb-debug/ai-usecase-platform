@@ -287,33 +287,40 @@ function route_(action, params, body) {
       rejectUseCase_(rejectRecordId, rejectEmail, rejectComment));
   }
 
+  // ── Auth dùng chung với SHTD (H2) ──────────────────────────────
+
+  // Đăng nhập bằng username + password → { token, user }
+  if (action === 'auth-login') {
+    var alUser = body.username || params.username || '';
+    var alPass = body.password || params.password || '';
+    if (!alUser || !alPass) return createResponse_(false, 'Thiếu tên đăng nhập hoặc mật khẩu');
+    return createResponse_(true, 'Đăng nhập thành công', authLogin_(alUser, alPass));
+  }
+
+  // Đổi mật khẩu (yêu cầu token hợp lệ)
+  if (action === 'auth-change-password') {
+    var cpToken = validateToken_(body.token || params.token || '');
+    if (!cpToken) return createResponse_(false, 'Phiên đăng nhập hết hạn, vui lòng đăng nhập lại');
+    authChangePassword_(cpToken, body.old_password || '', body.new_password || '');
+    return createResponse_(true, 'Đổi mật khẩu thành công', { status: 'ok' });
+  }
+
   // ── User management endpoints ──────────────────────────────────
 
   // Validate login + update Last_Login + trả về user info từ USERS sheet
+  // (LEGACY — luồng cũ username-only; giữ cho tương thích ngược)
   if (action === 'user-login') {
     var loginUser = params.username || body.username || '';
     if (!loginUser) return createResponse_(false, 'Thiếu username');
     return createResponse_(true, 'Đăng nhập thành công', validateUserLogin_(loginUser));
   }
 
-  // Danh sách tất cả user (để admin quản lý)
+  // Danh sách tất cả user (để admin quản lý) — nguồn: User_Master dùng chung
   if (action === 'users') {
-    var rawUsers = getAllUsers_();
-    return createResponse_(true, 'Danh sách user', rawUsers.map(function(u) {
-      return {
-        username:     normalizeUser_(u.Username),
-        display_name: u.Display_Name || '',
-        role:         normalizeUser_(u.Role || 'user'),
-        team:         u.Team  || '',
-        email:        u.Email || '',
-        active:       (u.Active === true || String(u.Active).toUpperCase() === 'TRUE'),
-        created_at:   u.Created_At || '',
-        last_login:   u.Last_Login || ''
-      };
-    }));
+    return createResponse_(true, 'Danh sách user', getAllUsersFromMaster_());
   }
 
-  // Tạo mới hoặc cập nhật user (admin only)
+  // Tạo mới hoặc cập nhật user (admin only) — ghi vào User_Master dùng chung
   if (action === 'user-upsert') {
     var upsertAdmin = body.reviewer_email || body.admin_email || '';
     if (!isAdminEmail_(upsertAdmin)) {
@@ -322,17 +329,29 @@ function route_(action, params, body) {
     var upsertUsername = body.Username || body.username || '';
     if (!upsertUsername) return createResponse_(false, 'Thiếu Username');
     body.Username = upsertUsername;
-    var upsertResult = upsertUser_(body);
+    var upsertResult = userUpsertInMaster_(body);
     return createResponse_(true, upsertResult.created ? 'Đã tạo user mới' : 'Đã cập nhật user', upsertResult);
   }
 
-  // Đồng bộ USERS sheet từ MASTER_DATA (admin only)
+  // Admin đặt lại mật khẩu cho user (admin only)
+  if (action === 'user-reset-password') {
+    var rpAdmin = body.reviewer_email || body.admin_email || '';
+    if (!isAdminEmail_(rpAdmin)) {
+      return createResponse_(false, 'Không có quyền đặt lại mật khẩu: ' + rpAdmin);
+    }
+    var rpUser = body.Username || body.username || '';
+    var rpPass = body.new_password || body.Password || '';
+    if (!rpUser) return createResponse_(false, 'Thiếu Username');
+    return createResponse_(true, 'Đã đặt lại mật khẩu', userResetPasswordInMaster_(rpUser, rpPass));
+  }
+
+  // Đồng bộ owner từ MASTER_DATA vào User_Master (admin only)
   if (action === 'user-sync') {
     var syncAdmin = body.reviewer_email || body.admin_email || params.admin_email || '';
     if (!isAdminEmail_(syncAdmin)) {
       return createResponse_(false, 'Không có quyền thực hiện sync: ' + syncAdmin);
     }
-    return createResponse_(true, 'Sync hoàn tất', syncUsersFromMasterData_());
+    return createResponse_(true, 'Sync hoàn tất', syncUsersToMaster_());
   }
 
   // Khởi tạo sheet USERS + seed từ ADMIN_EMAILS (admin only, gọi 1 lần)

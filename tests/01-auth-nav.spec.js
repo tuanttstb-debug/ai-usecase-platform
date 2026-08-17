@@ -71,7 +71,7 @@ for (const page_path of PAGES_WITH_NAV) {
       await page.waitForLoadState('networkidle');
 
       const roleEl = page.locator('#sidebarUserRole');
-      await expect(roleEl).toHaveText('Champion');
+      await expect(roleEl).toHaveText('Teamlead');
     });
 
     test('Unauthenticated user redirects to login', async ({ page }) => {
