@@ -1,5 +1,65 @@
 # SESSION HANDOVER
 
+## Session: 2026-08-17
+**Scope:** H2 — (1) Phân tích + lập kế hoạch triển khai H2 (3 hạng mục); (2) Triển khai **Giai đoạn 1: Auth dùng chung user/mật khẩu với SHTD-Dashboard** (phương án A).
+**Branch:** `feat/h2-shared-auth` (commit `50bc341`) — **CHƯA merge `main`** → GitHub Pages chưa live.
+**Status:** ✅ Code xong + test local PASS (Playwright 98/98 · SPTD 34/34 · KPI 38/38 · ID 14/14). GAS user đã deploy (AUTH_SECRET + authorize User_Master), URL không đổi.
+
+### Bối cảnh H2 (kế hoạch đầy đủ: `AI_CONTEXT/H2_PLAN.md`)
+3 hạng mục H2: (1) **Nhập liệu theo Workflow** (chọn WF theo Team → chọn US từ danh mục 69 US thay free-text; data `H2/Template nhập Workflow và Use case.xlsx`: 3 Nhóm→23 WF→69 US); (2) **Auth dùng chung SHTD**; (3) **Đổi scoring** (bỏ auto-score + SPTD; Điểm US do hội đồng 4 teamlead chấm 30/40/30, Điểm cá nhân do teamlead chấm 30/20/30/20 một lần cuối kỳ 31/12/2026). Trình tự: Item 2 → Item 1 → Item 3.
+
+### Task completed (phiên này)
+1. **Kế hoạch H2** — `AI_CONTEXT/H2_PLAN.md` (phân tích hiện trạng đã verify, thiết kế từng item, §6 quyết định đã chốt, §8 nhật ký).
+2. **Giai đoạn 1 — Auth dùng chung (phương án A = 1 sheet `User_Master`):**
+   - Đăng nhập chuyển từ **username-only** → **username + password** (SHA-256) với **token HMAC-SHA256** (AUTH_SECRET chia sẻ), nguồn user duy nhất = `User_Master` trên spreadsheet SHTD `1cpg1p…`.
+   - Role `champion` → **`teamlead`** toàn hệ thống (giữ alias nhận `champion` cũ để không vỡ).
+   - Quản lý user (users.html) repoint sang `User_Master`: tạo (cần mật khẩu) / cập nhật / đặt lại mật khẩu / sync owner từ MASTER_DATA.
+   - Trang **đổi mật khẩu** mới.
+
+### Files changed
+| File | Thay đổi | Deploy |
+|---|---|---|
+| `assets/gas-backend/AuthTokenService.gs` | **MỚI** — `authLogin_`/`validateToken_`/`authChangePassword_`; `getAllUsersFromMaster_`/`getAdminUsernamesFromMaster_`/`getCouncilUsernames_`; `userUpsertInMaster_`/`userResetPasswordInMaster_`/`syncUsersToMaster_`. Đọc-ghi `User_Master` (SHTD spreadsheet) | ⚠️ GAS (đã deploy) |
+| `assets/gas-backend/Code.gs` | routes `auth-login`, `auth-change-password`, `user-reset-password`; `user-upsert`/`user-sync`/`users` repoint → User_Master | ⚠️ GAS (đã deploy) |
+| `assets/gas-backend/AdminService.gs` | `getAdminEmails_()` Priority 1 → `getAdminUsernamesFromMaster_()` (USERS nội bộ xuống 1b) | ⚠️ GAS (đã deploy) |
+| `login.html` | Thêm ô mật khẩu; submit → `Api.authLogin` → `storeAuth`; **bỏ fallback local** (không bypass mật khẩu) | FE tĩnh |
+| `change-password.html` | **MỚI** — đổi mật khẩu qua `Api.changePassword` + token | FE tĩnh |
+| `assets/js/auth.js` | `getToken`, `storeAuth`, `isTeamlead/isTeamleadOrAdmin/requireTeamleadOrAdmin`, `isCouncil`; alias champion→teamlead; role label Teamlead; chuẩn hóa champion→teamlead khi lưu | FE tĩnh |
+| `assets/js/api.js` | `authLogin(u,p)`, `changePassword(...)`, `resetUserPassword(...)` | FE tĩnh |
+| `config/routes.js` | `authLogin`, `authChangePassword`, `userResetPassword` | FE tĩnh |
+| `config/env.js` | `COUNCIL_USERS: ['tuantt4','maittt7','tutv3','quynhnny']`; ghi chú CHAMPION_USERS→teamlead | FE tĩnh |
+| `assets/js/users.js` | Ô mật khẩu (tạo=bắt buộc, sửa=đặt lại tùy chọn); gửi Password + `resetUserPassword`; role màu/nhãn teamlead | FE tĩnh |
+| `users.html` | Ô mật khẩu trong modal; role option `teamlead` (thay champion) | FE tĩnh |
+| `assets/js/dashboard.js` | `populateSidebarUser` roleLabels + teamlead (champion→Teamlead) | FE tĩnh |
+| `assets/css/components.css` | `#userModal .modal-card` max-height 90vh + body cuộn (thêm field không tràn viewport) | FE tĩnh |
+| `tests/01-auth-nav.spec.js`, `tests/02-users-page.spec.js` | assertion + option champion→teamlead | — |
+| `AI_CONTEXT/H2_PLAN.md` | **MỚI** — kế hoạch H2 + nhật ký Giai đoạn 1 | — |
+
+### Decision made
+1. **Auth = 1 sheet `User_Master` dùng chung** (không nhân bản/sync 2 chiều) → nguồn duy nhất, đổi mật khẩu 1 bên áp cả 2 hệ thống.
+2. **`champion` → `teamlead`** (SHTD đã có role Teamlead) — khớp yêu cầu Item 3 (teamlead chấm điểm). Giữ alias nhận champion để migrate dần, chưa dọn `review-queue.js`.
+3. **Bỏ fallback đăng nhập local** — có mật khẩu thì không được bypass khi lỗi mạng.
+4. **Hội đồng chấm điểm US = 4 teamlead** (TuanTT4, MaiTTT7, TuTV3, QuynhNNY) — cấu hình qua `COUNCIL_USERS` (env.js + Script Property).
+5. **Commit chỉ file liên quan** — không đưa `H2/*.xlsx` (binary) và evd screenshots vào commit này.
+
+### Blocker
+- **Không chặn code.** Branch chưa merge `main` → muốn FE lên GitHub Pages phải merge. Cần **smoke test đăng nhập thật** (user+password) trên GAS đã deploy trước khi merge.
+
+### Next step
+1. **[P1] Smoke test login thật** — đăng nhập username+password (tài khoản trong User_Master) trên branch (chạy local hoặc merge). Kiểm tra role teamlead thấy đúng nav; đổi mật khẩu; admin tạo/sửa/đặt-lại-mật-khẩu user; sync owner. Nếu lỗi token → soát `AUTH_SECRET` AI US khớp SHTD.
+2. **[P1] Merge `feat/h2-shared-auth` → `main`** sau smoke test.
+3. **[P2] Giai đoạn 2 — Nhập liệu theo Workflow** (độc lập; xem H2_PLAN §3): sheet `WORKFLOW_CATALOG` + `TEAM_GROUP_MAP` (Số/CV/BL=PO, PTKD MB/MN=PTKD&QLDM, QLDM tạm PTKD&QLDM), endpoint catalog, dependent dropdown Step 1, option "Khác — nhập tự do".
+4. **[P3] Giai đoạn 3 — Scoring mới** (lớn nhất).
+
+### Regression risk
+- **Đăng nhập đổi cơ bản (username-only → username+password).** Mọi user PHẢI có trong `User_Master` kèm mật khẩu, nếu không sẽ không đăng nhập được. Đã bỏ fallback local → GAS/AUTH_SECRET lỗi = không ai login được.
+- **2 GAS project ghi chung 1 sheet `User_Master`** → concurrency khi ghi user (LockService chỉ per-project, không mutual giữa 2 project) — xem TECH_DEBT USERMASTER-CONCURRENCY-01. Tần suất ghi user thấp → rủi ro thấp.
+- **`review-queue.js` vẫn dùng thuật ngữ champion** — chạy nhờ alias auth; sẽ dọn ở Item 3 (xem TECH_DEBT CHAMPION-TERM-01).
+- **Sheet `USERS` nội bộ cũ ngừng dùng cho auth** nhưng vẫn còn hàm đọc (validateUserLogin_ legacy route user-login). Không xóa vội (USERS-LEGACY-01).
+- Test local 98/98 + unit đầy đủ PASS → không regression trong phạm vi test hiện có (mock JSONP, inject session — không cover đường token thật).
+
+---
+
 ## Session: 2026-08-02
 **Scope:** (1) Đồng bộ duyệt milestone với duyệt US — xem chi tiết toàn cảnh trước khi duyệt; (2) Link demo bấm được trong mọi popup duyệt/chi tiết US; (3) Fix triệt để lỗi link demo dài (ổ chung) làm hỏng tạo US.
 **Version:** 3.15.0

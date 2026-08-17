@@ -4,6 +4,19 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🔜 H2 — ưu tiên session tiếp theo
+
+- [ ] **[P1] Smoke test login thật (Giai đoạn 1)** — branch `feat/h2-shared-auth`. Đăng nhập username+password (tài khoản trong `User_Master`) → role teamlead thấy đúng nav; đổi mật khẩu (`change-password.html`); admin tạo/sửa/đặt-lại-mật-khẩu user + sync owner. Lỗi token → soát `AUTH_SECRET` AI US == SHTD.
+- [ ] **[P1] Merge `feat/h2-shared-auth` → `main`** sau smoke test (GitHub Pages serve main → merge mới live).
+- [ ] **[P2] Giai đoạn 2 — Nhập liệu theo Workflow** (H2_PLAN §3): sheet `WORKFLOW_CATALOG` (import 69 US từ `H2/Template nhập Workflow và Use case.xlsx`) + `TEAM_GROUP_MAP` (Số/CV/BL=PO · PTKD MB/MN=PTKD&QLDM · QLDM tạm PTKD&QLDM · ai cũng thấy "Workflow chung"); endpoint `workflow-catalog`; dependent dropdown Step 1; option "Khác — nhập tự do"; thêm cột `Workflow` vào MASTER_DATA.
+- [ ] **[P3] Giai đoạn 3 — Scoring mới** (lớn nhất, thay thế hoàn toàn): Điểm US (hội đồng 4 teamlead, 30/40/30, bình quân) + Điểm cá nhân (teamlead, 30/20/30/20, 0–10, 1 lần cuối kỳ 31/12/2026). Bỏ auto-score + SPTD 80-10-10; rebuild leaderboard/KPI/review. Sheet mới `UC_COUNCIL_SCORE`, `PERSONAL_SCORE`.
+
+### ✅ Đã hoàn thành trong session 2026-08-17 (H2 — Giai đoạn 1: Auth dùng chung)
+- [x] **Lập kế hoạch H2** — `AI_CONTEXT/H2_PLAN.md` (3 hạng mục, quyết định §6, nhật ký §8).
+- [x] **Auth dùng chung SHTD (phương án A)** — username+password + token HMAC đọc `User_Master`; role champion→teamlead; quản lý user + đổi/đặt-lại mật khẩu qua User_Master; `change-password.html`. GAS `AuthTokenService.gs` (mới) + routes. GAS deployed (URL không đổi). Test local: Playwright 98/98 · SPTD 34/34 · KPI 38/38 · ID 14/14. Branch `feat/h2-shared-auth` (`50bc341`, pushed), **chưa merge main**.
+
+---
+
 ## ✅ Deploy v3.15.0 — HOÀN THÀNH (2026-08-02)
 
 - [x] **Deploy 3 file GAS** — `Code.gs` (doPost decode payload), `UseCaseService.gs` (getUseCaseById_ fallback UseCase_ID), `AdminService.gs` (list demo fields). Edit deployment → New version, URL không đổi.

@@ -4,6 +4,54 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
+## USERMASTER-CONCURRENCY-01 — 2 GAS project ghi chung sheet User_Master (H2, 2026-08-17)
+
+**Mô tả:** Auth H2 cho AI US đọc/ghi `User_Master` trên spreadsheet SHTD. `userUpsertInMaster_` dùng `LockService.getScriptLock()` nhưng lock chỉ **per-project** — không loại trừ lẫn nhau giữa GAS AI US và GAS SHTD khi cùng ghi User_Master.
+
+**Rủi ro:** Thấp — thao tác ghi user (tạo/sửa/đặt-lại mật khẩu/last-login) tần suất rất thấp, khả năng đụng đồng thời 2 project nhỏ. Xung đột (nếu có) chỉ ở 1 row user.
+
+**Fix đề xuất:** Dùng `LockService.getDocumentLock()` trên spreadsheet dùng chung ở CẢ 2 project, hoặc gom quản lý user về 1 project (SHTD) và AI US chỉ đọc.
+
+**File:** `assets/gas-backend/AuthTokenService.gs`.
+
+---
+
+## CHAMPION-TERM-01 — review-queue.js còn dùng thuật ngữ "champion" (H2, 2026-08-17)
+
+**Mô tả:** H2 đổi role `champion` → `teamlead`. `auth.js` giữ alias (isChampion→isTeamlead, requireChampionOrAdmin→requireTeamleadOrAdmin) nên các trang cũ chạy được, nhưng `review-queue.js` (+ route GAS `champion-review`, `submitChampionReview_`) vẫn dùng tên champion nội bộ. Fixtures test cũng còn role `champion`.
+
+**Rủi ro:** Thấp — chạy đúng nhờ alias. Chỉ là nợ thuật ngữ/độ rõ ràng.
+
+**Fix đề xuất:** Dọn khi rewrite scoring (Item 3): đổi review-queue + route + fixtures sang teamlead, bỏ alias champion.
+
+**File:** `assets/js/review-queue.js`, `assets/gas-backend/AdminService.gs` (`submitChampionReview_`), `tests/helpers.js`.
+
+---
+
+## USERS-LEGACY-01 — Sheet USERS nội bộ ngừng dùng cho auth nhưng chưa gỡ (H2, 2026-08-17)
+
+**Mô tả:** Nguồn user chuyển sang `User_Master` dùng chung. Sheet `USERS` nội bộ (spreadsheet AI US) + hàm `validateUserLogin_`/`getAllUsers_`/`upsertUser_` (UserService.gs) + route legacy `user-login`/`user-init` vẫn còn. `getAdminEmails_` giữ USERS nội bộ ở Priority 1b (fallback).
+
+**Rủi ro:** Thấp — không dùng trong luồng chính; chỉ gây nhầm nếu ai đó sửa nhầm sheet cũ.
+
+**Fix đề xuất:** Sau khi Giai đoạn 1 chạy ổn định live, gỡ route `user-login`/`user-init` + hàm liên quan; hoặc giữ làm fallback offline có ghi chú rõ.
+
+**File:** `assets/gas-backend/UserService.gs`, `assets/gas-backend/Code.gs`, `assets/gas-backend/AdminService.gs`.
+
+---
+
+## AUTH-PASSWORD-IN-URL-01 — Mật khẩu đi trong payload base64url của JSONP GET (H2, 2026-08-17)
+
+**Mô tả:** `Api.authLogin` gửi `{username,password}` qua `_request` → base64url trong query param `payload` của JSONP GET (HTTPS). Password bị base64 (không mã hóa) → có thể xuất hiện trong log server/proxy dù đường truyền TLS.
+
+**Rủi ro:** Trung bình-thấp — TLS bảo vệ trên đường truyền; rủi ro chủ yếu ở log. Mô hình hệ thống nội bộ, mật khẩu SHA-256 tại rest.
+
+**Fix đề xuất:** Chuyển login sang POST body (đã có `doPost` + `_submitViaPost`) để password không nằm trên URL; hoặc dùng `google.script.run` như SHTD nếu nhúng cùng origin.
+
+**File:** `assets/js/api.js` (`authLogin`), `login.html`.
+
+---
+
 ## CREATE-VALIDATION-MSG-01 — Lỗi validate GAS khi create không hiện message cụ thể (v3.15.0, 2026-08-02)
 
 **Mô tả:** Create/update chuyển sang hidden-iframe FORM POST (fix link demo dài). FE **không đọc được response iframe** (cross-origin) → nếu GAS trả `success:false` (vd validate thiếu field), FE không lấy được message; thay vào đó verify `getUseCase` không xác nhận → sau timeout (90s) hiện cảnh báo chung "Dữ liệu CÓ THỂ đã lưu — kiểm tra dashboard".
