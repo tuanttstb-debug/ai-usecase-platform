@@ -279,4 +279,6 @@ Kèm tính năng mới (theo yêu cầu user 2026-08-18): **trang Admin cấu h�
 4. Smoke test: đăng ký UC → chọn Workflow (lọc đúng theo Team) → US dependent → "Khác" nhập tự do → lưu có `Workflow`/`Workflow_Group`; admin mở `workflow-catalog.html` thêm/sửa/xóa/đổi-tên.
 5. Sau smoke test → merge `feat/h2-workflow-input` → `main`.
 
-*Cập nhật lần cuối nhật ký: 2026-08-18 (Giai đoạn 2 code xong, chờ deploy GAS + seed).*
+**Cập nhật 2026-08-18 (cuối phiên):** GAS đã deploy (URL không đổi), local test PASS, **đã merge `feat/h2-workflow-input` → `main` + push** (user: push thẳng main, không dùng nhánh riêng vì DA chưa thương mại hóa). Còn lại: xác nhận `seedWorkflowCatalog()` đã chạy (nếu droplist trống) + smoke test live.
+
+*Cập nhật lần cuối nhật ký: 2026-08-18 (Giai đoạn 2 deployed + merged main).*
