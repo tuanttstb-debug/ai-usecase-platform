@@ -4,15 +4,15 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
-## USERMASTER-CONCURRENCY-01 — 2 GAS project ghi chung sheet User_Master (H2, 2026-08-17)
+## USERMASTER-CONCURRENCY-01 — 2 GAS project ghi chung sheet User_Master (H2, 2026-08-17) — GIẢM MẠNH 2026-08-18
 
-**Mô tả:** Auth H2 cho AI US đọc/ghi `User_Master` trên spreadsheet SHTD. `userUpsertInMaster_` dùng `LockService.getScriptLock()` nhưng lock chỉ **per-project** — không loại trừ lẫn nhau giữa GAS AI US và GAS SHTD khi cùng ghi User_Master.
+**Mô tả:** Auth H2 cho AI US đọc/ghi `User_Master` trên spreadsheet SHTD. Lock `LockService.getScriptLock()` chỉ **per-project** — không loại trừ lẫn nhau giữa 2 GAS project khi cùng ghi.
 
-**Rủi ro:** Thấp — thao tác ghi user (tạo/sửa/đặt-lại mật khẩu/last-login) tần suất rất thấp, khả năng đụng đồng thời 2 project nhỏ. Xung đột (nếu có) chỉ ở 1 row user.
+**Cập nhật 2026-08-18 (dọn rác):** AI US đã **gỡ mọi thao tác GHI user** (userUpsert/reset/sync removed) — quản lý user chỉ làm ở SHTD. Đường ghi User_Master từ AI US chỉ còn `authChangePassword_` (user tự đổi mật khẩu, ghi đúng 1 cell Password_Hash của chính mình). Rủi ro concurrency **gần như triệt tiêu**.
 
-**Fix đề xuất:** Dùng `LockService.getDocumentLock()` trên spreadsheet dùng chung ở CẢ 2 project, hoặc gom quản lý user về 1 project (SHTD) và AI US chỉ đọc.
+**Rủi ro:** Rất thấp. Có thể để mở hoặc đóng.
 
-**File:** `assets/gas-backend/AuthTokenService.gs`.
+**File:** `assets/gas-backend/AuthTokenService.gs` (`authChangePassword_`).
 
 ---
 
@@ -28,15 +28,23 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
-## USERS-LEGACY-01 — Sheet USERS nội bộ ngừng dùng cho auth nhưng chưa gỡ (H2, 2026-08-17)
+## USERS-LEGACY-01 — Sheet USERS nội bộ — ✅ CLOSED 2026-08-18
 
-**Mô tả:** Nguồn user chuyển sang `User_Master` dùng chung. Sheet `USERS` nội bộ (spreadsheet AI US) + hàm `validateUserLogin_`/`getAllUsers_`/`upsertUser_` (UserService.gs) + route legacy `user-login`/`user-init` vẫn còn. `getAdminEmails_` giữ USERS nội bộ ở Priority 1b (fallback).
+**Mô tả (đã đóng):** Nguồn user chuyển hẳn sang `User_Master`. Phiên 2026-08-18 (dọn rác) đã **xóa** `UserService.gs` + `MigrationService.gs` + `FixOwnerNameMigration.gs`, bỏ `SHEETS.USERS`/`USERS_HEADERS`, gỡ route `user-login`/`user-init`/`user-upsert`/`user-reset-password`/`user-sync`, bỏ Priority-1b USERS-nội-bộ trong `getAdminEmails_`. `normalizeUser_` chuyển sang `Utils.gs`. Nguồn user DUY NHẤT = User_Master (SHTD); AI US chỉ ĐỌC. Commit `97939fd`.
 
-**Rủi ro:** Thấp — không dùng trong luồng chính; chỉ gây nhầm nếu ai đó sửa nhầm sheet cũ.
+**Còn lại:** Cần **redeploy GAS** để bản gỡ có hiệu lực live.
 
-**Fix đề xuất:** Sau khi Giai đoạn 1 chạy ổn định live, gỡ route `user-login`/`user-init` + hàm liên quan; hoặc giữ làm fallback offline có ghi chú rõ.
+---
 
-**File:** `assets/gas-backend/UserService.gs`, `assets/gas-backend/Code.gs`, `assets/gas-backend/AdminService.gs`.
+## ADMIN-FALLBACK-INERT-01 — env.js ADMIN_EMAILS không còn được FE đọc (2026-08-18)
+
+**Mô tả:** Sau khi gỡ `AuthService.login()`/`_resolveRole`, FE resolve role 100% từ token User_Master. `APP_CONFIG.ADMIN_EMAILS` (env.js) giữ lại theo yêu cầu "fallback tối thiểu" nhưng thực tế FE không còn đọc. Fallback admin thật sự nằm ở GAS `Config.gs ADMIN_EMAILS` (getAdminEmails_ Priority 3, khi User_Master offline).
+
+**Rủi ro:** Không — chỉ là hằng số inert ở FE.
+
+**Fix đề xuất:** Có thể xóa `ADMIN_EMAILS` khỏi env.js nếu muốn sạch tuyệt đối; giữ Config.gs làm cứu hộ. Để lại có chú thích cũng chấp nhận được.
+
+**File:** `config/env.js`, `assets/gas-backend/Config.gs`.
 
 ---
 
