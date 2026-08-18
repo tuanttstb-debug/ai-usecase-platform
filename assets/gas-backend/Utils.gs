@@ -64,6 +64,14 @@ function getSpreadsheet_() {
  * @param {string} sheetName
  * @returns {GoogleAppsScript.Spreadsheet.Sheet}
  */
+/**
+ * Normalize username: trim + lowercase → so sánh case-insensitive.
+ * "Tuantt4" → "tuantt4". (Chuyển từ UserService.gs cũ — nguồn user duy nhất nay là User_Master.)
+ */
+function normalizeUser_(str) {
+  return String(str || '').trim().toLowerCase();
+}
+
 function getOrCreateSheet_(sheetName) {
   var ss    = getSpreadsheet_();
   var sheet = ss.getSheetByName(sheetName);
@@ -91,10 +99,6 @@ function getOrCreateSheet_(sheetName) {
     case SHEETS.CONFIG:
       sheet.appendRow(['Key', 'Value', 'Description']);
       sheet.appendRow(['NEXT_ID', String(CONFIG_DEFAULTS.NEXT_ID), 'Auto-increment ID counter']);
-      formatHeaderRow_(sheet);
-      break;
-    case SHEETS.USERS:
-      sheet.appendRow(USERS_HEADERS);
       formatHeaderRow_(sheet);
       break;
     case SHEETS.WEEKLY_LOG:

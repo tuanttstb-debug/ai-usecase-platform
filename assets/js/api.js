@@ -271,13 +271,8 @@ var Api = {
   deleteWorkflow(data)          { return Api._request(API.workflowDelete(), data); },
   renameWorkflow(data)          { return Api._request(API.workflowRename(), data); },
 
-  // User management
-  validateUser(username)        { return Api._request(API.userLogin(username)); },
+  // User — chỉ ĐỌC (danh sách từ User_Master, phục vụ KPI). Quản lý user làm ở SHTD-Dashboard.
   getUsers()                    { return Api._request(API.users()); },
-  upsertUser(data)              { return Api._request(API.userUpsert(), data); },
-  resetUserPassword(data)       { return Api._request(API.userResetPassword(), data); },
-  syncUsers(adminEmail)         { return Api._request(API.userSync(),  { reviewer_email: adminEmail }); },
-  initUsersSheet(adminEmail)    { return Api._request(API.userInit(),  { reviewer_email: adminEmail }); },
 
   // ── Governance v3.0 ────────────────────────────────────────────
   getLeaderboard(filters)       { return Api._request(API.leaderboard(filters)); },

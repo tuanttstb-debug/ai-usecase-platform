@@ -1,5 +1,32 @@
 # SESSION HANDOVER
 
+## Session: 2026-08-18 (Part 3) — Dọn rác: nguồn user DUY NHẤT = User_Master (SHTD)
+**Scope:** Rà soát toàn bộ, gỡ tính năng rác trỏ data cũ (sheet USERS nội bộ), gỡ quản lý user khỏi AI US, chốt nguồn user duy nhất = `User_Master` trên SHTD.
+**Status:** ✅ Code xong + test local PASS: **Playwright 88/88** (đã xóa spec 02 users-page ~10 test) · SPTD 34/34 · KPI 38/38 · ID 14/14. **⚠️ CẦN redeploy GAS.**
+
+### Quyết định (AskUserQuestion)
+1. **Xóa hẳn quản lý user khỏi AI US** — SHTD-Dashboard là nơi DUY NHẤT quản lý user; AI US chỉ ĐỌC User_Master (login/role/KPI).
+2. **Giữ `change-password.html` + thêm link nav** (đổi mật khẩu tự phục vụ, ghi User_Master).
+3. **Xóa script migration 1 lần** (MigrationService, FixOwnerNameMigration).
+4. **Giữ tối thiểu fallback admin** (Config.gs/env.js ADMIN_EMAILS — cứu hộ offline); **bỏ CHAMPION_USERS**.
+
+### Đã gỡ
+- **GAS xóa file:** `UserService.gs` (chuyển `normalizeUser_` → Utils.gs), `MigrationService.gs`, `FixOwnerNameMigration.gs`.
+- **GAS route bỏ:** `user-login`, `user-init`, `user-upsert`, `user-reset-password`, `user-sync` (giữ `users` READ, `auth-login`, `auth-change-password`).
+- **GAS bỏ hàm ghi user** trong AuthTokenService: `userUpsertInMaster_`, `userResetPasswordInMaster_`, `syncUsersToMaster_`, `_canonRole_`, `_userHeaderIdx_`. Giữ `getAllUsersFromMaster_`, `getAdminUsernamesFromMaster_`, `authChangePassword_`, `getCouncilUsernames_`.
+- **GAS:** Config bỏ `SHEETS.USERS`+`USERS_HEADERS`; Utils bỏ case USERS trong getOrCreateSheet_; AdminService bỏ priority USERS-nội-bộ + repoint `getAllUsers_()`→`getAllUsersFromMaster_()` (2 chỗ: enrich owner name + isChampionForTeam_, champion→teamlead).
+- **FE xóa file:** `users.html`, `assets/js/users.js`, `tests/02-users-page.spec.js`.
+- **FE:** api.js bỏ validateUser/upsertUser/resetUserPassword/syncUsers/initUsersSheet (giữ getUsers READ); routes.js tương ứng; auth.js bỏ `login()` chết + `_resolveRole` (CHAMPION_USERS); env.js bỏ CHAMPION_USERS; dashboard.js gỡ users-tab (giữ `_usersList` load cho KPI); dashboard.html gỡ orphan userModal; **gỡ navUsers khỏi 8 page + thêm nav "Đổi mật khẩu"** (mọi user); setupNav bỏ navUsers; index.html card "Quản lý người dùng"→"Cấu hình Workflow".
+
+### Blocker / Next
+- **[P0] Redeploy GAS** (Edit deployment → New version) — routes user-* đã bỏ; nếu FE cũ còn gọi sẽ 'Endpoint không tồn tại' (đã gỡ FE nên không gọi). Deploy để đồng bộ.
+- Test lại login/role/KPI đọc User_Master; đổi mật khẩu qua nav mới.
+
+### Kèm theo (chưa kích hoạt): Team Số split
+- `WorkflowSeedTeamSo.gs` + Config `TEAM_GROUP_SEED` (Số→'4. Workflow đặc thù Số hóa tín dụng') + WorkflowService group-4 default: **committed nhưng DORMANT** — chỉ có tác dụng khi chạy `seedTeamSoWorkflows()`. **Danh sách WF/US đề xuất còn CHỜ user duyệt** trước khi chạy (xem cuối phiên trước).
+
+---
+
 ## Session: 2026-08-18 (Part 2) — H2 Giai đoạn 2: Nhập liệu theo Workflow + Admin cấu hình WF/US
 **Scope:** Triển khai Giai đoạn 2 (nhập liệu theo Workflow) + tính năng mới do user đề xuất: **trang Admin cấu hình Workflow/US** (thêm mới khi phát sinh; cấu hình lưu tại GAS phục vụ droplist).
 **Branch:** `feat/h2-workflow-input` (nhánh mới từ main sau khi merge auth). **Chưa deploy GAS, chưa merge main.**

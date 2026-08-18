@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────────────────────────
 // auth.js — AuthService
 //
-// Roles: admin | champion | user
-// Champion: can review UCs of their own team (no approve/reject)
+// Roles: admin | teamlead | user  (nguồn role DUY NHẤT = User_Master trên SHTD, qua token auth-login)
+// Teamlead: review UC của team mình (không approve/reject). 'champion' cũ được nhận như teamlead.
 //
 // Depends on: config/env.js (APP_CONFIG) — must load first.
 // Session key: APP_CONFIG.USER_SESSION_KEY || 'ai_user_session'
-// Role resolution: ADMIN_EMAILS → admin, CHAMPION_USERS → champion, else user
+// Đăng nhập: login.html → Api.authLogin (username+password) → storeAuth (token + user từ User_Master).
 // ─────────────────────────────────────────────────────────────────
 
 var AuthService = (function () {
@@ -14,18 +14,6 @@ var AuthService = (function () {
   var SESSION_KEY = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.USER_SESSION_KEY)
     ? APP_CONFIG.USER_SESSION_KEY
     : 'ai_user_session';
-
-  // ── Role resolution ──────────────────────────────────────────────
-  function _resolveRole(email) {
-    var normalized = email.toLowerCase().trim();
-    var adminList = ((typeof APP_CONFIG !== 'undefined' && APP_CONFIG.ADMIN_EMAILS) || [])
-      .map(function (e) { return String(e).toLowerCase().trim(); });
-    if (adminList.indexOf(normalized) !== -1) return 'admin';
-    var championList = ((typeof APP_CONFIG !== 'undefined' && APP_CONFIG.CHAMPION_USERS) || [])
-      .map(function (e) { return String(e).toLowerCase().trim(); });
-    if (championList.indexOf(normalized) !== -1) return 'champion';
-    return 'user';
-  }
 
   // Build display name from username (or email local-part)
   function _buildDisplayName(username) {
@@ -60,21 +48,6 @@ var AuthService = (function () {
 
   // ── Public API ───────────────────────────────────────────────────
   return {
-
-    login: function (username) {
-      var uname = String(username || '').trim();
-      if (!uname) {
-        return { success: false, error: 'Vui lòng nhập tên đăng nhập' };
-      }
-      var user = {
-        email:       uname,
-        displayName: _buildDisplayName(uname),
-        role:        _resolveRole(uname),
-        loginAt:     new Date().toISOString()
-      };
-      _save(user);
-      return { success: true, user: user };
-    },
 
     logout: function () { _clear(); },
 
@@ -208,7 +181,6 @@ var AuthService = (function () {
       }
       if (isAdm) {
         show('navDashboard');
-        show('navUsers');
         show('navWorkflowCatalog');
         show('navReviewQueue');
       } else if (isTl) {

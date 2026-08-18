@@ -47,13 +47,8 @@ var API = {
   workflowDelete:  () => `${_gasBase}?action=workflow-delete`,
   workflowRename:  () => `${_gasBase}?action=workflow-rename`,
 
-  // User management endpoints
-  userLogin:  (username) => `${_gasBase}?action=user-login&username=${encodeURIComponent(username)}`,
+  // User — CHỈ ĐỌC (nguồn duy nhất = User_Master trên SHTD; quản lý user làm ở SHTD-Dashboard)
   users:      ()         => `${_gasBase}?action=users`,
-  userUpsert: ()         => `${_gasBase}?action=user-upsert`,
-  userResetPassword: ()  => `${_gasBase}?action=user-reset-password`,
-  userSync:   ()         => `${_gasBase}?action=user-sync`,
-  userInit:   ()         => `${_gasBase}?action=user-init`,
 
   // Governance v3.0 endpoints
   weeklyReport:   (weekStart) => {

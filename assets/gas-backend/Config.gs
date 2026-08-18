@@ -12,19 +12,10 @@ var SHEETS = {
   ACTIVITY:    'ACTIVITY_LOG',   // Audit trail
   DASHBOARD:   'DASHBOARD_READY',// Pre-aggregated dashboard cache
   CONFIG:      'CONFIG',         // System config (NEXT_ID counter, v.v.)
-  USERS:       'USERS',          // Danh sách user và phân quyền
   WEEKLY_LOG:  'WEEKLY_LOG',     // Lịch sử cập nhật tiến độ tuần (1 row/lần submit)
   WORKFLOW:    'WORKFLOW_CATALOG',// H2 Giai đoạn 2: danh mục Workflow → Use case (droplist đăng ký)
   TEAM_GROUP:  'TEAM_GROUP_MAP'  // H2 Giai đoạn 2: map Team → Nhóm workflow được thấy
 };
-
-// ── USERS Sheet Column Headers ────────────────────────────────────
-// Username: normalized lowercase — primary key, case-insensitive lookup
-// Role:     'admin' hoặc 'user'
-// Active:   TRUE/FALSE — deactivate không cần xóa row
-var USERS_HEADERS = [
-  'Username', 'Display_Name', 'Role', 'Team', 'Email', 'Active', 'Created_At', 'Last_Login'
-];
 
 // ── WORKFLOW_CATALOG Column Headers (H2 Giai đoạn 2) ───────────────
 // Mỗi row = 1 Use case thuộc 1 Workflow thuộc 1 Nhóm.
@@ -43,9 +34,11 @@ var TEAM_GROUP_HEADERS = ['Team', 'Nhom'];
 // Nhóm 'chung' — mọi user đều thấy (không phụ thuộc Team).
 var WORKFLOW_COMMON_GROUP = '1. Workflow chung';
 
-// Seed mặc định cho TEAM_GROUP_MAP (khớp H2_PLAN §6.1). Admin sửa được trong sheet.
+// Seed mặc định cho TEAM_GROUP_MAP. Admin sửa được trong sheet.
+// 2026-08-18: Team Số tách riêng khỏi PO → nhóm '4. Workflow đặc thù Số hóa tín dụng'
+// (xem WorkflowSeedTeamSo.gs). CV/BL vẫn ở nhóm PO.
 var TEAM_GROUP_SEED = [
-  ['Số',      '2. Workflow đặc thù PO'],
+  ['Số',      '4. Workflow đặc thù Số hóa tín dụng'],
   ['CV',      '2. Workflow đặc thù PO'],
   ['BL',      '2. Workflow đặc thù PO'],
   ['PTKD MB', '3. Workflow PTKD & QLDM'],

@@ -305,53 +305,13 @@ function route_(action, params, body) {
     return createResponse_(true, 'Đổi mật khẩu thành công', { status: 'ok' });
   }
 
-  // ── User management endpoints ──────────────────────────────────
+  // ── User (chỉ ĐỌC — nguồn duy nhất = User_Master trên SHTD) ────
+  // Quản lý user (tạo/sửa/đặt lại mật khẩu/sync) CHỈ làm ở SHTD-Dashboard.
+  // AI US chỉ đọc danh sách user (phục vụ KPI + resolve admin) + đổi mật khẩu tự phục vụ (auth-change-password).
 
-  // Validate login + update Last_Login + trả về user info từ USERS sheet
-  // (LEGACY — luồng cũ username-only; giữ cho tương thích ngược)
-  if (action === 'user-login') {
-    var loginUser = params.username || body.username || '';
-    if (!loginUser) return createResponse_(false, 'Thiếu username');
-    return createResponse_(true, 'Đăng nhập thành công', validateUserLogin_(loginUser));
-  }
-
-  // Danh sách tất cả user (để admin quản lý) — nguồn: User_Master dùng chung
+  // Danh sách tất cả user (đọc từ User_Master, không kèm Password_Hash)
   if (action === 'users') {
     return createResponse_(true, 'Danh sách user', getAllUsersFromMaster_());
-  }
-
-  // Tạo mới hoặc cập nhật user (admin only) — ghi vào User_Master dùng chung
-  if (action === 'user-upsert') {
-    var upsertAdmin = body.reviewer_email || body.admin_email || '';
-    if (!isAdminEmail_(upsertAdmin)) {
-      return createResponse_(false, 'Không có quyền quản lý user: ' + upsertAdmin);
-    }
-    var upsertUsername = body.Username || body.username || '';
-    if (!upsertUsername) return createResponse_(false, 'Thiếu Username');
-    body.Username = upsertUsername;
-    var upsertResult = userUpsertInMaster_(body);
-    return createResponse_(true, upsertResult.created ? 'Đã tạo user mới' : 'Đã cập nhật user', upsertResult);
-  }
-
-  // Admin đặt lại mật khẩu cho user (admin only)
-  if (action === 'user-reset-password') {
-    var rpAdmin = body.reviewer_email || body.admin_email || '';
-    if (!isAdminEmail_(rpAdmin)) {
-      return createResponse_(false, 'Không có quyền đặt lại mật khẩu: ' + rpAdmin);
-    }
-    var rpUser = body.Username || body.username || '';
-    var rpPass = body.new_password || body.Password || '';
-    if (!rpUser) return createResponse_(false, 'Thiếu Username');
-    return createResponse_(true, 'Đã đặt lại mật khẩu', userResetPasswordInMaster_(rpUser, rpPass));
-  }
-
-  // Đồng bộ owner từ MASTER_DATA vào User_Master (admin only)
-  if (action === 'user-sync') {
-    var syncAdmin = body.reviewer_email || body.admin_email || params.admin_email || '';
-    if (!isAdminEmail_(syncAdmin)) {
-      return createResponse_(false, 'Không có quyền thực hiện sync: ' + syncAdmin);
-    }
-    return createResponse_(true, 'Sync hoàn tất', syncUsersToMaster_());
   }
 
   // ── Workflow catalog endpoints (H2 Giai đoạn 2) ────────────────
@@ -390,16 +350,6 @@ function route_(action, params, body) {
       return createResponse_(false, 'Không có quyền cấu hình workflow');
     }
     return createResponse_(true, 'Đã đổi tên workflow', workflowRename_(body));
-  }
-
-  // Khởi tạo sheet USERS + seed từ ADMIN_EMAILS (admin only, gọi 1 lần)
-  if (action === 'user-init') {
-    var initAdmin = body.reviewer_email || body.admin_email || params.admin_email || '';
-    if (!isAdminEmail_(initAdmin)) {
-      return createResponse_(false, 'Không có quyền khởi tạo: ' + initAdmin);
-    }
-    initUsersSheet_();
-    return createResponse_(true, 'Sheet USERS đã được khởi tạo', { status: 'ok' });
   }
 
   return createResponse_(false, 'Endpoint không tồn tại: ' + action);

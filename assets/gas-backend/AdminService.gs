@@ -15,22 +15,16 @@
 
 /**
  * Đọc danh sách admin usernames (đã normalize lowercase).
- * Ưu tiên:
- *   1. USERS sheet — Role=admin, Active=TRUE (single source of truth)
+ * Ưu tiên (nguồn user DUY NHẤT = User_Master trên SHTD):
+ *   1. User_Master — Role=Admin, Active=TRUE (single source of truth)
  *   2. CONFIG sheet — key=ADMIN_EMAILS (comma-separated, cho phép update không deploy)
- *   3. Config.gs ADMIN_EMAILS — hardcoded fallback cuối cùng
+ *   3. Config.gs ADMIN_EMAILS — hardcoded fallback cứu hộ khi User_Master offline
  */
 function getAdminEmails_() {
   // Priority 1: User_Master dùng chung với SHTD (H2 — nguồn user duy nhất)
   try {
     var fromMaster = getAdminUsernamesFromMaster_();
     if (fromMaster.length > 0) return fromMaster;
-  } catch(e) { /* Fallback */ }
-
-  // Priority 1b: USERS sheet nội bộ (legacy — giữ tạm cho tương thích ngược)
-  try {
-    var fromSheet = getAdminUsernamesFromSheet_();
-    if (fromSheet.length > 0) return fromSheet;
   } catch(e) { /* Fallback */ }
 
   // Priority 2: CONFIG sheet
@@ -177,14 +171,14 @@ function listUseCases_(filters) {
   var ownerNameF  = String(filters.owner_name || '').trim().toLowerCase();
   var hasOwnerF   = !!(ownerLoginF || ownerNameF);
 
-  // Build username → Display_Name từ USERS sheet để enrich owner info (best-effort)
+  // Build username → Display_Name từ User_Master để enrich owner info (best-effort)
   var userDisplayMap = {};
   try {
-    getAllUsers_().forEach(function(u) {
-      var key = normalizeUser_(u.Username);
-      if (key) userDisplayMap[key] = sanitizeStr_(u.Display_Name) || _buildDisplayNameGas_(key);
+    getAllUsersFromMaster_().forEach(function(u) {
+      var key = normalizeUser_(u.username);
+      if (key) userDisplayMap[key] = sanitizeStr_(u.display_name) || key;
     });
-  } catch (e) { /* không chặn list nếu USERS sheet lỗi */ }
+  } catch (e) { /* không chặn list nếu User_Master lỗi */ }
 
   var filtered = all.filter(function(uc) {
     if (filterPreset === 'pending') {
@@ -807,14 +801,14 @@ function isChampionForTeam_(email, team) {
   var normalizedEmail = String(email).toLowerCase().trim();
   var normalizedTeam  = String(team).toLowerCase().trim();
   try {
-    var users = getAllUsers_();
+    var users = getAllUsersFromMaster_();
     for (var i = 0; i < users.length; i++) {
       var u = users[i];
-      var uEmail  = String(u.Username || u.Email || '').toLowerCase().trim();
-      var uRole   = String(u.Role || '').toLowerCase().trim();
-      var uActive = u.Active === true || String(u.Active).toLowerCase() === 'true';
-      var uTeam   = String(u.Team || '').toLowerCase().trim();
-      if (uEmail === normalizedEmail && uRole === 'champion' && uActive && uTeam === normalizedTeam) {
+      var uEmail  = String(u.username || u.email || '').toLowerCase().trim();
+      var uRole   = String(u.role || '').toLowerCase().trim();
+      var uActive = u.active === true;
+      var uTeam   = String(u.team || '').toLowerCase().trim();
+      if (uEmail === normalizedEmail && (uRole === 'teamlead' || uRole === 'champion') && uActive && uTeam === normalizedTeam) {
         return true;
       }
     }

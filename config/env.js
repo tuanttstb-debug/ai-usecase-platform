@@ -6,14 +6,9 @@ var APP_CONFIG = {
   AUTO_SAVE_KEY:    'ai_usecase_draft',
   DUPLICATE_THRESHOLD: 0.8,
 
-  // Danh sách username (không phải email) được cấp quyền admin
-  // Thêm/xóa username ở đây để cấp/thu hồi quyền (không cần sửa logic)
-  // Lưu ý: kiểm tra phía frontend (UI-level). Backend GAS có validation riêng.
+  // Fallback admin (cứu hộ) — nguồn role DUY NHẤT là User_Master trên SHTD (Role=Admin).
+  // List này chỉ là dự phòng offline phía GAS (Config.gs ADMIN_EMAILS, priority cuối); FE không resolve role từ đây.
   ADMIN_EMAILS: ['cuongvm1', 'tuantt4', 'dunglq1'],
-
-  // Danh sách username được cấp quyền teamlead (review UC của team mình)
-  // Nguồn chính là User_Master dùng chung (Role=Teamlead). List này là fallback FE-only.
-  CHAMPION_USERS: [],
 
   // Hội đồng chấm điểm US (H2) — 4 teamlead. Điểm US = bình quân điểm hội đồng.
   // GAS đối chiếu song song qua Script Property COUNCIL_USERS.

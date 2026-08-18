@@ -128,9 +128,10 @@ function listWorkflowCatalog_() {
     };
   });
 
-  // Danh sách Nhóm gợi ý = 3 nhóm mặc định + nhóm đã có trong data.
+  // Danh sách Nhóm gợi ý = nhóm mặc định + nhóm đã có trong data.
   var groupSet = {};
-  [WORKFLOW_COMMON_GROUP, '2. Workflow đặc thù PO', '3. Workflow PTKD & QLDM'].forEach(function (g) { groupSet[g] = true; });
+  [WORKFLOW_COMMON_GROUP, '2. Workflow đặc thù PO', '3. Workflow PTKD & QLDM',
+   '4. Workflow đặc thù Số hóa tín dụng'].forEach(function (g) { groupSet[g] = true; });
   rows.forEach(function (r) { if (r.nhom) groupSet[r.nhom] = true; });
 
   var tm = readSheetAsObjects_(SHEETS.TEAM_GROUP).map(function (r) {

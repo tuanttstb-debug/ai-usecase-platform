@@ -6,6 +6,11 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ## 🔜 H2 — ưu tiên session tiếp theo
 
+- [x] **Dọn rác nguồn user (2026-08-18, Part 3)** — gỡ hẳn quản lý user khỏi AI US + sheet USERS nội bộ + script migration cũ. Nguồn user DUY NHẤT = `User_Master` (SHTD); AI US chỉ ĐỌC (login/role/KPI) + đổi mật khẩu tự phục vụ. Test 88/88 (+ unit). Chi tiết: handover Part 3.
+- [ ] **[P0] Redeploy GAS cho bản dọn rác** — Edit deployment → New version (đã bỏ routes user-login/init/upsert/reset/sync + file UserService/Migration). URL không đổi.
+- [ ] **[P1] Team Số split — CHỜ DUYỆT danh sách WF/US** rồi chạy `seedTeamSoWorkflows()` trong GAS Editor (tách Số khỏi PO + import WF/US nhóm '4. Số hóa tín dụng'). Script đã có (dormant), sửa mảng `TEAM_SO_NEW_WF` nếu cần trước khi chạy.
+
+
 - [x] **[P1] Merge `feat/h2-shared-auth` → `main` + push** — DONE 2026-08-18 (fast-forward `fc894b5..2e14332`, pushed `origin/main`). Merge theo yêu cầu user, **TRƯỚC khi smoke test** (chấp nhận rủi ro). GitHub Pages nay serve auth mới (hard-refresh vì cache).
 - [x] **[P0] Login thật (Giai đoạn 1) TRÊN LIVE — ĐÃ CHẠY (2026-08-18).** Root cause lỗi login ban đầu: **quên set `AUTH_SECRET` trong Script Properties của project GAS AI US** (Script Properties là per-project — set bên SHTD không tự sang AI US). Đã bổ sung → login OK. Đóng vấn đề.
 - [ ] **[P1] Smoke test phần còn lại của Giai đoạn 1** (khi tiện): đổi mật khẩu (`change-password.html`); admin tạo/sửa/đặt-lại-mật-khẩu user + sync owner; kiểm token verify ở thao tác sau login (approve/reject) để chắc `AUTH_SECRET` hai bên khớp tuyệt đối.

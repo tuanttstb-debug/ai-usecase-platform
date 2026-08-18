@@ -7,7 +7,7 @@ const PAGES_WITH_NAV = ['index.html', 'register.html', 'dashboard.html'];
 for (const page_path of PAGES_WITH_NAV) {
   test.describe(`[${page_path}] Role-based sidebar nav`, () => {
 
-    test('Admin sees navDashboard + navUsers + navReviewQueue', async ({ page }) => {
+    test('Admin sees navDashboard + navWorkflowCatalog + navReviewQueue', async ({ page }) => {
       await setSession(page, ADMIN_USER);
       await mockGAS(page, {
         lookup:    MOCK_LOOKUP,
@@ -22,12 +22,12 @@ for (const page_path of PAGES_WITH_NAV) {
       const navRQ = page.locator('#navReviewQueue');
       await expect(navRQ).toBeVisible();
 
-      // navUsers visible for admin
-      const navUsers = page.locator('#navUsers');
+      // navWorkflowCatalog visible for admin
+      const navUsers = page.locator('#navWorkflowCatalog');
       await expect(navUsers).toBeVisible();
     });
 
-    test('Champion sees navReviewQueue only (not navUsers)', async ({ page }) => {
+    test('Champion sees navReviewQueue only (not navWorkflowCatalog)', async ({ page }) => {
       await setSession(page, CHAMPION_USER);
       await mockGAS(page, {
         lookup:    MOCK_LOOKUP,
@@ -39,12 +39,12 @@ for (const page_path of PAGES_WITH_NAV) {
       await page.waitForLoadState('networkidle');
 
       const navRQ    = page.locator('#navReviewQueue');
-      const navUsers = page.locator('#navUsers');
+      const navUsers = page.locator('#navWorkflowCatalog');
       await expect(navRQ).toBeVisible();
       await expect(navUsers).not.toBeVisible();
     });
 
-    test('Regular user sees neither navUsers nor navReviewQueue', async ({ page }) => {
+    test('Regular user sees neither navWorkflowCatalog nor navReviewQueue', async ({ page }) => {
       await setSession(page, REGULAR_USER);
       await mockGAS(page, {
         lookup:    MOCK_LOOKUP,
@@ -56,7 +56,7 @@ for (const page_path of PAGES_WITH_NAV) {
       await page.waitForLoadState('networkidle');
 
       await expect(page.locator('#navReviewQueue')).not.toBeVisible();
-      await expect(page.locator('#navUsers')).not.toBeVisible();
+      await expect(page.locator('#navWorkflowCatalog')).not.toBeVisible();
     });
 
     test('Sidebar shows correct role label', async ({ page }) => {
