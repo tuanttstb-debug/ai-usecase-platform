@@ -36,6 +36,17 @@ var API = {
   authLogin:          () => `${_gasBase}?action=auth-login`,
   authChangePassword: () => `${_gasBase}?action=auth-change-password`,
 
+  // Workflow catalog endpoints (H2 Giai đoạn 2)
+  workflowCatalog: (team) => {
+    var url = `${_gasBase}?action=workflow-catalog`;
+    if (team) url += '&team=' + encodeURIComponent(team);
+    return url;
+  },
+  workflowList:    () => `${_gasBase}?action=workflow-list`,
+  workflowUpsert:  () => `${_gasBase}?action=workflow-upsert`,
+  workflowDelete:  () => `${_gasBase}?action=workflow-delete`,
+  workflowRename:  () => `${_gasBase}?action=workflow-rename`,
+
   // User management endpoints
   userLogin:  (username) => `${_gasBase}?action=user-login&username=${encodeURIComponent(username)}`,
   users:      ()         => `${_gasBase}?action=users`,

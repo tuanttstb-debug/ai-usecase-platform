@@ -7,13 +7,15 @@ var SPREADSHEET_ID = '1xLMQLTgj2sRf1l9C6s6AHCT5zWJLQOofL375t8Pv_NA';
 
 // ── Sheet Names ───────────────────────────────────────────────────
 var SHEETS = {
-  MASTER:     'MASTER_DATA',    // Bảng chính chứa toàn bộ use case
-  LOOKUP:     'LOOKUP',         // Dropdown options (Field / Value)
-  ACTIVITY:   'ACTIVITY_LOG',   // Audit trail
-  DASHBOARD:  'DASHBOARD_READY',// Pre-aggregated dashboard cache
-  CONFIG:     'CONFIG',         // System config (NEXT_ID counter, v.v.)
-  USERS:      'USERS',          // Danh sách user và phân quyền
-  WEEKLY_LOG: 'WEEKLY_LOG'      // Lịch sử cập nhật tiến độ tuần (1 row/lần submit)
+  MASTER:      'MASTER_DATA',    // Bảng chính chứa toàn bộ use case
+  LOOKUP:      'LOOKUP',         // Dropdown options (Field / Value)
+  ACTIVITY:    'ACTIVITY_LOG',   // Audit trail
+  DASHBOARD:   'DASHBOARD_READY',// Pre-aggregated dashboard cache
+  CONFIG:      'CONFIG',         // System config (NEXT_ID counter, v.v.)
+  USERS:       'USERS',          // Danh sách user và phân quyền
+  WEEKLY_LOG:  'WEEKLY_LOG',     // Lịch sử cập nhật tiến độ tuần (1 row/lần submit)
+  WORKFLOW:    'WORKFLOW_CATALOG',// H2 Giai đoạn 2: danh mục Workflow → Use case (droplist đăng ký)
+  TEAM_GROUP:  'TEAM_GROUP_MAP'  // H2 Giai đoạn 2: map Team → Nhóm workflow được thấy
 };
 
 // ── USERS Sheet Column Headers ────────────────────────────────────
@@ -22,6 +24,33 @@ var SHEETS = {
 // Active:   TRUE/FALSE — deactivate không cần xóa row
 var USERS_HEADERS = [
   'Username', 'Display_Name', 'Role', 'Team', 'Email', 'Active', 'Created_At', 'Last_Login'
+];
+
+// ── WORKFLOW_CATALOG Column Headers (H2 Giai đoạn 2) ───────────────
+// Mỗi row = 1 Use case thuộc 1 Workflow thuộc 1 Nhóm.
+// Catalog_ID: khóa ổn định (WFC-NNNN) để sửa/xóa không lệ thuộc vị trí row.
+// UseCase có thể để trống → biểu diễn 1 Workflow chưa có US (vẫn hiện ở droplist Workflow).
+// Active=FALSE → ẩn khỏi droplist đăng ký nhưng vẫn giữ để đối chiếu.
+var WORKFLOW_HEADERS = [
+  'Catalog_ID', 'Nhom', 'Workflow', 'UseCase', 'Active', 'Updated_At'
+];
+
+// ── TEAM_GROUP_MAP Column Headers (H2 Giai đoạn 2) ─────────────────
+// Map Team → Nhóm workflow. Mọi user luôn thấy '1. Workflow chung';
+// cộng thêm Nhóm ứng với Team của mình. Admin sửa trực tiếp trong sheet.
+var TEAM_GROUP_HEADERS = ['Team', 'Nhom'];
+
+// Nhóm 'chung' — mọi user đều thấy (không phụ thuộc Team).
+var WORKFLOW_COMMON_GROUP = '1. Workflow chung';
+
+// Seed mặc định cho TEAM_GROUP_MAP (khớp H2_PLAN §6.1). Admin sửa được trong sheet.
+var TEAM_GROUP_SEED = [
+  ['Số',      '2. Workflow đặc thù PO'],
+  ['CV',      '2. Workflow đặc thù PO'],
+  ['BL',      '2. Workflow đặc thù PO'],
+  ['PTKD MB', '3. Workflow PTKD & QLDM'],
+  ['PTKD MN', '3. Workflow PTKD & QLDM'],
+  ['QLDM',    '3. Workflow PTKD & QLDM']
 ];
 
 // ── MASTER_DATA Column Headers ────────────────────────────────────
@@ -97,7 +126,12 @@ var HEADERS = [
   'Self_Assessment_Score',   // Layer 1: tự đánh giá (20%)
   'Manager_Review_Score',    // Layer 2: quản lý đánh giá (20%)
   'Committee_Review_Score',  // Layer 4: hội đồng đánh giá (10%)
-  'Review_Committee_Comment' // Nhận xét hội đồng
+  'Review_Committee_Comment',// Nhận xét hội đồng
+
+  // ── H2 Giai đoạn 2 — Nhập liệu theo Workflow ─────────────────────
+  // Thêm CUỐI bảng để ensureSheetColumns_(SHEETS.MASTER, HEADERS) self-heal không lệch cột cũ.
+  'Workflow',                // Workflow lớn user chọn khi đăng ký (từ WORKFLOW_CATALOG hoặc 'Khác')
+  'Workflow_Group'           // Nhóm workflow tương ứng (1/2/3), suy ra từ catalog lúc đăng ký
 ];
 
 // ── WEEKLY_LOG Column Headers ─────────────────────────────────────

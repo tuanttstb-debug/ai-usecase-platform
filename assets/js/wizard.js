@@ -150,6 +150,7 @@ var FieldBuilder = {
 
     this._bindDuplicateCheck();
     this._bindConditionals();
+    this._bindWorkflowCascade();
   },
 
   /* Group fields by their GROUP_CONFIG key, preserving order of first occurrence */
@@ -489,5 +490,129 @@ var FieldBuilder = {
   /* Expose for app.js to call after populateData (re-evaluate conditionals) */
   refreshConditionals() {
     this._bindConditionals();
+  },
+
+  /* ─────────────────────────────────────────
+     H2 Giai đoạn 2 — Workflow → Use case dependent dropdown
+     - Workflow select (name=Workflow): options nạp từ window.__WF_CATALOG (lọc theo Team ở GAS)
+     - UseCase_Name select: options phụ thuộc Workflow đã chọn + option "Khác — nhập tự do"
+     - Khi chọn "Khác": hiện ô text; carrier name="UseCase_Name" chuyển sang ô text
+       (đảm bảo LUÔN chỉ có đúng 1 phần tử mang name="UseCase_Name" để collectData không nhầm)
+     ───────────────────────────────────────── */
+  _wfOther: '__OTHER__',
+
+  _bindWorkflowCascade() {
+    var self  = this;
+    var wfSel  = document.getElementById('field_Workflow');
+    var ucSel  = document.getElementById('field_UseCase_Name');
+    if (!wfSel || !ucSel) return;
+
+    // Tạo ô text tự do (ẩn) cho lựa chọn "Khác"
+    if (!document.getElementById('field_UseCase_Name_custom')) {
+      var custom = document.createElement('input');
+      custom.type = 'text';
+      custom.id   = 'field_UseCase_Name_custom';
+      custom.name = 'UseCase_Name__custom';   // inert cho tới khi chọn "Khác"
+      custom.placeholder = 'Nhập tên Use case mới…';
+      custom.style.display   = 'none';
+      custom.style.marginTop = 'var(--space-2)';
+      var wrapper = ucSel.closest('.select-wrapper');
+      if (wrapper && wrapper.parentNode) wrapper.parentNode.insertBefore(custom, wrapper.nextSibling);
+      else if (ucSel.parentNode) ucSel.parentNode.appendChild(custom);
+    }
+
+    wfSel.addEventListener('change', function () { self._populateUseCaseOptions(wfSel.value); });
+    ucSel.addEventListener('change', function () { self._syncUseCaseCustom(); });
+
+    if (window.__WF_CATALOG) this.applyWorkflowCatalog();
+  },
+
+  /* Nạp options cho Workflow select từ catalog (optgroup theo Nhóm). Giữ giá trị đang chọn. */
+  applyWorkflowCatalog() {
+    var cat   = window.__WF_CATALOG || { groups: [] };
+    var wfSel = document.getElementById('field_Workflow');
+    if (!wfSel) return;
+    var current = wfSel.value;
+    while (wfSel.options.length > 1) wfSel.remove(1);   // giữ option "— Chọn —"
+    (cat.groups || []).forEach(function (g) {
+      if (!g.workflows || !g.workflows.length) return;
+      var og = document.createElement('optgroup');
+      og.label = g.nhom;
+      g.workflows.forEach(function (w) {
+        var opt = document.createElement('option');
+        opt.value = w.name; opt.textContent = w.name;
+        og.appendChild(opt);
+      });
+      wfSel.appendChild(og);
+    });
+    window.__WF_CATALOG_READY = !!(cat.groups && cat.groups.length);
+    if (current) wfSel.value = current;
+    this._populateUseCaseOptions(wfSel.value);
+  },
+
+  _wfUseCases(workflowName) {
+    var cat = window.__WF_CATALOG;
+    if (!cat || !cat.groups || !workflowName) return [];
+    for (var i = 0; i < cat.groups.length; i++) {
+      var ws = cat.groups[i].workflows || [];
+      for (var j = 0; j < ws.length; j++) {
+        if (ws[j].name === workflowName) return ws[j].usecases || [];
+      }
+    }
+    return [];
+  },
+
+  /* Nạp options UseCase_Name theo Workflow đã chọn + luôn thêm "Khác — nhập tự do". */
+  _populateUseCaseOptions(workflowName) {
+    var ucSel = document.getElementById('field_UseCase_Name');
+    if (!ucSel) return;
+    var current = ucSel.value;
+    while (ucSel.options.length > 1) ucSel.remove(1);   // giữ option "— Chọn —"
+    this._wfUseCases(workflowName).forEach(function (uc) {
+      var o = document.createElement('option');
+      o.value = uc; o.textContent = uc;
+      ucSel.appendChild(o);
+    });
+    var other = document.createElement('option');
+    other.value = this._wfOther; other.textContent = 'Khác — nhập tự do';
+    ucSel.appendChild(other);
+    // Giữ lại lựa chọn cũ nếu còn hợp lệ
+    var keep = Array.prototype.some.call(ucSel.options, function (o) { return o.value === current; });
+    if (current && keep) ucSel.value = current;
+    this._syncUseCaseCustom();
+  },
+
+  /* Đồng bộ ô text tự do + carrier name="UseCase_Name" theo lựa chọn hiện tại. */
+  _syncUseCaseCustom() {
+    var ucSel  = document.getElementById('field_UseCase_Name');
+    var custom = document.getElementById('field_UseCase_Name_custom');
+    if (!ucSel || !custom) return;
+    if (ucSel.value === this._wfOther) {
+      custom.style.display = '';
+      custom.name = 'UseCase_Name';        // ô text trở thành carrier
+      ucSel.name  = 'UseCase_Name__pick';  // select tạm rời khỏi collectData
+    } else {
+      custom.style.display = 'none';
+      custom.value = '';
+      custom.name = 'UseCase_Name__custom';
+      ucSel.name  = 'UseCase_Name';         // select là carrier
+    }
+  },
+
+  /* Áp lại lựa chọn Workflow/UseCase khi edit/khôi phục nháp (gọi sau khi catalog đã nạp). */
+  syncWorkflowSelection(workflowVal, usecaseVal) {
+    var wfSel  = document.getElementById('field_Workflow');
+    var ucSel  = document.getElementById('field_UseCase_Name');
+    var custom = document.getElementById('field_UseCase_Name_custom');
+    if (wfSel && workflowVal) {
+      wfSel.value = workflowVal;
+      this._populateUseCaseOptions(workflowVal);
+    }
+    if (ucSel && usecaseVal) {
+      var has = Array.prototype.some.call(ucSel.options, function (o) { return o.value === usecaseVal; });
+      ucSel.value = has ? usecaseVal : this._wfOther;
+      this._syncUseCaseCustom();
+      if (!has && custom) custom.value = usecaseVal;   // US ngoài danh mục → nhập tự do
+    }
   }
 };

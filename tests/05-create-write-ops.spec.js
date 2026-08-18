@@ -114,6 +114,11 @@ async function fillAndGoToSubmit(page, data) {
   );
   await page.evaluate((d) => {
     FormMapper.populateData(d);
+    // H2: UseCase_Name giờ là dependent select — route giá trị test qua cascade
+    // (catalog mock rỗng → dùng nhánh "Khác — nhập tự do" bằng ô text tự do).
+    if (typeof FieldBuilder !== 'undefined' && FieldBuilder.syncWorkflowSelection) {
+      FieldBuilder.syncWorkflowSelection(d.Workflow || '', d.UseCase_Name || '');
+    }
     Wizard.goTo(Wizard.totalSteps);
   }, data);
   await page.waitForSelector('#submitBtn', { state: 'visible' });

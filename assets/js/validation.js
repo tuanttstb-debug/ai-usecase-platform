@@ -8,6 +8,10 @@ var Validator = {
 
   step1(data) {
     const err = [];
+    // H2: Workflow bắt buộc — nhưng chỉ khi catalog đã nạp (offline không chặn đăng ký)
+    if (typeof window !== 'undefined' && window.__WF_CATALOG_READY && !data[FIELDS.WORKFLOW]) {
+      err.push('Vui lòng chọn Workflow');
+    }
     if (!data[FIELDS.USE_CASE_NAME])   err.push('Tên Use Case không được để trống');
     if (!data[FIELDS.OWNER_NAME])      err.push('Họ tên người đăng ký không được để trống');
     if (!data[FIELDS.TEAM])            err.push('Vui lòng chọn Team');
@@ -33,6 +37,7 @@ var Validator = {
   markErrors(errors, currentStep) {
     // Map error message to field name for targeted highlighting
     const errorFieldMap = {
+      'Workflow': FIELDS.WORKFLOW,
       'Tên Use Case': FIELDS.USE_CASE_NAME,
       'người đăng ký': FIELDS.OWNER_NAME,
       'Team': FIELDS.TEAM,

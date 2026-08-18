@@ -264,6 +264,13 @@ var Api = {
     return Api._request(API.authChangePassword(), { token: token, old_password: oldPassword, new_password: newPassword });
   },
 
+  // Workflow catalog (H2 Giai đoạn 2)
+  getWorkflowCatalog(team)      { return Api._request(API.workflowCatalog(team)); },
+  listWorkflowCatalog()         { return Api._request(API.workflowList()); },
+  upsertWorkflow(data)          { return Api._request(API.workflowUpsert(), data); },
+  deleteWorkflow(data)          { return Api._request(API.workflowDelete(), data); },
+  renameWorkflow(data)          { return Api._request(API.workflowRename(), data); },
+
   // User management
   validateUser(username)        { return Api._request(API.userLogin(username)); },
   getUsers()                    { return Api._request(API.users()); },

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quản lý người dùng — TT SPTD</title>
+  <title>Cấu hình Workflow — TT SPTD</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%237B2CBF' stroke-width='1.5'><path stroke-linecap='round' stroke-linejoin='round' d='M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z'/></svg>">
   <link rel="stylesheet" href="assets/css/variables.css">
   <link rel="stylesheet" href="assets/css/base.css">
@@ -69,8 +69,8 @@
           <span class="sidebar-nav-label">Use Case của tôi</span>
         </a>
 
-        <!-- admin only: user management (active) -->
-        <a href="users.html" class="sidebar-nav-item is-active" id="navUsers" role="menuitem" aria-current="page" style="display:none">
+        <!-- admin only: user management -->
+        <a href="users.html" class="sidebar-nav-item" id="navUsers" role="menuitem" style="display:none">
           <i class="sidebar-nav-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
@@ -78,8 +78,9 @@
           </i>
           <span class="sidebar-nav-label">Quản lý người dùng</span>
         </a>
-        <!-- admin only: workflow catalog -->
-        <a href="workflow-catalog.html" class="sidebar-nav-item" id="navWorkflowCatalog" role="menuitem" style="display:none">
+
+        <!-- admin only: workflow catalog (active) -->
+        <a href="workflow-catalog.html" class="sidebar-nav-item is-active" id="navWorkflowCatalog" role="menuitem" aria-current="page" style="display:none">
           <i class="sidebar-nav-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -88,7 +89,7 @@
           <span class="sidebar-nav-label">Cấu hình Workflow</span>
         </a>
 
-        <!-- admin + champion: review queue -->
+        <!-- admin + teamlead: review queue -->
         <a href="review-queue.html" class="sidebar-nav-item" id="navReviewQueue" role="menuitem" style="display:none">
           <i class="sidebar-nav-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
@@ -147,7 +148,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
           </svg>
         </button>
-        <h1 class="topbar-title">Quản lý người dùng</h1>
+        <h1 class="topbar-title">Cấu hình Workflow &amp; Use case</h1>
         <div class="topbar-user-chip" id="topbarUserChip" style="display:none">
           <div class="topbar-user-avatar" id="topbarAvatar" aria-hidden="true"></div>
           <span class="topbar-user-name" id="topbarUserName"></span>
@@ -156,74 +157,92 @@
 
       <main class="app-content" role="main">
         <div class="page-header" style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-5)">
-          <div style="flex:1">
-            <h2 style="margin:0;font-size:var(--text-xl);font-weight:600">Danh sách người dùng</h2>
-            <p style="margin:var(--space-1) 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)">Quản lý tài khoản, vai trò và team</p>
+          <div style="flex:1;min-width:240px">
+            <h2 style="margin:0;font-size:var(--text-xl);font-weight:600">Danh mục Workflow → Use case</h2>
+            <p style="margin:var(--space-1) 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)">
+              Nguồn droplist khi đăng ký Use case. Lọc theo Team qua sheet <code>TEAM_GROUP_MAP</code>.
+            </p>
           </div>
-          <div style="display:flex;gap:var(--space-2)">
-            <button id="syncUsersBtn" class="btn btn-outline btn--sm" type="button">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="14" height="14" style="vertical-align:middle;margin-right:4px" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-              </svg>Đồng bộ từ UC
-            </button>
-            <button id="addUserBtn" class="btn btn-primary btn--sm" type="button">+ Thêm người dùng</button>
+          <div style="display:flex;gap:var(--space-2);flex-wrap:wrap">
+            <input type="search" id="wfSearch" class="form-control" placeholder="Tìm workflow / use case…" style="min-width:220px">
+            <button id="wfRenameBtn" class="btn btn-outline btn--sm" type="button">Đổi tên Workflow</button>
+            <button id="wfAddBtn" class="btn btn-primary btn--sm" type="button">+ Thêm Use case</button>
           </div>
         </div>
 
-        <div id="usersTableWrap">
-          <p class="empty-state">Đang tải danh sách người dùng…</p>
+        <div id="wfTableWrap">
+          <p class="empty-state">Đang tải danh mục…</p>
         </div>
       </main>
     </div><!-- /app-main -->
   </div><!-- /app-layout -->
 
-  <!-- User Modal -->
-  <div class="modal-overlay hidden" id="userModal" role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
-    <div class="modal-card" style="max-width:480px;width:100%">
+  <!-- Use case Modal -->
+  <div class="modal-overlay hidden" id="wfModal" role="dialog" aria-modal="true" aria-labelledby="wfModalTitle">
+    <div class="modal-card" style="max-width:520px;width:100%">
       <div class="modal-header">
-        <h3 class="modal-title" id="userModalTitle">Thêm người dùng</h3>
-        <button class="modal-close-btn" id="userModalCloseBtn" aria-label="Đóng">&times;</button>
+        <h3 class="modal-title" id="wfModalTitle">Thêm Use case</h3>
+        <button class="modal-close-btn" id="wfModalCloseBtn" aria-label="Đóng">&times;</button>
       </div>
       <div class="modal-body" style="display:flex;flex-direction:column;gap:var(--space-3)">
         <div class="form-group">
-          <label class="form-label" for="umUsername">Username <span style="color:var(--color-error)">*</span></label>
-          <input type="text" id="umUsername" class="form-control" placeholder="vd: nguyenvana" autocomplete="off">
+          <label class="form-label" for="wfNhom">Nhóm <span style="color:var(--color-error)">*</span></label>
+          <select id="wfNhom" class="form-control"></select>
         </div>
         <div class="form-group">
-          <label class="form-label" for="umDisplayName">Tên hiển thị</label>
-          <input type="text" id="umDisplayName" class="form-control" placeholder="Nguyễn Văn A">
+          <label class="form-label" for="wfWorkflow">Workflow <span style="color:var(--color-error)">*</span></label>
+          <input type="text" id="wfWorkflow" class="form-control" list="wfWorkflowList" placeholder="Tên workflow lớn" autocomplete="off">
+          <datalist id="wfWorkflowList"></datalist>
+          <p style="font-size:var(--text-xs);color:var(--color-text-muted);margin:4px 0 0">Gõ tên mới để tạo workflow mới, hoặc chọn workflow đã có.</p>
         </div>
         <div class="form-group">
-          <label class="form-label" for="umEmail">Email</label>
-          <input type="email" id="umEmail" class="form-control" placeholder="nguyenvana@bank.vn">
-        </div>
-        <div class="form-group" id="umPasswordGroup">
-          <label class="form-label" for="umPassword">
-            <span id="umPasswordLabel">Mật khẩu</span> <span id="umPasswordReq" style="color:var(--color-error)">*</span>
-          </label>
-          <input type="password" id="umPassword" class="form-control" placeholder="Tối thiểu 6 ký tự" autocomplete="new-password">
-          <p id="umPasswordHint" style="font-size:var(--text-xs);color:var(--color-text-muted);margin:4px 0 0"></p>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="umRole">Vai trò</label>
-          <select id="umRole" class="form-control">
-            <option value="user">User</option>
-            <option value="teamlead">Teamlead</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="umTeam">Team</label>
-          <input type="text" id="umTeam" class="form-control" placeholder="Team Số">
+          <label class="form-label" for="wfUseCase">Use case</label>
+          <input type="text" id="wfUseCase" class="form-control" placeholder="Tên use case (để trống nếu chỉ tạo workflow rỗng)">
         </div>
         <div class="form-group" style="display:flex;align-items:center;gap:var(--space-2)">
-          <input type="checkbox" id="umActive" style="width:16px;height:16px;accent-color:var(--color-primary)">
-          <label for="umActive" class="form-label" style="margin:0">Đang hoạt động</label>
+          <input type="checkbox" id="wfActive" style="width:16px;height:16px;accent-color:var(--color-primary)" checked>
+          <label for="wfActive" class="form-label" style="margin:0">Hiển thị ở droplist đăng ký (Active)</label>
         </div>
       </div>
+      <div class="modal-footer" style="display:flex;justify-content:space-between;gap:var(--space-2)">
+        <button type="button" id="wfDeleteBtn" class="btn btn-outline" style="color:var(--color-error);display:none">Xóa</button>
+        <div style="display:flex;gap:var(--space-2);margin-left:auto">
+          <button type="button" id="wfModalCancelBtn" class="btn btn-outline">Hủy</button>
+          <button type="button" id="wfModalSaveBtn" class="btn btn-primary">Lưu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rename Workflow Modal -->
+  <div class="modal-overlay hidden" id="wfRenameModal" role="dialog" aria-modal="true" aria-labelledby="wfRenameTitle">
+    <div class="modal-card" style="max-width:520px;width:100%">
+      <div class="modal-header">
+        <h3 class="modal-title" id="wfRenameTitle">Đổi tên Workflow</h3>
+        <button class="modal-close-btn" id="wfRenameCloseBtn" aria-label="Đóng">&times;</button>
+      </div>
+      <div class="modal-body" style="display:flex;flex-direction:column;gap:var(--space-3)">
+        <div class="form-group">
+          <label class="form-label" for="rnNhom">Nhóm</label>
+          <select id="rnNhom" class="form-control"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="rnWorkflow">Workflow hiện tại</label>
+          <select id="rnWorkflow" class="form-control"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="rnNewName">Tên workflow mới <span style="color:var(--color-error)">*</span></label>
+          <input type="text" id="rnNewName" class="form-control" placeholder="Tên mới" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="rnNewNhom">Chuyển sang Nhóm (tùy chọn)</label>
+          <select id="rnNewNhom" class="form-control"></select>
+        </div>
+        <p style="font-size:var(--text-xs);color:var(--color-text-muted);margin:0">Áp dụng cho tất cả Use case thuộc workflow này.</p>
+      </div>
       <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:var(--space-2)">
-        <button type="button" id="userModalCancelBtn" class="btn btn-outline">Hủy</button>
-        <button type="button" id="userModalSaveBtn" class="btn btn-primary">Lưu</button>
+        <button type="button" id="wfRenameCancelBtn" class="btn btn-outline">Hủy</button>
+        <button type="button" id="wfRenameSaveBtn" class="btn btn-primary">Đổi tên</button>
       </div>
     </div>
   </div>
@@ -240,10 +259,8 @@
       if (!AuthService.requireAdmin()) return;
       AuthService.populateSidebarUser();
       AuthService.setupNav();
-      // Keep navUsers visible even though setupNav already shows it for admin
-      var navUsers = document.getElementById('navUsers');
-      if (navUsers) navUsers.style.display = '';
-      // Sidebar toggle
+      var navWf = document.getElementById('navWorkflowCatalog');
+      if (navWf) navWf.style.display = '';
       var sidebar = document.getElementById('appSidebar');
       var overlay = document.getElementById('sidebarOverlay');
       var toggle  = document.getElementById('sidebarToggle');
@@ -257,6 +274,6 @@
   <script src="config/routes.js"></script>
   <script src="assets/js/toast.js"></script>
   <script src="assets/js/api.js"></script>
-  <script src="assets/js/users.js"></script>
+  <script src="assets/js/workflow-catalog.js"></script>
 </body>
 </html>

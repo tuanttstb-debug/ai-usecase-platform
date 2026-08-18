@@ -1,5 +1,34 @@
 # SESSION HANDOVER
 
+## Session: 2026-08-18 (Part 2) — H2 Giai đoạn 2: Nhập liệu theo Workflow + Admin cấu hình WF/US
+**Scope:** Triển khai Giai đoạn 2 (nhập liệu theo Workflow) + tính năng mới do user đề xuất: **trang Admin cấu hình Workflow/US** (thêm mới khi phát sinh; cấu hình lưu tại GAS phục vụ droplist).
+**Branch:** `feat/h2-workflow-input` (nhánh mới từ main sau khi merge auth). **Chưa deploy GAS, chưa merge main.**
+**Status:** ✅ Code xong + test local PASS: **Playwright 98/98 · SPTD 34/34 · KPI 38/38 · ID 14/14** (1 flake A2 "Api is not defined" dưới tải song song — pass khi chạy riêng).
+
+### Quyết định (AskUserQuestion)
+1. UI admin = **trang riêng `workflow-catalog.html`** (admin-only, Pattern A) — không nhồi vào dashboard.
+2. CRUD **chỉ Workflow + US**; Team→Nhóm map sửa trực tiếp trong sheet `TEAM_GROUP_MAP`.
+3. Wizard: **Workflow bắt buộc → US dependent dropdown + "Khác — nhập tự do"** (§6.2).
+
+### Đã làm (chi tiết đầy đủ + việc thủ công: H2_PLAN §8)
+- **GAS:** `WorkflowService.gs` (MỚI: getWorkflowCatalog_ lọc theo Team, list/upsert/delete/rename, `seedWorkflowCatalog()` import 69 US), `WorkflowSeedData.gs` (MỚI: 69 dòng từ xlsx), `Config.gs` (SHEETS+headers+seed Team→Nhóm+cột MASTER `Workflow`/`Workflow_Group`), `Code.gs` (routes workflow-*).
+- **FE:** `workflow-catalog.html`+`workflow-catalog.js` (MỚI, trang admin CRUD); `constants.js`/`wizard.js` (dependent dropdown + name-swap 1 carrier UseCase_Name + "Khác" free-text); `app.js` (fetch catalog theo team, sync edit/nháp, inject Workflow_Group); `validation.js` (Workflow required chỉ khi catalog ready); `routes.js`/`api.js`; nav "Cấu hình Workflow" (admin) vào 8 page + `auth.js setupNav`.
+- **Data source:** đọc `H2/Template nhập Workflow và Use case.xlsx` → 3 Nhóm/23 WF/69 US (verify).
+
+### Blocker
+- **Không chặn code.** Cần **deploy GAS + chạy `seedWorkflowCatalog()`** rồi smoke test trước khi merge main (GAS-first). Trước khi seed: FE fallback catalog rỗng → US về nhập tự do (không vỡ đăng ký).
+
+### Next step
+1. **[P0]** GAS Editor: Edit deployment → New version; chạy `seedWorkflowCatalog()`; smoke test đăng ký (Workflow lọc theo Team → US dependent → "Khác") + trang `workflow-catalog.html` (thêm/sửa/xóa/đổi-tên).
+2. **[P1]** Merge `feat/h2-workflow-input` → main sau smoke test.
+3. **[P3]** Giai đoạn 3 — Scoring mới (H2_PLAN §4).
+
+### Regression risk
+- **UseCase_Name đổi từ text → select (dependent).** Edit UC cũ có US ngoài danh mục → tự chuyển "Khác" + điền lại text (đã xử lý `syncWorkflowSelection`). Offline/chưa seed → Workflow không bắt buộc, US nhập tự do → không chặn. 98/98 Playwright xác nhận (gồm full-UI submit qua nhánh "Khác").
+- **MASTER_DATA thêm 2 cột cuối** — `ensureSheetColumns_` self-heal khi chạy `seedWorkflowCatalog()`; create/update chỉ persist field có trong HEADERS nên an toàn.
+
+---
+
 ## Session: 2026-08-18
 **Scope:** Merge H2 Giai đoạn 1 (auth dùng chung) `feat/h2-shared-auth` → `main` + push thẳng `origin/main`; cập nhật context.
 **Status:** ✅ Merged fast-forward (`fc894b5..2e14332`) + pushed `origin/main`. **⚠️ Chưa smoke test login thật** — user yêu cầu merge trước, chấp nhận rủi ro.

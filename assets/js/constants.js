@@ -3,6 +3,7 @@
    ───────────────────────────────────────── */
 var FIELDS = {
   // ── Form fields (existing — do NOT rename) ───────────────────
+  WORKFLOW:            'Workflow',          // H2 Giai đoạn 2 — chọn trước UseCase_Name
   USE_CASE_NAME:       'UseCase_Name',
   OWNER_NAME:          'Owner_Name',
   OWNER_EMAIL:         'Owner_Email',
@@ -146,6 +147,7 @@ var STEPS = [
     shortTitle: 'Nghiệp vụ',
     subtitle: 'Mô tả bài toán cần giải quyết bằng AI',
     fields: [
+      FIELDS.WORKFLOW,
       FIELDS.USE_CASE_NAME,
       FIELDS.OWNER_NAME,
       FIELDS.TEAM,
@@ -237,12 +239,21 @@ var FIELD_CONFIG = {
 
   /* ── STEP 1: Thông tin nghiệp vụ ── */
 
-  UseCase_Name: {
-    label: 'Tên Use Case',
-    type: 'text',
+  Workflow: {
+    label: 'Workflow',
+    type: 'select',
     required: true,
+    wfRole: 'workflow',          // H2: cascade nạp options từ window.__WF_CATALOG
+    helper: 'Chọn workflow phù hợp — danh sách lọc theo Team của bạn + Workflow chung',
+    group: 'identity'
+  },
+  UseCase_Name: {
+    label: 'Use Case',
+    type: 'select',
+    required: true,
+    wfRole: 'usecase',           // H2: options phụ thuộc Workflow đã chọn; có "Khác — nhập tự do"
     placeholder: 'VD: Tóm tắt nội dung email khách hàng bằng AI',
-    helper: 'Tên ngắn gọn, dễ nhớ — mô tả rõ bài toán AI',
+    helper: 'Chọn từ danh mục theo Workflow, hoặc "Khác — nhập tự do" để đăng ký US mới',
     group: 'identity'
   },
   Owner_Name: {

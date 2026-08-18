@@ -249,4 +249,34 @@ Mỗi giai đoạn theo quy trình: **GAS trước → FE sau → test (Playwrig
 - `tests/helpers.js` fixtures vẫn để role `champion` (auth nhận như teamlead) — đổi khi tiện.
 - Sheet `USERS` nội bộ cũ: ngừng dùng cho auth, giữ lại đối chiếu.
 
-*Cập nhật lần cuối nhật ký: 2026-08-17.*
+### Giai đoạn 2 — Nhập liệu theo Workflow (đang làm, branch `feat/h2-workflow-input`)
+
+**Code đã xong (chưa deploy GAS, chưa merge main) — test local PASS: Playwright 98/98 · SPTD 34/34 · KPI 38/38 · ID 14/14.**
+
+Kèm tính năng mới (theo yêu cầu user 2026-08-18): **trang Admin cấu hình Workflow/US** (`workflow-catalog.html`) để thêm/sửa/xóa/đổi-tên khi phát sinh — nguồn cấu hình lưu tại GAS (sheet `WORKFLOW_CATALOG`), phục vụ droplist đăng ký.
+
+**Quyết định chốt (AskUserQuestion 2026-08-18):** (a) UI admin = **trang riêng** `workflow-catalog.html` (admin-only, Pattern A); (b) CRUD **chỉ Workflow + US** (Team→Nhóm map sửa trực tiếp trong sheet `TEAM_GROUP_MAP`); (c) wizard: **Workflow bắt buộc → US dependent dropdown + "Khác — nhập tự do"**.
+
+**GAS (mới/sửa):**
+- `WorkflowService.gs` (MỚI): `ensureWorkflowSheets_`, `getWorkflowCatalog_(team)` (lọc theo Team, luôn kèm "1. Workflow chung"), `listWorkflowCatalog_` (admin), `workflowUpsert_`/`workflowDelete_`/`workflowRename_` (LockService), `seedWorkflowCatalog()` (PUBLIC — chạy 1 lần import 69 US + seed Team→Nhóm + self-heal cột MASTER).
+- `WorkflowSeedData.gs` (MỚI): `WORKFLOW_SEED_ROWS` = 69 dòng [Nhom, Workflow, UseCase] import từ `H2/Template nhập Workflow và Use case.xlsx`.
+- `Config.gs`: SHEETS += `WORKFLOW`/`TEAM_GROUP`; headers `WORKFLOW_HEADERS`/`TEAM_GROUP_HEADERS`; `TEAM_GROUP_SEED` (§6.1); `WORKFLOW_COMMON_GROUP`; HEADERS (MASTER) += `Workflow`, `Workflow_Group` (cuối bảng → ensureSheetColumns_ self-heal).
+- `Code.gs`: routes `workflow-catalog` (public), `workflow-list`/`workflow-upsert`/`workflow-delete`/`workflow-rename` (admin, `isAdminEmail_`).
+
+**FE (mới/sửa):**
+- `workflow-catalog.html` + `assets/js/workflow-catalog.js` (MỚI): bảng danh mục theo Nhóm→Workflow, modal thêm/sửa US (Nhóm select + Workflow datalist + UseCase + Active) + Xóa, modal Đổi tên Workflow. Nav "Cấu hình Workflow" (admin-only) thêm vào 8 page + `auth.js setupNav` (`navWorkflowCatalog`).
+- `constants.js`: `FIELDS.WORKFLOW`; chèn vào `STEPS[0]` trước UseCase_Name; `FIELD_CONFIG.Workflow` (select, wfRole); `UseCase_Name` text→select (wfRole).
+- `wizard.js` `FieldBuilder`: `_bindWorkflowCascade` + `applyWorkflowCatalog`/`_populateUseCaseOptions`/`_syncUseCaseCustom`/`syncWorkflowSelection`. Dependent Workflow→US; "Khác" → ô text tự do; **name-swap** đảm bảo luôn đúng 1 carrier `name="UseCase_Name"`.
+- `app.js`: fetch `workflow-catalog` theo team user (song song lookup/nextId) → `applyWorkflowCatalog`; re-sync edit/nháp; inject `Workflow_Group` lúc submit. Offline/không seed → catalog rỗng, US về nhập tự do (không chặn).
+- `validation.js`: Workflow bắt buộc **chỉ khi** `window.__WF_CATALOG_READY` (offline không chặn).
+- `routes.js`/`api.js`: `workflowCatalog/List/Upsert/Delete/Rename` + methods.
+- `tests/05`: `fillAndGoToSubmit` route UseCase_Name qua cascade (nhánh "Khác").
+
+**⚠️ VIỆC THỦ CÔNG để chạy được (GAS Editor AI US project) — theo thứ tự GAS→FE:**
+1. Deploy code GAS mới: **Edit deployment → New version** (URL không đổi).
+2. Chạy **`seedWorkflowCatalog()`** 1 lần → tạo `WORKFLOW_CATALOG` (69 US) + `TEAM_GROUP_MAP` (seed §6.1) + thêm cột `Workflow`/`Workflow_Group` vào MASTER_DATA. (Authorize nếu được hỏi.)
+3. (tùy chọn) Sửa `TEAM_GROUP_MAP` nếu muốn đổi Team→Nhóm (vd QLDM tách riêng).
+4. Smoke test: đăng ký UC → chọn Workflow (lọc đúng theo Team) → US dependent → "Khác" nhập tự do → lưu có `Workflow`/`Workflow_Group`; admin mở `workflow-catalog.html` thêm/sửa/xóa/đổi-tên.
+5. Sau smoke test → merge `feat/h2-workflow-input` → `main`.
+
+*Cập nhật lần cuối nhật ký: 2026-08-18 (Giai đoạn 2 code xong, chờ deploy GAS + seed).*

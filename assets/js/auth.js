@@ -209,6 +209,7 @@ var AuthService = (function () {
       if (isAdm) {
         show('navDashboard');
         show('navUsers');
+        show('navWorkflowCatalog');
         show('navReviewQueue');
       } else if (isTl) {
         show('navReviewQueue');

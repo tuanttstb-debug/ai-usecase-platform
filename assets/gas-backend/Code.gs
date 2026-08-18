@@ -354,6 +354,44 @@ function route_(action, params, body) {
     return createResponse_(true, 'Sync hoàn tất', syncUsersToMaster_());
   }
 
+  // ── Workflow catalog endpoints (H2 Giai đoạn 2) ────────────────
+
+  // Cây Workflow → Use case đã LỌC theo Team (droplist đăng ký). Public (mọi user đăng nhập).
+  if (action === 'workflow-catalog') {
+    var wcTeam = params.team || body.team || '';
+    return createResponse_(true, 'Workflow catalog', getWorkflowCatalog_(wcTeam));
+  }
+
+  // Toàn bộ catalog + Nhóm + Team map (trang quản lý admin)
+  if (action === 'workflow-list') {
+    return createResponse_(true, 'Danh sách workflow', listWorkflowCatalog_());
+  }
+
+  // Thêm/sửa 1 dòng US (admin only)
+  if (action === 'workflow-upsert') {
+    if (!isAdminEmail_(body.reviewer_email || body.admin_email || '')) {
+      return createResponse_(false, 'Không có quyền cấu hình workflow');
+    }
+    var wuRes = workflowUpsert_(body);
+    return createResponse_(true, wuRes.created ? 'Đã thêm Use case' : 'Đã cập nhật Use case', wuRes);
+  }
+
+  // Xóa 1 dòng US (admin only)
+  if (action === 'workflow-delete') {
+    if (!isAdminEmail_(body.reviewer_email || body.admin_email || '')) {
+      return createResponse_(false, 'Không có quyền cấu hình workflow');
+    }
+    return createResponse_(true, 'Đã xóa', workflowDelete_(body));
+  }
+
+  // Đổi tên Workflow (áp cho mọi US của workflow đó) (admin only)
+  if (action === 'workflow-rename') {
+    if (!isAdminEmail_(body.reviewer_email || body.admin_email || '')) {
+      return createResponse_(false, 'Không có quyền cấu hình workflow');
+    }
+    return createResponse_(true, 'Đã đổi tên workflow', workflowRename_(body));
+  }
+
   // Khởi tạo sheet USERS + seed từ ADMIN_EMAILS (admin only, gọi 1 lần)
   if (action === 'user-init') {
     var initAdmin = body.reviewer_email || body.admin_email || params.admin_email || '';

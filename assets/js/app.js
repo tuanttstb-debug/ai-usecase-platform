@@ -2,6 +2,8 @@
   var currentRecordId  = null;
   // Lưu data edit mode để re-apply sau khi lookup rebuild xong (fix race condition)
   var _pendingEditData = null;
+  // Lưu data nháp đã khôi phục để re-sync Workflow/UseCase sau khi catalog nạp
+  var _pendingDraftData = null;
   // Pre-fetch lúc load để không block submit critical path (phương án 3 — giảm timeout)
   var _preloadedNextId = null;
 
@@ -146,11 +148,19 @@
     });
   }
 
-  /* ── Load lookup data + pre-fetch nextId song song (không block form render) ── */
+  /* ── Load lookup data + workflow catalog + pre-fetch nextId song song (không block form render) ── */
   async function loadLookupData() {
-    // Fetch lookup và nextId đồng thời — cả 2 là read ops, không phụ thuộc nhau
-    const [lookupResult, idResult] = await Promise.allSettled([
+    // Team của user để GAS lọc workflow catalog (mọi user thấy "Workflow chung" + Nhóm của Team)
+    var team = '';
+    if (typeof AuthService !== 'undefined') {
+      var u = AuthService.getUser();
+      if (u) team = u.team || '';
+    }
+
+    // Fetch lookup, workflow catalog, nextId đồng thời — đều là read ops, không phụ thuộc nhau
+    const [lookupResult, wfResult, idResult] = await Promise.allSettled([
       Api.getLookup(),
+      Api.getWorkflowCatalog(team),
       Api.getNextId()
     ]);
 
@@ -166,9 +176,34 @@
       );
     }
 
+    // Workflow catalog → nạp droplist Workflow/UseCase (dependent). Lỗi → fallback rỗng (US = nhập tự do).
+    if (wfResult.status === 'fulfilled' && wfResult.value && wfResult.value.groups) {
+      window.__WF_CATALOG = wfResult.value;
+    } else {
+      if (wfResult.status !== 'fulfilled') console.warn('Không load được workflow catalog:', wfResult.reason && wfResult.reason.message);
+      window.__WF_CATALOG = { groups: [] };
+    }
+    FieldBuilder.applyWorkflowCatalog();
+    // Re-apply lựa chọn Workflow/UseCase cho edit mode / nháp sau khi catalog đã nạp
+    var syncSrc = _pendingEditData || _pendingDraftData;
+    if (syncSrc) FieldBuilder.syncWorkflowSelection(syncSrc.Workflow, syncSrc.UseCase_Name);
+
     if (idResult.status === 'fulfilled' && idResult.value && idResult.value.next_id) {
       _preloadedNextId = idResult.value.next_id;
     }
+  }
+
+  /* Suy ra Nhóm workflow từ tên Workflow đã chọn (để lưu Workflow_Group). */
+  function _workflowGroupOf(name) {
+    var cat = window.__WF_CATALOG;
+    if (!cat || !cat.groups || !name) return '';
+    for (var i = 0; i < cat.groups.length; i++) {
+      var ws = cat.groups[i].workflows || [];
+      for (var j = 0; j < ws.length; j++) {
+        if (ws[j].name === name) return cat.groups[i].nhom || '';
+      }
+    }
+    return '';
   }
 
   /* ── Rebuild select/checkbox sau khi lookup load xong ── */
@@ -232,6 +267,11 @@
   /* ── Form Submission ── */
   async function submitForm() {
     const data = FormMapper.collectData();
+    // H2: suy ra Nhóm workflow từ Workflow đã chọn để lưu kèm (Workflow_Group)
+    if (data.Workflow) {
+      var wg = _workflowGroupOf(data.Workflow);
+      if (wg) data.Workflow_Group = wg;
+    }
     // Inject self-assessment slider values
     var sliderBiz = document.getElementById('sliderBizValue');
     var sliderInn = document.getElementById('sliderInnovation');
@@ -370,8 +410,10 @@
     if (!banner) return;
     banner.classList.remove('hidden');
     restoreBtn.addEventListener('click', () => {
+      _pendingDraftData = draft;   // để loadLookupData re-sync nếu catalog chưa nạp
       FormMapper.populateData(draft);
       FieldBuilder.refreshConditionals();
+      FieldBuilder.syncWorkflowSelection(draft.Workflow, draft.UseCase_Name);
       banner.classList.add('hidden');
       Toast.show('Đã khôi phục bản nháp', 'success');
     }, { once: true });
