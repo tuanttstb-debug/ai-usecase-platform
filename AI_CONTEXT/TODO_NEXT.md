@@ -6,8 +6,8 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ## 🔜 H2 — ưu tiên session tiếp theo
 
-- [ ] **[P1] Smoke test login thật (Giai đoạn 1)** — branch `feat/h2-shared-auth`. Đăng nhập username+password (tài khoản trong `User_Master`) → role teamlead thấy đúng nav; đổi mật khẩu (`change-password.html`); admin tạo/sửa/đặt-lại-mật-khẩu user + sync owner. Lỗi token → soát `AUTH_SECRET` AI US == SHTD.
-- [ ] **[P1] Merge `feat/h2-shared-auth` → `main`** sau smoke test (GitHub Pages serve main → merge mới live).
+- [x] **[P1] Merge `feat/h2-shared-auth` → `main` + push** — DONE 2026-08-18 (fast-forward `fc894b5..2e14332`, pushed `origin/main`). Merge theo yêu cầu user, **TRƯỚC khi smoke test** (chấp nhận rủi ro). GitHub Pages nay serve auth mới (hard-refresh vì cache).
+- [ ] **[P0 — VIỆC ĐẦU TIÊN] Smoke test login thật (Giai đoạn 1) TRÊN LIVE** — đã merge nên test thẳng trên GitHub Pages (hard-refresh cache). Đăng nhập username+password (tài khoản trong `User_Master`) → role teamlead thấy đúng nav; đổi mật khẩu (`change-password.html`); admin tạo/sửa/đặt-lại-mật-khẩu user + sync owner. **Lỗi token/không login được → soát ngay: (a) `AUTH_SECRET` AI US == SHTD; (b) `User_Master` có đủ user + Password_Hash; (c) GAS đã authorize spreadsheet SHTD `1cpg1p…`.** Nếu vỡ → rollback nhanh: `git revert` hoặc trỏ Pages về commit `fc894b5`.
 - [ ] **[P2] Giai đoạn 2 — Nhập liệu theo Workflow** (H2_PLAN §3): sheet `WORKFLOW_CATALOG` (import 69 US từ `H2/Template nhập Workflow và Use case.xlsx`) + `TEAM_GROUP_MAP` (Số/CV/BL=PO · PTKD MB/MN=PTKD&QLDM · QLDM tạm PTKD&QLDM · ai cũng thấy "Workflow chung"); endpoint `workflow-catalog`; dependent dropdown Step 1; option "Khác — nhập tự do"; thêm cột `Workflow` vào MASTER_DATA.
 - [ ] **[P3] Giai đoạn 3 — Scoring mới** (lớn nhất, thay thế hoàn toàn): Điểm US (hội đồng 4 teamlead, 30/40/30, bình quân) + Điểm cá nhân (teamlead, 30/20/30/20, 0–10, 1 lần cuối kỳ 31/12/2026). Bỏ auto-score + SPTD 80-10-10; rebuild leaderboard/KPI/review. Sheet mới `UC_COUNCIL_SCORE`, `PERSONAL_SCORE`.
 

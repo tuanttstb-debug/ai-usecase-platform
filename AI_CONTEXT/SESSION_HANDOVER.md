@@ -1,5 +1,28 @@
 # SESSION HANDOVER
 
+## Session: 2026-08-18
+**Scope:** Merge H2 Giai đoạn 1 (auth dùng chung) `feat/h2-shared-auth` → `main` + push thẳng `origin/main`; cập nhật context.
+**Status:** ✅ Merged fast-forward (`fc894b5..2e14332`) + pushed `origin/main`. **⚠️ Chưa smoke test login thật** — user yêu cầu merge trước, chấp nhận rủi ro.
+
+### Đã làm
+1. **Fast-forward merge** `feat/h2-shared-auth` (4 commit: `2e14332`, `50bc341`, `e377098`, `413071c`) vào `main` — không tạo merge commit, lịch sử thẳng.
+2. **Push `origin/main`** (theo yêu cầu user, push thẳng lên main).
+3. **Cập nhật context**: PROJECT_STATE (trạng thái merged + cảnh báo chưa smoke test), TODO_NEXT (đánh dấu merge xong, smoke test lên P0 việc đầu tiên, kèm bước rollback), handover này.
+4. **KHÔNG commit** `evd/weekly-update/*.png` (modified) và `H2/*.xlsx` (untracked) — giữ nguyên quyết định §5 phiên trước (không đưa binary/screenshot vào commit).
+
+### Quyết định
+- **Merge trước, smoke test sau** — user chỉ đạo rõ. Rủi ro auth breaking (bỏ fallback local; mọi user phải có trong `User_Master` + mật khẩu) được chấp nhận có ý thức. Đã ghi cảnh báo + đường rollback (revert / trỏ Pages về `fc894b5`) trong TODO_NEXT.
+
+### Next step
+1. **[P0] Smoke test login thật trên GitHub Pages live** (hard-refresh) — xem TODO_NEXT. Nếu không login được → soát `AUTH_SECRET`, `User_Master`, GAS authorize `1cpg1p…`.
+2. **[P2] Giai đoạn 2 — Nhập liệu theo Workflow** (H2_PLAN §3).
+3. **[P3] Giai đoạn 3 — Scoring mới** (H2_PLAN §4).
+
+### Regression risk
+- **Đăng nhập breaking đã LÊN LIVE** (username-only → username+password, bỏ fallback local). Nếu GAS/AUTH_SECRET/User_Master lệch → toàn bộ user không login được. Chưa smoke test → theo dõi sát sau khi Pages cập nhật cache.
+
+---
+
 ## Session: 2026-08-17
 **Scope:** H2 — (1) Phân tích + lập kế hoạch triển khai H2 (3 hạng mục); (2) Triển khai **Giai đoạn 1: Auth dùng chung user/mật khẩu với SHTD-Dashboard** (phương án A).
 **Branch:** `feat/h2-shared-auth` (commit `50bc341`) — **CHƯA merge `main`** → GitHub Pages chưa live.
