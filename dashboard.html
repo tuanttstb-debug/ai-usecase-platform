@@ -96,6 +96,10 @@
           </i>
           <span class="sidebar-nav-label">Hàng đợi Review</span>
         </a>
+        <a href="personal-score.html" class="sidebar-nav-item" id="navPersonalScore" role="menuitem" style="display:none">
+          <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg></i>
+          <span class="sidebar-nav-label">Chấm điểm cá nhân</span>
+        </a>
 
         <div class="sidebar-divider" aria-hidden="true"></div>
         <span class="sidebar-section-label">AI Governance</span>
@@ -238,7 +242,9 @@
             <button class="dash-tab" data-tab="kpi" role="tab" aria-selected="false" id="tab-btn-kpi">
               KPI &amp; Tiến độ
             </button>
-            <button class="dash-tab" data-tab="sptd" role="tab" aria-selected="false" id="tab-btn-sptd">
+            <!-- H2 Giai đoạn 3: tab Điểm SPTD (80-10-10) NGƯNG dùng — thay bằng mô hình chấm mới
+                 (Điểm US hội đồng + Điểm cá nhân) trên Leaderboard + trang review-queue/personal-score. -->
+            <button class="dash-tab" data-tab="sptd" role="tab" aria-selected="false" id="tab-btn-sptd" style="display:none">
               Điểm SPTD
             </button>
           </div>

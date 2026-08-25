@@ -290,6 +290,15 @@ var Api = {
   recalculateScores(adminEmail) { return Api._request(API.scoreRecalc(),  { admin_email: adminEmail }); },
   recalculateRankings(adminEmail){ return Api._request(API.rankRecalc(),  { admin_email: adminEmail }); },
 
+  // ── H2 Giai đoạn 3: chấm điểm mới ──────────────────────────────
+  // token đính vào payload để GAS verify server-side (fallback reviewer_email nếu thiếu token).
+  submitCouncilScore(data)      { return Api._request(API.councilScoreSubmit(), data, 30000); },
+  listCouncilScores(recordId)   { return Api._request(API.councilScoreList(recordId)); },
+  getCouncilProgress()          { return Api._request(API.councilProgress()); },
+  submitPersonalScore(data)     { return Api._request(API.personalScoreSubmit(), data, 30000); },
+  listPersonalScores(team)      { return Api._request(API.personalScoreList(team)); },
+  getH2Leaderboard(filters)     { return Api._request(API.h2Leaderboard(filters)); },
+
   // ── Convenience: callback-style JSONP (for pages that don't use Promises) ──
   jsonp(url, callback) {
     var cbName  = '__gasCb_' + Date.now() + '_' + Math.random().toString(36).slice(2);

@@ -14,7 +14,9 @@ var SHEETS = {
   CONFIG:      'CONFIG',         // System config (NEXT_ID counter, v.v.)
   WEEKLY_LOG:  'WEEKLY_LOG',     // Lịch sử cập nhật tiến độ tuần (1 row/lần submit)
   WORKFLOW:    'WORKFLOW_CATALOG',// H2 Giai đoạn 2: danh mục Workflow → Use case (droplist đăng ký)
-  TEAM_GROUP:  'TEAM_GROUP_MAP'  // H2 Giai đoạn 2: map Team → Nhóm workflow được thấy
+  TEAM_GROUP:  'TEAM_GROUP_MAP', // H2 Giai đoạn 2: map Team → Nhóm workflow được thấy
+  UC_COUNCIL:  'UC_COUNCIL_SCORE',// H2 Giai đoạn 3: điểm US do hội đồng teamlead chấm (1 row/reviewer/UC)
+  PERSONAL:    'PERSONAL_SCORE'  // H2 Giai đoạn 3: điểm cá nhân do teamlead chấm (1 row/member, cuối kỳ)
 };
 
 // ── WORKFLOW_CATALOG Column Headers (H2 Giai đoạn 2) ───────────────
@@ -273,3 +275,43 @@ var SCORE_WEIGHTS = {
 // ── Governance v3.0 — Weekly Report ──────────────────────────────
 var OVERDUE_DAYS_THRESHOLD    = 7;   // Số ngày không cập nhật → overdue warning
 var BOTTOM_PERFORMER_THRESHOLD = 10; // % dưới cùng → committee review bắt buộc
+
+// ══════════════════════════════════════════════════════════════════
+// H2 GIAI ĐOẠN 3 — MÔ HÌNH CHẤM ĐIỂM MỚI (thay thế HOÀN TOÀN auto 70/30 + SPTD 80-10-10)
+// Nguồn: AI_CONTEXT/H2_PLAN.md §4 + hub binh-dan-hoa-ai-H2/config/kpi_roles.yaml.
+// Mọi tiêu chí nhập thang 0–10 (H2_PLAN §6.5), quy đổi về thang 100 qua trọng số.
+// ══════════════════════════════════════════════════════════════════
+
+var H2_CRITERIA_MAX = 10;               // Thang nhập mỗi tiêu chí (0–10)
+
+// ── Điểm US — Hội đồng teamlead chấm mỗi UC (3 tiêu chí 30/40/30) ──
+// 1 row / (reviewer × UC). Điểm US cuối = bình quân Member_Score các thành viên đã chấm.
+var UC_COUNCIL_HEADERS = [
+  'Score_ID', 'Record_ID', 'UseCase_ID', 'Reviewer',
+  'Time_Saving', 'Automation', 'Creativity',  // 3 tiêu chí, mỗi cái 0–10
+  'Member_Score',                              // = Σ(tiêu chí/10 × trọng số) × 100, tối đa 100
+  'Comment', 'Scored_At'
+];
+var H2_UC_WEIGHTS = {
+  TIME_SAVING: 0.30,   // Tiết kiệm thời gian
+  AUTOMATION:  0.40,   // Mức độ tự động hóa
+  CREATIVITY:  0.30    // Tính sáng tạo
+};
+
+// ── Điểm cá nhân — Teamlead chấm mỗi thành viên (4 tiêu chí 30/20/30/20) ──
+// 1 row / member. Chấm 1 lần cuối kỳ (hạn 31/12/2026). Final = Σ(tiêu chí/10 × trọng số) × 100.
+var PERSONAL_HEADERS = [
+  'Score_ID', 'Username', 'Display_Name', 'Team',
+  'Diversity', 'AI_Proficiency', 'Product_Quality', 'Quantity_Met', // 4 tiêu chí 0–10
+  'Final_Score',                                                     // tối đa 100
+  'Scored_By', 'Comment', 'Scored_At'
+];
+var H2_PERSONAL_WEIGHTS = {
+  DIVERSITY:       0.30,  // Mức độ đa dạng
+  AI_PROFICIENCY:  0.20,  // Thành thạo ứng dụng AI
+  PRODUCT_QUALITY: 0.30,  // Chất lượng sản phẩm
+  QUANTITY_MET:    0.20   // Số lượng đủ theo yêu cầu (định mức 1 UC duyệt/người/tuần)
+};
+
+// Hạn chấm điểm cá nhân cuối kỳ (thông tin — không hard-block server-side ở Đợt 1).
+var H2_PERSONAL_DEADLINE = '2026-12-31';

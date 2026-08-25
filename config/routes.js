@@ -76,5 +76,24 @@ var API = {
   managerReview:  () => `${_gasBase}?action=manager-review`,
   scoreRecalc:    () => `${_gasBase}?action=score-recalc`,
   rankRecalc:     () => `${_gasBase}?action=rank-recalc`,
-  championReview: () => `${_gasBase}?action=champion-review`
+  championReview: () => `${_gasBase}?action=champion-review`,
+
+  // ── H2 Giai đoạn 3: chấm điểm mới (hội đồng US + cá nhân) ──────────
+  councilScoreSubmit: () => `${_gasBase}?action=council-score-submit`,
+  councilScoreList:   (recordId) => `${_gasBase}?action=council-score-list&record_id=${encodeURIComponent(recordId)}`,
+  councilProgress:    () => `${_gasBase}?action=council-progress`,
+  personalScoreSubmit:() => `${_gasBase}?action=personal-score-submit`,
+  personalScoreList:  (team) => {
+    var url = `${_gasBase}?action=personal-score-list`;
+    if (team) url += '&team=' + encodeURIComponent(team);
+    return url;
+  },
+  h2Leaderboard:      (filters) => {
+    var url = `${_gasBase}?action=h2-leaderboard`;
+    if (filters) {
+      if (filters.team)  url += '&team='  + encodeURIComponent(filters.team);
+      if (filters.limit) url += '&limit=' + encodeURIComponent(filters.limit);
+    }
+    return url;
+  }
 };

@@ -149,6 +149,10 @@
         </i>
         <span class="sidebar-nav-label">Hàng đợi Review</span>
       </a>
+      <a href="personal-score.html" class="sidebar-nav-item" id="navPersonalScore" role="menuitem" style="display:none">
+        <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg></i>
+        <span class="sidebar-nav-label">Chấm điểm cá nhân</span>
+      </a>
 
       <div class="sidebar-divider" aria-hidden="true"></div>
       <span class="sidebar-section-label">AI Governance</span>
@@ -213,13 +217,8 @@
       </div>
       <div class="lb-filters" style="margin-top:var(--space-4)">
         <label style="font-size:var(--text-sm); color:var(--color-text-secondary)">Lọc theo:</label>
-        <select class="lb-filter-select" id="filterCategory" onchange="loadLeaderboard()">
+        <select class="lb-filter-select" id="filterCategory" onchange="loadLeaderboard()" style="display:none">
           <option value="">Tất cả category</option>
-          <option value="PRODUCTIVITY">Năng suất cá nhân</option>
-          <option value="ANALYSIS">Phân tích &amp; Review</option>
-          <option value="AUTOMATION">Tự động hóa</option>
-          <option value="KNOWLEDGE">Quản lý tri thức</option>
-          <option value="ADVANCED_AI">AI nâng cao</option>
         </select>
         <select class="lb-filter-select" id="filterTeam" onchange="loadLeaderboard()">
           <option value="">Tất cả team</option>
@@ -227,18 +226,17 @@
       </div>
 
       <div class="lb-tabs">
-        <div class="lb-tab is-active" data-tab="top" onclick="switchTab('top', this)">Top Performers</div>
-        <div class="lb-tab" data-tab="bottom" onclick="switchTab('bottom', this)">Cần cải thiện</div>
-        <div class="lb-tab" data-tab="category" onclick="switchTab('category', this)">Theo Category</div>
+        <div class="lb-tab is-active" data-tab="top" onclick="switchTab('top', this)">Điểm US (hội đồng)</div>
+        <div class="lb-tab" data-tab="personal" onclick="switchTab('personal', this)">Điểm cá nhân</div>
       </div>
     </div>
 
     <div style="padding: var(--space-6) var(--space-8)">
-      <!-- Top performers tab -->
+      <!-- UC ranking (council average) tab -->
       <div id="tabTop">
         <div class="section-panel">
           <div class="section-panel-header">
-            <span class="section-panel-title">🏆 Top Performers</span>
+            <span class="section-panel-title">🏆 Điểm US — bình quân hội đồng (30/40/30)</span>
             <span id="topCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span>
           </div>
           <div class="section-panel-body" id="topTable">
@@ -247,23 +245,16 @@
         </div>
       </div>
 
-      <!-- Bottom performers tab -->
-      <div id="tabBottom" style="display:none">
+      <!-- Personal ranking tab -->
+      <div id="tabPersonal" style="display:none">
         <div class="section-panel">
           <div class="section-panel-header">
-            <span class="section-panel-title">⚠️ Cần cải thiện</span>
-            <span id="bottomCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span>
+            <span class="section-panel-title">👤 Điểm cá nhân — teamlead chấm (30/20/30/20)</span>
+            <span id="personalCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span>
           </div>
-          <div class="section-panel-body" id="bottomTable">
+          <div class="section-panel-body" id="personalTable">
             <div class="lb-loading"><div class="spinner"></div> Đang tải...</div>
           </div>
-        </div>
-      </div>
-
-      <!-- Category tab -->
-      <div id="tabCategory" style="display:none">
-        <div id="categoryContent">
-          <div class="lb-loading"><div class="spinner"></div> Đang tải...</div>
         </div>
       </div>
     </div>
@@ -335,11 +326,10 @@ function initAuth() {
 }
 
 function loadLeaderboard() {
-  var category = document.getElementById('filterCategory').value;
-  var team     = document.getElementById('filterTeam').value;
+  var team = document.getElementById('filterTeam').value;
 
   setLoading(true);
-  Api.jsonp(API.leaderboard({ category: category, team: team, limit: 20 }), function(res) {
+  Api.jsonp(API.h2Leaderboard({ team: team, limit: 50 }), function(res) {
     if (!res || !res.success) { setError('Không tải được dữ liệu'); return; }
     _lbData = res.data;
     _lbCache = {};
@@ -350,17 +340,17 @@ function loadLeaderboard() {
 
 function renderAll(data) {
   if (!data) return;
-  renderTable('topTable',    data.top_performers,    false);
-  renderTable('bottomTable', data.bottom_performers, true);
-  renderCategorySection(data.category_rankings);
-  document.getElementById('topCount').textContent    = (data.top_performers    || []).length + ' use cases';
-  document.getElementById('bottomCount').textContent = (data.bottom_performers || []).length + ' use cases';
+  var uc = data.uc_ranking || [];
+  var personal = data.personal_ranking || [];
+  renderUcTable('topTable', uc);
+  renderPersonalTable('personalTable', personal);
+  document.getElementById('topCount').textContent      = uc.length + ' use cases';
+  document.getElementById('personalCount').textContent = personal.length + ' thành viên';
+
   // Populate team dropdown from data
   var currentTeam = document.getElementById('filterTeam').value;
   var teams = {};
-  (data.top_performers || []).concat(data.bottom_performers || []).forEach(function(uc) {
-    if (uc.team) teams[uc.team] = 1;
-  });
+  uc.concat(personal).forEach(function(r) { if (r.team) teams[r.team] = 1; });
   var sel = document.getElementById('filterTeam');
   while (sel.options.length > 1) sel.remove(1);
   Object.keys(teams).sort().forEach(function(t) {
@@ -370,36 +360,28 @@ function renderAll(data) {
   });
 }
 
-function renderTable(containerId, items, isBottom) {
+// UC ranking = bình quân điểm hội đồng (Điểm US /100)
+function renderUcTable(containerId, items) {
   var el = document.getElementById(containerId);
   if (!items || items.length === 0) {
-    el.innerHTML = '<div style="padding:var(--space-8);text-align:center;color:var(--color-text-muted)">Chưa có dữ liệu xếp hạng</div>';
+    el.innerHTML = '<div style="padding:var(--space-8);text-align:center;color:var(--color-text-muted)">Chưa có UC nào được hội đồng chấm</div>';
     return;
   }
   var rows = items.map(function(uc, i) {
     _lbCache[uc.usecase_id] = uc;
     var rank  = uc.rank || (i + 1);
-    var cls   = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : isBottom ? 'bottom' : 'normal';
+    var cls   = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
     var rankCat = uc.rank_category || '';
     var pillStyle = RANK_LABELS[rankCat] ? ('background:' + RANK_LABELS[rankCat].bg + ';color:' + RANK_LABELS[rankCat].color) : '';
-    var rewardBadge = String(uc.reward_eligible).toUpperCase() === 'TRUE'
-      ? '<span style="font-size:10px;background:#E8F5E9;color:#2E7D32;padding:2px 6px;border-radius:10px;margin-left:4px">Khen thưởng</span>' : '';
-    var warnBadge = String(uc.warning_flag).toUpperCase() === 'TRUE'
-      ? '<span style="font-size:10px;background:#FFEBEE;color:#C62828;padding:2px 6px;border-radius:10px;margin-left:4px">Cảnh báo</span>' : '';
-    var autoScore  = uc.auto_score   || 0;
-    var champScore = uc.manual_score || 0;
-    var totalScore = uc.total_score  || 0;
-    var comment    = uc.review_comment || '';
+    var council = (uc.scored_count || 0) + '/' + (uc.council_size || 4);
     var uid = esc(uc.usecase_id).replace(/'/g, '\\\'');
     return '<tr class="lb-row-clickable" onclick="lbOpenDetail(\'' + uid + '\')">' +
       '<td><div class="rank-num ' + cls + '">' + rank + '</div></td>' +
-      '<td><div class="owner-cell"><span class="owner-name">' + esc(uc.name) + rewardBadge + warnBadge + '</span><span class="owner-team">' + esc(uc.usecase_id) + ' · ' + esc(uc.team) + '</span></div></td>' +
+      '<td><div class="owner-cell"><span class="owner-name">' + esc(uc.name) + '</span><span class="owner-team">' + esc(uc.usecase_id) + ' · ' + esc(uc.team) + '</span></div></td>' +
       '<td><div class="owner-cell"><span class="owner-name">' + esc(uc.owner_name) + '</span></div></td>' +
       '<td><span class="rank-pill" style="' + pillStyle + '">' + (RANK_LABELS[rankCat] ? RANK_LABELS[rankCat].label : (rankCat || '—')) + '</span></td>' +
-      '<td class="lb-score-num lb-score-auto">' + autoScore + '</td>' +
-      '<td class="lb-score-num lb-score-champion">' + champScore + '</td>' +
-      '<td class="lb-score-num lb-score-total">' + totalScore + '</td>' +
-      '<td><div class="lb-comment-cell" title="' + esc(comment) + '">' + esc(comment) + '</div></td>' +
+      '<td class="lb-score-num" style="text-align:center">' + council + '</td>' +
+      '<td class="lb-score-num lb-score-total">' + (uc.uc_score || 0) + '</td>' +
       '</tr>';
   }).join('');
 
@@ -409,50 +391,42 @@ function renderTable(containerId, items, isBottom) {
     '<th>Use Case</th>' +
     '<th>Người đăng ký</th>' +
     '<th>Hạng</th>' +
-    '<th class="lb-score-head">Auto<br><small style="font-weight:400;opacity:.7">/70</small></th>' +
-    '<th class="lb-score-head">Champion<br><small style="font-weight:400;opacity:.7">/30</small></th>' +
-    '<th class="lb-score-head">Tổng<br><small style="font-weight:400;opacity:.7">/100</small></th>' +
-    '<th>Comment</th>' +
+    '<th class="lb-score-head">Hội đồng</th>' +
+    '<th class="lb-score-head">Điểm US<br><small style="font-weight:400;opacity:.7">/100</small></th>' +
     '</tr></thead>' +
     '<tbody>' + rows + '</tbody></table>';
 }
 
-function renderCategorySection(catRankings) {
-  var el = document.getElementById('categoryContent');
-  if (!catRankings || Object.keys(catRankings).length === 0) {
-    el.innerHTML = '<div style="text-align:center;padding:var(--space-8);color:var(--color-text-muted)">Chưa có dữ liệu theo category</div>';
+// Personal ranking = điểm cá nhân do teamlead chấm (Điểm CN /100)
+function renderPersonalTable(containerId, items) {
+  var el = document.getElementById(containerId);
+  if (!items || items.length === 0) {
+    el.innerHTML = '<div style="padding:var(--space-8);text-align:center;color:var(--color-text-muted)">Chưa có thành viên nào được chấm điểm cá nhân</div>';
     return;
   }
-  var html = '';
-  Object.keys(catRankings).forEach(function(cat) {
-    var items = catRankings[cat];
-    if (!items || items.length === 0) return;
-    var label = CATEGORY_LABELS[cat] || cat;
-    html += '<div class="section-panel" style="margin-bottom:var(--space-5)">';
-    html += '<div class="section-panel-header"><span class="section-panel-title">' + label + '</span><span style="font-size:var(--text-xs);color:var(--color-text-secondary)">' + items.length + ' use cases</span></div>';
-    html += '<div class="section-panel-body">';
-    var rows = items.slice(0, 5).map(function(uc, i) {
-      _lbCache[uc.usecase_id] = uc;
-      var uid = esc(uc.usecase_id).replace(/'/g, '\\\'');
-      return '<tr class="lb-row-clickable" onclick="lbOpenDetail(\'' + uid + '\')">' +
-        '<td style="width:32px;color:var(--color-text-secondary);font-weight:600">' + (i+1) + '</td>' +
-        '<td><span style="font-weight:500">' + esc(uc.name) + '</span><br><span style="font-size:11px;color:var(--color-text-secondary)">' + esc(uc.team) + ' · ' + esc(uc.owner_name) + '</span></td>' +
-        '<td class="lb-score-num lb-score-auto">' + (uc.auto_score   || 0) + '</td>' +
-        '<td class="lb-score-num lb-score-champion">' + (uc.manual_score || 0) + '</td>' +
-        '<td class="lb-score-num lb-score-total">' + (uc.total_score  || 0) + '</td>' +
-        '</tr>';
-    }).join('');
-    html += '<table class="rank-table">' +
-      '<thead><tr>' +
-      '<th>#</th><th>Use Case</th>' +
-      '<th class="lb-score-head">Auto<br><small style="font-weight:400;opacity:.7">/70</small></th>' +
-      '<th class="lb-score-head">Champion<br><small style="font-weight:400;opacity:.7">/30</small></th>' +
-      '<th class="lb-score-head">Tổng<br><small style="font-weight:400;opacity:.7">/100</small></th>' +
-      '</tr></thead>' +
-      '<tbody>' + rows + '</tbody></table>';
-    html += '</div></div>';
-  });
-  el.innerHTML = html;
+  var rows = items.map(function(p, i) {
+    var rank  = p.rank || (i + 1);
+    var cls   = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
+    var rankCat = p.rank_category || '';
+    var pillStyle = RANK_LABELS[rankCat] ? ('background:' + RANK_LABELS[rankCat].bg + ';color:' + RANK_LABELS[rankCat].color) : '';
+    return '<tr>' +
+      '<td><div class="rank-num ' + cls + '">' + rank + '</div></td>' +
+      '<td><div class="owner-cell"><span class="owner-name">' + esc(p.display_name || p.username) + '</span><span class="owner-team">' + esc(p.username) + '</span></div></td>' +
+      '<td>' + esc(p.team || '—') + '</td>' +
+      '<td><span class="rank-pill" style="' + pillStyle + '">' + (RANK_LABELS[rankCat] ? RANK_LABELS[rankCat].label : (rankCat || '—')) + '</span></td>' +
+      '<td class="lb-score-num lb-score-total">' + (p.final_score || 0) + '</td>' +
+      '</tr>';
+  }).join('');
+
+  el.innerHTML = '<table class="rank-table">' +
+    '<thead><tr>' +
+    '<th style="width:48px">#</th>' +
+    '<th>Thành viên</th>' +
+    '<th>Team</th>' +
+    '<th>Hạng</th>' +
+    '<th class="lb-score-head">Điểm CN<br><small style="font-weight:400;opacity:.7">/100</small></th>' +
+    '</tr></thead>' +
+    '<tbody>' + rows + '</tbody></table>';
 }
 
 // ── Detail popup ─────────────────────────────────────────────────────
@@ -772,8 +746,7 @@ function switchTab(tab, el) {
   document.querySelectorAll('.lb-tab').forEach(function(t) { t.classList.remove('is-active'); });
   el.classList.add('is-active');
   document.getElementById('tabTop').style.display      = tab === 'top'      ? '' : 'none';
-  document.getElementById('tabBottom').style.display   = tab === 'bottom'   ? '' : 'none';
-  document.getElementById('tabCategory').style.display = tab === 'category' ? '' : 'none';
+  document.getElementById('tabPersonal').style.display = tab === 'personal' ? '' : 'none';
 }
 
 function setLoading(on) {
@@ -781,7 +754,7 @@ function setLoading(on) {
 }
 
 function setError(msg) {
-  ['topTable','bottomTable','categoryContent'].forEach(function(id) {
+  ['topTable','personalTable'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.innerHTML = '<div style="padding:var(--space-8);text-align:center;color:var(--color-error)">' + msg + '</div>';
   });

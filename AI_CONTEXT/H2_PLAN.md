@@ -281,4 +281,33 @@ Kèm tính năng mới (theo yêu cầu user 2026-08-18): **trang Admin cấu h�
 
 **Cập nhật 2026-08-18 (cuối phiên):** GAS đã deploy (URL không đổi), local test PASS, **đã merge `feat/h2-workflow-input` → `main` + push** (user: push thẳng main, không dùng nhánh riêng vì DA chưa thương mại hóa). Còn lại: xác nhận `seedWorkflowCatalog()` đã chạy (nếu droplist trống) + smoke test live.
 
-*Cập nhật lần cuối nhật ký: 2026-08-18 (Giai đoạn 2 deployed + merged main).*
+### Giai đoạn 3 — Mô hình chấm điểm mới (Đợt 1: lõi member scoring, branch `feat/h2-scoring`)
+
+**Ngày:** 2026-08-25 · **PM:** Tuan. Bối cảnh: chương trình H2 quản trị tại AIOS hub (`binh-dan-hoa-ai-H2/`); **KPI PM chốt bản A** (30/20/30/20) — mở khóa Giai đoạn 3. Đợt 1 làm **lõi member scoring**; KPI Teamlead 60/40 + KPI PM bản A + khóa học/lan tỏa/trừ milestone để **Đợt 2**.
+
+**Code đã xong (chưa deploy GAS, chưa merge main):**
+
+*GAS backend (mới `ScoringServiceH2.gs` + sửa `Config.gs`/`Code.gs`):*
+- Sheets mới: `UC_COUNCIL_SCORE` (Score_ID·Record_ID·UseCase_ID·Reviewer·Time_Saving·Automation·Creativity·Member_Score·Comment·Scored_At) + `PERSONAL_SCORE` (Score_ID·Username·Display_Name·Team·Diversity·AI_Proficiency·Product_Quality·Quantity_Met·Final_Score·Scored_By·Comment·Scored_At). Headers + trọng số ở `Config.gs` (`H2_UC_WEIGHTS` 30/40/30 · `H2_PERSONAL_WEIGHTS` 30/20/30/20 · `H2_CRITERIA_MAX`=10). `ensureScoringH2Sheets_()` self-heal (idempotent — route tự gọi, KHÔNG cần seed).
+- **Điểm US:** `submitCouncilScore_` (upsert theo Record_ID×Reviewer; auth = council `getCouncilUsernames_` hoặc admin; token ưu tiên qua `_resolveReviewer_` → fallback reviewer_email) → tính `Member_Score` → `computeUcFinalScore_` ghi **bình quân** lên MASTER (`Total_Score`+`Committee_Review_Score`+`Rank_Category`+`Score_Updated_At`). `listCouncilScores_` (ai đã/chưa chấm + final) · `getCouncilProgress_` (map tất cả UC, 1 lần đọc — cho hàng đợi).
+- **Điểm cá nhân:** `submitPersonalScore_` (upsert theo Username; auth = teamlead đúng team `isChampionForTeam_` hoặc admin; team member tra body → User_Master) · `listPersonalScores_`.
+- **Leaderboard:** `getH2Leaderboard_` (uc_ranking = UC đã có ≥1 lượt chấm, theo Committee_Review_Score; personal_ranking).
+- Routes `Code.gs`: `council-score-submit/list`, `council-progress`, `personal-score-submit/list`, `h2-leaderboard`. **Ngưng** dùng `champion-review`/auto-score (giữ code, không route mới).
+
+*FE:*
+- `routes.js`/`api.js`: +6 method H2 (submitCouncilScore·listCouncilScores·getCouncilProgress·submitPersonalScore·listPersonalScores·getH2Leaderboard) — đính `token` vào payload.
+- `assets/js/scoring-h2.js` (MỚI, mirror GAS): `councilMemberScore`·`personalFinalScore`·`councilAverage`·`rankInfo`. Unit test `assets/tests/test-scoring-h2.js` **27/27 PASS**.
+- **`review-queue.html`+`review-queue.js` (viết lại):** hội đồng chấm 3 tiêu chí 0–10 (30/40/30); panel hiện điểm US bình quân + ai đã/chưa chấm + prefill điểm của chính reviewer; 3 nhóm theo góc nhìn (Cần bạn chấm / Đã chấm—chờ đủ / Đã đủ hội đồng); nạp `getCouncilProgress` + `listUseCases(Approved)`; gate submit theo `isCouncil()`. Swap include `scoring.js`→`scoring-h2.js`.
+- **`personal-score.html`+`personal-score.js` (MỚI):** teamlead chấm 4 tiêu chí 0–10 (30/20/30/20) cho thành viên team mình (admin mọi team); bảng thành viên + panel; nav `navPersonalScore` thêm vào 9 trang + `auth.js setupNav` (teamlead+admin).
+- **`leaderboard.html` (rebuild):** 2 tab — "Điểm US (hội đồng)" (uc_ranking, cột Hội đồng n/4 + Điểm US/100) + "Điểm cá nhân" (personal_ranking); nguồn `h2-leaderboard`; ẩn filter category; bỏ cột Auto/Champion/Tổng cũ.
+- **`dashboard.html`:** ẩn tab "Điểm SPTD" (mô hình 80-10-10 ngưng dùng).
+
+**⚠️ VIỆC THỦ CÔNG để chạy được (GAS Editor AI US project):**
+1. (Tùy) Script Property `COUNCIL_USERS` = `tuantt4,maittt7,tutv3,quynhnny` (mặc định đã hardcode nếu thiếu).
+2. Deploy code GAS mới: **Edit deployment → New version** (URL không đổi). Rồi chạy TAY **`setupScoringH2Sheets()`** trong GAS Editor (PUBLIC) để tạo sẵn 2 sheet `UC_COUNCIL_SCORE`+`PERSONAL_SCORE` tại LIVE (idempotent; route chấm điểm cũng tự tạo nếu quên).
+3. Smoke test: (a) đăng nhập council → review-queue → chấm 1 UC Approved → điểm US = bình quân, tiến độ n/4 tăng; (b) teamlead → personal-score → chấm 1 thành viên; (c) leaderboard 2 tab hiển thị đúng.
+4. Sau smoke test → merge `feat/h2-scoring` → `main`.
+
+**Đợt 2 (chưa làm):** KPI Teamlead 60/40 + KPI PM bản A (PM-A1..A4, phần lớn tính từ dashboard) + KPI khóa học/lan tỏa + điểm trừ milestone (−2%/mốc) + dọn hẳn auto-score preview (register `scoring.js`) + breakdown 70/30 ở KPI drill-down + rewrite Playwright spec 03/04/06 theo model mới.
+
+*Cập nhật lần cuối nhật ký: 2026-08-25 (Giai đoạn 3 Đợt 1 code xong, branch `feat/h2-scoring`, chưa deploy/merge).*

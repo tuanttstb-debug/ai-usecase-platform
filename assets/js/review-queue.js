@@ -1,54 +1,62 @@
+// ─────────────────────────────────────────────────────────────────
+// review-queue.js — H2 Giai đoạn 3: Hội đồng chấm điểm US
+//
+// Hội đồng (4 teamlead, APP_CONFIG.COUNCIL_USERS) chấm mỗi UC ĐÃ DUYỆT theo 3 tiêu chí
+// 0–10 (Tiết kiệm 30% · Tự động 40% · Sáng tạo 30%). Điểm US cuối = bình quân điểm
+// các thành viên đã chấm. Mỗi thành viên 1 dòng/UC (chấm lại = ghi đè).
+//
+// 3 nhóm (theo góc nhìn người đang đăng nhập):
+//   pending     — UC duyệt, chưa đủ hội đồng & BẠN chưa chấm  → "Cần bạn chấm"
+//   underReview — UC duyệt, BẠN đã chấm nhưng chưa đủ hội đồng → "Đã chấm — chờ đủ"
+//   done        — UC duyệt, đã đủ hội đồng (đủ số thành viên)   → "Đã đủ hội đồng"
+// ─────────────────────────────────────────────────────────────────
 (function () {
   'use strict';
 
-  var _allUcs = [];      // full list from GAS
-  var _cache  = {};      // recordId → uc
-  var _currentUc = null; // uc being reviewed in the panel
+  var _allUcs   = [];    // full list from GAS (đã lọc Approved)
+  var _cache    = {};    // recordId → uc
+  var _progress = {};    // recordId → { count, final, reviewers[] }
+  var _councilSize = 4;
+  var _currentUc = null; // uc being scored in the panel
   var _filterState = { search: '', team: '', section: '' };
 
   /* ── Utilities ── */
   function esc(str) {
     return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
-
   function showToast(msg, type) {
     if (typeof Toast !== 'undefined') Toast.show(msg, type || 'info');
     else alert(msg);
   }
-
-  /* ── Filtering ── */
-  function _filter(list) {
-    var user = AuthService.getUser();
-    if (!user || user.role === 'admin') return list;
-    // champion: only their team
-    var team = String(user.team || '').trim().toLowerCase();
-    if (!team) return []; // champion with no team sees nothing
-    return list.filter(function (uc) {
-      return String(uc.team || '').trim().toLowerCase() === team;
-    });
+  function _norm(s) { return String(s || '').trim().toLowerCase(); }
+  function _myUsername() {
+    var u = AuthService.getUser();
+    return u ? _norm(u.email) : '';
   }
+  function _canScore() {
+    return AuthService.isCouncil() || AuthService.isAdmin();
+  }
+  function _rid(uc) { return uc.record_id || uc.Record_ID || ''; }
 
-  /* ── Queue grouping ── */
+  /* ── Filtering (council + admin thấy TẤT CẢ — hội đồng chấm mọi UC) ── */
+  function _filter(list) { return list; }
+
+  /* ── Queue grouping theo tiến độ hội đồng + góc nhìn người dùng ── */
   function _group(list) {
-    var pending     = []; // Submitted — not yet reviewed
-    var underReview = []; // Under Review
-    var done        = []; // Approved + has manual score
-
+    var me = _myUsername();
+    var pending = [], waiting = [], done = [];
     list.forEach(function (uc) {
-      var st = String(uc.status || '').toLowerCase();
-      if (st === 'submitted') {
-        pending.push(uc);
-      } else if (st === 'under review') {
-        underReview.push(uc);
-      } else if (st === 'approved' && (uc.manual_score > 0 || uc.total_score > 0)) {
-        done.push(uc);
-      }
+      var p = _progress[_rid(uc)] || { count: 0, reviewers: [] };
+      var scoredByMe = (p.reviewers || []).indexOf(me) !== -1;
+      if (p.count >= _councilSize) done.push(uc);
+      else if (scoredByMe)        waiting.push(uc);
+      else                        pending.push(uc);
     });
-    return { pending: pending, underReview: underReview, done: done };
+    return { pending: pending, underReview: waiting, done: done };
   }
 
   /* ── Table rendering ── */
-  function _renderQueue(containerId, badgeId, list, showScores) {
+  function _renderQueue(containerId, badgeId, list) {
     var badge = document.getElementById(badgeId);
     if (badge) badge.textContent = list.length;
 
@@ -60,49 +68,44 @@
     }
 
     var rows = list.map(function (uc) {
-      var rid = uc.record_id || uc.Record_ID || '';
+      var rid = _rid(uc);
       _cache[rid] = uc;
+      var p = _progress[rid] || { count: 0, final: 0 };
 
-      var scoreCell = '';
-      if (showScores && (uc.total_score > 0 || uc.auto_score > 0)) {
-        var total = uc.total_score || 0;
-        var rank  = typeof ScoringEngine !== 'undefined' ? ScoringEngine.getRankInfo(total) : null;
-        scoreCell = '<span class="score-chip" style="' + (rank ? 'background:' + rank.color : '') + '">' + total + '</span>';
+      var scoreCell;
+      if (p.count > 0) {
+        var rank = (typeof ScoringH2 !== 'undefined') ? ScoringH2.rankInfo(p.final) : null;
+        scoreCell = '<span class="score-chip" style="' + (rank ? 'background:' + rank.color : '') + '">' + p.final + '</span>';
       } else {
         scoreCell = '<span style="color:var(--color-text-muted)">—</span>';
       }
+      var progCell = '<span style="font-weight:600">' + p.count + '</span>' +
+                     '<span style="color:var(--color-text-muted)">/' + _councilSize + '</span>';
 
       return '<tr>' +
         '<td style="font-family:monospace;font-size:var(--text-sm);font-weight:600">' + esc(uc.usecase_id || uc.UseCase_ID || rid) + '</td>' +
         '<td><a href="#" class="rq-name-link" onclick="ReviewQueue._open(\'' + esc(rid) + '\');return false">' + esc(uc.name || uc.Use_Case_Name || '(không tên)') + '</a></td>' +
         '<td>' + esc(uc.team || '—') + '</td>' +
         '<td>' + esc(uc.owner_name || uc.owner || '—') + '</td>' +
+        '<td style="text-align:center">' + progCell + '</td>' +
         '<td style="text-align:center">' + scoreCell + '</td>' +
-        '<td>' +
-          '<button class="btn btn--ghost btn--sm" onclick="ReviewQueue._open(\'' + esc(rid) + '\');return false">Review</button>' +
-        '</td>' +
+        '<td><button class="btn btn--ghost btn--sm" onclick="ReviewQueue._open(\'' + esc(rid) + '\');return false">' +
+          (_canScore() ? 'Chấm điểm' : 'Xem') + '</button></td>' +
         '</tr>';
     }).join('');
 
     wrap.innerHTML =
       '<table class="rq-table data-table">' +
-      '<thead><tr><th>Mã</th><th>Tên Use Case</th><th>Team</th><th>Người đăng ký</th><th style="text-align:center">Điểm</th><th></th></tr></thead>' +
+      '<thead><tr><th>Mã</th><th>Tên Use Case</th><th>Team</th><th>Người đăng ký</th>' +
+      '<th style="text-align:center">Hội đồng</th><th style="text-align:center">Điểm US</th><th></th></tr></thead>' +
       '<tbody>' + rows + '</tbody>' +
       '</table>';
   }
 
   /* ── UI Filters ── */
-  function _norm(s) { return String(s || '').trim().toLowerCase(); }
-
   function _populateTeamFilter() {
     var sel = document.getElementById('rqTeamFilter');
     if (!sel) return;
-    var user = AuthService.getUser();
-    // Champion only sees their own team → no need for dropdown
-    if (user && user.role !== 'admin') {
-      sel.style.display = 'none';
-      return;
-    }
     var teams = [];
     _allUcs.forEach(function (uc) {
       var t = String(uc.team || '').trim();
@@ -115,7 +118,7 @@
   }
 
   function _applyFilters() {
-    var base    = _filter(_allUcs);       // role-based
+    var base    = _filter(_allUcs);
     var q       = _norm(_filterState.search);
     var team    = _norm(_filterState.team);
     var section = _filterState.section;
@@ -142,9 +145,9 @@
       if (el) el.style.display = visible.indexOf(id) !== -1 ? '' : 'none';
     });
 
-    if (visible.indexOf('rqSectionPending')     !== -1) _renderQueue('rqTablePending',     'rqBadgePending',     groups.pending,     false);
-    if (visible.indexOf('rqSectionUnderReview') !== -1) _renderQueue('rqTableUnderReview', 'rqBadgeUnderReview', groups.underReview, false);
-    if (visible.indexOf('rqSectionDone')        !== -1) _renderQueue('rqTableDone',        'rqBadgeDone',        groups.done,        true);
+    if (visible.indexOf('rqSectionPending')     !== -1) _renderQueue('rqTablePending',     'rqBadgePending',     groups.pending);
+    if (visible.indexOf('rqSectionUnderReview') !== -1) _renderQueue('rqTableUnderReview', 'rqBadgeUnderReview', groups.underReview);
+    if (visible.indexOf('rqSectionDone')        !== -1) _renderQueue('rqTableDone',        'rqBadgeDone',        groups.done);
 
     var countEl = document.getElementById('rqResultCount');
     if (countEl) countEl.textContent = total + ' use case';
@@ -162,7 +165,6 @@
         }, 250);
       });
     }
-
     var teamSel = document.getElementById('rqTeamFilter');
     if (teamSel) {
       teamSel.addEventListener('change', function () {
@@ -170,7 +172,6 @@
         _applyFilters();
       });
     }
-
     var pills = document.querySelectorAll('.rq-pill');
     pills.forEach(function (pill) {
       pill.addEventListener('click', function () {
@@ -189,13 +190,25 @@
     var filterBar = document.getElementById('rqFilterBar');
     if (filterBar) filterBar.style.display = 'none';
     try {
-      var result = await Api.listUseCases({ limit: 0 });   // 0 = tất cả (không cắt)
-      _allUcs = Array.isArray(result) ? result : (result.items || result.data || []);
+      var results = await Promise.all([
+        Api.listUseCases({ status: 'Approved', limit: 0 }),
+        Api.getCouncilProgress()
+      ]);
+      var raw = results[0];
+      var all = Array.isArray(raw) ? raw : (raw.items || raw.data || []);
+      // chỉ giữ UC đã duyệt (phòng khi filter server không áp)
+      _allUcs = all.filter(function (uc) { return _norm(uc.status) === 'approved'; });
+
+      var prog = results[1] || {};
+      _progress    = prog.map || {};
+      _councilSize = prog.council_size || (APP_CONFIG.COUNCIL_USERS || []).length || 4;
+
       _populateTeamFilter();
       _render();
     } catch (e) {
-      document.getElementById('rqLoading').textContent = 'Không tải được dữ liệu. Kiểm tra kết nối GAS.';
-      document.getElementById('rqLoading').style.color = 'var(--color-error)';
+      var l = document.getElementById('rqLoading');
+      l.textContent = 'Không tải được dữ liệu. Kiểm tra kết nối GAS.';
+      l.style.color = 'var(--color-error)';
     }
   }
 
@@ -207,137 +220,168 @@
     if (filterBar) filterBar.style.display = '';
   }
 
-  /* ── Review Panel ── */
+  /* ── Panel ── */
+  function setTxt(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+
   function _openPanel(uc) {
     _currentUc = uc;
-    var panel   = document.getElementById('reviewPanel');
-    var overlay = document.getElementById('reviewPanelOverlay');
-
-    // Fill header info
-    function setTxt(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
-    setTxt('rpUcId',   uc.usecase_id || uc.UseCase_ID || uc.record_id || '');
+    setTxt('rpUcId',   uc.usecase_id || uc.UseCase_ID || _rid(uc));
     setTxt('rpUcName', uc.name || uc.Use_Case_Name || '');
-    setTxt('rpUcMeta', (uc.team || '') + (uc.owner ? ' · ' + uc.owner : ''));
+    setTxt('rpUcMeta', (uc.team || '') + (uc.owner_name || uc.owner ? ' · ' + (uc.owner_name || uc.owner) : ''));
 
-    // Auto score
-    var autoScore = uc.auto_score || 0;
-    setTxt('rpAutoScore', autoScore);
-
-    // Reset sliders to existing values or defaults
-    var q   = Math.min(10, Math.max(0, parseInt(uc.quality_score   || uc.Quality_Score   || 5, 10)));
-    var bv  = Math.min(10, Math.max(0, parseInt(uc.business_value_score || uc.Business_Value_Score || 5, 10)));
-    var inn = Math.min(10, Math.max(0, parseInt(uc.innovation_score || uc.Innovation_Score || 5, 10)));
-
-    var sQ   = document.getElementById('rpSliderQuality');
-    var sBiz = document.getElementById('rpSliderBiz');
-    var sInn = document.getElementById('rpSliderInn');
-    if (sQ)   { sQ.value   = q;   setTxt('rpValQuality', q); }
-    if (sBiz) { sBiz.value = bv;  setTxt('rpValBiz', bv); }
-    if (sInn) { sInn.value = inn; setTxt('rpValInn', inn); }
-
-    // Reset comment
+    // Reset sliders về mặc định (sẽ prefill nếu reviewer đã chấm)
+    ['rpSliderTime', 'rpSliderAuto', 'rpSliderCreative'].forEach(function (id) {
+      var el = document.getElementById(id); if (el) el.value = 5;
+    });
     var commentEl = document.getElementById('rpComment');
     if (commentEl) commentEl.value = '';
 
+    setTxt('rpCouncilFinal', '…');
+    setTxt('rpCouncilStatus', 'Đang tải trạng thái hội đồng…');
     _updateProjectedScore();
 
-    panel.style.display   = '';
-    overlay.style.display = '';
+    // Gate submit theo quyền hội đồng
+    var submitBtn = document.getElementById('rpSubmitBtn');
+    var notice    = document.getElementById('rpNotCouncil');
+    if (_canScore()) {
+      if (submitBtn) submitBtn.style.display = '';
+      if (notice) notice.style.display = 'none';
+    } else {
+      if (submitBtn) submitBtn.style.display = 'none';
+      if (notice) notice.style.display = '';
+    }
+
+    var panel   = document.getElementById('reviewPanel');
+    var overlay = document.getElementById('reviewPanelOverlay');
+    panel.style.display = ''; overlay.style.display = '';
     panel.classList.add('is-open');
+
+    // Nạp trạng thái hội đồng của UC này
+    Api.listCouncilScores(_rid(uc)).then(function (info) {
+      _fillCouncilStatus(info);
+    }).catch(function () {
+      setTxt('rpCouncilStatus', 'Không tải được trạng thái hội đồng (có thể chưa ai chấm).');
+      setTxt('rpCouncilFinal', '0');
+    });
+  }
+
+  function _fillCouncilStatus(info) {
+    if (!info) return;
+    var final = info.final || 0;
+    setTxt('rpCouncilFinal', final);
+    var rankChip = document.getElementById('rpCouncilRank');
+    if (rankChip && typeof ScoringH2 !== 'undefined' && info.scored_count > 0) {
+      var r = ScoringH2.rankInfo(final);
+      rankChip.textContent = r.label; rankChip.style.background = r.color; rankChip.style.display = '';
+    } else if (rankChip) {
+      rankChip.style.display = 'none';
+    }
+
+    var scored  = (info.scores || []).map(function (s) { return s.reviewer; });
+    var pending = info.pending || [];
+    var statusHtml = 'Đã chấm: <strong>' + (info.scored_count || 0) + '/' + (info.council_size || _councilSize) + '</strong>';
+    if (scored.length)  statusHtml += ' · Đã: ' + scored.map(esc).join(', ');
+    if (pending.length) statusHtml += ' · Chưa: ' + pending.map(esc).join(', ');
+    var statusEl = document.getElementById('rpCouncilStatus');
+    if (statusEl) statusEl.innerHTML = statusHtml;
+
+    // Prefill điểm của chính reviewer nếu đã chấm
+    var me = _myUsername();
+    var mine = (info.scores || []).filter(function (s) { return _norm(s.reviewer) === me; })[0];
+    if (mine) {
+      var st = document.getElementById('rpSliderTime');     if (st) st.value = mine.time_saving;
+      var sa = document.getElementById('rpSliderAuto');     if (sa) sa.value = mine.automation;
+      var sc = document.getElementById('rpSliderCreative'); if (sc) sc.value = mine.creativity;
+      var cm = document.getElementById('rpComment');        if (cm && mine.comment) cm.value = mine.comment;
+      _updateProjectedScore();
+    }
   }
 
   function _closePanel() {
     var panel   = document.getElementById('reviewPanel');
     var overlay = document.getElementById('reviewPanelOverlay');
     panel.classList.remove('is-open');
-    setTimeout(function () {
-      panel.style.display   = 'none';
-      overlay.style.display = 'none';
-    }, 260);
+    setTimeout(function () { panel.style.display = 'none'; overlay.style.display = 'none'; }, 260);
     _currentUc = null;
   }
 
+  function _sliderVals() {
+    var t = document.getElementById('rpSliderTime');
+    var a = document.getElementById('rpSliderAuto');
+    var c = document.getElementById('rpSliderCreative');
+    return {
+      time:     t ? parseInt(t.value, 10) : 0,
+      auto:     a ? parseInt(a.value, 10) : 0,
+      creative: c ? parseInt(c.value, 10) : 0
+    };
+  }
+
   function _updateProjectedScore() {
-    if (!_currentUc) return;
-    var sQ   = document.getElementById('rpSliderQuality');
-    var sBiz = document.getElementById('rpSliderBiz');
-    var sInn = document.getElementById('rpSliderInn');
-    var q   = sQ   ? parseInt(sQ.value, 10)   : 0;
-    var bv  = sBiz ? parseInt(sBiz.value, 10)  : 0;
-    var inn = sInn ? parseInt(sInn.value, 10)  : 0;
-
-    var auto  = _currentUc.auto_score || 0;
-    var total = Math.min(100, auto + q + bv + inn);
-
-    function setTxt(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
-    setTxt('rpProjectedTotal', total);
-    setTxt('rpValQuality', q);
-    setTxt('rpValBiz', bv);
-    setTxt('rpValInn', inn);
-
+    var v = _sliderVals();
+    setTxt('rpValTime', v.time);
+    setTxt('rpValAuto', v.auto);
+    setTxt('rpValCreative', v.creative);
+    var member = (typeof ScoringH2 !== 'undefined')
+      ? ScoringH2.councilMemberScore(v.time, v.auto, v.creative)
+      : 0;
+    setTxt('rpProjectedTotal', member);
     var chip = document.getElementById('rpRankChip');
-    if (chip && typeof ScoringEngine !== 'undefined') {
-      var rank = ScoringEngine.getRankInfo(total);
-      chip.textContent      = rank.label;
-      chip.style.background = rank.color;
-      chip.style.display    = '';
+    if (chip && typeof ScoringH2 !== 'undefined') {
+      var rank = ScoringH2.rankInfo(member);
+      chip.textContent = rank.label; chip.style.background = rank.color; chip.style.display = '';
     }
   }
 
-  async function _submitReview() {
+  async function _submitScore() {
     if (!_currentUc) return;
+    if (!_canScore()) { showToast('Chỉ thành viên hội đồng mới được chấm điểm US.', 'error'); return; }
     var user = AuthService.getUser();
     if (!user) return;
 
-    var sQ   = document.getElementById('rpSliderQuality');
-    var sBiz = document.getElementById('rpSliderBiz');
-    var sInn = document.getElementById('rpSliderInn');
+    var v = _sliderVals();
     var commentEl = document.getElementById('rpComment');
     var submitBtn = document.getElementById('rpSubmitBtn');
 
     var payload = {
-      Record_ID:             _currentUc.record_id || _currentUc.Record_ID,
-      Quality_Score:         parseInt(sQ   ? sQ.value   : 0, 10),
-      Business_Value_Score:  parseInt(sBiz ? sBiz.value : 0, 10),
-      Innovation_Score:      parseInt(sInn ? sInn.value : 0, 10),
-      Review_Comment:        commentEl ? commentEl.value.trim() : '',
-      reviewer_email:        user.email
+      Record_ID:   _rid(_currentUc),
+      Time_Saving: v.time,
+      Automation:  v.auto,
+      Creativity:  v.creative,
+      Comment:     commentEl ? commentEl.value.trim() : '',
+      token:          AuthService.getToken(),
+      reviewer_email: user.email
     };
-
     if (!payload.Record_ID) { showToast('Không xác định được Record_ID', 'error'); return; }
 
     submitBtn.disabled = true;
     submitBtn.textContent = 'Đang gửi…';
     try {
-      await Api.submitChampionReview(payload);
-      showToast('Đã gửi đánh giá thành công!', 'success');
+      await Api.submitCouncilScore(payload);
+      showToast('Đã ghi điểm hội đồng!', 'success');
       _closePanel();
       await _load();
     } catch (e) {
-      showToast('Lỗi gửi đánh giá: ' + (e.message || e), 'error');
+      showToast('Lỗi ghi điểm: ' + (e.message || e), 'error');
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Gửi đánh giá';
+      submitBtn.textContent = 'Gửi điểm hội đồng';
     }
   }
 
   /* ── Bind ── */
   function _bind() {
-    // Panel close
     var closeBtn = document.getElementById('reviewPanelClose');
     if (closeBtn) closeBtn.addEventListener('click', _closePanel);
     var overlay = document.getElementById('reviewPanelOverlay');
     if (overlay) overlay.addEventListener('click', _closePanel);
 
-    // Slider live updates
-    ['rpSliderQuality', 'rpSliderBiz', 'rpSliderInn'].forEach(function (id) {
+    ['rpSliderTime', 'rpSliderAuto', 'rpSliderCreative'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.addEventListener('input', _updateProjectedScore);
     });
 
-    // Submit
     var submitBtn = document.getElementById('rpSubmitBtn');
-    if (submitBtn) submitBtn.addEventListener('click', _submitReview);
+    if (submitBtn) submitBtn.addEventListener('click', _submitScore);
   }
 
   /* ── Init ── */

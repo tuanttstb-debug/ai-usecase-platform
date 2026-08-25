@@ -4,6 +4,23 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
+## SCORING-H2-RESIDUAL-01 — Nợ dọn dẹp sau Giai đoạn 3 Đợt 1 (2026-08-25)
+
+**Mô tả:** Đợt 1 (branch `feat/h2-scoring`) làm lõi member scoring (Điểm US hội đồng + Điểm cá nhân) và **ngưng** auto-score 70/30 + SPTD 80-10-10 bằng cách **ẩn** (không xóa) — còn nợ dọn dẹp:
+- **Playwright spec chưa cập nhật:** `03-review-queue.spec.js` (champion single-review cũ), `04-scoring-preview.spec.js` (auto-score preview), `06-sptd-tab.spec.js` (tab SPTD ẩn) → sẽ FAIL với UI mới. Cần rewrite theo model hội đồng/cá nhân. (Unit test mới `test-scoring-h2.js` 27/27 PASS.)
+- **Register auto-score preview** (`scoring.js` + ring/bars trong `register.html`) vẫn chạy — chỉ là preview, KHÔNG còn ảnh hưởng điểm cuối; nên gỡ ở Đợt 2 để tránh gây hiểu nhầm.
+- **KPI tab drill-down** (`dashboard.js`) vẫn hiển thị cột Auto/Champion/breakdown 70/30 + modal chi tiết leaderboard section "Đánh giá & Điểm số" theo field cũ; `Total_Score` nay = bình quân hội đồng nên số tổng đúng, nhưng breakdown Auto/Champion vô nghĩa → dọn ở Đợt 2.
+- **dashboard.js SPTD code** còn nguyên (tab ẩn, dormant) — xóa khi chắc không cần đối chiếu.
+- **`champion-review` route + `ScoringEngine.gs` auto-score** giữ lại (không route mới trỏ tới `recalculateAllScores_`); gỡ khi Đợt 2 ổn định.
+
+**Hướng:** Đợt 2 dọn đồng thời khi thêm KPI Teamlead/PM. Ưu tiên trung bình — không chặn Đợt 1 chạy.
+
+## SCORING-H2-AUTH-01 — Council/personal auth tin token FE hoặc reviewer_email (2026-08-25)
+
+**Mô tả:** `submitCouncilScore_`/`submitPersonalScore_` xác định reviewer qua `_resolveReviewer_`: ưu tiên `token` (HMAC verify server-side) → **fallback `reviewer_email`** (không verify) nếu thiếu token, giống pattern `approve/reject`/`champion-review` sẵn có. Nếu client cố tình bỏ token + giả `reviewer_email` = 1 council/teamlead khác → có thể mạo danh. Rủi ro thấp (nội bộ, đã đăng nhập; FE luôn gửi token). **Hướng:** siết bắt buộc token cho các thao tác ghi điểm (bỏ fallback) khi toàn hệ đã dùng token ổn định. Ưu tiên thấp.
+
+---
+
 ## USERMASTER-CONCURRENCY-01 — 2 GAS project ghi chung sheet User_Master (H2, 2026-08-17) — GIẢM MẠNH 2026-08-18
 
 **Mô tả:** Auth H2 cho AI US đọc/ghi `User_Master` trên spreadsheet SHTD. Lock `LockService.getScriptLock()` chỉ **per-project** — không loại trừ lẫn nhau giữa 2 GAS project khi cùng ghi.

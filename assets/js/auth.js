@@ -183,8 +183,10 @@ var AuthService = (function () {
         show('navDashboard');
         show('navWorkflowCatalog');
         show('navReviewQueue');
+        show('navPersonalScore');
       } else if (isTl) {
         show('navReviewQueue');
+        show('navPersonalScore');
       }
     },
 

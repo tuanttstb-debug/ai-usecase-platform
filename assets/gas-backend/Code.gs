@@ -352,6 +352,43 @@ function route_(action, params, body) {
     return createResponse_(true, 'Đã đổi tên workflow', workflowRename_(body));
   }
 
+  // ── H2 Giai đoạn 3: Chấm điểm mới (hội đồng US + cá nhân) ──────
+
+  // Hội đồng chấm điểm 1 UC (upsert theo reviewer). Auth: council member hoặc admin.
+  if (action === 'council-score-submit') {
+    return createResponse_(true, 'Đã ghi điểm hội đồng', submitCouncilScore_(body));
+  }
+
+  // Tiến độ chấm hội đồng của TẤT CẢ UC (map record_id → count/final). Public (đăng nhập).
+  if (action === 'council-progress') {
+    return createResponse_(true, 'Tiến độ chấm hội đồng', getCouncilProgress_());
+  }
+
+  // Danh sách điểm hội đồng của 1 UC + ai đã/chưa chấm + điểm cuối. Public (đăng nhập).
+  if (action === 'council-score-list') {
+    var csRid = params.record_id || body.record_id || body.Record_ID || '';
+    if (!csRid) return createResponse_(false, 'Thiếu record_id');
+    return createResponse_(true, 'Điểm hội đồng', listCouncilScores_(csRid));
+  }
+
+  // Teamlead chấm điểm cá nhân 1 thành viên (upsert theo Username). Auth: teamlead team đó / admin.
+  if (action === 'personal-score-submit') {
+    return createResponse_(true, 'Đã ghi điểm cá nhân', submitPersonalScore_(body));
+  }
+
+  // Danh sách điểm cá nhân (lọc theo team nếu có). Public (đăng nhập).
+  if (action === 'personal-score-list') {
+    var psTeam = params.team || body.team || '';
+    return createResponse_(true, 'Điểm cá nhân', listPersonalScores_(psTeam));
+  }
+
+  // Leaderboard H2: UC (bình quân hội đồng) + cá nhân. Public (đăng nhập).
+  if (action === 'h2-leaderboard') {
+    var h2Team  = params.team || body.team || '';
+    var h2Limit = parseInt(params.limit || body.limit || '50', 10);
+    return createResponse_(true, 'Leaderboard H2', getH2Leaderboard_(h2Team, h2Limit));
+  }
+
   return createResponse_(false, 'Endpoint không tồn tại: ' + action);
 }
 

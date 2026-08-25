@@ -6,6 +6,12 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ## 🔜 H2 — ưu tiên session tiếp theo
 
+- [x] **[P3] Giai đoạn 3 — Scoring mới (Đợt 1: lõi member scoring) — CODE XONG 2026-08-25** (branch `feat/h2-scoring`, chưa deploy/merge). GAS `ScoringServiceH2.gs` (council + personal + h2-leaderboard, sheets `UC_COUNCIL_SCORE`/`PERSONAL_SCORE`); FE review-queue viết lại + `personal-score.html` mới + leaderboard 2 tab + ẩn tab SPTD; `scoring-h2.js` unit test 27/27. Chi tiết: H2_PLAN §8 Giai đoạn 3.
+  - [ ] **[P0] Deploy GAS Giai đoạn 3** — Edit deployment → New version (URL không đổi). Sheet mới tự tạo khi gọi route. (Tùy) set Script Property `COUNCIL_USERS`.
+  - [ ] **[P0] Smoke test live** — council chấm 1 UC Approved (điểm US = bình quân, tiến độ n/4) · teamlead chấm 1 thành viên (personal-score) · leaderboard 2 tab đúng → merge `feat/h2-scoring` → `main`.
+  - [ ] **[P1] Đợt 2** — KPI Teamlead 60/40 + KPI PM bản A (PM-A1..A4) + KPI khóa học/lan tỏa + điểm trừ milestone (−2%/mốc) + dọn auto-score preview (register) + breakdown 70/30 KPI drill-down + **rewrite Playwright spec 03/04/06** (review-queue/scoring-preview/sptd) theo model mới.
+
+
 - [x] **Dọn rác nguồn user (2026-08-18, Part 3)** — gỡ hẳn quản lý user khỏi AI US + sheet USERS nội bộ + script migration cũ. Nguồn user DUY NHẤT = `User_Master` (SHTD); AI US chỉ ĐỌC (login/role/KPI) + đổi mật khẩu tự phục vụ. Test 88/88 (+ unit). Chi tiết: handover Part 3.
 - [ ] **[P0] Redeploy GAS cho bản dọn rác** — Edit deployment → New version (đã bỏ routes user-login/init/upsert/reset/sync + file UserService/Migration). URL không đổi.
 - [ ] **[P1] Team Số split — CHỜ DUYỆT danh sách WF/US** rồi chạy `seedTeamSoWorkflows()` trong GAS Editor (tách Số khỏi PO + import WF/US nhóm '4. Số hóa tín dụng'). Script đã có (dormant), sửa mảng `TEAM_SO_NEW_WF` nếu cần trước khi chạy.
