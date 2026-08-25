@@ -133,6 +133,15 @@ function isCouncilMember_(username) {
   return getCouncilUsernames_().indexOf(u) !== -1;
 }
 
+/**
+ * Parse boolean chặt: rỗng/false/0/no → false (khác _isActive_ của workflow coi rỗng=true).
+ */
+function _isTrue_(v) {
+  if (v === true) return true;
+  var s = String(v).trim().toLowerCase();
+  return s === 'true' || s === '1' || s === 'yes' || s === 'x' || s === 'có';
+}
+
 // ══════════════════════════════════════════════════════════════════
 // (1) ĐIỂM US — HỘI ĐỒNG CHẤM
 // ══════════════════════════════════════════════════════════════════
@@ -354,6 +363,13 @@ function submitPersonalScore_(body) {
   var comment = sanitizeStr_(body.Comment || body.comment || '', 500);
   var now = new Date().toISOString();
 
+  // M-KPI-3 (khóa học) + M-KPI-4 (lan tỏa) + điểm trừ (milestone chậm) — teamlead nhập cùng.
+  var coursesCompleted = Math.max(0, Math.round(safeNum_(body.Courses_Completed)));
+  var coursesPaid      = Math.max(0, Math.round(safeNum_(body.Courses_Paid)));
+  if (coursesPaid > coursesCompleted) coursesPaid = coursesCompleted; // trả phí ⊆ đã hoàn thành
+  var sharingAchieved  = _isTrue_(body.Sharing_Achieved);
+  var milestonesLate   = Math.max(0, Math.round(safeNum_(body.Milestones_Late)));
+
   var scoreId = '';
   var lock = LockService.getScriptLock();
   lock.waitLock(LOCK_TIMEOUT_MS);
@@ -369,18 +385,22 @@ function submitPersonalScore_(body) {
     scoreId = existingId || _nextScoreId_(all, 'PS');
 
     var rowObj = {
-      Score_ID:        scoreId,
-      Username:        memberUser,
-      Display_Name:    memberDisplay,
-      Team:            memberTeam,
-      Diversity:       d,
-      AI_Proficiency:  ai,
-      Product_Quality: pq,
-      Quantity_Met:    qm,
-      Final_Score:     final,
-      Scored_By:       rv.username,
-      Comment:         comment,
-      Scored_At:       now
+      Score_ID:          scoreId,
+      Username:          memberUser,
+      Display_Name:      memberDisplay,
+      Team:              memberTeam,
+      Diversity:         d,
+      AI_Proficiency:    ai,
+      Product_Quality:   pq,
+      Quantity_Met:      qm,
+      Final_Score:       final,
+      Courses_Completed: coursesCompleted,
+      Courses_Paid:      coursesPaid,
+      Sharing_Achieved:  sharingAchieved,
+      Milestones_Late:   milestonesLate,
+      Scored_By:         rv.username,
+      Comment:           comment,
+      Scored_At:         now
     };
 
     if (existingId) {
@@ -394,7 +414,9 @@ function submitPersonalScore_(body) {
 
   logActivity_('', '', 'PERSONAL_SCORE',
     'Teamlead ' + rv.username + ' chấm cá nhân ' + memberUser + ' (' + memberTeam + '): ' +
-    'DV=' + d + ' AI=' + ai + ' PQ=' + pq + ' QT=' + qm + ' → ' + final,
+    'DV=' + d + ' AI=' + ai + ' PQ=' + pq + ' QT=' + qm + ' → M2=' + final +
+    ' | khóa=' + coursesCompleted + '(trả phí ' + coursesPaid + ') lan tỏa=' + sharingAchieved +
+    ' milestone chậm=' + milestonesLate,
     rv.username, null, null);
 
   return { score_id: scoreId, username: memberUser, final_score: final };
@@ -424,6 +446,10 @@ function listPersonalScores_(team) {
         quantity_met:    safeNum_(r.Quantity_Met),
         final_score:     final,
         rank_category:   _rankForScore_(final),
+        courses_completed: Math.round(safeNum_(r.Courses_Completed)),
+        courses_paid:      Math.round(safeNum_(r.Courses_Paid)),
+        sharing_achieved:  _isTrue_(r.Sharing_Achieved),
+        milestones_late:   Math.round(safeNum_(r.Milestones_Late)),
         scored_by:       normalizeUser_(r.Scored_By),
         comment:         String(r.Comment || ''),
         scored_at:       String(r.Scored_At || '')
@@ -519,6 +545,167 @@ function getH2Leaderboard_(team, limit) {
   return {
     uc_ranking:       ucRows,
     personal_ranking: personal,
+    council_size:     getCouncilUsernames_().length,
+    filter_team:      team || 'all'
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════
+// KPI TỔNG HỢP (Đợt 2) — Member (M1..M4 − trừ) + Teamlead (60/40) + PM (bản A)
+// ══════════════════════════════════════════════════════════════════
+
+// M-KPI-3: khóa học (mỗi khóa 25%, trả phí x2, tối đa 100%).
+function _courseScore_(completed, paid) {
+  var c = Math.max(0, Math.round(safeNum_(completed)));
+  var p = Math.max(0, Math.round(safeNum_(paid)));
+  if (p > c) p = c;
+  var effective = c + p;            // trả phí tính x2 = (c - p) + p*2
+  var score = effective * H2_COURSE_PCT_EACH;
+  return Math.min(100, score);
+}
+
+// M-KPI-4: lan tỏa (đạt → 100, không → 0).
+function _sharingScore_(achieved) { return _isTrue_(achieved) ? 100 : 0; }
+
+// Điểm trừ milestone chậm: −2%/mốc, tối đa −10%.
+function _milestonePenalty_(late) {
+  var n = Math.max(0, Math.round(safeNum_(late)));
+  return Math.min(H2_MILESTONE_PENALTY_MAX, n * H2_MILESTONE_PENALTY_EACH);
+}
+
+// Member final = M1·0.40 + M2·0.30 + M3·0.15 + M4·0.15 − trừ (clamp 0..100).
+function _memberKpiFinal_(m1, m2, m3, m4, penalty) {
+  var raw = safeNum_(m1) * H2_KPI_WEIGHTS.UC
+          + safeNum_(m2) * H2_KPI_WEIGHTS.CAPABILITY
+          + safeNum_(m3) * H2_KPI_WEIGHTS.COURSES
+          + safeNum_(m4) * H2_KPI_WEIGHTS.SHARING
+          - safeNum_(penalty);
+  raw = Math.max(0, Math.min(100, raw));
+  return Math.round(raw * 10) / 10;
+}
+
+// Teamlead final = T1·0.60 + T2·0.40 (T1 = KPI cá nhân teamlead; T2 = % thành viên team ≥70%).
+function _teamleadKpiFinal_(t1, t2) {
+  var raw = safeNum_(t1) * H2_TEAMLEAD_WEIGHTS.SELF + safeNum_(t2) * H2_TEAMLEAD_WEIGHTS.TEAM;
+  return Math.round(Math.max(0, Math.min(100, raw)) * 10) / 10;
+}
+
+/**
+ * Dựng ngữ cảnh 1 lần (3 read) để tính KPI cho mọi người.
+ * ucByOwner: map username(lower) → { sum, count } điểm US hội đồng (Committee_Review_Score>0).
+ * ucByName:  map Owner_Name(lower) → { sum, count } (fallback khi Owner_Email không khớp username).
+ * personalByUser: map username(lower) → personal row (M2 + khóa/lan tỏa/milestone).
+ * users: getAllUsersFromMaster_().
+ */
+function _buildKpiContext_() {
+  var ucByOwner = {}, ucByName = {};
+  readSheetAsObjects_(SHEETS.MASTER).forEach(function (uc) {
+    var score = safeNum_(uc.Committee_Review_Score);
+    if (score <= 0) return; // chỉ UC đã hội đồng chấm
+    var email = normalizeUser_(uc.Owner_Email);
+    var name  = String(uc.Owner_Name || '').trim().toLowerCase();
+    if (email) { if (!ucByOwner[email]) ucByOwner[email] = { sum: 0, count: 0 }; ucByOwner[email].sum += score; ucByOwner[email].count++; }
+    if (name)  { if (!ucByName[name])  ucByName[name]  = { sum: 0, count: 0 }; ucByName[name].sum  += score; ucByName[name].count++; }
+  });
+
+  var personalByUser = {};
+  readSheetAsObjects_(SHEETS.PERSONAL).forEach(function (r) {
+    var u = normalizeUser_(r.Username);
+    if (u) personalByUser[u] = r;
+  });
+
+  return { ucByOwner: ucByOwner, ucByName: ucByName, personalByUser: personalByUser, users: getAllUsersFromMaster_() };
+}
+
+/**
+ * Tính KPI tổng hợp cho 1 người theo ngữ cảnh.
+ * @returns {{ username, display_name, team, m1, m2, m3, m4, penalty, final, rank_category, uc_count, has_data }}
+ */
+function _memberKpiFor_(user, ctx) {
+  var uname = normalizeUser_(user.username);
+  var dname = String(user.display_name || user.username || '');
+  var team  = String(user.team || '');
+
+  // M-KPI-1: bình quân điểm US hội đồng của các UC người này sở hữu.
+  var ucAgg = ctx.ucByOwner[uname] || ctx.ucByName[dname.toLowerCase()] || { sum: 0, count: 0 };
+  var m1 = ucAgg.count ? Math.round((ucAgg.sum / ucAgg.count) * 10) / 10 : 0;
+
+  // M-KPI-2..4 + điểm trừ từ PERSONAL_SCORE.
+  var pr = ctx.personalByUser[uname];
+  var m2 = pr ? safeNum_(pr.Final_Score) : 0;
+  var m3 = pr ? _courseScore_(pr.Courses_Completed, pr.Courses_Paid) : 0;
+  var m4 = pr ? _sharingScore_(pr.Sharing_Achieved) : 0;
+  var penalty = pr ? _milestonePenalty_(pr.Milestones_Late) : 0;
+
+  var final = _memberKpiFinal_(m1, m2, m3, m4, penalty);
+  var hasData = (ucAgg.count > 0) || !!pr;
+
+  return {
+    username: uname, display_name: dname, team: team,
+    m1: m1, m2: m2, m3: m3, m4: m4, penalty: penalty,
+    final: final, rank_category: _rankForScore_(final),
+    uc_count: ucAgg.count, has_data: hasData
+  };
+}
+
+/**
+ * KPI leaderboard tổng hợp: member (M1..M4 − trừ) + teamlead (60/40) + bình quân toàn TT.
+ * @param {string} team  Lọc theo team (rỗng = tất cả).
+ * @returns {{ member_ranking, teamlead_ranking, center_avg, kpi_pass, council_size, filter_team }}
+ */
+function getKpiLeaderboard_(team) {
+  ensureScoringH2Sheets_();
+  var teamL = String(team || '').trim().toLowerCase();
+  var ctx = _buildKpiContext_();
+
+  // Member ranking (role=user, active). Center avg tính trên TẤT CẢ member (không lọc team).
+  var allMembers = [];
+  ctx.users.forEach(function (u) {
+    if (String(u.role).toLowerCase() !== 'user') return;
+    if (u.active === false) return;
+    allMembers.push(_memberKpiFor_(u, ctx));
+  });
+
+  var scored = allMembers.filter(function (m) { return m.has_data; });
+  var centerAvg = scored.length
+    ? Math.round((scored.reduce(function (s, m) { return s + m.final; }, 0) / scored.length) * 10) / 10
+    : 0;
+
+  var memberRanking = scored
+    .filter(function (m) { return !teamL || m.team.toLowerCase() === teamL; })
+    .sort(function (a, b) { return b.final - a.final; })
+    .map(function (m, i) { m.rank = i + 1; return m; });
+
+  // Teamlead ranking: T1 = KPI cá nhân teamlead; T2 = % thành viên team ≥70%.
+  var teamleadRanking = [];
+  ctx.users.forEach(function (u) {
+    if (String(u.role).toLowerCase() !== 'teamlead') return;
+    if (u.active === false) return;
+    if (teamL && String(u.team || '').toLowerCase() !== teamL) return;
+
+    var self = _memberKpiFor_(u, ctx);
+    var tlTeam = String(u.team || '').toLowerCase();
+    var teamMembers = allMembers.filter(function (m) { return m.team.toLowerCase() === tlTeam && m.has_data; });
+    var passCount = teamMembers.filter(function (m) { return m.final >= H2_KPI_PASS; }).length;
+    var t2 = teamMembers.length ? Math.round((passCount / teamMembers.length) * 100 * 10) / 10 : 0;
+    var final = _teamleadKpiFinal_(self.final, t2);
+
+    teamleadRanking.push({
+      username: normalizeUser_(u.username), display_name: String(u.display_name || u.username),
+      team: String(u.team || ''),
+      t1: self.final, t2: t2,
+      team_size: teamMembers.length, pass_count: passCount,
+      final: final, rank_category: _rankForScore_(final)
+    });
+  });
+  teamleadRanking.sort(function (a, b) { return b.final - a.final; });
+  teamleadRanking = teamleadRanking.map(function (r, i) { r.rank = i + 1; return r; });
+
+  return {
+    member_ranking:   memberRanking,
+    teamlead_ranking: teamleadRanking,
+    center_avg:       centerAvg,
+    kpi_pass:         H2_KPI_PASS,
     council_size:     getCouncilUsernames_().length,
     filter_team:      team || 'all'
   };

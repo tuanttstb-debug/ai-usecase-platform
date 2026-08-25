@@ -298,6 +298,7 @@ var Api = {
   submitPersonalScore(data)     { return Api._request(API.personalScoreSubmit(), data, 30000); },
   listPersonalScores(team)      { return Api._request(API.personalScoreList(team)); },
   getH2Leaderboard(filters)     { return Api._request(API.h2Leaderboard(filters)); },
+  getKpiLeaderboard(filters)    { return Api._request(API.kpiLeaderboard(filters)); },
 
   // ── Convenience: callback-style JSONP (for pages that don't use Promises) ──
   jsonp(url, callback) {

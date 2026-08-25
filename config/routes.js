@@ -95,5 +95,10 @@ var API = {
       if (filters.limit) url += '&limit=' + encodeURIComponent(filters.limit);
     }
     return url;
+  },
+  kpiLeaderboard:     (filters) => {
+    var url = `${_gasBase}?action=kpi-leaderboard`;
+    if (filters && filters.team) url += '&team=' + encodeURIComponent(filters.team);
+    return url;
   }
 };

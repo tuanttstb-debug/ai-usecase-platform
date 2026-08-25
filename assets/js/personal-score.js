@@ -142,7 +142,15 @@
     setSlider('psSliderPq', vals[2]);  setSlider('psSliderQt', vals[3]);
     var cm = document.getElementById('psComment');
     if (cm) cm.value = (s && s.comment) ? s.comment : '';
+
+    // KPI khác (M-KPI-3/4 + điểm trừ)
+    setNum('psCourses',     s ? s.courses_completed : 0);
+    setNum('psCoursesPaid', s ? s.courses_paid : 0);
+    var sh = document.getElementById('psSharing'); if (sh) sh.checked = !!(s && s.sharing_achieved);
+    setNum('psLate',        s ? s.milestones_late : 0);
+
     _updateProjected();
+    _updateKpiOther();
 
     var panel = document.getElementById('psPanel');
     var overlay = document.getElementById('psPanelOverlay');
@@ -153,6 +161,23 @@
   function setSlider(id, val) {
     var el = document.getElementById(id);
     if (el) el.value = (val === undefined || val === null || val === '') ? 5 : val;
+  }
+  function setNum(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.value = (val === undefined || val === null || val === '') ? 0 : val;
+  }
+  function numVal(id) { var el = document.getElementById(id); return el ? Math.max(0, parseInt(el.value, 10) || 0) : 0; }
+
+  // Preview M-KPI-3 (khóa học) · M-KPI-4 (lan tỏa) · điểm trừ milestone.
+  function _updateKpiOther() {
+    var courses = numVal('psCourses');
+    var paid    = numVal('psCoursesPaid');
+    var sharing = document.getElementById('psSharing');
+    var late    = numVal('psLate');
+    var m3 = (typeof ScoringH2 !== 'undefined') ? ScoringH2.courseScore(courses, paid) : 0;
+    var m4 = (typeof ScoringH2 !== 'undefined') ? ScoringH2.sharingScore(sharing && sharing.checked) : 0;
+    var pen = (typeof ScoringH2 !== 'undefined') ? ScoringH2.milestonePenalty(late) : 0;
+    setTxt('psM3', m3); setTxt('psM4', m4); setTxt('psPenalty', pen);
   }
 
   function _close() {
@@ -189,6 +214,7 @@
     var commentEl = document.getElementById('psComment');
     var btn = document.getElementById('psSubmitBtn');
 
+    var sharing = document.getElementById('psSharing');
     var payload = {
       Username:        _current.username,
       Display_Name:    _current.display_name,
@@ -197,6 +223,10 @@
       AI_Proficiency:  v.ai,
       Product_Quality: v.pq,
       Quantity_Met:    v.qt,
+      Courses_Completed: numVal('psCourses'),
+      Courses_Paid:      numVal('psCoursesPaid'),
+      Sharing_Achieved:  !!(sharing && sharing.checked),
+      Milestones_Late:   numVal('psLate'),
       Comment:         commentEl ? commentEl.value.trim() : '',
       token:          AuthService.getToken(),
       reviewer_email: user.email
@@ -225,6 +255,11 @@
     ['psSliderDiv', 'psSliderAi', 'psSliderPq', 'psSliderQt'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.addEventListener('input', _updateProjected);
+    });
+    ['psCourses', 'psCoursesPaid', 'psSharing', 'psLate'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', _updateKpiOther);
+      if (el && el.type === 'checkbox') el.addEventListener('change', _updateKpiOther);
     });
     var btn = document.getElementById('psSubmitBtn');
     if (btn) btn.addEventListener('click', _submit);

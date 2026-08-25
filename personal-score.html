@@ -170,9 +170,40 @@
       </div>
 
       <div class="rp-score-projected">
-        <span>Điểm cá nhân:</span>
+        <span>Điểm năng lực (M-KPI-2):</span>
         <span class="rp-projected-val" id="psProjected">—</span>
         <span class="rank-chip" id="psRankChip"></span>
+      </div>
+
+      <!-- KPI khác teamlead nhập cùng: M-KPI-3 (khóa học) · M-KPI-4 (lan tỏa) · điểm trừ -->
+      <div class="rp-score-section">
+        <div class="rp-section-label">KPI khác (teamlead nhập)</div>
+
+        <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between">
+          <label class="rp-score-label" style="flex:1">Số khóa học AI đã hoàn thành</label>
+          <input type="number" id="psCourses" class="form-control" min="0" max="50" step="1" value="0" style="width:80px">
+        </div>
+        <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between">
+          <label class="rp-score-label" style="flex:1">Trong đó khóa <strong>trả phí</strong> (hệ số x2)</label>
+          <input type="number" id="psCoursesPaid" class="form-control" min="0" max="50" step="1" value="0" style="width:80px">
+        </div>
+        <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3)">
+          <input type="checkbox" id="psSharing" style="width:18px;height:18px">
+          <label class="rp-score-label" for="psSharing" style="flex:1;margin:0">Lan tỏa AI đạt (≥1 buổi chia sẻ HOẶC UC được team khác tái dùng — xác nhận ≥3 người)</label>
+        </div>
+        <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between">
+          <label class="rp-score-label" style="flex:1">Số milestone chậm (do cá nhân phụ trách)</label>
+          <input type="number" id="psLate" class="form-control" min="0" max="20" step="1" value="0" style="width:80px">
+        </div>
+
+        <div style="margin-top:var(--space-3);padding:var(--space-3);background:var(--color-bg);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--color-text-secondary)">
+          <div>M-KPI-3 (khóa học, 15%): <strong id="psM3">0</strong>/100</div>
+          <div>M-KPI-4 (lan tỏa, 15%): <strong id="psM4">0</strong>/100</div>
+          <div>Điểm trừ milestone: <strong id="psPenalty" style="color:var(--color-error,#c62828)">0</strong>%</div>
+          <div style="margin-top:var(--space-2);color:var(--color-text-muted)">
+            Điểm US (M-KPI-1, 40%) do <strong>hội đồng</strong> chấm — xem tổng hợp ở Leaderboard tab "KPI tổng hợp".
+          </div>
+        </div>
       </div>
 
       <div class="rp-score-section">

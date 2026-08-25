@@ -228,10 +228,32 @@
       <div class="lb-tabs">
         <div class="lb-tab is-active" data-tab="top" onclick="switchTab('top', this)">Điểm US (hội đồng)</div>
         <div class="lb-tab" data-tab="personal" onclick="switchTab('personal', this)">Điểm cá nhân</div>
+        <div class="lb-tab" data-tab="kpiMember" onclick="switchTab('kpiMember', this)">KPI tổng hợp</div>
+        <div class="lb-tab" data-tab="kpiTeamlead" onclick="switchTab('kpiTeamlead', this)">KPI Teamlead</div>
       </div>
     </div>
 
     <div style="padding: var(--space-6) var(--space-8)">
+      <!-- PM KPI card (bản A) — chỉ admin/PM. A1/A2 tự động, A3/A4 nhập tay. -->
+      <div id="pmKpiCard" class="section-panel" style="display:none;margin-bottom:var(--space-5);border:1px solid var(--color-primary)">
+        <div class="section-panel-header">
+          <span class="section-panel-title">🎯 KPI PM (bản A) — 30/20/30/20</span>
+          <span id="pmKpiFinal" style="font-size:var(--text-lg);font-weight:700;color:var(--color-primary)">—</span>
+        </div>
+        <div class="section-panel-body" style="padding:var(--space-4)">
+          <div style="display:flex;flex-wrap:wrap;gap:var(--space-4);align-items:flex-end">
+            <div><div style="font-size:var(--text-xs);color:var(--color-text-secondary)">A1 · KPI cá nhân PM (30%)</div><div style="font-weight:600" id="pmA1">—</div><small style="color:var(--color-text-muted)">tự động</small></div>
+            <div><div style="font-size:var(--text-xs);color:var(--color-text-secondary)">A2 · Bình quân toàn TT (20%)</div><div style="font-weight:600" id="pmA2">—</div><small style="color:var(--color-text-muted)">tự động</small></div>
+            <div><div style="font-size:var(--text-xs);color:var(--color-text-secondary)">A3 · Milestone Action Plan đúng hạn (30%)</div><input type="number" id="pmA3" class="form-control" min="0" max="100" step="1" value="0" style="width:90px"><small style="color:var(--color-text-muted)">nhập tay (từ SHTD/hub)</small></div>
+            <div><div style="font-size:var(--text-xs);color:var(--color-text-secondary)">A4 · Đóng góp hệ sinh thái (20%)</div><input type="number" id="pmA4" class="form-control" min="0" max="100" step="1" value="0" style="width:90px"><small style="color:var(--color-text-muted)">nhập tay (checklist)</small></div>
+          </div>
+          <p style="margin-top:var(--space-3);font-size:var(--text-xs);color:var(--color-text-muted)">
+            A3 = tỷ lệ milestone Action Plan đúng hạn (%) lấy từ SHTD DB / workspace hub <code>binh-dan-hoa-ai-H2</code>.
+            A4 = checklist đóng góp (Dashboard 40% · thư viện prompt 20% · đào tạo 20% · case study 20%).
+          </p>
+        </div>
+      </div>
+
       <!-- UC ranking (council average) tab -->
       <div id="tabTop">
         <div class="section-panel">
@@ -253,6 +275,32 @@
             <span id="personalCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span>
           </div>
           <div class="section-panel-body" id="personalTable">
+            <div class="lb-loading"><div class="spinner"></div> Đang tải...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI tổng hợp Member tab -->
+      <div id="tabKpiMember" style="display:none">
+        <div class="section-panel">
+          <div class="section-panel-header">
+            <span class="section-panel-title">📊 KPI tổng hợp Member — M1·40 + M2·30 + M3·15 + M4·15 − trừ</span>
+            <span id="kpiMemberCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span>
+          </div>
+          <div class="section-panel-body" id="kpiMemberTable">
+            <div class="lb-loading"><div class="spinner"></div> Đang tải...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Teamlead tab -->
+      <div id="tabKpiTeamlead" style="display:none">
+        <div class="section-panel">
+          <div class="section-panel-header">
+            <span class="section-panel-title">🧭 KPI Teamlead — T1 (KPI cá nhân) 60% + T2 (% team ≥70%) 40%</span>
+            <span id="kpiTeamleadCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span>
+          </div>
+          <div class="section-panel-body" id="kpiTeamleadTable">
             <div class="lb-loading"><div class="spinner"></div> Đang tải...</div>
           </div>
         </div>
@@ -287,9 +335,11 @@
 <script src="assets/js/helpers.js"></script>
 <script src="assets/js/api.js"></script>
 <script src="assets/js/auth.js"></script>
+<script src="assets/js/scoring-h2.js"></script>
 
 <script>
 var _lbData      = null;
+var _kpiData     = null;
 var _lbCache     = {};   // usecase_id → leaderboard row object
 var _lbDetailUc  = null; // currently-open UC (merged leaderboard + full data)
 var _activeTab   = 'top';
@@ -297,6 +347,10 @@ var _activeTab   = 'top';
 document.addEventListener('DOMContentLoaded', function() {
   initAuth();
   loadLeaderboard();
+  ['pmA3', 'pmA4'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', _recomputePm);
+  });
 });
 
 function initAuth() {
@@ -336,6 +390,120 @@ function loadLeaderboard() {
     renderAll(_lbData);
     setLoading(false);
   });
+  loadKpi(team);
+}
+
+function loadKpi(team) {
+  Api.jsonp(API.kpiLeaderboard({ team: team }), function(res) {
+    if (!res || !res.success) return;
+    _kpiData = res.data;
+    renderKpiMember('kpiMemberTable', _kpiData.member_ranking || []);
+    renderKpiTeamlead('kpiTeamleadTable', _kpiData.teamlead_ranking || []);
+    document.getElementById('kpiMemberCount').textContent   = (_kpiData.member_ranking   || []).length + ' thành viên';
+    document.getElementById('kpiTeamleadCount').textContent = (_kpiData.teamlead_ranking || []).length + ' teamlead';
+    renderPmCard(_kpiData);
+  });
+}
+
+// KPI tổng hợp Member — breakdown M1..M4 − trừ
+function renderKpiMember(containerId, items) {
+  var el = document.getElementById(containerId);
+  if (!items || items.length === 0) {
+    el.innerHTML = '<div style="padding:var(--space-8);text-align:center;color:var(--color-text-muted)">Chưa có dữ liệu KPI (cần điểm US hội đồng hoặc điểm cá nhân)</div>';
+    return;
+  }
+  var rows = items.map(function(m, i) {
+    var rank = m.rank || (i + 1);
+    var cls  = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
+    var rc = m.rank_category || '';
+    var pill = RANK_LABELS[rc] ? ('background:' + RANK_LABELS[rc].bg + ';color:' + RANK_LABELS[rc].color) : '';
+    var pen = m.penalty ? ('−' + m.penalty) : '0';
+    return '<tr>' +
+      '<td><div class="rank-num ' + cls + '">' + rank + '</div></td>' +
+      '<td><div class="owner-cell"><span class="owner-name">' + esc(m.display_name || m.username) + '</span><span class="owner-team">' + esc(m.username) + '</span></div></td>' +
+      '<td>' + esc(m.team || '—') + '</td>' +
+      '<td class="lb-score-num" style="text-align:center">' + (m.m1 || 0) + '</td>' +
+      '<td class="lb-score-num" style="text-align:center">' + (m.m2 || 0) + '</td>' +
+      '<td class="lb-score-num" style="text-align:center">' + (m.m3 || 0) + '</td>' +
+      '<td class="lb-score-num" style="text-align:center">' + (m.m4 || 0) + '</td>' +
+      '<td class="lb-score-num" style="text-align:center;color:var(--color-error,#c62828)">' + pen + '</td>' +
+      '<td><span class="rank-pill" style="' + pill + '">' + (RANK_LABELS[rc] ? RANK_LABELS[rc].label : (rc || '—')) + '</span></td>' +
+      '<td class="lb-score-num lb-score-total">' + (m.final || 0) + '</td>' +
+      '</tr>';
+  }).join('');
+  el.innerHTML = '<table class="rank-table"><thead><tr>' +
+    '<th style="width:48px">#</th><th>Thành viên</th><th>Team</th>' +
+    '<th class="lb-score-head">M1<br><small style="font-weight:400;opacity:.7">US·40</small></th>' +
+    '<th class="lb-score-head">M2<br><small style="font-weight:400;opacity:.7">NL·30</small></th>' +
+    '<th class="lb-score-head">M3<br><small style="font-weight:400;opacity:.7">Khóa·15</small></th>' +
+    '<th class="lb-score-head">M4<br><small style="font-weight:400;opacity:.7">Lan·15</small></th>' +
+    '<th class="lb-score-head">Trừ</th><th>Hạng</th>' +
+    '<th class="lb-score-head">KPI<br><small style="font-weight:400;opacity:.7">/100</small></th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+// KPI Teamlead — T1 (60%) + T2 (% team ≥70%, 40%)
+function renderKpiTeamlead(containerId, items) {
+  var el = document.getElementById(containerId);
+  if (!items || items.length === 0) {
+    el.innerHTML = '<div style="padding:var(--space-8);text-align:center;color:var(--color-text-muted)">Chưa có dữ liệu KPI Teamlead</div>';
+    return;
+  }
+  var rows = items.map(function(t, i) {
+    var rank = t.rank || (i + 1);
+    var cls  = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
+    var rc = t.rank_category || '';
+    var pill = RANK_LABELS[rc] ? ('background:' + RANK_LABELS[rc].bg + ';color:' + RANK_LABELS[rc].color) : '';
+    return '<tr>' +
+      '<td><div class="rank-num ' + cls + '">' + rank + '</div></td>' +
+      '<td><div class="owner-cell"><span class="owner-name">' + esc(t.display_name || t.username) + '</span><span class="owner-team">' + esc(t.username) + '</span></div></td>' +
+      '<td>' + esc(t.team || '—') + '</td>' +
+      '<td class="lb-score-num" style="text-align:center">' + (t.t1 || 0) + '</td>' +
+      '<td class="lb-score-num" style="text-align:center">' + (t.t2 || 0) + '%<br><small style="color:var(--color-text-muted)">' + (t.pass_count || 0) + '/' + (t.team_size || 0) + '</small></td>' +
+      '<td><span class="rank-pill" style="' + pill + '">' + (RANK_LABELS[rc] ? RANK_LABELS[rc].label : (rc || '—')) + '</span></td>' +
+      '<td class="lb-score-num lb-score-total">' + (t.final || 0) + '</td>' +
+      '</tr>';
+  }).join('');
+  el.innerHTML = '<table class="rank-table"><thead><tr>' +
+    '<th style="width:48px">#</th><th>Teamlead</th><th>Team</th>' +
+    '<th class="lb-score-head">T1<br><small style="font-weight:400;opacity:.7">KPI·60</small></th>' +
+    '<th class="lb-score-head">T2<br><small style="font-weight:400;opacity:.7">team≥70·40</small></th>' +
+    '<th>Hạng</th>' +
+    '<th class="lb-score-head">KPI<br><small style="font-weight:400;opacity:.7">/100</small></th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+// PM card (bản A) — chỉ admin. A1 = KPI cá nhân PM (tìm trong member_ranking), A2 = center_avg.
+function renderPmCard(data) {
+  var card = document.getElementById('pmKpiCard');
+  if (!card) return;
+  var user = AuthService.getUser();
+  var isAdmin = AuthService.isAdmin();
+  if (!isAdmin) { card.style.display = 'none'; return; }
+  card.style.display = '';
+
+  var me = user ? String(user.email || '').toLowerCase() : '';
+  var mine = (data.member_ranking || []).filter(function(m){ return m.username === me; })[0];
+  var a1 = mine ? mine.final : 0;
+  var a2 = data.center_avg || 0;
+  document.getElementById('pmA1').textContent = a1;
+  document.getElementById('pmA2').textContent = a2;
+  card.setAttribute('data-a1', a1);
+  card.setAttribute('data-a2', a2);
+  _recomputePm();
+}
+
+function _recomputePm() {
+  var card = document.getElementById('pmKpiCard');
+  if (!card) return;
+  var a1 = parseFloat(card.getAttribute('data-a1')) || 0;
+  var a2 = parseFloat(card.getAttribute('data-a2')) || 0;
+  var a3 = Math.max(0, Math.min(100, parseFloat(document.getElementById('pmA3').value) || 0));
+  var a4 = Math.max(0, Math.min(100, parseFloat(document.getElementById('pmA4').value) || 0));
+  var final = (typeof ScoringH2 !== 'undefined') ? ScoringH2.pmKpiFinal(a1, a2, a3, a4) : 0;
+  var el = document.getElementById('pmKpiFinal');
+  el.textContent = final;
+  if (typeof ScoringH2 !== 'undefined') el.style.color = ScoringH2.rankInfo(final).color;
 }
 
 function renderAll(data) {
@@ -745,8 +913,10 @@ function switchTab(tab, el) {
   _activeTab = tab;
   document.querySelectorAll('.lb-tab').forEach(function(t) { t.classList.remove('is-active'); });
   el.classList.add('is-active');
-  document.getElementById('tabTop').style.display      = tab === 'top'      ? '' : 'none';
-  document.getElementById('tabPersonal').style.display = tab === 'personal' ? '' : 'none';
+  document.getElementById('tabTop').style.display         = tab === 'top'         ? '' : 'none';
+  document.getElementById('tabPersonal').style.display    = tab === 'personal'    ? '' : 'none';
+  document.getElementById('tabKpiMember').style.display   = tab === 'kpiMember'   ? '' : 'none';
+  document.getElementById('tabKpiTeamlead').style.display = tab === 'kpiTeamlead' ? '' : 'none';
 }
 
 function setLoading(on) {

@@ -308,6 +308,23 @@ Kèm tính năng mới (theo yêu cầu user 2026-08-18): **trang Admin cấu h�
 3. Smoke test: (a) đăng nhập council → review-queue → chấm 1 UC Approved → điểm US = bình quân, tiến độ n/4 tăng; (b) teamlead → personal-score → chấm 1 thành viên; (c) leaderboard 2 tab hiển thị đúng.
 4. Sau smoke test → merge `feat/h2-scoring` → `main`.
 
-**Đợt 2 (chưa làm):** KPI Teamlead 60/40 + KPI PM bản A (PM-A1..A4, phần lớn tính từ dashboard) + KPI khóa học/lan tỏa + điểm trừ milestone (−2%/mốc) + dọn hẳn auto-score preview (register `scoring.js`) + breakdown 70/30 ở KPI drill-down + rewrite Playwright spec 03/04/06 theo model mới.
+### Giai đoạn 3 — Đợt 2: KPI tổng hợp (Member + Teamlead + PM bản A) — CODE XONG 2026-08-25
 
-*Cập nhật lần cuối nhật ký: 2026-08-25 (Giai đoạn 3 Đợt 1 code xong, branch `feat/h2-scoring`, chưa deploy/merge).*
+Hoàn thiện bộ KPI H2 đầy đủ (`binh-dan-hoa-ai-H2/config/kpi_roles.yaml` + `kpi_pm.yaml` bản A).
+
+**GAS (`ScoringServiceH2.gs` + `Config.gs`/`Code.gs`):**
+- Mở rộng `PERSONAL_SCORE` +4 cột: `Courses_Completed`, `Courses_Paid` (M-KPI-3), `Sharing_Achieved` (M-KPI-4), `Milestones_Late` (điểm trừ) — **teamlead nhập cùng lúc chấm năng lực** (1 chạm, 1 nguồn).
+- Hằng số `H2_KPI_WEIGHTS` (M1·0.40 M2·0.30 M3·0.15 M4·0.15) · `H2_COURSE_*` (mỗi khóa 25%, trả phí x2, cap 100) · `H2_MILESTONE_PENALTY_*` (−2%/mốc, cap −10%) · `H2_TEAMLEAD_WEIGHTS` (60/40) · `H2_KPI_PASS`=70 · `H2_PM_WEIGHTS` (30/20/30/20).
+- Engine: `_courseScore_`/`_sharingScore_`/`_milestonePenalty_`/`_memberKpiFinal_`/`_teamleadKpiFinal_`; `_buildKpiContext_` (3 read: MASTER→UC theo owner, PERSONAL, users); `_memberKpiFor_` (M1 = bình quân điểm US hội đồng các UC của member, match Owner_Email→username fallback Owner_Name); `getKpiLeaderboard_` (member_ranking + teamlead_ranking T1/T2 + **center_avg** cho PM-A2). Route `kpi-leaderboard`.
+- `submitPersonalScore_`/`listPersonalScores_` ghi/đọc 4 cột mới.
+
+**FE:**
+- `scoring-h2.js`: +`courseScore`/`sharingScore`/`milestonePenalty`/`memberKpiFinal`/`teamleadKpiFinal`/`pmKpiFinal` + weights. Unit test `test-scoring-h2.js` **62/62 PASS** (27 Đợt 1 + 35 Đợt 2).
+- `personal-score.html/js`: +ô Số khóa học / trả phí / Lan tỏa (checkbox) / Số milestone chậm + preview M3/M4/−trừ; prefill + submit 4 field.
+- `leaderboard.html`: +2 tab "KPI tổng hợp" (Member: breakdown M1/M2/M3/M4/−trừ + KPI/100) + "KPI Teamlead" (T1/T2 + KPI/100); **PM card** (admin) A1 (KPI cá nhân PM tự tìm) + A2 (center_avg) tự động, A3/A4 nhập tay → tính `pmKpiFinal` live. `routes.js`/`api.js`: +`kpiLeaderboard`.
+
+**⚠️ VIỆC THỦ CÔNG (LIVE):** deploy GAS (New version) + chạy lại **`setupScoringH2Sheets()`** (idempotent — thêm 4 cột mới vào `PERSONAL_SCORE`). M-KPI-1 hiển thị khi có UC hội đồng chấm; M-KPI-2/3/4/trừ khi teamlead chấm cá nhân.
+
+**Đợt 2 residual (chưa làm):** nối A3 (milestone Action Plan) tự động từ SHTD/hub (hiện nhập tay); dọn hẳn auto-score preview (register `scoring.js`) + breakdown 70/30 ở KPI drill-down dashboard; rewrite Playwright spec 03/04/06 theo model mới.
+
+*Cập nhật lần cuối nhật ký: 2026-08-25 (Giai đoạn 3 Đợt 1+2 code xong, branch `feat/h2-scoring`; Đợt 1 đã deploy+merge, Đợt 2 chờ deploy+merge).*

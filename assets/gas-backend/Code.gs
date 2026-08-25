@@ -389,6 +389,12 @@ function route_(action, params, body) {
     return createResponse_(true, 'Leaderboard H2', getH2Leaderboard_(h2Team, h2Limit));
   }
 
+  // KPI tổng hợp (Đợt 2): member (M1..M4−trừ) + teamlead (60/40) + center_avg (cho PM). Public.
+  if (action === 'kpi-leaderboard') {
+    var klTeam = params.team || body.team || '';
+    return createResponse_(true, 'KPI tổng hợp', getKpiLeaderboard_(klTeam));
+  }
+
   return createResponse_(false, 'Endpoint không tồn tại: ' + action);
 }
 

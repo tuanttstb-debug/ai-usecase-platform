@@ -300,10 +300,15 @@ var H2_UC_WEIGHTS = {
 
 // ── Điểm cá nhân — Teamlead chấm mỗi thành viên (4 tiêu chí 30/20/30/20) ──
 // 1 row / member. Chấm 1 lần cuối kỳ (hạn 31/12/2026). Final = Σ(tiêu chí/10 × trọng số) × 100.
+// Final_Score = điểm NĂNG LỰC (M-KPI-2, thang 100). Các cột KPI khác teamlead nhập cùng lúc:
+//   Courses_Completed/Courses_Paid → M-KPI-3 · Sharing_Achieved → M-KPI-4 · Milestones_Late → điểm trừ.
 var PERSONAL_HEADERS = [
   'Score_ID', 'Username', 'Display_Name', 'Team',
-  'Diversity', 'AI_Proficiency', 'Product_Quality', 'Quantity_Met', // 4 tiêu chí 0–10
-  'Final_Score',                                                     // tối đa 100
+  'Diversity', 'AI_Proficiency', 'Product_Quality', 'Quantity_Met', // 4 tiêu chí 0–10 (M-KPI-2)
+  'Final_Score',                                                     // M-KPI-2 (0–100)
+  'Courses_Completed', 'Courses_Paid',                              // M-KPI-3: số khóa học (+ trả phí x2)
+  'Sharing_Achieved',                                               // M-KPI-4: lan tỏa đạt (TRUE/FALSE)
+  'Milestones_Late',                                                // Điểm trừ: số milestone chậm (−2%/mốc)
   'Scored_By', 'Comment', 'Scored_At'
 ];
 var H2_PERSONAL_WEIGHTS = {
@@ -315,3 +320,25 @@ var H2_PERSONAL_WEIGHTS = {
 
 // Hạn chấm điểm cá nhân cuối kỳ (thông tin — không hard-block server-side ở Đợt 1).
 var H2_PERSONAL_DEADLINE = '2026-12-31';
+
+// ── KPI tổng hợp Member (Đợt 2) — M1..M4 + điểm trừ milestone ──────
+// Member final = M1·0.40 + M2·0.30 + M3·0.15 + M4·0.15 − điểm trừ (clamp 0..100).
+var H2_KPI_WEIGHTS = {
+  UC:         0.40,  // M-KPI-1: điểm US cá nhân (bình quân UC hội đồng chấm)
+  CAPABILITY: 0.30,  // M-KPI-2: năng lực ứng dụng (PERSONAL_SCORE.Final_Score)
+  COURSES:    0.15,  // M-KPI-3: khóa học
+  SHARING:    0.15   // M-KPI-4: lan tỏa
+};
+var H2_COURSE_TARGET   = 4;    // 4 khóa = 100%
+var H2_COURSE_PCT_EACH = 25;   // mỗi khóa 25% (khóa trả phí tính x2)
+var H2_MILESTONE_PENALTY_EACH = 2;   // −2% / milestone chậm
+var H2_MILESTONE_PENALTY_MAX  = 10;  // tổng trừ tối đa −10%
+
+// ── KPI Teamlead (Đợt 2) — 60/40 ──────────────────────────────────
+var H2_TEAMLEAD_WEIGHTS = { SELF: 0.60, TEAM: 0.40 };
+var H2_KPI_PASS = 70;  // ngưỡng "đạt KPI cá nhân" cho T-KPI-2 (% thành viên ≥70%)
+
+// ── KPI PM (Đợt 2) — bản A đã chốt (D10 hub) 30/20/30/20 ──────────
+// A1 (KPI cá nhân PM) + A2 (bình quân toàn TT) tính tự động; A3 (milestone Action Plan) +
+// A4 (đóng góp hệ sinh thái, checklist) nhập tay (dữ liệu ở SHTD/hub).
+var H2_PM_WEIGHTS = { A1: 0.30, A2: 0.20, A3: 0.30, A4: 0.20 };
