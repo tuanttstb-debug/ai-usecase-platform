@@ -334,6 +334,11 @@ Sau rà soát toàn bộ yêu cầu H2 (21 đầu việc `action_plan.csv`), b�
 - **P15 Thư viện AI** (`library.html`+`library.js` MỚI): gom UC đã duyệt theo Workflow, lọc/tìm + modal xem prompt (8 field) + Quick Win hướng dẫn + **Copy toàn bộ Prompt**. Nav `navLibrary` (luôn hiện) thêm vào 9 trang. Mọi user xem.
 - Test: `06` +T10 heatmap, `08-library.spec.js` mới → **16/16 PASS**. Thuần FE (không đổi GAS).
 
-**Còn thiếu (rà soát):** lịch AIOS cron cho việc định kỳ (P05/P07/P02/P03/P06/P16 — chờ [TT] chốt giờ); cơ chế xác nhận UC tái dùng ≥3 người (T05/M05 — hiện teamlead tick tay); AI Worklog riêng (M03 — gộp weekly-update); nối A3 PM tự động. Quyết định treo: Q2 Hội đồng · Q3 %trừ · Q4 owner · M-KPI-1 bình quân vs UC cao nhất.
+### Xác nhận UC tái dùng (T05/M05) + dọn auto-score (2026-08-25 #2)
+- ✅ **T05/M05 — cơ chế xác nhận UC tái dùng:** sheet `UC_REUSE` + `submitReuseConfirm_`/`getReuseCounts_`/`_reuseByOwner_`; route `reuse-confirm`/`reuse-counts`. **Wire M-KPI-4**: lan tỏa=100 nếu teamlead đánh Sharing_Achieved **HOẶC** member sở hữu UC có **≥3 người khác** xác nhận tái dùng (`H2_REUSE_THRESHOLD`). FE thư viện: badge "♻ N người tái dùng" + nút "Tôi đã tái dùng" (không tự UC mình, chặn trùng) + "Lan tỏa đạt ✓" khi ≥3. Test spec 08 +T07/T08 (8/8). `setupScoringH2Sheets()` +sheet `UC_REUSE`.
+- ✅ **Dọn auto-score tiếp:** `dashboard.js` gỡ nốt ref `ScoringEngine` (dùng `_dsRankOf` inline, `scoreVal=total_score`); `dashboard.html` bỏ include `scoring.js` (giữ `sptd-scoring.js` cho tab SPTD dormant).
+- ✅ **Chốt:** M-KPI-1 = bình quân (D12) · Q3 −2%/cap −10% (D13) · 4 cron cloud định kỳ (D14, xem hub `cadence.yaml`).
+
+**Còn thiếu:** AI Worklog riêng (M03 — gộp weekly-update, chấp nhận); nối A3 PM tự động từ SHTD/hub (nhập tay); xóa hẳn dashboard.js SPTD dormant + gỡ `sptd-scoring.js`/`champion-review`/`ScoringEngine.gs`. Quyết định treo: **Q2** Hội đồng (mặc định 4 teamlead) · **Q4** reassign owner 21 task (cần [TT] cho tên).
 
 *Cập nhật lần cuối nhật ký: 2026-08-25 (Đợt 1+2 deploy+merge; residual + P06 Heatmap + P15 Thư viện code xong).*

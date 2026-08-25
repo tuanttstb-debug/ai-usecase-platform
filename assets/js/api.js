@@ -299,6 +299,8 @@ var Api = {
   listPersonalScores(team)      { return Api._request(API.personalScoreList(team)); },
   getH2Leaderboard(filters)     { return Api._request(API.h2Leaderboard(filters)); },
   getKpiLeaderboard(filters)    { return Api._request(API.kpiLeaderboard(filters)); },
+  submitReuseConfirm(data)      { return Api._request(API.reuseConfirm(), data, 30000); },
+  getReuseCounts()              { return Api._request(API.reuseCounts()); },
 
   // ── Convenience: callback-style JSONP (for pages that don't use Promises) ──
   jsonp(url, callback) {

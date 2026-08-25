@@ -881,13 +881,13 @@
     }
     tbody.innerHTML = items.map(function (uc) {
       var k = _cache(uc);
-      var scoreVal = uc.total_score || uc.auto_score || 0;
+      var scoreVal = uc.total_score || 0; // H2: điểm US hội đồng (bỏ auto_score cũ)
       var scoreHtml, rankHtml;
       if (scoreVal > 0) {
-        var rank = (typeof ScoringEngine !== 'undefined') ? ScoringEngine.getRankInfo(scoreVal) : null;
-        var c = rank ? rank.color : '#999';
+        var rk = _dsRankOf(scoreVal);
+        var c = rk[1];
         scoreHtml = '<span class="score-chip" style="background:' + c + '20;color:' + c + ';border:1px solid ' + c + '40;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:600">' + scoreVal + '</span>';
-        rankHtml  = rank ? '<span style="font-size:11px;font-weight:600;color:' + c + '">' + esc(rank.label) + '</span>' : '<span style="color:var(--color-text-muted);font-size:11px">--</span>';
+        rankHtml  = '<span style="font-size:11px;font-weight:600;color:' + c + '">' + esc(rk[0]) + '</span>';
       } else {
         scoreHtml = '<span style="color:var(--color-text-muted);font-size:12px">--</span>';
         rankHtml  = '<span style="color:var(--color-text-muted);font-size:11px">Chưa chấm</span>';

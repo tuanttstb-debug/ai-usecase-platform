@@ -10,8 +10,12 @@
   var _all = [];
   var _cache = {};       // record_id → uc summary
   var _full = {};        // record_id → full UC (fetched)
+  var _reuse = {};       // record_id → { count, reusers[] }
+  var _threshold = 3;
   var _current = null;   // record_id đang mở modal
   var _filter = { search: '', workflow: '', team: '' };
+
+  function _me() { var u = AuthService.getUser(); return u ? _norm(u.email) : ''; }
 
   function esc(s) {
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -26,9 +30,13 @@
     document.getElementById('libContent').style.display = 'none';
     var bar = document.getElementById('libFilterBar'); if (bar) bar.style.display = 'none';
     try {
-      var res = await Api.listUseCases({ status: 'Approved', limit: 0 });
+      var results = await Promise.all([ Api.listUseCases({ status: 'Approved', limit: 0 }), Api.getReuseCounts() ]);
+      var res = results[0];
       var arr = Array.isArray(res) ? res : (res.items || res.data || []);
       _all = arr.filter(function (uc) { return _norm(uc.status) === 'approved'; });
+      var rc = results[1] || {};
+      _reuse = rc.map || {};
+      _threshold = rc.threshold || 3;
       _populateFilters();
       _render();
     } catch (e) {
@@ -79,13 +87,32 @@
           var scoreChip = score > 0
             ? '<span class="score-chip" style="background:rgba(123,44,191,.12);color:var(--color-primary)">' + score + '</span>'
             : '';
+
+          // Tái dùng (T05/M05)
+          var rz = _reuse[rid] || { count: 0, reusers: [] };
+          var me = _me();
+          var iReused = (rz.reusers || []).indexOf(me) !== -1;
+          var isMine = (uc.owner_email && _norm(uc.owner_email) === me) ||
+                       (uc.owner_login && _norm(uc.owner_login) === me);
+          var reached = rz.count >= _threshold;
+          var reuseBadge = '<div style="font-size:12px;' + (reached ? 'color:var(--color-success,#2e7d32);font-weight:600' : 'color:var(--color-text-secondary)') + '">' +
+            '♻ ' + rz.count + ' người tái dùng' + (reached ? ' · Lan tỏa đạt ✓' : '') + '</div>';
+          var reuseBtn;
+          if (isMine) reuseBtn = '';
+          else if (iReused) reuseBtn = '<button class="btn btn--ghost btn--sm" disabled style="opacity:.6">✓ Bạn đã tái dùng</button>';
+          else reuseBtn = '<button class="btn btn--ghost btn--sm" onclick="Library.reuse(\'' + esc(rid) + '\')">♻ Tôi đã tái dùng</button>';
+
           return '<div class="dash-card" style="padding:var(--space-4);display:flex;flex-direction:column;gap:6px">' +
             '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
               '<span class="id-badge">' + esc(uc.usecase_id || rid) + '</span>' + scoreChip +
             '</div>' +
             '<div style="font-weight:600;color:var(--color-text)">' + esc(uc.name || '(không tên)') + '</div>' +
             '<div style="font-size:12px;color:var(--color-text-secondary)">' + esc(uc.team || '—') + ' · ' + esc(uc.owner_name || uc.owner || '—') + '</div>' +
-            '<button class="btn btn--ghost btn--sm" style="margin-top:4px" onclick="Library.open(\'' + esc(rid) + '\')">Xem &amp; Copy Prompt</button>' +
+            reuseBadge +
+            '<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">' +
+              '<button class="btn btn--ghost btn--sm" onclick="Library.open(\'' + esc(rid) + '\')">Xem &amp; Copy Prompt</button>' +
+              reuseBtn +
+            '</div>' +
           '</div>';
         }).join('');
         return '<div class="section-panel" style="margin-bottom:var(--space-5)">' +
@@ -181,6 +208,23 @@
 
   function closeModal() { document.getElementById('libModal').classList.add('hidden'); _current = null; }
 
+  // Xác nhận đã tái dùng UC (T05/M05)
+  async function reuse(rid) {
+    var user = AuthService.getUser();
+    if (!user) return;
+    try {
+      var res = await Api.submitReuseConfirm({ Record_ID: rid, token: AuthService.getToken(), reviewer_email: user.email });
+      // cập nhật local rồi re-render
+      _reuse[rid] = _reuse[rid] || { count: 0, reusers: [] };
+      if (_reuse[rid].reusers.indexOf(_me()) === -1) _reuse[rid].reusers.push(_me());
+      _reuse[rid].count = (res && res.reuse_count != null) ? res.reuse_count : (_reuse[rid].count + 1);
+      showToast('Đã ghi nhận bạn tái dùng UC này!', 'success');
+      _render();
+    } catch (e) {
+      showToast('Lỗi: ' + (e.message || e), 'error');
+    }
+  }
+
   function _bind() {
     var s = document.getElementById('libSearch');
     if (s) { var d; s.addEventListener('input', function () { clearTimeout(d); d = setTimeout(function () { _filter.search = s.value; _render(); }, 250); }); }
@@ -192,6 +236,6 @@
 
   document.addEventListener('DOMContentLoaded', function () { _bind(); _load(); });
 
-  window.Library = { open: open, copyPrompt: copyPrompt, closeModal: closeModal };
+  window.Library = { open: open, copyPrompt: copyPrompt, closeModal: closeModal, reuse: reuse };
 
 })();

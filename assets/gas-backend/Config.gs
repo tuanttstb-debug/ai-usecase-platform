@@ -16,7 +16,8 @@ var SHEETS = {
   WORKFLOW:    'WORKFLOW_CATALOG',// H2 Giai đoạn 2: danh mục Workflow → Use case (droplist đăng ký)
   TEAM_GROUP:  'TEAM_GROUP_MAP', // H2 Giai đoạn 2: map Team → Nhóm workflow được thấy
   UC_COUNCIL:  'UC_COUNCIL_SCORE',// H2 Giai đoạn 3: điểm US do hội đồng teamlead chấm (1 row/reviewer/UC)
-  PERSONAL:    'PERSONAL_SCORE'  // H2 Giai đoạn 3: điểm cá nhân do teamlead chấm (1 row/member, cuối kỳ)
+  PERSONAL:    'PERSONAL_SCORE', // H2 Giai đoạn 3: điểm cá nhân do teamlead chấm (1 row/member, cuối kỳ)
+  UC_REUSE:    'UC_REUSE'        // H2 (T05/M05): xác nhận tái dùng UC (1 row/người-tái-dùng/UC) → lan tỏa M-KPI-4
 };
 
 // ── WORKFLOW_CATALOG Column Headers (H2 Giai đoạn 2) ───────────────
@@ -320,6 +321,14 @@ var H2_PERSONAL_WEIGHTS = {
 
 // Hạn chấm điểm cá nhân cuối kỳ (thông tin — không hard-block server-side ở Đợt 1).
 var H2_PERSONAL_DEADLINE = '2026-12-31';
+
+// ── Xác nhận tái dùng UC (T05/M05) → điều kiện (ii) của lan tỏa M-KPI-4 ──
+// 1 row / (UC × người tái dùng). Lan tỏa M-KPI-4 = 100 nếu teamlead đánh Sharing_Achieved
+// HOẶC member sở hữu ≥1 UC có ≥H2_REUSE_THRESHOLD người khác xác nhận tái dùng.
+var UC_REUSE_HEADERS = [
+  'Reuse_ID', 'Record_ID', 'UseCase_ID', 'Owner_Username', 'Reused_By', 'Comment', 'Confirmed_At'
+];
+var H2_REUSE_THRESHOLD = 3;  // ≥3 người tái dùng (khác chủ) → đạt điều kiện lan tỏa (ii)
 
 // ── KPI tổng hợp Member (Đợt 2) — M1..M4 + điểm trừ milestone ──────
 // Member final = M1·0.40 + M2·0.30 + M3·0.15 + M4·0.15 − điểm trừ (clamp 0..100).

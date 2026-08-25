@@ -100,5 +100,7 @@ var API = {
     var url = `${_gasBase}?action=kpi-leaderboard`;
     if (filters && filters.team) url += '&team=' + encodeURIComponent(filters.team);
     return url;
-  }
+  },
+  reuseConfirm:       () => `${_gasBase}?action=reuse-confirm`,
+  reuseCounts:        () => `${_gasBase}?action=reuse-counts`
 };

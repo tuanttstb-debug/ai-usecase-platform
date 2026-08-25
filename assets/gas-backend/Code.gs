@@ -395,6 +395,16 @@ function route_(action, params, body) {
     return createResponse_(true, 'KPI tổng hợp', getKpiLeaderboard_(klTeam));
   }
 
+  // Xác nhận tái dùng UC (T05/M05). Auth: người đăng nhập (token/reviewer_email); không tự UC mình.
+  if (action === 'reuse-confirm') {
+    return createResponse_(true, 'Đã ghi nhận tái dùng', submitReuseConfirm_(body));
+  }
+
+  // Số người tái dùng mỗi UC (map record_id → count). Public (đăng nhập).
+  if (action === 'reuse-counts') {
+    return createResponse_(true, 'Số lượt tái dùng', getReuseCounts_());
+  }
+
   return createResponse_(false, 'Endpoint không tồn tại: ' + action);
 }
 

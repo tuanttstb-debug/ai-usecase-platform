@@ -25,6 +25,7 @@
 function ensureScoringH2Sheets_() {
   ensureSheetColumns_(SHEETS.UC_COUNCIL, UC_COUNCIL_HEADERS);
   ensureSheetColumns_(SHEETS.PERSONAL,   PERSONAL_HEADERS);
+  ensureSheetColumns_(SHEETS.UC_REUSE,   UC_REUSE_HEADERS);
 }
 
 /**
@@ -41,13 +42,15 @@ function ensureScoringH2Sheets_() {
 function setupScoringH2Sheets() {
   var ucAdded = ensureSheetColumns_(SHEETS.UC_COUNCIL, UC_COUNCIL_HEADERS);
   var psAdded = ensureSheetColumns_(SHEETS.PERSONAL,   PERSONAL_HEADERS);
+  var rzAdded = ensureSheetColumns_(SHEETS.UC_REUSE,   UC_REUSE_HEADERS);
   var council = getCouncilUsernames_();
-  var msg = 'H2 Giai đoạn 3 — đã đảm bảo 2 sheet điểm:\n'
+  var msg = 'H2 Giai đoạn 3 — đã đảm bảo các sheet điểm:\n'
     + '  • ' + SHEETS.UC_COUNCIL + ': ' + (ucAdded.length ? 'tạo mới / thêm cột [' + ucAdded.join(', ') + ']' : 'đã đủ cột') + '\n'
     + '  • ' + SHEETS.PERSONAL   + ': ' + (psAdded.length ? 'tạo mới / thêm cột [' + psAdded.join(', ') + ']' : 'đã đủ cột') + '\n'
+    + '  • ' + SHEETS.UC_REUSE   + ': ' + (rzAdded.length ? 'tạo mới / thêm cột [' + rzAdded.join(', ') + ']' : 'đã đủ cột') + '\n'
     + '  • Hội đồng chấm US (COUNCIL_USERS): ' + (council.length ? council.join(', ') : '(trống!)');
   Logger.log(msg);
-  return { uc_council_added: ucAdded, personal_added: psAdded, council: council, message: msg };
+  return { uc_council_added: ucAdded, personal_added: psAdded, uc_reuse_added: rzAdded, council: council, message: msg };
 }
 
 /**
@@ -488,6 +491,112 @@ function getCouncilProgress_() {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// XÁC NHẬN TÁI DÙNG UC (T05/M05) → điều kiện (ii) lan tỏa M-KPI-4
+// ══════════════════════════════════════════════════════════════════
+
+/**
+ * Người dùng xác nhận đã tái dùng 1 UC (upsert theo Record_ID × Reused_By).
+ * KHÔNG cho tự xác nhận UC của chính mình. body: { Record_ID, token?/reviewer_email?, Comment? }
+ * @returns {{ record_id, reuse_count, reused }}
+ */
+function submitReuseConfirm_(body) {
+  ensureScoringH2Sheets_();
+  var recordId = String(body.Record_ID || body.record_id || '').trim();
+  if (!recordId) throw new Error('Thiếu Record_ID');
+
+  var rv = _resolveReviewer_(body);
+  if (!rv.username) throw new Error('Thiếu thông tin người tái dùng (token hoặc reviewer_email).');
+
+  var uc = findObjectByField_(SHEETS.MASTER, 'Record_ID', recordId);
+  if (!uc) throw new Error('Không tìm thấy use case: ' + recordId);
+  var ownerU = normalizeUser_(uc.Owner_Email);
+  if (ownerU && ownerU === rv.username) throw new Error('Không thể tự xác nhận tái dùng UC của chính mình.');
+
+  var comment = sanitizeStr_(body.Comment || body.comment || '', 300);
+  var now = new Date().toISOString();
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(LOCK_TIMEOUT_MS);
+  try {
+    var all = readSheetAsObjects_(SHEETS.UC_REUSE);
+    var existingId = '';
+    for (var i = 0; i < all.length; i++) {
+      if (String(all[i].Record_ID).trim() === recordId && normalizeUser_(all[i].Reused_By) === rv.username) {
+        existingId = String(all[i].Reuse_ID).trim(); break;
+      }
+    }
+    var rowObj = {
+      Reuse_ID:       existingId || _nextScoreId_(all, 'RZ'),
+      Record_ID:      recordId,
+      UseCase_ID:     String(uc.UseCase_ID || ''),
+      Owner_Username: ownerU,
+      Reused_By:      rv.username,
+      Comment:        comment,
+      Confirmed_At:   now
+    };
+    if (existingId) updateRowByField_(SHEETS.UC_REUSE, 'Reuse_ID', existingId, rowObj);
+    else            appendRowFromObject_(SHEETS.UC_REUSE, rowObj);
+  } finally {
+    lock.releaseLock();
+  }
+
+  var counts = getReuseCounts_();
+  var c = (counts.map[recordId] && counts.map[recordId].count) || 0;
+  logActivity_(uc.UseCase_ID, recordId, 'REUSE_CONFIRM',
+    rv.username + ' xác nhận tái dùng → ' + c + ' người', rv.username, null, null);
+  return { record_id: recordId, reuse_count: c, reused: true };
+}
+
+/**
+ * Đếm số NGƯỜI KHÁC tái dùng mỗi UC (distinct Reused_By, không tính chủ).
+ * @returns {{ map: Object<string,{count,reusers:string[]}>, threshold:number }}
+ */
+function getReuseCounts_() {
+  ensureScoringH2Sheets_();
+  var agg = {};
+  readSheetAsObjects_(SHEETS.UC_REUSE).forEach(function (r) {
+    var rid = String(r.Record_ID || '').trim();
+    var by  = normalizeUser_(r.Reused_By);
+    var owner = normalizeUser_(r.Owner_Username);
+    if (!rid || !by || by === owner) return;
+    if (!agg[rid]) agg[rid] = {};
+    agg[rid][by] = true;
+  });
+  var map = {};
+  Object.keys(agg).forEach(function (rid) {
+    var reusers = Object.keys(agg[rid]);
+    map[rid] = { count: reusers.length, reusers: reusers };
+  });
+  return { map: map, threshold: H2_REUSE_THRESHOLD };
+}
+
+/**
+ * Map owner_username → số người tái dùng cao nhất trong các UC của họ (cho M-KPI-4).
+ */
+function _reuseByOwner_() {
+  var byOwner = {};
+  readSheetAsObjects_(SHEETS.UC_REUSE).forEach(function (r) {
+    var owner = normalizeUser_(r.Owner_Username);
+    var rid   = String(r.Record_ID || '').trim();
+    var by    = normalizeUser_(r.Reused_By);
+    if (!owner || !rid || !by || by === owner) return;
+    byOwner[owner] = byOwner[owner] || {};
+    byOwner[owner][rid] = byOwner[owner][rid] || {};
+    byOwner[owner][rid][by] = true;
+  });
+  var maxByOwner = {};
+  Object.keys(byOwner).forEach(function (owner) {
+    var max = 0;
+    Object.keys(byOwner[owner]).forEach(function (rid) {
+      var n = Object.keys(byOwner[owner][rid]).length;
+      if (n > max) max = n;
+    });
+    maxByOwner[owner] = max;
+  });
+  return maxByOwner;
+}
+
+// ══════════════════════════════════════════════════════════════════
 // LEADERBOARD H2 — gộp Điểm US (bình quân hội đồng) + Điểm cá nhân
 // Dùng cho FE leaderboard rebuild (Đợt 1). Đọc-only.
 // ══════════════════════════════════════════════════════════════════
@@ -614,7 +723,10 @@ function _buildKpiContext_() {
     if (u) personalByUser[u] = r;
   });
 
-  return { ucByOwner: ucByOwner, ucByName: ucByName, personalByUser: personalByUser, users: getAllUsersFromMaster_() };
+  return {
+    ucByOwner: ucByOwner, ucByName: ucByName, personalByUser: personalByUser,
+    reuseByOwner: _reuseByOwner_(), users: getAllUsersFromMaster_()
+  };
 }
 
 /**
@@ -634,7 +746,11 @@ function _memberKpiFor_(user, ctx) {
   var pr = ctx.personalByUser[uname];
   var m2 = pr ? safeNum_(pr.Final_Score) : 0;
   var m3 = pr ? _courseScore_(pr.Courses_Completed, pr.Courses_Paid) : 0;
-  var m4 = pr ? _sharingScore_(pr.Sharing_Achieved) : 0;
+  // M-KPI-4 lan tỏa = 100 nếu (i) teamlead đánh Sharing_Achieved HOẶC (ii) member sở hữu UC
+  // có ≥H2_REUSE_THRESHOLD người khác xác nhận tái dùng (T05/M05, tự động từ UC_REUSE).
+  var sharingFlag = pr ? _isTrue_(pr.Sharing_Achieved) : false;
+  var reuseQualified = ((ctx.reuseByOwner && ctx.reuseByOwner[uname]) || 0) >= H2_REUSE_THRESHOLD;
+  var m4 = (sharingFlag || reuseQualified) ? 100 : 0;
   var penalty = pr ? _milestonePenalty_(pr.Milestones_Late) : 0;
 
   var final = _memberKpiFinal_(m1, m2, m3, m4, penalty);
