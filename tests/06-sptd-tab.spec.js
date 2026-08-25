@@ -1,231 +1,112 @@
-// 06-sptd-tab.spec.js — Playwright E2E tests for Điểm SPTD tab
+// 06-sptd-tab.spec.js — H2 Giai đoạn 3: tab "Điểm SPTD" (80-10-10) ĐÃ ẩn;
+// thay bằng Leaderboard KPI mới (Điểm US hội đồng / Điểm cá nhân / KPI tổng hợp / KPI Teamlead + PM card).
 const { test, expect } = require('@playwright/test');
-const {
-  setSession, mockGAS,
-  ADMIN_USER, REGULAR_USER,
-  MOCK_LOOKUP, MOCK_USER_LIST,
-} = require('./helpers');
+const { setSession, mockGAS, ADMIN_USER, REGULAR_USER } = require('./helpers');
 
-// ── SPTD-specific mock data ────────────────────────────────────────
-// UCs with submit_date after T0 (2026-05-01) and owner_email set
-const SPTD_UC_LIST = [
-  {
-    record_id: 'REC-S01', usecase_id: 'AIUS-S01',
-    name: 'UC user01 week1', team: 'Team ABC',
-    owner_email: 'user01', owner_name: 'User Test',
-    status: 'Approved', submit_date: '2026-06-09', // week 1 after T0=2026-06-01
-    total_score: 80, auto_score: 60,
-    quality_score: 8, business_value_score: 7, innovation_score: 5,
-    reviewer_email: 'tuantt4',
-  },
-  {
-    record_id: 'REC-S02', usecase_id: 'AIUS-S02',
-    name: 'UC user01 week2', team: 'Team ABC',
-    owner_email: 'user01', owner_name: 'User Test',
-    status: 'Approved', submit_date: '2026-06-16', // week 2 after T0
-    total_score: 60, auto_score: 45,
-    quality_score: 5, business_value_score: 5, innovation_score: 5,
-    reviewer_email: 'tuantt4',
-  },
-  {
-    record_id: 'REC-S03', usecase_id: 'AIUS-S03',
-    name: 'UC admin week1', team: 'Team Số',
-    owner_email: 'tuantt4', owner_name: 'Tuan TT4',
-    status: 'Approved', submit_date: '2026-06-10', // week 1 after T0
-    total_score: 95, auto_score: 70,
-    quality_score: 9, business_value_score: 9, innovation_score: 7,
-    reviewer_email: 'tuantt4',
-  },
-  // Draft UC — should NOT count in SPTD
-  {
-    record_id: 'REC-S04', usecase_id: 'AIUS-S04',
-    name: 'UC draft user01', team: 'Team ABC',
-    owner_email: 'user01', owner_name: 'User Test',
-    status: 'Draft', submit_date: '2026-06-23',
-    total_score: 0, auto_score: 0,
-    quality_score: 0, business_value_score: 0, innovation_score: 0,
-    reviewer_email: '',
-  },
-];
-
-const SPTD_MOCK = {
-  lookup:    MOCK_LOOKUP,
-  list:      SPTD_UC_LIST,
-  users:     MOCK_USER_LIST,
-  dashboard: { total: 0, teams: [], categories: [] },
-  'next-id': { next_id: 'AIUS-999' },
+const MOCK_H2 = {
+  uc_ranking: [
+    { rank: 1, record_id: 'REC-001', usecase_id: 'AIUS-001', name: 'UC A', team: 'Team Số',
+      owner_name: 'User A', uc_score: 80, rank_category: 'STRONG_CONTRIBUTOR', scored_count: 4, council_size: 4 },
+  ],
+  personal_ranking: [
+    { rank: 1, username: 'user01', display_name: 'User Test', team: 'Team ABC', final_score: 70, rank_category: 'STRONG_CONTRIBUTOR' },
+  ],
+  council_size: 4, filter_team: 'all',
 };
 
-// Helper: navigate to dashboard.html, click SPTD tab, wait for content
-async function goToSPTDTab(page) {
-  await page.goto('/dashboard.html');
+const MOCK_KPI = {
+  member_ranking: [
+    { rank: 1, username: 'tuantt4', display_name: 'Tuan TT4', team: 'Team Số', m1: 90, m2: 90, m3: 100, m4: 100, penalty: 0, final: 90, rank_category: 'TOP_PERFORMER' },
+    { rank: 2, username: 'user01', display_name: 'User Test', team: 'Team ABC', m1: 80, m2: 70, m3: 50, m4: 100, penalty: 0, final: 74.5, rank_category: 'STRONG_CONTRIBUTOR' },
+  ],
+  teamlead_ranking: [
+    { rank: 1, username: 'champion01', display_name: 'Champion Test', team: 'Team Số', t1: 80, t2: 100, team_size: 2, pass_count: 2, final: 88, rank_category: 'TOP_PERFORMER' },
+  ],
+  center_avg: 74.5, kpi_pass: 70, council_size: 4, filter_team: 'all',
+};
+
+const LB_MOCK = {
+  'h2-leaderboard':  MOCK_H2,
+  'kpi-leaderboard': MOCK_KPI,
+};
+
+async function gotoLeaderboard(page, user) {
+  await setSession(page, user);
+  await mockGAS(page, LB_MOCK);
+  await page.goto('/leaderboard.html');
   await page.waitForLoadState('networkidle');
-  await page.click('[data-tab="sptd"]');
-  // Wait for non-loading content (the formula box is always rendered)
-  await page.waitForSelector('.sptd-formula-box', { timeout: 8000 });
 }
 
-// ─────────────────────────────────────────────────────────────────
-// T01 — Tab button visible for regular user
-// ─────────────────────────────────────────────────────────────────
-test('T01: Tab "Điểm SPTD" visible for regular user', async ({ page }) => {
+test('T01: Leaderboard loads with 4 KPI tabs', async ({ page }) => {
+  await gotoLeaderboard(page, ADMIN_USER);
+  await expect(page.locator('.lb-tab[data-tab="top"]')).toBeVisible();
+  await expect(page.locator('.lb-tab[data-tab="personal"]')).toBeVisible();
+  await expect(page.locator('.lb-tab[data-tab="kpiMember"]')).toBeVisible();
+  await expect(page.locator('.lb-tab[data-tab="kpiTeamlead"]')).toBeVisible();
+});
+
+test('T02: UC ranking (Điểm US) tab renders rows from h2-leaderboard', async ({ page }) => {
+  await gotoLeaderboard(page, ADMIN_USER);
+  const rows = page.locator('#topTable table tbody tr');
+  await expect(rows).toHaveCount(1);
+  await expect(page.locator('#topTable')).toContainText('UC A');
+});
+
+test('T03: KPI tổng hợp tab shows member breakdown', async ({ page }) => {
+  await gotoLeaderboard(page, ADMIN_USER);
+  await page.click('.lb-tab[data-tab="kpiMember"]');
+  await expect(page.locator('#tabKpiMember')).toBeVisible();
+  const rows = page.locator('#kpiMemberTable table tbody tr');
+  await expect(rows).toHaveCount(2);
+  // final score column present
+  await expect(page.locator('#kpiMemberTable')).toContainText('74.5');
+});
+
+test('T04: KPI Teamlead tab renders teamlead ranking', async ({ page }) => {
+  await gotoLeaderboard(page, ADMIN_USER);
+  await page.click('.lb-tab[data-tab="kpiTeamlead"]');
+  await expect(page.locator('#tabKpiTeamlead')).toBeVisible();
+  const rows = page.locator('#kpiTeamleadTable table tbody tr');
+  await expect(rows).toHaveCount(1);
+  await expect(page.locator('#kpiTeamleadTable')).toContainText('Champion Test');
+});
+
+test('T05: PM card visible for admin with A1/A2 auto', async ({ page }) => {
+  await gotoLeaderboard(page, ADMIN_USER);
+  await expect(page.locator('#pmKpiCard')).toBeVisible();
+  // A1 = tuantt4 member final = 90; A2 = center_avg = 74.5
+  await expect(page.locator('#pmA1')).toHaveText('90');
+  await expect(page.locator('#pmA2')).toHaveText('74.5');
+});
+
+test('T06: PM card final recomputes when A3/A4 entered', async ({ page }) => {
+  await gotoLeaderboard(page, ADMIN_USER);
+  await page.locator('#pmA3').fill('100');
+  await page.locator('#pmA3').dispatchEvent('input');
+  await page.locator('#pmA4').fill('100');
+  await page.locator('#pmA4').dispatchEvent('input');
+  // 90*.3 + 74.5*.2 + 100*.3 + 100*.2 = 27 + 14.9 + 30 + 20 = 91.9
+  await expect(page.locator('#pmKpiFinal')).toHaveText('91.9');
+});
+
+test('T07: PM card hidden for non-admin', async ({ page }) => {
+  await gotoLeaderboard(page, REGULAR_USER);
+  await expect(page.locator('#pmKpiCard')).not.toBeVisible();
+});
+
+test('T08: SPTD tab button is hidden on dashboard', async ({ page }) => {
   await setSession(page, REGULAR_USER);
-  await mockGAS(page, SPTD_MOCK);
+  await mockGAS(page, {});
   await page.goto('/dashboard.html');
   await page.waitForLoadState('networkidle');
-
-  const tabBtn = page.locator('[data-tab="sptd"]');
-  await expect(tabBtn).toBeVisible();
-  await expect(tabBtn).toHaveText(/Điểm SPTD/);
+  await expect(page.locator('#tab-btn-sptd')).toBeHidden();
 });
 
-// ─────────────────────────────────────────────────────────────────
-// T02 — My score card renders for regular user (user01 has 2 UCs)
-// ─────────────────────────────────────────────────────────────────
-test('T02: My score card renders with correct structure', async ({ page }) => {
-  await setSession(page, REGULAR_USER);
-  await mockGAS(page, SPTD_MOCK);
-  await goToSPTDTab(page);
-
-  const card = page.locator('.sptd-my-card');
-  await expect(card).toBeVisible();
-
-  // Title
-  await expect(card.locator('.sptd-card-title')).toHaveText('Điểm của bạn');
-
-  // Score big is a number
-  const scoreTxt = await card.locator('.sptd-score-big').textContent();
-  expect(parseFloat(scoreTxt)).toBeGreaterThan(0);
-
-  // Rank badge exists
-  await expect(card.locator('.sptd-rank-badge')).toBeVisible();
-
-  // 3 breakdown items (Chất lượng, Số lượng, Tuần đạt)
-  await expect(card.locator('.sptd-breakdown-item')).toHaveCount(3);
-});
-
-// ─────────────────────────────────────────────────────────────────
-// T03 — Formula box shows scoring principles
-// ─────────────────────────────────────────────────────────────────
-test('T03: Formula box shows scoring principles', async ({ page }) => {
-  await setSession(page, REGULAR_USER);
-  await mockGAS(page, SPTD_MOCK);
-  await goToSPTDTab(page);
-
-  const box = page.locator('.sptd-formula-box');
-  await expect(box).toBeVisible();
-  await expect(box.locator('.sptd-formula-title')).toHaveText('Nguyên tắc chấm điểm');
-
-  // Formula body contains the 80-10-10 components
-  const body = await box.locator('.sptd-formula-body').textContent();
-  expect(body).toContain('80%');
-  expect(body).toContain('10%');
-});
-
-// ─────────────────────────────────────────────────────────────────
-// T04 — Leaderboard table has rows for each user
-// ─────────────────────────────────────────────────────────────────
-test('T04: Leaderboard table has correct row count', async ({ page }) => {
-  await setSession(page, REGULAR_USER);
-  await mockGAS(page, SPTD_MOCK);
-  await goToSPTDTab(page);
-
-  const table = page.locator('.sptd-lb-table');
-  await expect(table).toBeVisible();
-
-  // MOCK_USER_LIST has 3 active users → 3 rows
-  const rows = table.locator('tbody tr');
-  await expect(rows).toHaveCount(3);
-});
-
-// ─────────────────────────────────────────────────────────────────
-// T05 — My row in leaderboard highlighted
-// ─────────────────────────────────────────────────────────────────
-test('T05: My row highlighted with sptd-row--me class', async ({ page }) => {
-  await setSession(page, REGULAR_USER);
-  await mockGAS(page, SPTD_MOCK);
-  await goToSPTDTab(page);
-
-  const myRow = page.locator('.sptd-lb-table .sptd-row--me');
-  await expect(myRow).toHaveCount(1);
-
-  // My row contains the "Bạn" chip
-  await expect(myRow.locator('.sptd-me-tag')).toBeVisible();
-  await expect(myRow.locator('.sptd-me-tag')).toHaveText('Bạn');
-});
-
-// ─────────────────────────────────────────────────────────────────
-// T06 — UC list shows correct UC count for current user
-// ─────────────────────────────────────────────────────────────────
-test('T06: UC list shows correct Approved UC count', async ({ page }) => {
-  await setSession(page, REGULAR_USER);
-  await mockGAS(page, SPTD_MOCK);
-  await goToSPTDTab(page);
-
-  // user01 has 2 Approved UCs in SPTD_UC_LIST (S01, S02)
-  const ucTable = page.locator('.sptd-uc-table');
-  await expect(ucTable).toBeVisible();
-  const ucRows = ucTable.locator('tbody tr');
-  await expect(ucRows).toHaveCount(2);
-});
-
-// ─────────────────────────────────────────────────────────────────
-// T07 — Timeline renders week cells (≥ 1 since program started)
-// ─────────────────────────────────────────────────────────────────
-test('T07: Timeline renders correct number of week cells', async ({ page }) => {
-  await setSession(page, REGULAR_USER);
-  await mockGAS(page, SPTD_MOCK);
-  await goToSPTDTab(page);
-
-  const timeline = page.locator('.sptd-timeline');
-  await expect(timeline).toBeVisible();
-
-  // At least 1 cell; T0 = 2026-05-01, today = 2026-07-08 → 11 weeks
-  const cells = timeline.locator('.sptd-week-cell');
-  const count = await cells.count();
-  expect(count).toBeGreaterThanOrEqual(1);
-
-  // First cell label should be "T1"
-  await expect(cells.first().locator('.sptd-week-label')).toHaveText('T1');
-});
-
-// ─────────────────────────────────────────────────────────────────
-// T08 — Export CSV button visible for admin, hidden for regular user
-// ─────────────────────────────────────────────────────────────────
-test('T08a: Export CSV button NOT visible for regular user', async ({ page }) => {
-  await setSession(page, REGULAR_USER);
-  await mockGAS(page, SPTD_MOCK);
-  await goToSPTDTab(page);
-
-  const exportBtn = page.locator('button:has-text("Xuất CSV")');
-  await expect(exportBtn).toHaveCount(0);
-});
-
-test('T08b: Export CSV button visible for admin', async ({ page }) => {
-  await setSession(page, ADMIN_USER);
-  await mockGAS(page, SPTD_MOCK);
-  await goToSPTDTab(page);
-
-  const exportBtn = page.locator('button:has-text("Xuất CSV")');
-  await expect(exportBtn).toBeVisible();
-});
-
-// ─────────────────────────────────────────────────────────────────
-// T09 — No JS console errors on SPTD tab
-// ─────────────────────────────────────────────────────────────────
-test('T09: No JS console errors when visiting SPTD tab', async ({ page }) => {
+test('T09: No JS console errors on leaderboard', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (err) => errors.push(err.message));
-  page.on('console', (msg) => {
-    if (msg.type() === 'error') errors.push(msg.text());
-  });
-
-  await setSession(page, REGULAR_USER);
-  await mockGAS(page, SPTD_MOCK);
-  await goToSPTDTab(page);
-
-  // Allow network settle
+  page.on('console', (msg) => { if (msg.type() === 'error') errors.push(msg.text()); });
+  await gotoLeaderboard(page, ADMIN_USER);
   await page.waitForTimeout(500);
-
   expect(errors).toEqual([]);
 });

@@ -325,6 +325,6 @@ Hoàn thiện bộ KPI H2 đầy đủ (`binh-dan-hoa-ai-H2/config/kpi_roles.yam
 
 **⚠️ VIỆC THỦ CÔNG (LIVE):** deploy GAS (New version) + chạy lại **`setupScoringH2Sheets()`** (idempotent — thêm 4 cột mới vào `PERSONAL_SCORE`). M-KPI-1 hiển thị khi có UC hội đồng chấm; M-KPI-2/3/4/trừ khi teamlead chấm cá nhân.
 
-**Đợt 2 residual (chưa làm):** nối A3 (milestone Action Plan) tự động từ SHTD/hub (hiện nhập tay); dọn hẳn auto-score preview (register `scoring.js`) + breakdown 70/30 ở KPI drill-down dashboard; rewrite Playwright spec 03/04/06 theo model mới.
+**Đợt 2 residual:** ✅ **DỌN auto-score cũ** (gỡ preview register + breakdown 70/30 ở leaderboard/dashboard → hiển thị Điểm US hội đồng) + ✅ **rewrite Playwright 03/04/06** (03 hội đồng · 04 ScoringH2 fixture · 06 leaderboard KPI + SPTD ẩn — **42/42 PASS**; full suite 85 pass +1 flake timing weekly-update pass khi chạy riêng). **Còn:** nối A3 (Action Plan) tự động từ SHTD/hub (nhập tay); xóa hẳn dashboard.js SPTD dormant code + gỡ `scoring.js`/`champion-review`/`ScoringEngine.gs` khi ổn định.
 
 *Cập nhật lần cuối nhật ký: 2026-08-25 (Giai đoạn 3 Đợt 1+2 code xong, branch `feat/h2-scoring`; Đợt 1 đã deploy+merge, Đợt 2 chờ deploy+merge).*

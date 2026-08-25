@@ -12,7 +12,8 @@ Thứ tự ưu tiên cho session tiếp theo.
   - [x] **[P1] Đợt 2 — KPI tổng hợp — CODE XONG 2026-08-25** (branch `feat/h2-scoring`). Member KPI (M1·40+M2·30+M3·15+M4·15−trừ) + Teamlead (T1·60+T2·40) + PM card (A1/A2 auto, A3/A4 tay). `PERSONAL_SCORE` +4 cột (khóa học/lan tỏa/milestone teamlead nhập cùng); route `kpi-leaderboard`; leaderboard +2 tab + PM card; `scoring-h2.js` 62/62. Chi tiết H2_PLAN §8 Đợt 2.
     - [ ] **[P0] Deploy GAS Đợt 2** — Edit deployment → New version + chạy lại `setupScoringH2Sheets()` (thêm 4 cột vào `PERSONAL_SCORE`).
     - [ ] **[P0] Smoke test** — teamlead chấm cá nhân (có khóa học/lan tỏa/milestone) → leaderboard tab "KPI tổng hợp" hiện M1..M4−trừ + tab "KPI Teamlead" (T1/T2) + PM card (admin) A1/A2 auto, nhập A3/A4 → final. → merge main.
-    - [ ] **[P2] Residual** — nối A3 (milestone Action Plan) tự động từ SHTD/hub; dọn auto-score preview (register `scoring.js`) + breakdown 70/30 KPI drill-down; **rewrite Playwright spec 03/04/06**.
+    - [x] **[P2] Residual (một phần) — 2026-08-25:** ✅ dọn auto-score cũ (gỡ preview register + breakdown 70/30 leaderboard/dashboard → Điểm US hội đồng) · ✅ rewrite Playwright 03/04/06 (42/42; full 85 pass +1 flake weekly-update pass riêng) · ✅ `scoring-h2.js` 62/62.
+    - [ ] **[P3] Residual còn lại:** nối A3 (Action Plan) tự động từ SHTD/hub (đang nhập tay); xóa hẳn dashboard.js SPTD dormant code + gỡ `scoring.js`/`champion-review`/`ScoringEngine.gs` khi ổn định.
 
 
 - [x] **Dọn rác nguồn user (2026-08-18, Part 3)** — gỡ hẳn quản lý user khỏi AI US + sheet USERS nội bộ + script migration cũ. Nguồn user DUY NHẤT = `User_Master` (SHTD); AI US chỉ ĐỌC (login/role/KPI) + đổi mật khẩu tự phục vụ. Test 88/88 (+ unit). Chi tiết: handover Part 3.

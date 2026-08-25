@@ -1,20 +1,50 @@
-// 03-review-queue.spec.js — review-queue.html tests
+// 03-review-queue.spec.js — review-queue.html (H2 Giai đoạn 3: Hội đồng chấm điểm US)
 const { test, expect } = require('@playwright/test');
-const { setSession, mockGAS, ADMIN_USER, CHAMPION_USER, REGULAR_USER, MOCK_UC_LIST } = require('./helpers');
+const { setSession, mockGAS, ADMIN_USER, CHAMPION_USER, REGULAR_USER } = require('./helpers');
 
-test.describe('review-queue.html — Review Queue Page', () => {
+// UC Approved (chỉ UC đã duyệt mới được hội đồng chấm)
+const MOCK_APPROVED = [
+  { record_id: 'REC-001', usecase_id: 'AIUS-001', name: 'UC A', team: 'Team Số',  owner_name: 'User A', status: 'Approved' },
+  { record_id: 'REC-002', usecase_id: 'AIUS-002', name: 'UC B', team: 'Team Khác', owner_name: 'User B', status: 'Approved' },
+  { record_id: 'REC-003', usecase_id: 'AIUS-003', name: 'UC C', team: 'Team Số',  owner_name: 'User C', status: 'Approved' },
+  { record_id: 'REC-004', usecase_id: 'AIUS-004', name: 'UC D', team: 'Team Số',  owner_name: 'User D', status: 'Approved' },
+];
 
-  test('Admin can access page', async ({ page }) => {
+// Tiến độ hội đồng: REC-003 đủ 4 (done); REC-004 admin đã chấm, 2/4 (underReview cho admin);
+// REC-001/002 chưa ai chấm (pending). council_size = 4.
+const MOCK_PROGRESS = {
+  council_size: 4,
+  map: {
+    'REC-003': { count: 4, final: 80, reviewers: ['tuantt4', 'maittt7', 'tutv3', 'quynhnny'] },
+    'REC-004': { count: 2, final: 60, reviewers: ['tuantt4', 'maittt7'] },
+  },
+};
+
+const MOCK_COUNCIL_LIST = {
+  record_id: 'REC-001', final: 0, rank_category: 'BOTTOM_PERFORMER',
+  scored_count: 0, council_size: 4, scores: [], pending: ['tuantt4', 'maittt7', 'tutv3', 'quynhnny'],
+};
+
+const BASE_MOCK = {
+  list: MOCK_APPROVED,
+  'council-progress': MOCK_PROGRESS,
+  'council-score-list': MOCK_COUNCIL_LIST,
+  'council-score-submit': { score_id: 'CS-0001', member_score: 100, uc_final: 100, scored_count: 1, council_size: 4 },
+};
+
+test.describe('review-queue.html — Hội đồng chấm điểm US', () => {
+
+  test('Admin (council) can access page', async ({ page }) => {
     await setSession(page, ADMIN_USER);
-    await mockGAS(page, { list: MOCK_UC_LIST });
+    await mockGAS(page, BASE_MOCK);
     await page.goto('/review-queue.html');
     await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL(/review-queue\.html/);
   });
 
-  test('Champion can access page', async ({ page }) => {
+  test('Teamlead can access page', async ({ page }) => {
     await setSession(page, CHAMPION_USER);
-    await mockGAS(page, { list: MOCK_UC_LIST });
+    await mockGAS(page, BASE_MOCK);
     await page.goto('/review-queue.html');
     await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL(/review-queue\.html/);
@@ -35,167 +65,120 @@ test.describe('review-queue.html — Review Queue Page', () => {
 
   test('Admin sees all 3 queue sections rendered', async ({ page }) => {
     await setSession(page, ADMIN_USER);
-    await mockGAS(page, { list: MOCK_UC_LIST });
+    await mockGAS(page, BASE_MOCK);
     await page.goto('/review-queue.html');
     await page.waitForLoadState('networkidle');
-
     await expect(page.locator('#rqContent')).toBeVisible();
     await expect(page.locator('#rqSectionPending')).toBeVisible();
     await expect(page.locator('#rqSectionUnderReview')).toBeVisible();
     await expect(page.locator('#rqSectionDone')).toBeVisible();
   });
 
-  test('Admin sees correct badge counts (4 UCs total)', async ({ page }) => {
-    await setSession(page, ADMIN_USER);
-    await mockGAS(page, { list: MOCK_UC_LIST });
+  test('Council progress → correct badge counts', async ({ page }) => {
+    await setSession(page, ADMIN_USER); // tuantt4 ∈ hội đồng
+    await mockGAS(page, BASE_MOCK);
     await page.goto('/review-queue.html');
     await page.waitForLoadState('networkidle');
-
-    // Pending: 1 (REC-001 Submitted Team Số) + 1 (REC-004 Submitted Team Khác) = 2
+    // pending: REC-001 + REC-002 (chưa ai chấm, admin chưa chấm) = 2
     await expect(page.locator('#rqBadgePending')).toHaveText('2');
-    // Under Review: 1 (REC-002)
+    // underReview: REC-004 (admin đã chấm, 2/4) = 1
     await expect(page.locator('#rqBadgeUnderReview')).toHaveText('1');
-    // Done: 1 (REC-003 Approved + total_score > 0)
-    await expect(page.locator('#rqBadgeDone')).toHaveText('1');
-  });
-
-  test('Champion sees only their team (Team Số) UCs', async ({ page }) => {
-    await setSession(page, CHAMPION_USER); // team = 'Team Số'
-    await mockGAS(page, { list: MOCK_UC_LIST });
-    await page.goto('/review-queue.html');
-    await page.waitForLoadState('networkidle');
-
-    // Champion sees Team Số only: REC-001 Submitted, not REC-004 (Team Khác)
-    await expect(page.locator('#rqBadgePending')).toHaveText('1');
-    // Under Review: 1 (Team Số)
-    await expect(page.locator('#rqBadgeUnderReview')).toHaveText('1');
-    // Done: 1 (Team Số)
+    // done: REC-003 (đủ 4) = 1
     await expect(page.locator('#rqBadgeDone')).toHaveText('1');
   });
 
   test('navReviewQueue is marked as active', async ({ page }) => {
     await setSession(page, CHAMPION_USER);
-    await mockGAS(page, { list: MOCK_UC_LIST });
+    await mockGAS(page, BASE_MOCK);
     await page.goto('/review-queue.html');
     await page.waitForLoadState('networkidle');
-
     await expect(page.locator('#navReviewQueue')).toHaveClass(/is-active/);
   });
 
-  test('Review panel opens when clicking Review button', async ({ page }) => {
+  test('Council panel opens when clicking Chấm điểm button', async ({ page }) => {
     await setSession(page, ADMIN_USER);
-    await mockGAS(page, { list: MOCK_UC_LIST });
+    await mockGAS(page, BASE_MOCK);
     await page.goto('/review-queue.html');
     await page.waitForLoadState('networkidle');
 
-    const reviewPanel = page.locator('#reviewPanel');
-    await expect(reviewPanel).not.toBeVisible();
-
-    // Click first Review button in pending queue
-    const firstReviewBtn = page.locator('#rqTablePending button').first();
-    await firstReviewBtn.click();
-
-    await expect(reviewPanel).toBeVisible();
-    // UC ID should be filled
+    await expect(page.locator('#reviewPanel')).not.toBeVisible();
+    await page.locator('#rqTablePending button').first().click();
+    await expect(page.locator('#reviewPanel')).toBeVisible();
     await expect(page.locator('#rpUcId')).toHaveText('AIUS-001');
   });
 
-  test('Review panel close button works', async ({ page }) => {
+  test('Panel close button works', async ({ page }) => {
     await setSession(page, ADMIN_USER);
-    await mockGAS(page, { list: MOCK_UC_LIST });
+    await mockGAS(page, BASE_MOCK);
     await page.goto('/review-queue.html');
     await page.waitForLoadState('networkidle');
 
     await page.locator('#rqTablePending button').first().click();
     await expect(page.locator('#reviewPanel')).toBeVisible();
-
     await page.click('#reviewPanelClose');
-    // Panel animates out — wait for CSS transition
     await page.waitForTimeout(300);
     await expect(page.locator('#reviewPanel')).not.toBeVisible();
   });
 
-  test('Quality slider updates displayed value', async ({ page }) => {
+  test('Time-saving slider updates displayed value', async ({ page }) => {
     await setSession(page, ADMIN_USER);
-    await mockGAS(page, { list: MOCK_UC_LIST });
+    await mockGAS(page, BASE_MOCK);
+    await page.goto('/review-queue.html');
+    await page.waitForLoadState('networkidle');
+
+    await page.locator('#rqTablePending button').first().click();
+    await expect(page.locator('#reviewPanel')).toBeVisible();
+    await page.locator('#rpSliderTime').fill('8');
+    await page.locator('#rpSliderTime').dispatchEvent('input');
+    await expect(page.locator('#rpValTime')).toHaveText('8');
+  });
+
+  test('Member score preview = 100 when all criteria = 10', async ({ page }) => {
+    await setSession(page, ADMIN_USER);
+    await mockGAS(page, BASE_MOCK);
     await page.goto('/review-queue.html');
     await page.waitForLoadState('networkidle');
 
     await page.locator('#rqTablePending button').first().click();
     await expect(page.locator('#reviewPanel')).toBeVisible();
 
-    // Set quality slider to 8
-    await page.locator('#rpSliderQuality').fill('8');
-    await page.locator('#rpSliderQuality').dispatchEvent('input');
-    await expect(page.locator('#rpValQuality')).toHaveText('8');
+    for (const id of ['#rpSliderTime', '#rpSliderAuto', '#rpSliderCreative']) {
+      await page.locator(id).fill('10');
+      await page.locator(id).dispatchEvent('input');
+    }
+    // 10*.3 + 10*.4 + 10*.3 = 10 → /10*100 = 100
+    await expect(page.locator('#rpProjectedTotal')).toHaveText('100');
   });
 
-  test('Projected score updates when sliders change', async ({ page }) => {
+  test('Submit council score calls council-score-submit', async ({ page }) => {
     await setSession(page, ADMIN_USER);
-    await mockGAS(page, { list: MOCK_UC_LIST });
-    await page.goto('/review-queue.html');
-    await page.waitForLoadState('networkidle');
+    let submitCalled = false;
 
-    await page.locator('#rqTablePending button').first().click();
-    await expect(page.locator('#reviewPanel')).toBeVisible();
-
-    // REC-001 has auto_score=32. Set Q=10, BV=10, Inn=10 → total=32+30=62
-    await page.locator('#rpSliderQuality').fill('10');
-    await page.locator('#rpSliderQuality').dispatchEvent('input');
-    await page.locator('#rpSliderBiz').fill('10');
-    await page.locator('#rpSliderBiz').dispatchEvent('input');
-    await page.locator('#rpSliderInn').fill('10');
-    await page.locator('#rpSliderInn').dispatchEvent('input');
-
-    await expect(page.locator('#rpProjectedTotal')).toHaveText('62');
-  });
-
-  test('Submit champion review calls API and reloads', async ({ page }) => {
-    await setSession(page, ADMIN_USER);
-    let reviewCallMade = false;
-    await mockGAS(page, {
-      list: MOCK_UC_LIST,
-      'champion-review': async (route, cb) => {
-        reviewCallMade = true;
-        return { record_id: 'REC-001', total_score: 62 };
-      },
-    });
-
-    // Override to capture the champion-review call
     await page.route('**/script.google.com/**', async (route) => {
-      const url   = new URL(route.request().url());
+      const url    = new URL(route.request().url());
       const action = url.searchParams.get('action');
-      const cb    = url.searchParams.get('callback') || '__gasCb_test';
-
-      if (action === 'champion-review') {
-        reviewCallMade = true;
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/javascript; charset=utf-8',
-          body: `${cb}({"success":true,"data":{"record_id":"REC-001","total_score":62},"message":"ok"})`,
-        });
-      } else {
-        const mock = { list: MOCK_UC_LIST };
-        const data = mock[action] || null;
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/javascript; charset=utf-8',
-          body: `${cb}({"success":true,"data":${JSON.stringify(data)},"message":"ok"})`,
-        });
+      const cb     = url.searchParams.get('callback') || '__gasCb_test';
+      let data = null;
+      if (action === 'council-score-submit') {
+        submitCalled = true;
+        data = BASE_MOCK['council-score-submit'];
+      } else if (action in BASE_MOCK) {
+        data = BASE_MOCK[action];
       }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/javascript; charset=utf-8',
+        body: `${cb}({"success":true,"data":${JSON.stringify(data)},"message":"ok"})`,
+      });
     });
 
     await page.goto('/review-queue.html');
     await page.waitForLoadState('networkidle');
-
     await page.locator('#rqTablePending button').first().click();
     await expect(page.locator('#reviewPanel')).toBeVisible();
-
     await page.click('#rpSubmitBtn');
-
-    // Wait for reload — queues re-render
     await page.waitForLoadState('networkidle');
-    expect(reviewCallMade).toBe(true);
+    expect(submitCalled).toBe(true);
   });
 
 });

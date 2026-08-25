@@ -746,59 +746,30 @@ function _lbRenderBody(uc, isFullData) {
            _lbField('Nhận xét duyệt', uc.review_comment, true);
   if (s5.trim()) html += _lbSection('✓', 'Thông tin phê duyệt', [s5], 'detail-section--review');
 
-  // ── Section ★: Đánh giá & Điểm số ──────────────────────────────
+  // ── Section ★: Điểm US (hội đồng) ──────────────────────────────
+  // H2 Giai đoạn 3: điểm US = bình quân hội đồng (3 tiêu chí 30/40/30). Bỏ breakdown Auto/Champion 70/30.
   (function() {
-    var auto   = uc.auto_score           || 0;
-    var manual = uc.manual_score         || 0;
-    var total  = uc.total_score          || (auto + manual);
-    var q      = uc.quality_score        || 0;
-    var bv     = uc.business_value_score || 0;
-    var inn    = uc.innovation_score     || 0;
+    var total  = uc.uc_score != null ? uc.uc_score : (uc.total_score || 0);
     var rkInfo = RANK_LABELS[uc.rank_category] || null;
-    var hasScore = auto > 0 || manual > 0 || q > 0 || bv > 0 || inn > 0;
+    var hasScore = total > 0;
 
     var sScore = '';
     if (!hasScore) {
-      sScore = '<div class="not-scored-notice"><span class="not-scored-icon">⏳</span><span>Chưa thực hiện chấm điểm</span></div>';
+      sScore = '<div class="not-scored-notice"><span class="not-scored-icon">⏳</span><span>Chưa được hội đồng chấm điểm</span></div>';
     } else {
-      var rankBadge = (rkInfo && total > 0)
+      var rankBadge = rkInfo
         ? '<span class="score-rank-badge" style="background:' + rkInfo.color + '20;color:' + rkInfo.color + ';border:1px solid ' + rkInfo.color + '40">' + esc(rkInfo.label) + '</span>'
         : '';
       sScore += '<div class="score-total-row">' +
-        '<div class="score-total-num"><span class="score-total-val">' + total + '</span><span class="score-total-max">&nbsp;/100</span><span class="score-total-label">Tổng điểm</span></div>' +
+        '<div class="score-total-num"><span class="score-total-val">' + total + '</span><span class="score-total-max">&nbsp;/100</span><span class="score-total-label">Điểm US (hội đồng)</span></div>' +
         rankBadge +
       '</div>';
-
-      sScore += '<div class="score-subsections">';
-      sScore += '<div class="score-subsection">' +
-        '<div class="score-subsection-title">Điểm Auto <em>(hệ thống)</em>' +
-          '<span class="score-val-badge">' + auto + ' / 70</span>' +
-        '</div>' +
-        '<p class="score-subsection-note">Tính tự động: hiệu quả thời gian · số người dùng · tái sử dụng · tần suất · tài liệu</p>' +
-      '</div>';
-
-      if (manual > 0 || q > 0 || bv > 0 || inn > 0) {
-        sScore += '<div class="score-subsection">' +
-          '<div class="score-subsection-title">Điểm Champion <em>(đánh giá)</em>' +
-            '<span class="score-val-badge score-val-badge--champion">' + manual + ' / 30</span>' +
-          '</div>' +
-          '<div class="score-breakdown-grid">' +
-            '<div class="score-component"><span class="score-comp-label">Chất lượng</span><span class="score-comp-val">' + q + '<span class="score-comp-max">/10</span></span></div>' +
-            '<div class="score-component"><span class="score-comp-label">Giá trị KD</span><span class="score-comp-val">' + bv + '<span class="score-comp-max">/10</span></span></div>' +
-            '<div class="score-component"><span class="score-comp-label">Sáng tạo</span><span class="score-comp-val">' + inn + '<span class="score-comp-max">/10</span></span></div>' +
-          '</div>';
-        if (uc.reviewer_email)  sScore += '<div class="score-reviewer">Người đánh giá: <strong>' + esc(uc.reviewer_email) + '</strong></div>';
-        if (uc.review_comment)  sScore += '<div class="score-comment">' + esc(uc.review_comment) + '</div>';
-        sScore += '</div>';
-      } else {
-        sScore += '<div class="score-subsection">' +
-          '<div class="score-subsection-title">Điểm Champion <em>(đánh giá)</em></div>' +
-          '<div class="not-scored-notice not-scored-notice--sm">Chưa có đánh giá từ Champion</div>' +
-        '</div>';
-      }
-      sScore += '</div>';
+      var councilInfo = (uc.scored_count != null)
+        ? '<p class="score-subsection-note">Bình quân ' + uc.scored_count + '/' + (uc.council_size || 4) + ' thành viên hội đồng · 3 tiêu chí: Tiết kiệm 30% · Tự động hóa 40% · Sáng tạo 30%.</p>'
+        : '<p class="score-subsection-note">Bình quân điểm hội đồng · 3 tiêu chí: Tiết kiệm 30% · Tự động hóa 40% · Sáng tạo 30%.</p>';
+      sScore += '<div class="score-subsections"><div class="score-subsection">' + councilInfo + '</div></div>';
     }
-    html += _lbSection('★', 'Đánh giá & Điểm số', [sScore], 'detail-section--score');
+    html += _lbSection('★', 'Điểm US (hội đồng)', [sScore], 'detail-section--score');
   })();
 
   if (!isFullData && uc.record_id) {

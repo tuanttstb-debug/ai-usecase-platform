@@ -4,16 +4,18 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
-## SCORING-H2-RESIDUAL-01 — Nợ dọn dẹp sau Giai đoạn 3 Đợt 1 (2026-08-25)
+## SCORING-H2-RESIDUAL-01 — Nợ dọn dẹp sau Giai đoạn 3 (2026-08-25) — PHẦN LỚN ĐÃ DỌN
 
-**Mô tả:** Đợt 1 (branch `feat/h2-scoring`) làm lõi member scoring (Điểm US hội đồng + Điểm cá nhân) và **ngưng** auto-score 70/30 + SPTD 80-10-10 bằng cách **ẩn** (không xóa) — còn nợ dọn dẹp:
-- **Playwright spec chưa cập nhật:** `03-review-queue.spec.js` (champion single-review cũ), `04-scoring-preview.spec.js` (auto-score preview), `06-sptd-tab.spec.js` (tab SPTD ẩn) → sẽ FAIL với UI mới. Cần rewrite theo model hội đồng/cá nhân. (Unit test mới `test-scoring-h2.js` 27/27 PASS.)
-- **Register auto-score preview** (`scoring.js` + ring/bars trong `register.html`) vẫn chạy — chỉ là preview, KHÔNG còn ảnh hưởng điểm cuối; nên gỡ ở Đợt 2 để tránh gây hiểu nhầm.
-- **KPI tab drill-down** (`dashboard.js`) vẫn hiển thị cột Auto/Champion/breakdown 70/30 + modal chi tiết leaderboard section "Đánh giá & Điểm số" theo field cũ; `Total_Score` nay = bình quân hội đồng nên số tổng đúng, nhưng breakdown Auto/Champion vô nghĩa → dọn ở Đợt 2.
-- **dashboard.js SPTD code** còn nguyên (tab ẩn, dormant) — xóa khi chắc không cần đối chiếu.
-- **`champion-review` route + `ScoringEngine.gs` auto-score** giữ lại (không route mới trỏ tới `recalculateAllScores_`); gỡ khi Đợt 2 ổn định.
+**Đã dọn (2026-08-25):**
+- ✅ **Playwright 03/04/06 rewrite** theo model mới: `03` hội đồng chấm 3 tiêu chí + tiến độ n/4; `04` ScoringH2 fixture (`tests/scoring-h2-test.html`) thay ScoringEngine cũ; `06` leaderboard KPI tabs + PM card + SPTD-tab-hidden. **42/42 PASS** (03+04+06). Unit `test-scoring-h2.js` 62/62.
+- ✅ **Register auto-score preview GỠ:** bỏ `scoring.js` include + panel `#scoringPreview` (ring/bars/self-assessment) khỏi `register.html`; gỡ `_updateScoringPreview`/`_bindScoringPreview` + inject BV/Innovation khỏi `app.js`.
+- ✅ **Breakdown 70/30 DỌN** ở chỗ user thấy: `leaderboard.html` detail modal + `dashboard.js` KPI drill-down (`_openKPIScoreList`) + detail popup (`_renderDetailBody`) → hiển thị **Điểm US (hội đồng) /100** thay Auto/Champion (rank tính inline `_dsRankOf` vì dashboard không chắc có ScoringEngine).
 
-**Hướng:** Đợt 2 dọn đồng thời khi thêm KPI Teamlead/PM. Ưu tiên trung bình — không chặn Đợt 1 chạy.
+**Còn tồn (thấp):**
+- **dashboard.js SPTD code** (`_renderSPTDMyUCs` + bảng SPTD leaderboard, cột Auto/70·Champion/30) còn nguyên nhưng **sau tab SPTD đã ẩn** → dormant, không reachable. Xóa hẳn khi chắc không cần đối chiếu.
+- **`scoring.js`** vẫn được `dashboard.html`/`review-queue`(cũ đã đổi)/... include ở vài trang — vô hại; gỡ dần.
+- **`champion-review` route + `ScoringEngine.gs` auto-score** giữ lại (không route mới trỏ tới); gỡ khi ổn định.
+- **A3 (PM milestone Action Plan)** vẫn nhập tay — nối tự động từ SHTD/hub `binh-dan-hoa-ai-H2` sau. Ưu tiên thấp.
 
 ## SCORING-H2-AUTH-01 — Council/personal auth tin token FE hoặc reviewer_email (2026-08-25)
 

@@ -230,68 +230,8 @@
               </div>
             </div>
 
-            <!-- Scoring Preview Panel — shown live as user fills the form -->
-            <div id="scoringPreview" class="score-preview-panel" style="display:none">
-              <div class="score-preview-header">
-                <span class="score-preview-title">Dự kiến điểm số</span>
-                <span class="score-preview-note">Tự động cập nhật</span>
-              </div>
-              <div class="score-preview-body">
-                <div class="score-ring-wrap">
-                  <div class="score-ring">
-                    <svg viewBox="0 0 80 80" class="score-ring-svg">
-                      <circle cx="40" cy="40" r="32" class="score-ring-bg"/>
-                      <circle cx="40" cy="40" r="32" class="score-ring-fill" id="scoreRingFill"/>
-                    </svg>
-                    <div class="score-ring-inner">
-                      <span class="score-ring-value" id="scoreTotalVal">—</span>
-                      <span class="score-ring-label">/ 100</span>
-                    </div>
-                  </div>
-                  <div class="score-rank-chip" id="scoreRankChip" style="display:none"></div>
-                </div>
-
-                <div class="score-bars-group">
-                  <div class="score-bar-section-label">Điểm tự động (tối đa 70)</div>
-                  <div class="score-bar-item">
-                    <span class="score-bar-label">Hiệu quả</span>
-                    <div class="score-bar-track"><div class="score-bar-fill" id="barEfficiency"></div></div>
-                    <span class="score-bar-val" id="valEfficiency">0</span><span class="score-bar-max">/20</span>
-                  </div>
-                  <div class="score-bar-item">
-                    <span class="score-bar-label">Người dùng</span>
-                    <div class="score-bar-track"><div class="score-bar-fill" id="barAdoption"></div></div>
-                    <span class="score-bar-val" id="valAdoption">0</span><span class="score-bar-max">/20</span>
-                  </div>
-                  <div class="score-bar-item">
-                    <span class="score-bar-label">Tái sử dụng</span>
-                    <div class="score-bar-track"><div class="score-bar-fill" id="barReuse"></div></div>
-                    <span class="score-bar-val" id="valReuse">0</span><span class="score-bar-max">/20</span>
-                  </div>
-                  <div class="score-bar-item">
-                    <span class="score-bar-label">Tần suất</span>
-                    <div class="score-bar-track"><div class="score-bar-fill" id="barFrequency"></div></div>
-                    <span class="score-bar-val" id="valFrequency">0</span><span class="score-bar-max">/15</span>
-                  </div>
-                  <div class="score-bar-item">
-                    <span class="score-bar-label">Tài liệu</span>
-                    <div class="score-bar-track"><div class="score-bar-fill" id="barDocumentation"></div></div>
-                    <span class="score-bar-val" id="valDocumentation">0</span><span class="score-bar-max">/5</span>
-                  </div>
-
-                  <div class="score-bar-section-label" style="margin-top:10px">Tự đánh giá (tối đa 20)</div>
-                  <div class="self-assess-row">
-                    <label class="self-assess-label">Giá trị kinh doanh <span id="valBizSelf">5</span>/10</label>
-                    <input type="range" id="sliderBizValue" class="score-slider" min="0" max="10" step="1" value="5">
-                  </div>
-                  <div class="self-assess-row">
-                    <label class="self-assess-label">Tính sáng tạo <span id="valInnSelf">5</span>/10</label>
-                    <input type="range" id="sliderInnovation" class="score-slider" min="0" max="10" step="1" value="5">
-                  </div>
-                  <div class="score-bar-section-note">* Điểm chất lượng (0-10) do Champion/Admin chấm sau khi review.</div>
-                </div>
-              </div>
-            </div>
+            <!-- H2 Giai đoạn 3: gỡ bảng dự kiến điểm auto-score (70/30). Chấm điểm nay theo
+                 mô hình mới — Điểm US do hội đồng chấm ở review-queue, không preview khi đăng ký. -->
 
             <div class="wizard-nav-wrapper" id="wizardNavWrapper">
               <div class="wizard-nav-left">
@@ -354,7 +294,8 @@
   <script src="assets/js/duplicate-check.js"></script>
   <script src="assets/js/form-mapper.js"></script>
   <script src="assets/js/wizard.js"></script>
-  <script src="assets/js/scoring.js"></script>
+  <!-- H2 Giai đoạn 3: bỏ scoring.js (auto-score 70/30 ngưng dùng) -->
+
   <script src="assets/js/app.js"></script>
 </body>
 </html>
