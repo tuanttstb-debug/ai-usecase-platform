@@ -327,4 +327,13 @@ Hoàn thiện bộ KPI H2 đầy đủ (`binh-dan-hoa-ai-H2/config/kpi_roles.yam
 
 **Đợt 2 residual:** ✅ **DỌN auto-score cũ** (gỡ preview register + breakdown 70/30 ở leaderboard/dashboard → hiển thị Điểm US hội đồng) + ✅ **rewrite Playwright 03/04/06** (03 hội đồng · 04 ScoringH2 fixture · 06 leaderboard KPI + SPTD ẩn — **42/42 PASS**; full suite 85 pass +1 flake timing weekly-update pass khi chạy riêng). **Còn:** nối A3 (Action Plan) tự động từ SHTD/hub (nhập tay); xóa hẳn dashboard.js SPTD dormant code + gỡ `scoring.js`/`champion-review`/`ScoringEngine.gs` khi ổn định.
 
-*Cập nhật lần cuối nhật ký: 2026-08-25 (Giai đoạn 3 Đợt 1+2 code xong, branch `feat/h2-scoring`; Đợt 1 đã deploy+merge, Đợt 2 chờ deploy+merge).*
+### Bổ sung tính năng PM (2026-08-25) — P06 Heatmap + P15 Thư viện
+
+Sau rà soát toàn bộ yêu cầu H2 (21 đầu việc `action_plan.csv`), bổ sung 2 tính năng nền tảng còn thiếu:
+- **P06 Heatmap** (`leaderboard.html` +tab "Heatmap"): lưới team × cá nhân tô màu xanh–vàng–đỏ theo rank KPI (nguồn `kpi-leaderboard.member_ranking`) + TB team. Công khai phân nhóm.
+- **P15 Thư viện AI** (`library.html`+`library.js` MỚI): gom UC đã duyệt theo Workflow, lọc/tìm + modal xem prompt (8 field) + Quick Win hướng dẫn + **Copy toàn bộ Prompt**. Nav `navLibrary` (luôn hiện) thêm vào 9 trang. Mọi user xem.
+- Test: `06` +T10 heatmap, `08-library.spec.js` mới → **16/16 PASS**. Thuần FE (không đổi GAS).
+
+**Còn thiếu (rà soát):** lịch AIOS cron cho việc định kỳ (P05/P07/P02/P03/P06/P16 — chờ [TT] chốt giờ); cơ chế xác nhận UC tái dùng ≥3 người (T05/M05 — hiện teamlead tick tay); AI Worklog riêng (M03 — gộp weekly-update); nối A3 PM tự động. Quyết định treo: Q2 Hội đồng · Q3 %trừ · Q4 owner · M-KPI-1 bình quân vs UC cao nhất.
+
+*Cập nhật lần cuối nhật ký: 2026-08-25 (Đợt 1+2 deploy+merge; residual + P06 Heatmap + P15 Thư viện code xong).*

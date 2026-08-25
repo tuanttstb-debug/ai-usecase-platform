@@ -102,6 +102,16 @@ test('T08: SPTD tab button is hidden on dashboard', async ({ page }) => {
   await expect(page.locator('#tab-btn-sptd')).toBeHidden();
 });
 
+test('T10: Heatmap tab renders team cards colored by rank', async ({ page }) => {
+  await gotoLeaderboard(page, ADMIN_USER);
+  await page.click('.lb-tab[data-tab="heatmap"]');
+  await expect(page.locator('#tabHeatmap')).toBeVisible();
+  // 2 members trong MOCK_KPI thuộc 2 team (Team Số, Team ABC) → 2 team card
+  const teamCards = page.locator('#heatmapBody .section-panel');
+  await expect(teamCards).toHaveCount(2);
+  await expect(page.locator('#heatmapBody')).toContainText('Tuan TT4');
+});
+
 test('T09: No JS console errors on leaderboard', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (err) => errors.push(err.message));
