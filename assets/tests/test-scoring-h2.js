@@ -152,6 +152,22 @@ test('Chỉ A2=100 → 20', function () { eq(ScoringH2.pmKpiFinal(0,100,0,0), 20
 test('Chỉ A3=100 → 30', function () { eq(ScoringH2.pmKpiFinal(0,0,100,0), 30); });
 test('Chỉ A4=100 → 20', function () { eq(ScoringH2.pmKpiFinal(0,0,0,100), 20); });
 
+console.log('\n── ScoringH2: Điểm cá nhân THEO THÁNG (CR#1) ──');
+test('personalPeriodAvg [80] → 80', function () { eq(ScoringH2.personalPeriodAvg([80]), 80); });
+test('personalPeriodAvg [60,80] → 70', function () { eq(ScoringH2.personalPeriodAvg([60, 80]), 70); });
+test('personalPeriodAvg [90,60,30] → 60', function () { eq(ScoringH2.personalPeriodAvg([90, 60, 30]), 60); });
+test('personalPeriodAvg rỗng (chưa tháng nào) → 0', function () { eq(ScoringH2.personalPeriodAvg([]), 0); });
+test('personalPeriodAvg 1 chữ số thập phân [70,80,90,55] → 73.8', function () {
+  eq(ScoringH2.personalPeriodAvg([70, 80, 90, 55]), 73.8);
+});
+test('h2Months = 5 tháng (08→12/2026)', function () { eq(ScoringH2.h2Months().length, 5); });
+test('h2Months[0] = Tháng 08/2026', function () { eq(ScoringH2.h2Months()[0], 'Tháng 08/2026'); });
+test('h2Months cuối = Tháng 12/2026', function () { eq(ScoringH2.h2Months()[4], 'Tháng 12/2026'); });
+test('currentH2Month nằm trong danh sách kỳ', function () {
+  var c = ScoringH2.currentH2Month();
+  if (ScoringH2.h2Months().indexOf(c) === -1) throw new Error('currentH2Month "' + c + '" ngoài kỳ');
+});
+
 console.log('\n────────────────────────────────────────');
 console.log('  ' + passed + ' passed, ' + failed + ' failed');
 console.log('────────────────────────────────────────\n');

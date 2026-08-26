@@ -118,9 +118,9 @@
 
       <main class="app-content" role="main">
         <p style="color:var(--color-text-secondary);margin-bottom:var(--space-4)">
-          Teamlead chấm điểm cá nhân cho thành viên team mình — 4 tiêu chí (thang 0–10):
+          Teamlead chấm <strong>điểm năng lực (M-KPI-2)</strong> cho thành viên team mình theo <strong>từng tháng</strong> — 4 tiêu chí (thang 0–10):
           <strong>Đa dạng 30% · Thành thạo AI 20% · Chất lượng SP 30% · Số lượng đủ 20%</strong>.
-          Chấm 1 lần cuối kỳ (hạn 31/12/2026). Chấm lại sẽ ghi đè.
+          Điểm năng lực cuối kỳ = <strong>trung bình các tháng đã chấm</strong>. Chấm lại 1 tháng sẽ ghi đè tháng đó.
         </p>
 
         <div id="psLoading" class="empty-state">Đang tải danh sách thành viên…</div>
@@ -153,35 +153,60 @@
     </div>
 
     <div class="review-panel-body">
-      <div class="rp-score-section">
-        <div class="rp-section-label">4 tiêu chí (thang 0–10)</div>
-        <div class="rp-score-row">
-          <label class="rp-score-label">Mức độ đa dạng (30%) <span id="psValDiv">5</span>/10</label>
-          <input type="range" id="psSliderDiv" class="score-slider" min="0" max="10" step="1" value="5">
+      <!-- Nhóm điểm US (M-KPI-1) — hội đồng chấm, teamlead chỉ ĐỌC (CR#2) -->
+      <div class="ps-group ps-group--us">
+        <div class="ps-group-head">
+          <span class="ps-group-tag ps-tag-us">M-KPI-1</span>
+          <span class="ps-group-title">Điểm US (hội đồng chấm · 40%)</span>
+          <span class="ps-group-score" id="psUsScore">—</span>
         </div>
-        <div class="rp-score-row">
-          <label class="rp-score-label">Thành thạo ứng dụng AI (20%) <span id="psValAi">5</span>/10</label>
-          <input type="range" id="psSliderAi" class="score-slider" min="0" max="10" step="1" value="5">
+        <div class="ps-group-note" id="psUsNote">Bình quân điểm hội đồng các UC do thành viên sở hữu. Teamlead không chấm mục này.</div>
+      </div>
+
+      <!-- Nhóm điểm năng lực M-KPI-2 — teamlead chấm theo THÁNG (CR#1) -->
+      <div class="ps-group ps-group--m2">
+        <div class="ps-group-head">
+          <span class="ps-group-tag ps-tag-m2">M-KPI-2</span>
+          <span class="ps-group-title">Điểm năng lực (teamlead chấm · 30%)</span>
+          <span class="ps-group-score" id="psProjected">—</span>
+          <span class="rank-chip" id="psRankChip"></span>
         </div>
-        <div class="rp-score-row">
-          <label class="rp-score-label">Chất lượng sản phẩm (30%) <span id="psValPq">5</span>/10</label>
-          <input type="range" id="psSliderPq" class="score-slider" min="0" max="10" step="1" value="5">
+
+        <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between;margin-bottom:var(--space-3)">
+          <label class="rp-score-label" style="flex:1;margin:0"><strong>Kỳ chấm (tháng)</strong></label>
+          <select id="psMonth" class="form-control" style="width:170px"></select>
         </div>
-        <div class="rp-score-row">
-          <label class="rp-score-label">Số lượng đủ theo yêu cầu (20%) <span id="psValQt">5</span>/10</label>
-          <input type="range" id="psSliderQt" class="score-slider" min="0" max="10" step="1" value="5">
+        <div class="ps-month-hint" id="psMonthHint"></div>
+
+        <div class="rp-score-section" style="margin-top:var(--space-2)">
+          <div class="rp-score-row">
+            <label class="rp-score-label">Mức độ đa dạng (30%)</label>
+            <input type="range" id="psSliderDiv" class="score-slider" min="0" max="10" step="1" value="0">
+          </div>
+          <div class="rp-score-row">
+            <label class="rp-score-label">Thành thạo ứng dụng AI (20%)</label>
+            <input type="range" id="psSliderAi" class="score-slider" min="0" max="10" step="1" value="0">
+          </div>
+          <div class="rp-score-row">
+            <label class="rp-score-label">Chất lượng sản phẩm (30%)</label>
+            <input type="range" id="psSliderPq" class="score-slider" min="0" max="10" step="1" value="0">
+          </div>
+          <div class="rp-score-row">
+            <label class="rp-score-label">Số lượng đủ theo yêu cầu (20%)</label>
+            <input type="range" id="psSliderQt" class="score-slider" min="0" max="10" step="1" value="0">
+          </div>
+        </div>
+        <div class="ps-group-note">
+          Điểm năng lực cuối kỳ (M-KPI-2) = <strong>trung bình các tháng đã chấm</strong>. Hiện: <strong id="psAvgInfo">chưa có tháng nào</strong>.
         </div>
       </div>
 
-      <div class="rp-score-projected">
-        <span>Điểm năng lực (M-KPI-2):</span>
-        <span class="rp-projected-val" id="psProjected">—</span>
-        <span class="rank-chip" id="psRankChip"></span>
-      </div>
-
-      <!-- KPI khác teamlead nhập cùng: M-KPI-3 (khóa học) · M-KPI-4 (lan tỏa) · điểm trừ -->
-      <div class="rp-score-section">
-        <div class="rp-section-label">KPI khác (teamlead nhập)</div>
+      <!-- Nhóm KPI khác — M-KPI-3 (khóa học) · M-KPI-4 (lan tỏa) · điểm trừ (nhập 1 lần, không theo tháng) -->
+      <div class="ps-group ps-group--other">
+        <div class="ps-group-head">
+          <span class="ps-group-tag ps-tag-other">M-KPI-3/4</span>
+          <span class="ps-group-title">KPI khác + điểm trừ (nhập 1 lần)</span>
+        </div>
 
         <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between">
           <label class="rp-score-label" style="flex:1">Số khóa học AI đã hoàn thành</label>
@@ -200,22 +225,36 @@
           <input type="number" id="psLate" class="form-control" min="0" max="20" step="1" value="0" style="width:80px">
         </div>
 
-        <div style="margin-top:var(--space-3);padding:var(--space-3);background:var(--color-bg);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--color-text-secondary)">
+        <div class="ps-kpi-preview">
           <div>M-KPI-3 (khóa học, 15%): <strong id="psM3">0</strong>/100</div>
           <div>M-KPI-4 (lan tỏa, 15%): <strong id="psM4">0</strong>/100</div>
           <div>Điểm trừ milestone: <strong id="psPenalty" style="color:var(--color-error,#c62828)">0</strong>%</div>
-          <div style="margin-top:var(--space-2);color:var(--color-text-muted)">
-            Điểm US (M-KPI-1, 40%) do <strong>hội đồng</strong> chấm — xem tổng hợp ở Leaderboard tab "KPI tổng hợp".
-          </div>
         </div>
       </div>
 
+      <!-- EVD dạng dòng — link bằng chứng ở ổ share (CR#4, chỉ hiển thị) -->
+      <div class="ps-evd-row" id="psEvdRow">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
+        <span class="ps-evd-label">Bằng chứng (EVD):</span>
+        <span class="ps-evd-value" id="psEvdValue">—</span>
+      </div>
+
+      <!-- Tổng hợp KPI dự kiến (M1..M4 − trừ) -->
+      <div class="ps-group ps-group--final">
+        <div class="ps-group-head">
+          <span class="ps-group-title">KPI tổng hợp (dự kiến)</span>
+          <span class="ps-group-score ps-final-score" id="psFinalKpi">—</span>
+          <span class="rank-chip" id="psFinalRank"></span>
+        </div>
+        <div class="ps-group-note" id="psFinalBreakdown"></div>
+      </div>
+
       <div class="rp-score-section">
-        <div class="rp-section-label">Nhận xét</div>
+        <div class="rp-section-label">Nhận xét (tháng này)</div>
         <textarea id="psComment" class="form-control" rows="3" placeholder="Nhận xét cho thành viên này…" style="resize:vertical"></textarea>
       </div>
 
-      <button class="btn btn-primary" id="psSubmitBtn" style="width:100%;margin-top:var(--space-4)">Lưu điểm cá nhân</button>
+      <button class="btn btn-primary" id="psSubmitBtn" style="width:100%;margin-top:var(--space-4)">Lưu điểm tháng này</button>
     </div>
   </aside>
 
@@ -246,6 +285,7 @@
   <script src="assets/js/toast.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/scoring-h2.js"></script>
+  <script src="assets/js/score-slider.js"></script>
   <script src="assets/js/personal-score.js"></script>
 </body>
 </html>

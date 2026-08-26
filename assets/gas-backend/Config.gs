@@ -300,16 +300,21 @@ var H2_UC_WEIGHTS = {
 };
 
 // ── Điểm cá nhân — Teamlead chấm mỗi thành viên (4 tiêu chí 30/20/30/20) ──
-// 1 row / member. Chấm 1 lần cuối kỳ (hạn 31/12/2026). Final = Σ(tiêu chí/10 × trọng số) × 100.
-// Final_Score = điểm NĂNG LỰC (M-KPI-2, thang 100). Các cột KPI khác teamlead nhập cùng lúc:
-//   Courses_Completed/Courses_Paid → M-KPI-3 · Sharing_Achieved → M-KPI-4 · Milestones_Late → điểm trừ.
+// (CR 2026-08-26) Điểm NĂNG LỰC (M-KPI-2) chấm theo THÁNG: 1 row / (member × Month).
+//   Final_Score = điểm năng lực THÁNG đó (0–100). M-KPI-2 cuối kỳ = TRUNG BÌNH Final_Score
+//   các tháng ĐÃ chấm (tháng trống bỏ qua) — tính ở _memberKpiFor_/listPersonalScores_.
+//   Các cột KPI khác (khóa học/lan tỏa/milestone chậm) KHÔNG theo tháng: ghi kèm mỗi row,
+//   backend đọc từ dòng THÁNG MỚI NHẤT (nhập 1 lần, mới nhất áp dụng).
+//   Month = nhãn 'Tháng MM/YYYY' (rỗng = bản ghi cũ trước khi tách tháng → coi như 1 kỳ).
+//   Evidence_Link = link bằng chứng ở ổ share (CR#4) — chỉ hiển thị đọc ở panel, không nhập tại đây.
 var PERSONAL_HEADERS = [
-  'Score_ID', 'Username', 'Display_Name', 'Team',
+  'Score_ID', 'Username', 'Display_Name', 'Team', 'Month',
   'Diversity', 'AI_Proficiency', 'Product_Quality', 'Quantity_Met', // 4 tiêu chí 0–10 (M-KPI-2)
-  'Final_Score',                                                     // M-KPI-2 (0–100)
+  'Final_Score',                                                     // M-KPI-2 tháng (0–100)
   'Courses_Completed', 'Courses_Paid',                              // M-KPI-3: số khóa học (+ trả phí x2)
   'Sharing_Achieved',                                               // M-KPI-4: lan tỏa đạt (TRUE/FALSE)
   'Milestones_Late',                                                // Điểm trừ: số milestone chậm (−2%/mốc)
+  'Evidence_Link',                                                  // CR#4: link bằng chứng (ổ share) — đọc-only
   'Scored_By', 'Comment', 'Scored_At'
 ];
 var H2_PERSONAL_WEIGHTS = {

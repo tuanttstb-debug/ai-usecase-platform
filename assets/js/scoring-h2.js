@@ -56,6 +56,40 @@
     return round1(sum / arr.length);
   }
 
+  // ── Điểm cá nhân THEO THÁNG (CR#1, 2026-08-26) ────────────────────
+  // Kỳ H2: 08–12/2026 (nhãn 'Tháng MM/YYYY').
+  var H2_PERIOD = { startY: 2026, startM: 8, endY: 2026, endM: 12 };
+
+  function monthLabel(y, m) { return 'Tháng ' + (m < 10 ? '0' + m : '' + m) + '/' + y; }
+
+  // Danh sách nhãn tháng trong kỳ H2 (dùng cho droplist).
+  function h2Months() {
+    var out = [];
+    for (var y = H2_PERIOD.startY; y <= H2_PERIOD.endY; y++) {
+      var mFrom = (y === H2_PERIOD.startY) ? H2_PERIOD.startM : 1;
+      var mTo   = (y === H2_PERIOD.endY)   ? H2_PERIOD.endM   : 12;
+      for (var m = mFrom; m <= mTo; m++) out.push(monthLabel(y, m));
+    }
+    return out;
+  }
+
+  // Nhãn tháng hiện tại nếu nằm trong kỳ, ngược lại tháng gần nhất trong kỳ.
+  function currentH2Month() {
+    var d = new Date(), y = d.getFullYear(), m = d.getMonth() + 1;
+    var cur = monthLabel(y, m), all = h2Months();
+    if (all.indexOf(cur) !== -1) return cur;
+    var k = y * 100 + m;
+    if (k < H2_PERIOD.startY * 100 + H2_PERIOD.startM) return all[0];
+    return all[all.length - 1];
+  }
+
+  // Điểm năng lực CUỐI KỲ (M-KPI-2) = TRUNG BÌNH điểm các tháng ĐÃ chấm (tháng trống bỏ qua).
+  function personalPeriodAvg(monthlyFinals) {
+    var arr = (monthlyFinals || []).map(safeNum);
+    if (!arr.length) return 0;
+    return round1(arr.reduce(function (s, v) { return s + v; }, 0) / arr.length);
+  }
+
   // Rank theo thang 100 (khớp SCORE_THRESHOLDS + màu ScoringEngine cũ).
   function rankInfo(total) {
     var t = safeNum(total);
@@ -117,6 +151,9 @@
     councilMemberScore: councilMemberScore,
     personalFinalScore: personalFinalScore,
     councilAverage:     councilAverage,
+    h2Months:           h2Months,
+    currentH2Month:     currentH2Month,
+    personalPeriodAvg:  personalPeriodAvg,
     courseScore:        courseScore,
     sharingScore:       sharingScore,
     milestonePenalty:   milestonePenalty,

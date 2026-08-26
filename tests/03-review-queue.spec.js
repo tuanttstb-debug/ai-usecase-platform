@@ -120,7 +120,7 @@ test.describe('review-queue.html — Hội đồng chấm điểm US', () => {
     await expect(page.locator('#reviewPanel')).not.toBeVisible();
   });
 
-  test('Time-saving slider updates displayed value', async ({ page }) => {
+  test('Slider mặc định 0 + giá trị hiện trên thanh (bubble) — CR#3', async ({ page }) => {
     await setSession(page, ADMIN_USER);
     await mockGAS(page, BASE_MOCK);
     await page.goto('/review-queue.html');
@@ -128,9 +128,24 @@ test.describe('review-queue.html — Hội đồng chấm điểm US', () => {
 
     await page.locator('#rqTablePending button').first().click();
     await expect(page.locator('#reviewPanel')).toBeVisible();
+    // Mặc định 0 khi chấm mới
+    await expect(page.locator('#rpSliderTime')).toHaveValue('0');
+    // Giá trị hiện NGAY TRÊN thanh (bubble)
     await page.locator('#rpSliderTime').fill('8');
     await page.locator('#rpSliderTime').dispatchEvent('input');
-    await expect(page.locator('#rpValTime')).toHaveText('8');
+    await expect(page.locator('#rpSliderTime + .score-slider-bubble')).toHaveText('8');
+  });
+
+  test('EVD dạng dòng hiển thị trong panel review — CR#4', async ({ page }) => {
+    await setSession(page, ADMIN_USER);
+    await mockGAS(page, BASE_MOCK);
+    await page.goto('/review-queue.html');
+    await page.waitForLoadState('networkidle');
+
+    await page.locator('#rqTablePending button').first().click();
+    await expect(page.locator('#reviewPanel')).toBeVisible();
+    await expect(page.locator('#rpEvdRow')).toBeVisible();
+    await expect(page.locator('#rpEvdRow .ps-evd-label')).toContainText('Bằng chứng');
   });
 
   test('Member score preview = 100 when all criteria = 10', async ({ page }) => {

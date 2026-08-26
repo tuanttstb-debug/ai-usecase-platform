@@ -1,5 +1,16 @@
 # PROJECT STATE
 
+**CR chấm điểm cá nhân theo THÁNG + rà soát UI chấm điểm — CODE XONG 2026-08-26 (main).**
+Theo yêu cầu [TT] (4 CR):
+- **CR#1 — Điểm năng lực (M-KPI-2) chấm THEO THÁNG.** `PERSONAL_SCORE` +cột `Month`; upsert theo **(Username, Month)** (nhiều dòng/member). M-KPI-2 cuối kỳ = **TRUNG BÌNH các tháng ĐÃ chấm** (tháng trống bỏ qua). Khóa học/lan tỏa/điểm trừ **không theo tháng** (đọc dòng tháng mới nhất). Kỳ H2 = **08–12/2026** (droplist). `_memberKpiFor_`/`listPersonalScores_`/`_buildKpiContext_` gộp theo member.
+- **CR#2 — Panel chấm cá nhân hiện RÕ từng nhóm điểm.** Route mới **`member-kpi-preview`** trả M1(US)/M2/M3/M4/trừ/final. Panel bố cục 4 nhóm: **M-KPI-1 US** (hội đồng — chỉ đọc) · **M-KPI-2** (teamlead chấm theo tháng) · **KPI khác** · **KPI tổng hợp dự kiến**.
+- **CR#3 — Chuẩn hóa slider (cả chấm cá nhân + hội đồng).** Component chung `assets/js/score-slider.js`: **mặc định 0** khi chấm mới, **giữ điểm đã lưu** khi sửa; **giá trị hiện NGAY TRÊN thanh** (bubble theo núm) — bỏ label giá trị chiếm dòng.
+- **CR#4 — Dòng EVD (link bằng chứng ổ share, chỉ hiển thị).** Panel cá nhân: cột mới `Evidence_Link` (đọc-only, nguồn nhập sau). Review-queue: dòng EVD = `Demo_Link` của UC (bấm được).
+- **Việc thủ công [TT] trước live:** deploy GAS (New version) + chạy lại **`setupScoringH2Sheets()`** (thêm cột `Month` + `Evidence_Link` vào `PERSONAL_SCORE`). Sau đó hard-refresh.
+- **Verify:** unit `test-scoring-h2.js` **71/71** (+TB tháng/h2Months); Playwright `03` +2 (slider-0/bubble + EVD), `09-personal-score` **4/4** (droplist tháng · US · slider · submit-Month). *(chi tiết H2_PLAN §9)*
+
+---
+
 **H2 Giai đoạn 3 — Mô hình chấm điểm mới — CODE XONG 2026-08-25 (branch `feat/h2-scoring`).**
 Thay auto-score 70/30 + SPTD 80-10-10 bằng bộ KPI H2 đầy đủ.
 - **Đợt 1 (lõi member scoring) — ĐÃ DEPLOY GAS + MERGE main + PUSH:** **Điểm US** (hội đồng 4 teamlead, 3 tiêu chí 0–10, 30/40/30, điểm cuối = bình quân) + **Điểm cá nhân** (teamlead, 4 tiêu chí 0–10, 30/20/30/20). GAS `ScoringServiceH2.gs` (sheets `UC_COUNCIL_SCORE`+`PERSONAL_SCORE`); FE review-queue viết lại + `personal-score.html` mới + leaderboard 2 tab + ẩn tab SPTD.

@@ -382,6 +382,12 @@ function route_(action, params, body) {
     return createResponse_(true, 'Điểm cá nhân', listPersonalScores_(psTeam));
   }
 
+  // (CR#2) Xem trước KPI 1 member (M1 US do hội đồng + M2..M4 + trừ) cho panel chấm điểm. Public.
+  if (action === 'member-kpi-preview') {
+    var mkUser = params.username || body.username || body.Username || '';
+    return createResponse_(true, 'KPI member', getMemberKpiPreview_(mkUser));
+  }
+
   // Leaderboard H2: UC (bình quân hội đồng) + cá nhân. Public (đăng nhập).
   if (action === 'h2-leaderboard') {
     var h2Team  = params.team || body.team || '';

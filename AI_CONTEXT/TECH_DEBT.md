@@ -4,6 +4,13 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
+## SCORING-H2-MONTHLY-01 — Nợ nhẹ sau CR chấm điểm theo tháng (2026-08-26)
+
+- **Nguồn nhập `Evidence_Link` (EVD ổ share) CHƯA có** — panel cá nhân chỉ **hiển thị** cột `Evidence_Link` (đọc-only); chưa có nơi để member/teamlead nhập link. Backend đã hỗ trợ nhận `Evidence_Link` trong `personal-score-submit` (giữ giá trị cũ nếu không gửi). **Hướng:** khi [TT] chốt nguồn (member tự nhập ở đâu / link cố định theo team) → thêm 1 input ghi vào cột này. (CR#4 chủ đích chỉ hiển thị.)
+- **KPI khác (khóa học/lan tỏa/milestone) lưu lặp trên mỗi dòng tháng**, backend đọc **dòng tháng mới nhất** ("nhập 1 lần, mới nhất áp dụng"). Nếu sau này cần lịch sử theo tháng cho các mục này → tách sang bản ghi period riêng. Ưu tiên thấp.
+- **Dòng `PERSONAL_SCORE` cũ (trước CR)** có `Month` rỗng → `_normMonthLabel_('')=''`, `_monthKey_=0`; vẫn tính là 1 "tháng đã chấm" (tương thích ngược, không mất điểm). Nếu muốn gắn kỳ cho dữ liệu cũ → migration set `Month` (không bắt buộc).
+- **Migration cột:** cần chạy `setupScoringH2Sheets()` sau deploy để thêm `Month` + `Evidence_Link` vào `PERSONAL_SCORE` (idempotent; append cột, đọc theo header-name nên vị trí không ảnh hưởng).
+
 ## SCORING-H2-RESIDUAL-01 — Nợ dọn dẹp sau Giai đoạn 3 (2026-08-25) — PHẦN LỚN ĐÃ DỌN
 
 **Đã dọn (2026-08-25):**

@@ -1223,6 +1223,103 @@
   border: none;
 }
 
+/* Giá trị hiển thị NGAY TRÊN thanh kéo (CR#3 — tiết kiệm diện tích, căn theo núm) */
+.score-slider-wrap { position: relative; display: block; padding-top: 24px; }
+.score-slider-bubble {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 8px;
+  border-radius: 999px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 1;
+}
+.score-slider-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--color-primary);
+}
+
+/* ═══════════════════════════════════════════════════
+   Chấm điểm cá nhân — nhóm điểm rõ ràng (CR#2) + EVD dòng (CR#4)
+   ═══════════════════════════════════════════════════ */
+.ps-group {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-3, 12px);
+  margin-bottom: var(--space-4, 16px);
+  background: var(--color-surface, #fff);
+}
+.ps-group--us   { border-left: 3px solid #7B2CBF; }
+.ps-group--m2   { border-left: 3px solid #2563EB; }
+.ps-group--other{ border-left: 3px solid #F6B100; }
+.ps-group--final{ border-left: 3px solid #16A34A; background: var(--color-bg, #f8f9fb); }
+.ps-group-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2, 8px);
+}
+.ps-group-tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .3px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  color: #fff;
+}
+.ps-tag-us    { background: #7B2CBF; }
+.ps-tag-m2    { background: #2563EB; }
+.ps-tag-other { background: #C98A00; }
+.ps-group-title { font-weight: 700; font-size: var(--text-sm, 14px); color: var(--color-text-primary, #1a1a1a); }
+.ps-group-score {
+  margin-left: auto;
+  font-weight: 800;
+  font-size: var(--text-lg, 18px);
+  color: var(--color-primary, #7B2CBF);
+  font-variant-numeric: tabular-nums;
+}
+.ps-final-score { color: #16A34A; }
+.ps-group-note { font-size: var(--text-xs, 12px); color: var(--color-text-secondary, #667); line-height: 1.5; }
+.ps-month-hint { font-size: var(--text-xs, 12px); color: var(--color-text-muted, #8a8a99); margin-bottom: var(--space-2, 8px); }
+.ps-kpi-preview {
+  margin-top: var(--space-3, 12px);
+  padding: var(--space-3, 12px);
+  background: var(--color-bg, #f8f9fb);
+  border-radius: var(--radius-md, 8px);
+  font-size: var(--text-sm, 13px);
+  color: var(--color-text-secondary, #667);
+  display: grid;
+  gap: 2px;
+}
+.ps-evd-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-3, 10px) var(--space-3, 12px);
+  margin-bottom: var(--space-4, 16px);
+  border: 1px dashed var(--color-border, #d5d7de);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-bg, #f8f9fb);
+  font-size: var(--text-sm, 13px);
+}
+.ps-evd-row svg { color: var(--color-text-muted, #8a8a99); flex-shrink: 0; }
+.ps-evd-label { font-weight: 600; color: var(--color-text-secondary, #556); flex-shrink: 0; }
+.ps-evd-value { color: var(--color-text-muted, #8a8a99); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ps-evd-value a { color: var(--color-primary, #7B2CBF); text-decoration: none; font-weight: 600; }
+.ps-evd-value a:hover { text-decoration: underline; }
+
 /* ═══════════════════════════════════════════════════
    Score chip (explore table + review queue)
    ═══════════════════════════════════════════════════ */

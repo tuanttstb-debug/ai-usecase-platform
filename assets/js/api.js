@@ -297,6 +297,7 @@ var Api = {
   getCouncilProgress()          { return Api._request(API.councilProgress()); },
   submitPersonalScore(data)     { return Api._request(API.personalScoreSubmit(), data, 30000); },
   listPersonalScores(team)      { return Api._request(API.personalScoreList(team)); },
+  getMemberKpiPreview(username)  { return Api._request(API.memberKpiPreview(username)); },
   getH2Leaderboard(filters)     { return Api._request(API.h2Leaderboard(filters)); },
   getKpiLeaderboard(filters)    { return Api._request(API.kpiLeaderboard(filters)); },
   submitReuseConfirm(data)      { return Api._request(API.reuseConfirm(), data, 30000); },

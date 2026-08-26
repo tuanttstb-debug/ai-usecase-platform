@@ -342,3 +342,16 @@ Sau rà soát toàn bộ yêu cầu H2 (21 đầu việc `action_plan.csv`), b�
 **Còn thiếu:** AI Worklog riêng (M03 — gộp weekly-update, chấp nhận); nối A3 PM tự động từ SHTD/hub (nhập tay); xóa hẳn dashboard.js SPTD dormant + gỡ `sptd-scoring.js`/`champion-review`/`ScoringEngine.gs`. Quyết định treo: **Q2** Hội đồng (mặc định 4 teamlead) · **Q4** reassign owner 21 task (cần [TT] cho tên).
 
 *Cập nhật lần cuối nhật ký: 2026-08-25 (Đợt 1+2 deploy+merge; residual + P06 Heatmap + P15 Thư viện code xong).*
+
+## 9. CR chấm điểm cá nhân theo THÁNG + rà soát UI chấm điểm (2026-08-26)
+
+Yêu cầu [TT] — 4 CR (đã phỏng vấn chốt phạm vi qua AskUserQuestion):
+
+- **CR#1 — M-KPI-2 chấm THEO THÁNG; cuối kỳ = TB các tháng đã chấm.**
+  - Backend `Config.gs`: `PERSONAL_HEADERS` +`Month` +`Evidence_Link`. `ScoringServiceH2.gs`: `submitPersonalScore_` upsert theo **(Username, Month)**; helper `_normMonthLabel_`/`_monthKey_`/`_aggPersonalRows_`. `listPersonalScores_` gộp theo member (final_score=TB tháng + mảng `months`). `_buildKpiContext_`/`_memberKpiFor_`: M2=TB tháng, M3/M4/trừ lấy **tháng mới nhất**.
+  - Chỉ **4 tiêu chí năng lực** theo tháng (Q1); khóa học/lan tỏa/trừ nhập 1 lần. TB **chỉ tháng đã chấm** (Q2). Kỳ H2 = **08–12/2026**.
+- **CR#2 — Panel hiện rõ từng nhóm điểm + điểm US.** Route `member-kpi-preview` (`getMemberKpiPreview_`). Panel 4 nhóm: M-KPI-1 US (đọc-only) · M-KPI-2 (theo tháng) · KPI khác · tổng hợp dự kiến.
+- **CR#3 — `assets/js/score-slider.js` dùng chung** (personal + review-queue): mặc định **0** khi mới, giữ điểm cũ khi sửa; giá trị **trên thanh** (bubble). CSS `.score-slider-bubble`/`.ps-group*`.
+- **CR#4 — Dòng EVD đọc-only (cả 2 màn):** personal = cột `Evidence_Link` (nguồn nhập sau); review-queue = `Demo_Link` UC.
+- **Verify:** unit `test-scoring-h2.js` **71/71**; Playwright `03` +2 (slider-0/bubble + EVD) · `09-personal-score` **4/4**.
+- **[TT] trước live:** deploy GAS + `setupScoringH2Sheets()` (thêm `Month`+`Evidence_Link`). Xem TECH_DEBT `SCORING-H2-MONTHLY-01`.

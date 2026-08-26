@@ -229,12 +229,16 @@
     setTxt('rpUcName', uc.name || uc.Use_Case_Name || '');
     setTxt('rpUcMeta', (uc.team || '') + (uc.owner_name || uc.owner ? ' · ' + (uc.owner_name || uc.owner) : ''));
 
-    // Reset sliders về mặc định (sẽ prefill nếu reviewer đã chấm)
+    // Reset sliders về 0 khi chấm mới (sẽ prefill nếu reviewer đã chấm) — CR#3.
     ['rpSliderTime', 'rpSliderAuto', 'rpSliderCreative'].forEach(function (id) {
-      var el = document.getElementById(id); if (el) el.value = 5;
+      var el = document.getElementById(id);
+      if (el) { el.value = 0; if (typeof ScoreSlider !== 'undefined') ScoreSlider.refresh(el); }
     });
     var commentEl = document.getElementById('rpComment');
     if (commentEl) commentEl.value = '';
+
+    // EVD dạng dòng (CR#4): link demo/bằng chứng của UC — chỉ hiển thị.
+    _renderEvd(uc.demo_link || uc.Demo_Link || '');
 
     setTxt('rpCouncilFinal', '…');
     setTxt('rpCouncilStatus', 'Đang tải trạng thái hội đồng…');
@@ -292,6 +296,7 @@
       var st = document.getElementById('rpSliderTime');     if (st) st.value = mine.time_saving;
       var sa = document.getElementById('rpSliderAuto');     if (sa) sa.value = mine.automation;
       var sc = document.getElementById('rpSliderCreative'); if (sc) sc.value = mine.creativity;
+      if (typeof ScoreSlider !== 'undefined') { ScoreSlider.refresh(st); ScoreSlider.refresh(sa); ScoreSlider.refresh(sc); }
       var cm = document.getElementById('rpComment');        if (cm && mine.comment) cm.value = mine.comment;
       _updateProjectedScore();
     }
@@ -368,8 +373,24 @@
     }
   }
 
+  /* ── EVD dạng dòng (CR#4) — link demo/bằng chứng của UC, chỉ hiển thị ── */
+  function _renderEvd(link) {
+    var el = document.getElementById('rpEvdValue');
+    if (!el) return;
+    var url = String(link || '').trim();
+    if (url && /^https?:\/\//i.test(url)) {
+      el.innerHTML = '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(url) + '</a>';
+    } else if (url) {
+      el.textContent = url;
+    } else {
+      el.textContent = 'Chưa có link bằng chứng (sẽ cập nhật ở ổ share).';
+    }
+  }
+
   /* ── Bind ── */
   function _bind() {
+    if (typeof ScoreSlider !== 'undefined') ScoreSlider.enhanceAll(document.getElementById('reviewPanel'));
+
     var closeBtn = document.getElementById('reviewPanelClose');
     if (closeBtn) closeBtn.addEventListener('click', _closePanel);
     var overlay = document.getElementById('reviewPanelOverlay');

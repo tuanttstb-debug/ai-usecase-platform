@@ -77,6 +77,48 @@ function _clampCriteria_(v) {
 }
 
 /**
+ * Chuẩn hóa nhãn kỳ tháng về 'Tháng MM/YYYY'. Nhận 'Tháng 9/2026' | '9/2026' | '2026-09' | ''.
+ * Rỗng/không parse → '' (bản ghi không kỳ — tương thích dữ liệu cũ).
+ */
+function _normMonthLabel_(v) {
+  var s = String(v == null ? '' : v).trim();
+  if (!s) return '';
+  var m = /(\d{1,2})\s*\/\s*(\d{4})/.exec(s);        // MM/YYYY hoặc 'Tháng MM/YYYY'
+  if (!m) { var iso = /(\d{4})-(\d{1,2})/.exec(s); if (iso) m = [null, iso[2], iso[1]]; } // YYYY-MM
+  if (!m) return '';
+  var mm = parseInt(m[1], 10), yy = parseInt(m[2], 10);
+  if (mm < 1 || mm > 12) return '';
+  return 'Tháng ' + (mm < 10 ? '0' + mm : '' + mm) + '/' + yy;
+}
+
+/**
+ * Khóa sắp xếp kỳ tháng: 'Tháng MM/YYYY' → YYYY*100+MM. Rỗng/không parse → 0 (coi là cũ nhất).
+ */
+function _monthKey_(label) {
+  var m = /(\d{1,2})\s*\/\s*(\d{4})/.exec(String(label || ''));
+  return m ? (parseInt(m[2], 10) * 100 + parseInt(m[1], 10)) : 0;
+}
+
+/**
+ * Gộp các dòng PERSONAL_SCORE của 1 member (đã lọc theo username) thành:
+ *   { m2_avg, months_scored, latest, finals:[...] }
+ * - m2_avg  = TRUNG BÌNH Final_Score các tháng đã chấm (mọi dòng = 1 tháng đã chấm).
+ * - latest  = dòng tháng MỚI NHẤT (để đọc khóa học/lan tỏa/milestone/evidence — "nhập 1 lần").
+ */
+function _aggPersonalRows_(rows) {
+  var finals = [], latest = null, latestKey = -1;
+  (rows || []).forEach(function (r) {
+    finals.push(safeNum_(r.Final_Score));
+    var k = _monthKey_(r.Month);
+    if (k >= latestKey) { latestKey = k; latest = r; }
+  });
+  var m2 = finals.length
+    ? Math.round((finals.reduce(function (s, v) { return s + v; }, 0) / finals.length) * 10) / 10
+    : 0;
+  return { m2_avg: m2, months_scored: finals.length, latest: latest, finals: finals };
+}
+
+/**
  * Điểm thành viên hội đồng (0–100) từ 3 tiêu chí 0–10.
  */
 function _councilMemberScore_(timeSaving, automation, creativity) {
@@ -366,7 +408,10 @@ function submitPersonalScore_(body) {
   var comment = sanitizeStr_(body.Comment || body.comment || '', 500);
   var now = new Date().toISOString();
 
-  // M-KPI-3 (khóa học) + M-KPI-4 (lan tỏa) + điểm trừ (milestone chậm) — teamlead nhập cùng.
+  // Kỳ tháng (CR#1): nhãn 'Tháng MM/YYYY' — điểm năng lực M2 chấm theo tháng.
+  var month = _normMonthLabel_(body.Month || body.month || '');
+
+  // M-KPI-3 (khóa học) + M-KPI-4 (lan tỏa) + điểm trừ (milestone chậm) — teamlead nhập cùng (KHÔNG theo tháng).
   var coursesCompleted = Math.max(0, Math.round(safeNum_(body.Courses_Completed)));
   var coursesPaid      = Math.max(0, Math.round(safeNum_(body.Courses_Paid)));
   if (coursesPaid > coursesCompleted) coursesPaid = coursesCompleted; // trả phí ⊆ đã hoàn thành
@@ -378,20 +423,28 @@ function submitPersonalScore_(body) {
   lock.waitLock(LOCK_TIMEOUT_MS);
   try {
     var all = readSheetAsObjects_(SHEETS.PERSONAL);
-    var existingId = '';
+    // Upsert theo (Username, Month): mỗi member 1 dòng / tháng.
+    var existingId = '', existingEvd = '';
     for (var j = 0; j < all.length; j++) {
-      if (normalizeUser_(all[j].Username) === memberUser) {
-        existingId = String(all[j].Score_ID).trim();
+      if (normalizeUser_(all[j].Username) === memberUser
+          && _normMonthLabel_(all[j].Month) === month) {
+        existingId  = String(all[j].Score_ID).trim();
+        existingEvd = String(all[j].Evidence_Link || '');
         break;
       }
     }
     scoreId = existingId || _nextScoreId_(all, 'PS');
+
+    // Evidence_Link (CR#4): không nhập ở panel chấm → GIỮ giá trị cũ; chỉ đổi nếu body gửi tường minh.
+    var evidenceLink = (body.Evidence_Link !== undefined && body.Evidence_Link !== null)
+      ? sanitizeStr_(body.Evidence_Link, 500) : existingEvd;
 
     var rowObj = {
       Score_ID:          scoreId,
       Username:          memberUser,
       Display_Name:      memberDisplay,
       Team:              memberTeam,
+      Month:             month,
       Diversity:         d,
       AI_Proficiency:    ai,
       Product_Quality:   pq,
@@ -401,6 +454,7 @@ function submitPersonalScore_(body) {
       Courses_Paid:      coursesPaid,
       Sharing_Achieved:  sharingAchieved,
       Milestones_Late:   milestonesLate,
+      Evidence_Link:     evidenceLink,
       Scored_By:         rv.username,
       Comment:           comment,
       Scored_At:         now
@@ -416,13 +470,13 @@ function submitPersonalScore_(body) {
   }
 
   logActivity_('', '', 'PERSONAL_SCORE',
-    'Teamlead ' + rv.username + ' chấm cá nhân ' + memberUser + ' (' + memberTeam + '): ' +
-    'DV=' + d + ' AI=' + ai + ' PQ=' + pq + ' QT=' + qm + ' → M2=' + final +
+    'Teamlead ' + rv.username + ' chấm cá nhân ' + memberUser + ' (' + memberTeam + ') ' + (month || '(không kỳ)') + ': ' +
+    'DV=' + d + ' AI=' + ai + ' PQ=' + pq + ' QT=' + qm + ' → M2 tháng=' + final +
     ' | khóa=' + coursesCompleted + '(trả phí ' + coursesPaid + ') lan tỏa=' + sharingAchieved +
     ' milestone chậm=' + milestonesLate,
     rv.username, null, null);
 
-  return { score_id: scoreId, username: memberUser, final_score: final };
+  return { score_id: scoreId, username: memberUser, month: month, final_score: final };
 }
 
 /**
@@ -433,34 +487,59 @@ function submitPersonalScore_(body) {
 function listPersonalScores_(team) {
   ensureScoringH2Sheets_();
   var t = String(team || '').trim().toLowerCase();
-  var rows = readSheetAsObjects_(SHEETS.PERSONAL)
-    .filter(function (r) { return String(r.Username || '').trim() !== ''; })
-    .filter(function (r) { return !t || String(r.Team || '').trim().toLowerCase() === t; })
-    .map(function (r) {
-      var final = safeNum_(r.Final_Score);
+
+  // Gom tất cả dòng theo username (mỗi member nhiều dòng = nhiều tháng).
+  var byUser = {};   // username → { user, display, team, rows:[] }
+  readSheetAsObjects_(SHEETS.PERSONAL).forEach(function (r) {
+    var u = normalizeUser_(r.Username);
+    if (!u) return;
+    if (t && String(r.Team || '').trim().toLowerCase() !== t) return;
+    if (!byUser[u]) byUser[u] = { user: u, display: String(r.Display_Name || ''), team: String(r.Team || ''), rows: [] };
+    byUser[u].rows.push(r);
+    if (!byUser[u].display && r.Display_Name) byUser[u].display = String(r.Display_Name);
+  });
+
+  var scores = Object.keys(byUser).map(function (u) {
+    var g = byUser[u];
+    var agg = _aggPersonalRows_(g.rows);
+    var latest = agg.latest || {};
+    // Chi tiết từng tháng (sort tăng dần theo kỳ) — cho panel prefill theo tháng.
+    var months = g.rows.map(function (r) {
       return {
-        score_id:        String(r.Score_ID || ''),
-        username:        normalizeUser_(r.Username),
-        display_name:    String(r.Display_Name || ''),
-        team:            String(r.Team || ''),
+        month:           _normMonthLabel_(r.Month),
         diversity:       safeNum_(r.Diversity),
         ai_proficiency:  safeNum_(r.AI_Proficiency),
         product_quality: safeNum_(r.Product_Quality),
         quantity_met:    safeNum_(r.Quantity_Met),
-        final_score:     final,
-        rank_category:   _rankForScore_(final),
-        courses_completed: Math.round(safeNum_(r.Courses_Completed)),
-        courses_paid:      Math.round(safeNum_(r.Courses_Paid)),
-        sharing_achieved:  _isTrue_(r.Sharing_Achieved),
-        milestones_late:   Math.round(safeNum_(r.Milestones_Late)),
-        scored_by:       normalizeUser_(r.Scored_By),
+        final_score:     safeNum_(r.Final_Score),
         comment:         String(r.Comment || ''),
+        scored_by:       normalizeUser_(r.Scored_By),
         scored_at:       String(r.Scored_At || '')
       };
-    });
+    }).sort(function (a, b) { return _monthKey_(a.month) - _monthKey_(b.month); });
 
-  rows.sort(function (a, b) { return b.final_score - a.final_score; });
-  return { team: team || 'all', count: rows.length, scores: rows };
+    return {
+      username:        u,
+      display_name:    g.display || u,
+      team:            g.team,
+      final_score:     agg.m2_avg,          // M-KPI-2 cuối kỳ = TB các tháng đã chấm
+      rank_category:   _rankForScore_(agg.m2_avg),
+      months_scored:   agg.months_scored,
+      months:          months,
+      // "nhập 1 lần" (lấy tháng mới nhất):
+      courses_completed: Math.round(safeNum_(latest.Courses_Completed)),
+      courses_paid:      Math.round(safeNum_(latest.Courses_Paid)),
+      sharing_achieved:  _isTrue_(latest.Sharing_Achieved),
+      milestones_late:   Math.round(safeNum_(latest.Milestones_Late)),
+      evidence_link:     String(latest.Evidence_Link || ''),
+      scored_by:         normalizeUser_(latest.Scored_By),
+      comment:           String(latest.Comment || ''),
+      scored_at:         String(latest.Scored_At || '')
+    };
+  });
+
+  scores.sort(function (a, b) { return b.final_score - a.final_score; });
+  return { team: team || 'all', count: scores.length, scores: scores };
 }
 
 /**
@@ -717,11 +796,15 @@ function _buildKpiContext_() {
     if (name)  { if (!ucByName[name])  ucByName[name]  = { sum: 0, count: 0 }; ucByName[name].sum  += score; ucByName[name].count++; }
   });
 
-  var personalByUser = {};
+  // Gom PERSONAL_SCORE theo member (nhiều tháng) → { m2_avg, latest, months_scored }.
+  var pRowsByUser = {};
   readSheetAsObjects_(SHEETS.PERSONAL).forEach(function (r) {
     var u = normalizeUser_(r.Username);
-    if (u) personalByUser[u] = r;
+    if (!u) return;
+    (pRowsByUser[u] = pRowsByUser[u] || []).push(r);
   });
+  var personalByUser = {};
+  Object.keys(pRowsByUser).forEach(function (u) { personalByUser[u] = _aggPersonalRows_(pRowsByUser[u]); });
 
   return {
     ucByOwner: ucByOwner, ucByName: ucByName, personalByUser: personalByUser,
@@ -742,25 +825,26 @@ function _memberKpiFor_(user, ctx) {
   var ucAgg = ctx.ucByOwner[uname] || ctx.ucByName[dname.toLowerCase()] || { sum: 0, count: 0 };
   var m1 = ucAgg.count ? Math.round((ucAgg.sum / ucAgg.count) * 10) / 10 : 0;
 
-  // M-KPI-2..4 + điểm trừ từ PERSONAL_SCORE.
-  var pr = ctx.personalByUser[uname];
-  var m2 = pr ? safeNum_(pr.Final_Score) : 0;
-  var m3 = pr ? _courseScore_(pr.Courses_Completed, pr.Courses_Paid) : 0;
+  // M-KPI-2 = TRUNG BÌNH điểm năng lực các THÁNG đã chấm; M-KPI-3/4 + điểm trừ lấy THÁNG MỚI NHẤT.
+  var pa = ctx.personalByUser[uname];          // { m2_avg, latest, months_scored } hoặc undefined
+  var latest = pa ? pa.latest : null;
+  var m2 = pa ? pa.m2_avg : 0;
+  var m3 = latest ? _courseScore_(latest.Courses_Completed, latest.Courses_Paid) : 0;
   // M-KPI-4 lan tỏa = 100 nếu (i) teamlead đánh Sharing_Achieved HOẶC (ii) member sở hữu UC
   // có ≥H2_REUSE_THRESHOLD người khác xác nhận tái dùng (T05/M05, tự động từ UC_REUSE).
-  var sharingFlag = pr ? _isTrue_(pr.Sharing_Achieved) : false;
+  var sharingFlag = latest ? _isTrue_(latest.Sharing_Achieved) : false;
   var reuseQualified = ((ctx.reuseByOwner && ctx.reuseByOwner[uname]) || 0) >= H2_REUSE_THRESHOLD;
   var m4 = (sharingFlag || reuseQualified) ? 100 : 0;
-  var penalty = pr ? _milestonePenalty_(pr.Milestones_Late) : 0;
+  var penalty = latest ? _milestonePenalty_(latest.Milestones_Late) : 0;
 
   var final = _memberKpiFinal_(m1, m2, m3, m4, penalty);
-  var hasData = (ucAgg.count > 0) || !!pr;
+  var hasData = (ucAgg.count > 0) || !!pa;
 
   return {
     username: uname, display_name: dname, team: team,
     m1: m1, m2: m2, m3: m3, m4: m4, penalty: penalty,
     final: final, rank_category: _rankForScore_(final),
-    uc_count: ucAgg.count, has_data: hasData
+    uc_count: ucAgg.count, months_scored: pa ? pa.months_scored : 0, has_data: hasData
   };
 }
 
@@ -825,4 +909,24 @@ function getKpiLeaderboard_(team) {
     council_size:     getCouncilUsernames_().length,
     filter_team:      team || 'all'
   };
+}
+
+/**
+ * (CR#2) Xem trước KPI tổng hợp của 1 member — để panel chấm điểm cá nhân hiển thị RÕ từng nhóm điểm
+ * (đặc biệt M-KPI-1 điểm US do hội đồng chấm, teamlead chỉ đọc) TRƯỚC khi chấm.
+ * @param {string} username
+ * @returns {{ username, display_name, team, m1, m2, m3, m4, penalty, final, rank_category,
+ *             uc_count, months_scored, has_data }}
+ */
+function getMemberKpiPreview_(username) {
+  ensureScoringH2Sheets_();
+  var uname = normalizeUser_(username || '');
+  if (!uname) throw new Error('Thiếu username');
+  var ctx = _buildKpiContext_();
+  var user = null;
+  for (var i = 0; i < ctx.users.length; i++) {
+    if (normalizeUser_(ctx.users[i].username) === uname) { user = ctx.users[i]; break; }
+  }
+  if (!user) user = { username: uname, display_name: uname, team: '' };
+  return _memberKpiFor_(user, ctx);
 }

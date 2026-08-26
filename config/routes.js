@@ -88,6 +88,7 @@ var API = {
     if (team) url += '&team=' + encodeURIComponent(team);
     return url;
   },
+  memberKpiPreview:   (username) => `${_gasBase}?action=member-kpi-preview&username=${encodeURIComponent(username || '')}`,
   h2Leaderboard:      (filters) => {
     var url = `${_gasBase}?action=h2-leaderboard`;
     if (filters) {

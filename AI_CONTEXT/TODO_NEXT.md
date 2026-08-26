@@ -4,6 +4,18 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 CR chấm điểm cá nhân theo THÁNG + rà soát UI (2026-08-26) — CODE XONG
+
+- [x] **CR#1** Điểm năng lực M-KPI-2 theo tháng (`PERSONAL_SCORE` +`Month`, upsert (Username,Month), M2 cuối kỳ = TB tháng đã chấm; khóa/lan tỏa/trừ lấy tháng mới nhất). Kỳ H2 08–12/2026.
+- [x] **CR#2** Route `member-kpi-preview` + panel 4 nhóm điểm rõ (US đọc-only + M2 + KPI khác + tổng hợp).
+- [x] **CR#3** `score-slider.js` dùng chung: mặc định 0 (mới), giữ điểm cũ (sửa), giá trị trên thanh (bubble). Áp cả personal + review-queue.
+- [x] **CR#4** Dòng EVD đọc-only: personal (cột `Evidence_Link`) + review-queue (`Demo_Link` UC).
+- [x] Verify: unit 71/71 · Playwright 03 +2 · 09-personal-score 4/4.
+- [ ] **[P0] Deploy GAS + chạy `setupScoringH2Sheets()`** (thêm cột `Month` + `Evidence_Link` vào `PERSONAL_SCORE`) → hard-refresh.
+- [ ] **[P1] Smoke test live:** teamlead chấm 1 member cho 2 tháng khác nhau → bảng hiện TB 2 tháng; panel hiện điểm US; slider mặc định 0; đổi tháng → prefill đúng. Nguồn nhập `Evidence_Link` (ổ share) = **để sau** (hiện chỉ hiển thị).
+
+---
+
 ## 🔜 H2 — ưu tiên session tiếp theo
 
 - [x] **[P3] Giai đoạn 3 — Scoring mới (Đợt 1: lõi member scoring) — CODE XONG 2026-08-25** (branch `feat/h2-scoring`, chưa deploy/merge). GAS `ScoringServiceH2.gs` (council + personal + h2-leaderboard, sheets `UC_COUNCIL_SCORE`/`PERSONAL_SCORE`); FE review-queue viết lại + `personal-score.html` mới + leaderboard 2 tab + ẩn tab SPTD; `scoring-h2.js` unit test 27/27. Chi tiết: H2_PLAN §8 Giai đoạn 3.

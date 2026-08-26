@@ -237,21 +237,28 @@
         <div class="rp-council-status" id="rpCouncilStatus" style="margin-top:var(--space-2);font-size:var(--text-sm);color:var(--color-text-secondary)"></div>
       </div>
 
+      <!-- EVD dạng dòng — link bằng chứng / demo của UC (CR#4, chỉ hiển thị) -->
+      <div class="ps-evd-row" id="rpEvdRow">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
+        <span class="ps-evd-label">Bằng chứng (EVD):</span>
+        <span class="ps-evd-value" id="rpEvdValue">—</span>
+      </div>
+
       <!-- Council criteria sliders (0–10) — 30/40/30 -->
       <div class="rp-score-section">
         <div class="rp-section-label">Bạn chấm (3 tiêu chí, thang 0–10)</div>
 
         <div class="rp-score-row">
-          <label class="rp-score-label">Tiết kiệm thời gian (30%) <span id="rpValTime">5</span>/10</label>
-          <input type="range" id="rpSliderTime" class="score-slider" min="0" max="10" step="1" value="5">
+          <label class="rp-score-label">Tiết kiệm thời gian (30%)</label>
+          <input type="range" id="rpSliderTime" class="score-slider" min="0" max="10" step="1" value="0">
         </div>
         <div class="rp-score-row">
-          <label class="rp-score-label">Mức độ tự động hóa (40%) <span id="rpValAuto">5</span>/10</label>
-          <input type="range" id="rpSliderAuto" class="score-slider" min="0" max="10" step="1" value="5">
+          <label class="rp-score-label">Mức độ tự động hóa (40%)</label>
+          <input type="range" id="rpSliderAuto" class="score-slider" min="0" max="10" step="1" value="0">
         </div>
         <div class="rp-score-row">
-          <label class="rp-score-label">Tính sáng tạo (30%) <span id="rpValCreative">5</span>/10</label>
-          <input type="range" id="rpSliderCreative" class="score-slider" min="0" max="10" step="1" value="5">
+          <label class="rp-score-label">Tính sáng tạo (30%)</label>
+          <input type="range" id="rpSliderCreative" class="score-slider" min="0" max="10" step="1" value="0">
         </div>
       </div>
 
@@ -304,6 +311,7 @@
   <script src="assets/js/toast.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/scoring-h2.js"></script>
+  <script src="assets/js/score-slider.js"></script>
   <script src="assets/js/review-queue.js"></script>
 </body>
 </html>
