@@ -23,15 +23,10 @@ function validateCreate_(data) {
     }
   });
 
-  // 4. Demo_Link — chỉ validate URL khi Demo_Status != "Chưa có"
-  //    FIX: trước đây validate Demo_Link bất kể Demo_Status là gì
-  var demoStatus = String(data.Demo_Status || '').trim();
-  var demoRequired = demoStatus !== '' && demoStatus !== 'Chưa có';
-  if (demoRequired && data.Demo_Link && String(data.Demo_Link).trim() !== '') {
-    if (!isValidUrl_(data.Demo_Link)) {
-      errors.push('Demo_Link phải là URL hợp lệ (bắt đầu bằng https://)');
-    }
-  }
+  // 4. Demo_Link — FREE TEXT (CR 2026-08-26): KHÔNG validate URL/http nữa.
+  //    Link demo có thể là đường dẫn ổ chung (\\server\...), localhost, SharePoint
+  //    hoặc ghi chú tự do → lưu nguyên trạng; FE tự xử lý hiển thị (_demoLinkHtml:
+  //    link http bấm được, non-web hiển thị + nút Copy).
 
   // 5. Before >= After
   if (data.Before_Time_Min && data.After_Time_Min) {
@@ -61,14 +56,7 @@ function validateUpdate_(data) {
     }
   });
 
-  // Demo_Link — chỉ validate khi Demo_Status != "Chưa có"
-  var demoStatus = String(data.Demo_Status || '').trim();
-  var demoRequired = demoStatus !== '' && demoStatus !== 'Chưa có';
-  if (demoRequired && data.Demo_Link !== undefined && String(data.Demo_Link).trim() !== '') {
-    if (!isValidUrl_(data.Demo_Link)) {
-      errors.push('Demo_Link phải là URL hợp lệ (bắt đầu bằng https://)');
-    }
-  }
+  // Demo_Link — FREE TEXT (CR 2026-08-26): KHÔNG validate URL/http nữa (xem validateCreate_).
 
   if (data.Before_Time_Min && data.After_Time_Min) {
     var before = parseFloat(data.Before_Time_Min);

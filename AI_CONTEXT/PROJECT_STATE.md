@@ -1,5 +1,13 @@
 # PROJECT STATE
 
+**CR BỎ VALIDATE URL cho Demo_Link (free text) — CODE XONG 2026-08-26. ⚠️ CẦN [TT] REDEPLOY GAS.**
+[TT] báo khi đăng ký US, nhập link demo ổ chung/nội bộ (không phải https://) bị server chặn: *"Lỗi gửi: Demo_Link phải là URL hợp lệ (bắt đầu bằng https://)"*.
+- **Gốc:** validate **server-side** ở `assets/gas-backend/ValidationService.gs` (`validateCreate_` + `validateUpdate_`) gọi `isValidUrl_` — FE không hề validate (đã là free text).
+- **Sửa:** gỡ 2 khối validate Demo_Link (create + update) → link demo là **free text** (chấp nhận `\\server\...`, localhost, SharePoint, ghi chú). Hiển thị vẫn do FE `_demoLinkHtml` lo (http → bấm được; non-web → hiện + nút Copy). `isValidUrl_` (Utils.gs) nay dead code (không caller) — dọn sau.
+- **⚠️ [TT] cần redeploy GAS** (dán lại **ValidationService.gs**; nên dán TẤT CẢ .gs cùng lúc theo bài học `SHEET-SPAM-01`). Thuần backend — FE không đổi. Syntax check OK; không test unit nào cho validate (không vỡ).
+
+---
+
 **CR ĐĂNG KÝ US + REVIEW-QUEUE — CODE XONG + PUSH 2026-08-26 (main `73bfde1`).**
 Sửa 3 CR do [TT] báo (sau khi [TT] đã deploy GAS):
 - **CR#1 — Đăng ký US "timeout giả" + KHÔNG ghi được.** Gốc: đường ghi **hidden-iframe POST (v3.15.0)** KHÔNG đọc được response → mọi lỗi create/update phía server (validate/lock/…) bị che thành **"Timeout"** và US không được ghi. Kiểm chứng LIVE: **không US nào ghi được từ ~16/08**; backend create thực tế **OK** (probe ghi thành công `AIUS-0337` qua GET). **Sửa: transport HYBRID (v3.16.0)** — ưu tiên **GET-JSONP** (đọc được success/lỗi THẬT của GAS) cho payload nhỏ (đa số US); chỉ fallback iframe-POST khi payload >7500 (link demo dài, giữ fix URL-limit). + **guard `Owner_Email`** ở app.js (server REQUIRED_FIELDS_CREATE bắt buộc nhưng FE Validator không kiểm) → chặn sớm với thông báo rõ.

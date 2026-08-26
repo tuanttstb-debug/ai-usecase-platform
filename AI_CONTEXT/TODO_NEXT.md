@@ -4,6 +4,11 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 CR bỏ validate URL Demo_Link (free text) (2026-08-26 #3) — CODE XONG
+- [x] Gỡ validate server-side Demo_Link (`ValidationService.gs` create+update) → link demo là free text (ổ chung/localhost/ghi chú).
+- [ ] **[P0] [TT] redeploy GAS** (dán lại ValidationService.gs — nên dán tất cả .gs cùng lúc) → thử đăng ký lại với link nội bộ, không còn *"Demo_Link phải là URL hợp lệ"*.
+- [ ] **[CC]** (tùy chọn) gỡ `isValidUrl_` dead code (Utils.gs) + rà field link khác nếu cũng bị ép http.
+
 ## 🆕 CR đăng ký US + review-queue (2026-08-26) — CODE XONG + PUSH `73bfde1`
 - [x] **CR#1** Sửa đăng ký "timeout giả"/không ghi: truy gốc LIVE (không ghi từ ~16/08, backend OK) → transport **HYBRID** (`_writeHybrid`: GET-JSONP ≤7500 / iframe-POST >7500) + guard `Owner_Email`.
 - [x] **CR#2** Tên US → hyperlink mở chi tiết (bảng "Của tôi" + Explore).
