@@ -21,6 +21,17 @@ rồi chạy `cleanupEmptyDefaultSheets()` dọn 65 sheet rác. Sau redeploy đ�
 
 ---
 
+## H1-CLEANUP-01 — Dọn dẹp mô hình H1 (2026-08-26) — ĐÃ GỠ, GIỮ GHI CHÚ Ở archive/h1
+
+**Đã làm:** tách toàn bộ dấu vết H1 khỏi code chạy → `archive/h1/` (README giải thích H2 thay H1). Gỡ: routes GAS `manager-review`/`champion-review`/`score-recalc`/`rank-recalc`; hàm `submitManagerReview_`/`submitChampionReview_`; toàn bộ `ScoringEngine.gs` (auto-score 70/30) + mọi call `scoreUseCase_`; tab/CSS-JS SPTD ở dashboard; FE `scoring.js`/`sptd-scoring.js`/`manager-review.html`; test/HDSD/capture H1.
+
+**Còn tồn (nhẹ, không chặn):**
+- **[TT] redeploy GAS** để áp việc gỡ (routes + ScoringEngine + call site). Trước khi redeploy, GAS live cũ vẫn có route H1 (vô hại, FE không gọi).
+- **Thay đổi hành vi (chủ đích):** cập nhật tuần → milestone CHỈ theo đổi stage (bỏ "auto-score tăng"). Nếu [TT] muốn giữ cơ chế milestone-theo-điểm thì cần thiết kế lại trên nền H2 (không dùng auto-score H1).
+- **CSS lớp `.sptd-*`** trong `dashboard.css` còn (dead, vô hại) — gỡ dần nếu muốn gọn.
+- **Role `champion`**: shim `champion→teamlead` giữ ở `auth.js` (tương thích session/dữ liệu cũ) — giữ, không phải nợ.
+- Trường `Auto_Score`/`Manual_Score` trong MASTER_DATA nay không được ghi mới (UC mới để trống → hội đồng H2 ghi `Total_Score`). Không xóa cột (tương thích dữ liệu cũ).
+
 ## SCORING-H2-MONTHLY-01 — Nợ nhẹ sau CR chấm điểm theo tháng (2026-08-26)
 
 - **Nguồn nhập `Evidence_Link` (EVD ổ share) CHƯA có** — panel cá nhân chỉ **hiển thị** cột `Evidence_Link` (đọc-only); chưa có nơi để member/teamlead nhập link. Backend đã hỗ trợ nhận `Evidence_Link` trong `personal-score-submit` (giữ giá trị cũ nếu không gửi). **Hướng:** khi [TT] chốt nguồn (member tự nhập ở đâu / link cố định theo team) → thêm 1 input ghi vào cột này. (CR#4 chủ đích chỉ hiển thị.)

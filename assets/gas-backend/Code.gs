@@ -232,39 +232,9 @@ function route_(action, params, body) {
       submitSelfAssessment_(saRecordId, body));
   }
 
-  // ── Governance: Manager Review ────────────────────────────────
-  if (action === 'manager-review') {
-    var mrRecordId = body.Record_ID || body.record_id;
-    if (!mrRecordId) return createResponse_(false, 'Thiếu Record_ID');
-    return createResponse_(true, 'Manager review đã được ghi nhận',
-      submitManagerReview_(mrRecordId, body));
-  }
-
-  // ── Governance: Champion Review ───────────────────────────────
-  if (action === 'champion-review') {
-    var crRecordId = body.Record_ID || body.record_id;
-    if (!crRecordId) return createResponse_(false, 'Thiếu Record_ID');
-    return createResponse_(true, 'Champion review đã được ghi nhận',
-      submitChampionReview_(crRecordId, body));
-  }
-
-  // ── Governance: Recalculate all scores (admin only) ───────────
-  if (action === 'score-recalc') {
-    var rcAdmin = body.admin_email || params.admin_email || '';
-    if (!isAdminEmail_(rcAdmin)) {
-      return createResponse_(false, 'Không có quyền recalculate scores: ' + rcAdmin);
-    }
-    return createResponse_(true, 'Recalculate hoàn tất', recalculateAllScores_());
-  }
-
-  // ── Governance: Recalculate rankings (admin only) ─────────────
-  if (action === 'rank-recalc') {
-    var rrAdmin = body.admin_email || params.admin_email || '';
-    if (!isAdminEmail_(rrAdmin)) {
-      return createResponse_(false, 'Không có quyền recalculate rankings: ' + rrAdmin);
-    }
-    return createResponse_(true, 'Ranking recalculate hoàn tất', recalculateRankings_());
-  }
+  // ── Governance H1 (manager-review · champion-review · score-recalc · rank-recalc) đã GỠ ──
+  //    Mô hình chấm H2 = Điểm US hội đồng (council) + Điểm cá nhân (personal) trong ScoringServiceH2.gs.
+  //    Xem archive/h1 + ScoringEngine.gs (đã xóa).
 
   // ── Approval endpoints (data qua base64url payload) ──────────────
   if (action === 'approve') {

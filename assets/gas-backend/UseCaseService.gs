@@ -253,15 +253,9 @@ function createUseCase_(data) {
     obj.Estimated_Hours_Saved_Month = computeHoursSavedMonth_(data.Before_Time_Min, data.After_Time_Min);
   }
 
-  // ── 6. Auto-score (Governance v3.0) ──────────────────────────
-  try {
-    var createScores = scoreUseCase_(obj);
-    Object.keys(createScores).forEach(function(k) { obj[k] = createScores[k]; });
-    // Set initial Review_Status
-    obj.Review_Status = REVIEW_STATUS.PENDING;
-  } catch (scoreErr) {
-    logError_('createUseCase_ scoring', scoreErr, { recordId: recordId });
-  }
+  // ── 6. Trạng thái review ban đầu (H2: điểm do hội đồng/teamlead chấm, KHÔNG auto-score) ──
+  //    H1 auto-score (scoreUseCase_) đã GỠ — Total_Score sẽ do hội đồng H2 ghi khi chấm.
+  obj.Review_Status = REVIEW_STATUS.PENDING;
 
   // ── 7. JSON_Backup (snapshot không bao gồm chính nó) ─────────
   // Google Sheets giới hạn 50,000 chars/cell. JSON_Backup có thể vượt nếu
@@ -350,13 +344,7 @@ function updateUseCase_(recordId, data) {
     merged.Estimated_Hours_Saved_Month = computeHoursSavedMonth_(before, after);
   }
 
-  // ── 7. Auto-score (Governance v3.0) ──────────────────────────
-  try {
-    var updateScores = scoreUseCase_(merged);
-    Object.keys(updateScores).forEach(function(k) { merged[k] = updateScores[k]; });
-  } catch (scoreErr2) {
-    logError_('updateUseCase_ scoring', scoreErr2, { recordId: recordId });
-  }
+  // ── 7. (H1 auto-score đã GỠ — điểm H2 do hội đồng/teamlead chấm, không tính lại khi sửa) ──
 
   // ── 8. Cập nhật JSON_Backup ───────────────────────────────────
   // Cap tại 45,000 chars để tránh vượt giới hạn 50,000 chars/cell của Google Sheets

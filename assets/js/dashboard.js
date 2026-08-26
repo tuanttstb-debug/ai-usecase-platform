@@ -23,13 +23,12 @@
   var _ucCache      = {}; // key → uc object (safe alternative to inline JSON)
   var _rejectedList = [];
   var _milestonePending  = []; // milestone cập nhật tuần chờ Admin duyệt (v3.14.0)
-  var _milestoneApproved = []; // milestone đã duyệt — feed KPI/SPTD
+  var _milestoneApproved = []; // milestone đã duyệt — feed KPI
   var _msCache      = {}; // key(log_id) → milestone object
   var _filterAll    = { statuses: [], team: '' }; // multi-status + single-team filter for "all" tab
   var _usersList    = []; // cache user list for Users tab
   var _kpiViewedWeek = null; // null = current week; updated by week navigation buttons
   var _kpiViewMode   = 'total'; // 'total' | 'week' — default shows all-time ranking
-  var _sptdScores    = null;  // cached SPTDScoring.computeAllScores result
 
   // ── Status config ────────────────────────────────────────────────
   var STATUS_CFG = {
@@ -182,14 +181,6 @@
           .catch(function () { /* GAS users endpoint not deployed yet — fall back to _allList */ })
           .then(function () { renderKPITab(); });
       }
-    } else if (tab === 'sptd') {
-      renderSPTDTab();
-      if (!_usersList.length) {
-        Api.getUsers()
-          .then(function (list) { _usersList = list || []; })
-          .catch(function () {})
-          .then(function () { _sptdScores = null; renderSPTDTab(); });
-      }
     }
   }
 
@@ -215,7 +206,7 @@
       renderMyTable(_myList);
       renderExploreTable(_exploreList);
 
-      _loadMilestones(); // async, non-blocking — approved feed KPI/SPTD (all users) + admin queue
+      _loadMilestones(); // async, non-blocking — approved feed KPI (all users) + admin queue
 
       if (_isAdmin) {
         _dashData     = results[1] || {};
@@ -675,7 +666,7 @@
     if (mb) mb.textContent = _milestonePending.length ? String(_milestonePending.length) : '';
   }
 
-  // Load milestone lists. Approved feed KPI/SPTD cho MỌI user; pending queue chỉ admin.
+  // Load milestone lists. Approved feed KPI cho MỌI user; pending queue chỉ admin.
   // Non-blocking + fail-safe: endpoint có thể chưa deploy → giữ mảng rỗng.
   async function _loadMilestones() {
     try {
@@ -692,10 +683,8 @@
       renderPendingMilestones(_milestonePending);
       _refreshPendingBadge();
     }
-    // KPI/SPTD phụ thuộc milestone đã duyệt → làm mới cache + re-render nếu đang mở
-    _sptdScores = null;
+    // KPI phụ thuộc milestone đã duyệt → re-render nếu đang mở
     _rerenderIfActive('tab-kpi',  renderKPITab);
-    _rerenderIfActive('tab-sptd', renderSPTDTab);
   }
 
   function _rerenderIfActive(panelId, renderFn) {
@@ -2261,230 +2250,15 @@
 
   // ── Users: quản lý user ĐÃ GỠ khỏi AI US (2026-08-18) ─────────────
   // Nguồn user DUY NHẤT = User_Master trên SHTD; tạo/sửa/đặt-lại-mật-khẩu/sync làm ở SHTD-Dashboard.
-  // AI US chỉ ĐỌC danh sách user (Api.getUsers → _usersList) phục vụ KPI/SPTD.
+  // AI US chỉ ĐỌC danh sách user (Api.getUsers → _usersList) phục vụ KPI.
 
-  // ── SPTD Tab ─────────────────────────────────────────────────────
-
-  function renderSPTDTab() {
-    var container = document.getElementById('sptdTabContent');
-    if (!container) return;
-    if (!_allList.length) {
-      container.innerHTML = '<div class="empty-state"><p class="empty-state-text">Dữ liệu đang tải, vui lòng chờ...</p></div>';
-      return;
-    }
-
-    if (!_sptdScores) {
-      _sptdScores = SPTDScoring.computeAllScores(_allList, _usersList, _milestoneApproved);
-    }
-
-    var curKey  = _norm(_user ? (_user.email || _user.displayName || '') : '');
-    var myScore = null;
-    var myRank  = 0;
-    for (var i = 0; i < _sptdScores.length; i++) {
-      if (_sptdScores[i].username === curKey) { myScore = _sptdScores[i]; myRank = i + 1; break; }
-    }
-    var totalUsers = _sptdScores.length;
-    var avgScore   = totalUsers ? _r1(_sptdScores.reduce(function (s, u) { return s + u.total; }, 0) / totalUsers) : 0;
-
-    var myDetails  = myScore ? SPTDScoring.computeUserDetails(curKey, _allList, _milestoneApproved) : null;
-
-    var html = '';
-    html += _renderSPTDMyCard(myScore, myRank, totalUsers, avgScore);
-    html += _renderSPTDFormula(myScore, myDetails);
-    html += _renderSPTDLeaderboard(_sptdScores, curKey, myRank);
-    if (myDetails && myDetails.ucs.length) html += _renderSPTDMyUCs(myDetails.ucs);
-    if (myDetails) html += _renderSPTDTimeline(myDetails);
-
-    container.innerHTML = html;
-  }
-
-  function _r1(v) { return Math.round(v * 10) / 10; }
-
-  function _renderSPTDMyCard(myScore, myRank, totalUsers, avgScore) {
-    if (!myScore) {
-      return '<div class="dash-card sptd-my-card sptd-my-card--empty">' +
-        '<p style="color:var(--color-text-secondary)">Bạn chưa có Use Case nào được duyệt. ' +
-        '<a href="register.html">Đăng ký ngay →</a></p></div>';
-    }
-    var rk = SPTDScoring.getRank(myScore.total);
-    var pctAvg = totalUsers ? Math.round((myScore.total / (avgScore || 1)) * 100) : 100;
-    var compareDir = myScore.total >= avgScore ? '↑' : '↓';
-    var compareColor = myScore.total >= avgScore ? '#4CAF50' : '#F44336';
-    return '<div class="dash-card sptd-my-card">' +
-      '<div class="sptd-card-title">Điểm của bạn</div>' +
-      '<div class="sptd-score-row">' +
-        '<span class="sptd-score-big">' + myScore.total + '</span>' +
-        '<span class="sptd-score-denom">&thinsp;/ 100</span>' +
-        '<span class="sptd-rank-badge" style="background:' + rk.color + '">' + rk.label + '</span>' +
-      '</div>' +
-      '<div class="sptd-breakdown-grid">' +
-        '<div class="sptd-breakdown-item">' +
-          '<span class="sptd-breakdown-val">' + myScore.s_quality + '</span>' +
-          '<span class="sptd-breakdown-max">/80</span>' +
-          '<div class="sptd-breakdown-label">Chất lượng</div>' +
-          '<div class="sptd-breakdown-sub">avg ' + myScore.avg_quality + '/100</div>' +
-        '</div>' +
-        '<div class="sptd-breakdown-item">' +
-          '<span class="sptd-breakdown-val">' + myScore.s_quantity + '</span>' +
-          '<span class="sptd-breakdown-max">/10</span>' +
-          '<div class="sptd-breakdown-label">Số lượng</div>' +
-          '<div class="sptd-breakdown-sub">' + myScore.n_approved + ' UC / ' + myScore.nWeeks + ' tuần</div>' +
-        '</div>' +
-        '<div class="sptd-breakdown-item">' +
-          '<span class="sptd-breakdown-val">' + myScore.s_weeks + '</span>' +
-          '<span class="sptd-breakdown-max">/10</span>' +
-          '<div class="sptd-breakdown-label">Tuần đạt</div>' +
-          '<div class="sptd-breakdown-sub">' + myScore.n_weeks_hit + ' / ' + myScore.nWeeks + ' tuần</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="sptd-compare-row">' +
-        '<span class="sptd-compare-avg">Trung bình SPTD: <strong>' + avgScore + '</strong></span>' +
-        '<span class="sptd-compare-dir" style="color:' + compareColor + '">' + compareDir + ' ' + Math.abs(_r1(myScore.total - avgScore)) + ' điểm so với trung bình</span>' +
-        '<span class="sptd-compare-rank">Xếp hạng <strong>#' + myRank + '</strong> / ' + totalUsers + '</span>' +
-      '</div>' +
-    '</div>';
-  }
-
-  function _renderSPTDFormula(myScore, myDetails) {
-    var nW = myDetails ? myDetails.nWeeks : (myScore ? myScore.nWeeks : '?');
-    var t0Str = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.PROGRAM_START_DATE) ? APP_CONFIG.PROGRAM_START_DATE : '2026-05-01';
-    return '<div class="dash-card sptd-formula-box">' +
-      '<div class="sptd-formula-title">Nguyên tắc chấm điểm</div>' +
-      '<div class="sptd-formula-body">' +
-        '<div class="sptd-formula-line"><strong>Điểm</strong> = <em>80%</em> × (TB điểm UC Approved / 100) + <em>10%</em> × min(Số UC / Số tuần, 100%) + <em>10%</em> × (Số tuần có UC / Tổng tuần)</div>' +
-        '<div class="sptd-formula-meta">Mục tiêu: 1 UC được duyệt / người / tuần &nbsp;·&nbsp; Chương trình bắt đầu: ' + t0Str + ' &nbsp;·&nbsp; Tuần đã qua: <strong>' + nW + '</strong></div>' +
-        (myScore ? '<div class="sptd-formula-calc">' +
-          'Điểm bạn = 80% × (' + myScore.avg_quality + '/100) + 10% × min(' + myScore.n_approved + '/' + myScore.nWeeks + ', 100%) + 10% × (' + myScore.n_weeks_hit + '/' + myScore.nWeeks + ')' +
-          ' = <strong>' + myScore.s_quality + ' + ' + myScore.s_quantity + ' + ' + myScore.s_weeks + ' = ' + myScore.total + ' điểm</strong>' +
-        '</div>' : '') +
-      '</div>' +
-    '</div>';
-  }
-
-  function _renderSPTDLeaderboard(scores, curKey, myRank) {
-    var isAdmin = _isAdmin;
-    var rows = '';
-    scores.forEach(function (u, idx) {
-      var rank  = idx + 1;
-      var isMe  = u.username === curKey;
-      var rk    = SPTDScoring.getRank(u.total);
-      var medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
-      rows += '<tr class="' + (isMe ? 'sptd-row--me' : '') + '">' +
-        '<td style="text-align:center;font-weight:600">' + medal + '</td>' +
-        '<td>' + esc(u.name) + (isMe ? ' <span class="sptd-me-tag">Bạn</span>' : '') + '</td>' +
-        '<td style="text-align:center"><span class="sptd-rank-chip" style="background:' + rk.color + '">' + rk.label + '</span></td>' +
-        '<td style="text-align:center;font-weight:700;color:var(--color-primary)">' + u.total + '</td>' +
-        '<td style="text-align:center">' + u.s_quality + '</td>' +
-        '<td style="text-align:center">' + u.s_quantity + '</td>' +
-        '<td style="text-align:center">' + u.s_weeks + '</td>' +
-        '<td>' + esc(u.team) + '</td>' +
-      '</tr>';
-    });
-    if (!rows) rows = '<tr><td colspan="8" class="empty-cell">Chưa có dữ liệu</td></tr>';
-
-    var exportBtn = isAdmin
-      ? '<button class="btn btn-sm btn-outline" onclick="Dashboard._exportSPTDCSV()" style="margin-left:auto">⬇ Xuất CSV</button>'
-      : '';
-
-    return '<div class="dash-card">' +
-      '<div class="dash-card-header" style="display:flex;align-items:center;gap:var(--space-3)">' +
-        '<h3>Bảng xếp hạng SPTD</h3>' +
-        '<span class="all-count-badge">' + scores.length + ' thành viên</span>' +
-        exportBtn +
-      '</div>' +
-      '<div style="overflow-x:auto">' +
-      '<table class="dash-table sptd-lb-table" aria-label="Bảng xếp hạng điểm SPTD">' +
-        '<thead><tr><th style="text-align:center">#</th><th>Tên</th><th>Xếp loại</th>' +
-        '<th style="text-align:center">Tổng</th><th style="text-align:center">CL /80</th>' +
-        '<th style="text-align:center">SL /10</th><th style="text-align:center">Tuần /10</th><th>Team</th></tr></thead>' +
-        '<tbody>' + rows + '</tbody>' +
-      '</table>' +
-      '</div></div>';
-  }
-
-  function _renderSPTDMyUCs(ucs) {
-    if (!ucs.length) return '';
-    var rows = '';
-    ucs.slice().sort(function (a, b) { return (b.total_score || 0) - (a.total_score || 0); })
-      .forEach(function (uc) {
-        var scored   = !!uc.reviewer_email;
-        var autoScr  = uc.auto_score   || 0;
-        var champScr = (uc.quality_score || 0) + (uc.business_value_score || 0) + (uc.innovation_score || 0);
-        var champCell = scored
-          ? champScr
-          : '<span class="sptd-pending-badge">⏳ Chờ chấm</span>';
-        rows += '<tr>' +
-          '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
-          '<td>' + esc(uc.name || '--') + '</td>' +
-          '<td style="text-align:center">' + autoScr + '</td>' +
-          '<td style="text-align:center">' + champCell + '</td>' +
-          '<td style="text-align:center;font-weight:700;color:var(--color-primary)">' + (uc.total_score || 0) + '</td>' +
-          '<td style="font-size:var(--text-xs);color:var(--color-text-secondary)">' + esc(_fmtSubmit(uc)) + '</td>' +
-        '</tr>';
-      });
-    return '<div class="dash-card">' +
-      '<div class="dash-card-header"><h3>Use Case Approved của tôi</h3></div>' +
-      '<div style="overflow-x:auto">' +
-      '<table class="dash-table sptd-uc-table" aria-label="Use Case đã được duyệt của tôi">' +
-        '<thead><tr><th>Mã</th><th>Tên Use Case</th>' +
-        '<th style="text-align:center">Auto /70</th>' +
-        '<th style="text-align:center">Champion /30</th>' +
-        '<th style="text-align:center">Tổng /100</th>' +
-        '<th>Ngày nộp</th></tr></thead>' +
-        '<tbody>' + rows + '</tbody>' +
-      '</table>' +
-      '</div></div>';
-  }
+  // ── (H1 SPTD scoring tab đã gỡ — xem archive/h1) ──
 
   function _fmtSubmit(uc) {
     var ds = uc.submit_date || uc.submitted_at;
     if (!ds) return '--';
     var d = new Date(ds);
     return isNaN(d) ? ds : ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
-  }
-
-  function _renderSPTDTimeline(myDetails) {
-    var timeline = myDetails.weekTimeline;
-    if (!timeline.length) return '';
-    var cells = '';
-    timeline.forEach(function (w) {
-      var cls  = w.hit ? 'sptd-week-cell sptd-week-cell--hit' : 'sptd-week-cell sptd-week-cell--miss';
-      var icon = w.hit ? '✓' : '✗';
-      cells += '<div class="' + cls + '" title="' + esc(w.label + ': ' + w.dateRange + (w.ucCount ? ' (' + w.ucCount + ' UC)' : '')) + '">' +
-        '<div class="sptd-week-label">' + esc(w.label) + '</div>' +
-        '<div class="sptd-week-icon">' + icon + '</div>' +
-        '<div class="sptd-week-date">' + esc(w.dateRange) + '</div>' +
-      '</div>';
-    });
-    var hit  = timeline.filter(function (w) { return w.hit; }).length;
-    return '<div class="dash-card">' +
-      '<div class="dash-card-header">' +
-        '<h3>Timeline tuần</h3>' +
-        '<span class="all-count-badge">' + hit + ' / ' + timeline.length + ' tuần đạt</span>' +
-      '</div>' +
-      '<div class="sptd-timeline">' + cells + '</div>' +
-      '<p class="sptd-timeline-legend"><span class="sptd-legend--hit">■</span> Có UC Approved &nbsp; <span class="sptd-legend--miss">■</span> Chưa đạt</p>' +
-    '</div>';
-  }
-
-  function _exportSPTDCSV() {
-    if (!_sptdScores || !_sptdScores.length) return;
-    var header = ['STT', 'Tên', 'Username', 'Team', 'Tổng điểm', 'Xếp loại', 'Chất lượng /80', 'Số lượng /10', 'Tuần đạt /10', 'TB điểm UC', 'Số UC Approved', 'Số tuần đạt', 'Tổng tuần'].join(',');
-    var rows = _sptdScores.map(function (u, i) {
-      return [i + 1, '"' + u.name + '"', u.username, '"' + u.team + '"',
-        u.total, '"' + u.rank_label + '"', u.s_quality, u.s_quantity, u.s_weeks,
-        u.avg_quality, u.n_approved, u.n_weeks_hit, u.nWeeks].join(',');
-    });
-    var csv     = '﻿' + header + '\n' + rows.join('\n'); // BOM for Excel UTF-8
-    var blob    = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    var url     = URL.createObjectURL(blob);
-    var a       = document.createElement('a');
-    a.href      = url;
-    a.download  = 'sptd-scores-' + new Date().toISOString().slice(0, 10) + '.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   }
 
   // ── Public API ────────────────────────────────────────────────────
@@ -2545,9 +2319,7 @@
         _kpiViewedWeek = next > todayKey ? todayKey : next;
       }
       renderKPITab();
-    },
-    // SPTD export (admin only)
-    _exportSPTDCSV: _exportSPTDCSV
+    }
   };
 
 })();

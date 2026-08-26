@@ -368,13 +368,9 @@ function submitWeeklyUpdate_(recordId, data) {
   if (data.Current_Progress !== undefined) probe.Current_Progress = safeNum_(data.Current_Progress);
   if (stageChanged) probe.Current_Stage = proposedStage;
 
+  // H1 auto-score đã GỠ → bỏ "milestone theo điểm tăng"; milestone giờ CHỈ theo đổi stage.
   var proposedScore = prevScore;
-  try {
-    proposedScore = safeNum_(scoreUseCase_(probe).Total_Score);
-  } catch (e) {
-    logError_('submitWeeklyUpdate_ probe-score', e, { recordId: recordId });
-  }
-  var scoreRaised = proposedScore > prevScore;
+  var scoreRaised = false;
 
   // ── Milestone = chuyển Stage HOẶC nâng điểm → cần Admin duyệt ──
   var isMilestone   = stageChanged || scoreRaised;
@@ -393,12 +389,7 @@ function submitWeeklyUpdate_(recordId, data) {
     SCORE_NUM_FIELDS.forEach(function(f) {
       if (data[f] !== undefined) updates[f] = safeNum_(data[f]);
     });
-    try {
-      var scores = scoreUseCase_(probe);
-      Object.keys(scores).forEach(function(k) { updates[k] = scores[k]; });
-    } catch (e) {
-      logError_('submitWeeklyUpdate_ scoring', e, { recordId: recordId });
-    }
+    // H1 auto-score đã GỠ — không tính lại điểm khi cập nhật tuần.
   }
   // Nếu isMilestone: KHÔNG ghi Current_Stage/score/số-liệu-điểm → chờ approveMilestone_.
   updateRowByRecordId_(SHEETS.MASTER, recordId, updates);
@@ -603,16 +594,7 @@ function approveMilestone_(logId, adminEmail, comment) {
   var stageChanged = (logRow.Stage_Changed === 'TRUE' || logRow.Stage_Changed === true);
   if (stageChanged && logRow.New_Stage) updates.Current_Stage = String(logRow.New_Stage);
 
-  // Re-score với dữ liệu đã áp
-  var merged = {};
-  Object.keys(existing).forEach(function(k) { merged[k] = existing[k]; });
-  Object.keys(updates).forEach(function(k) { merged[k] = updates[k]; });
-  try {
-    var scores = scoreUseCase_(merged);
-    Object.keys(scores).forEach(function(k) { updates[k] = scores[k]; });
-  } catch (e) {
-    logError_('approveMilestone_ scoring', e, { logId: logId });
-  }
+  // H1 auto-score đã GỠ — duyệt milestone chỉ áp stage/tiến độ, không tính lại điểm (điểm do hội đồng H2).
 
   updateRowByRecordId_(SHEETS.MASTER, recordId, updates);
 
@@ -735,60 +717,7 @@ function submitSelfAssessment_(recordId, data) {
  *                          UseCase_Category, Review_Committee_Comment,
  *                          reviewer_email, escalate_to_committee: bool }
  */
-function submitManagerReview_(recordId, data) {
-  if (!recordId) throw new Error('Record_ID là bắt buộc');
-  if (!isAdminEmail_(data.reviewer_email)) {
-    throw new Error('Không có quyền thực hiện manager review: ' + data.reviewer_email);
-  }
-
-  var score    = Math.min(100, Math.max(0, safeNum_(data.Manager_Review_Score)));
-  var now      = new Date().toISOString();
-  var existing = findObjectByField_(SHEETS.MASTER, 'Record_ID', recordId);
-  if (!existing) throw new Error('Không tìm thấy use case: ' + recordId);
-
-  var nextReviewStatus = data.escalate_to_committee
-    ? REVIEW_STATUS.COMMITTEE
-    : REVIEW_STATUS.FINALIZED;
-
-  var updates = {
-    Record_ID:                recordId,
-    Manager_Review_Score:     score,
-    Review_Committee_Comment: String(data.Review_Committee_Comment || '').substring(0, 500),
-    Review_Status:            nextReviewStatus,
-    Reviewer:                 data.reviewer_email || '',
-    Review_Date:              now,
-    Updated_At:               now
-  };
-
-  // Áp dụng manual scores từ reviewer
-  if (data.Quality_Score         !== undefined) updates.Quality_Score         = safeNum_(data.Quality_Score);
-  if (data.Business_Value_Score  !== undefined) updates.Business_Value_Score  = safeNum_(data.Business_Value_Score);
-  if (data.Innovation_Score      !== undefined) updates.Innovation_Score      = safeNum_(data.Innovation_Score);
-  if (data.UseCase_Category      !== undefined) updates.UseCase_Category      = String(data.UseCase_Category);
-
-  // Re-score với manual scores mới
-  var merged = {};
-  Object.keys(existing).forEach(function(k) { merged[k] = existing[k]; });
-  Object.keys(updates).forEach(function(k) { merged[k] = updates[k]; });
-  try {
-    var scores = scoreUseCase_(merged);
-    Object.keys(scores).forEach(function(k) { updates[k] = scores[k]; });
-  } catch (e) {
-    logError_('submitManagerReview_ scoring', e, { recordId: recordId });
-  }
-
-  updateRowByRecordId_(SHEETS.MASTER, recordId, updates);
-  logActivity_(existing.UseCase_ID, recordId, 'MANAGER_REVIEW',
-    'Manager review: ' + score + '/100 → ' + nextReviewStatus,
-    data.reviewer_email, existing.Review_Status, nextReviewStatus);
-
-  return {
-    record_id:          recordId,
-    manager_review_score: score,
-    review_status:      nextReviewStatus,
-    total_score:        updates.Total_Score
-  };
-}
+// (H1 submitManagerReview_ đã GỠ — governance H1, xem archive/h1)
 
 // ── Champion helpers ──────────────────────────────────────────────
 
@@ -822,53 +751,4 @@ function isChampionForTeam_(email, team) {
  * Champion review: scores Quality/BusinessValue/Innovation, re-calculates total.
  * Auth: admin OR champion whose team matches the UC's team.
  */
-function submitChampionReview_(recordId, data) {
-  if (!recordId) throw new Error('Record_ID là bắt buộc');
-
-  var reviewerEmail = String(data.reviewer_email || '').trim();
-  var existing = findObjectByField_(SHEETS.MASTER, 'Record_ID', recordId);
-  if (!existing) throw new Error('Không tìm thấy use case: ' + recordId);
-
-  // Auth check: admin OR champion of the same team
-  var ucTeam = String(existing.Team || '').trim();
-  if (!isAdminEmail_(reviewerEmail) && !isChampionForTeam_(reviewerEmail, ucTeam)) {
-    throw new Error('Không có quyền champion review cho team: ' + ucTeam);
-  }
-
-  var now = new Date().toISOString();
-  var updates = {
-    Record_ID:   recordId,
-    Reviewer:    reviewerEmail,
-    Review_Date: now,
-    Updated_At:  now
-  };
-
-  if (data.Quality_Score        !== undefined) updates.Quality_Score        = Math.min(10, Math.max(0, safeNum_(data.Quality_Score)));
-  if (data.Business_Value_Score !== undefined) updates.Business_Value_Score = Math.min(10, Math.max(0, safeNum_(data.Business_Value_Score)));
-  if (data.Innovation_Score     !== undefined) updates.Innovation_Score     = Math.min(10, Math.max(0, safeNum_(data.Innovation_Score)));
-  if (data.Review_Comment       !== undefined) updates.Review_Committee_Comment = String(data.Review_Comment).substring(0, 500);
-
-  // Re-score with updated manual scores
-  var merged = {};
-  Object.keys(existing).forEach(function(k) { merged[k] = existing[k]; });
-  Object.keys(updates).forEach(function(k)  { merged[k] = updates[k]; });
-  try {
-    var scores = scoreUseCase_(merged);
-    Object.keys(scores).forEach(function(k) { updates[k] = scores[k]; });
-  } catch (e) {
-    logError_('submitChampionReview_ scoring', e, { recordId: recordId });
-  }
-
-  updateRowByRecordId_(SHEETS.MASTER, recordId, updates);
-  logActivity_(existing.UseCase_ID, recordId, 'CHAMPION_REVIEW',
-    'Champion review: Q=' + (updates.Quality_Score || 0) +
-    ' BV=' + (updates.Business_Value_Score || 0) +
-    ' Inn=' + (updates.Innovation_Score || 0) +
-    ' Total=' + (updates.Total_Score || '?'),
-    reviewerEmail, null, null);
-
-  return {
-    record_id:   recordId,
-    total_score: updates.Total_Score
-  };
-}
+// (H1 submitChampionReview_ đã GỠ — governance H1, xem archive/h1)

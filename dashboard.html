@@ -246,11 +246,8 @@
             <button class="dash-tab" data-tab="kpi" role="tab" aria-selected="false" id="tab-btn-kpi">
               KPI &amp; Tiến độ
             </button>
-            <!-- H2 Giai đoạn 3: tab Điểm SPTD (80-10-10) NGƯNG dùng — thay bằng mô hình chấm mới
-                 (Điểm US hội đồng + Điểm cá nhân) trên Leaderboard + trang review-queue/personal-score. -->
-            <button class="dash-tab" data-tab="sptd" role="tab" aria-selected="false" id="tab-btn-sptd" style="display:none">
-              Điểm SPTD
-            </button>
+            <!-- H1 tab "Điểm SPTD" (80-10-10) đã GỠ — mô hình H2 (Điểm US hội đồng + Điểm cá nhân)
+                 ở Leaderboard + trang review-queue/personal-score. Xem archive/h1. -->
           </div>
 
           <!-- Tab: Tổng quan (admin only) -->
@@ -390,12 +387,7 @@
             </div>
           </div>
 
-          <!-- Tab: Điểm SPTD (all users) -->
-          <div id="tab-sptd" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-sptd">
-            <div id="sptdTabContent">
-              <div class="empty-state"><p class="empty-state-text">Đang tải...</p></div>
-            </div>
-          </div>
+          <!-- Tab Điểm SPTD (H1) đã gỡ — xem archive/h1 -->
 
         </div><!-- /dashboardContent -->
 
@@ -503,9 +495,8 @@
   <script src="config/routes.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <!-- H2 Giai đoạn 3: bỏ scoring.js (auto-score 70/30 ngưng dùng; rank tính inline _dsRankOf).
-       sptd-scoring.js giữ tạm cho tab SPTD dormant (đã ẩn) — sẽ gỡ khi xóa hẳn code SPTD. -->
-  <script src="assets/js/sptd-scoring.js"></script>
+  <!-- H1 scoring (scoring.js auto-score 70/30 + sptd-scoring.js 80-10-10) đã GỠ — xem archive/h1.
+       Rank tính inline _dsRankOf; mô hình chấm H2 ở scoring-h2.js / trang review-queue, personal-score. -->
   <script src="assets/js/dashboard.js"></script>
 
   <!-- Sidebar toggle -->

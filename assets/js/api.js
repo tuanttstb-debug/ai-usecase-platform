@@ -285,10 +285,7 @@ var Api = {
   approveMilestone(data)        { return Api._request(API.milestoneApprove(), data, 45000); },
   rejectMilestone(data)         { return Api._request(API.milestoneReject(),  data, 45000); },
   submitSelfAssessment(data)    { return Api._request(API.selfAssessment(), data, 30000); },
-  submitManagerReview(data)     { return Api._request(API.managerReview(),  data, 30000); },
-  submitChampionReview(data)    { return Api._request(API.championReview(), data, 30000); },
-  recalculateScores(adminEmail) { return Api._request(API.scoreRecalc(),  { admin_email: adminEmail }); },
-  recalculateRankings(adminEmail){ return Api._request(API.rankRecalc(),  { admin_email: adminEmail }); },
+  // H1 governance (submitManagerReview/submitChampionReview/recalculate*) đã GỠ — xem archive/h1.
 
   // ── H2 Giai đoạn 3: chấm điểm mới ──────────────────────────────
   // token đính vào payload để GAS verify server-side (fallback reviewer_email nếu thiếu token).

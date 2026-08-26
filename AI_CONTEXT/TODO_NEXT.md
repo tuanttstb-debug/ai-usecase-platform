@@ -4,6 +4,13 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 Dọn dẹp H1 (cũ) — tách khỏi H2, giữ ghi chú (2026-08-26) — CODE XONG
+- [x] Archive toàn bộ dấu vết H1 vào `archive/h1/` (+README): ScoringEngine.gs · scoring.js · sptd-scoring.js · manager-review.html · HDSD/builder/capture/screenshots H1 · 3 test H1.
+- [x] Gỡ code chạy: routes GAS manager-review/champion-review/score-recalc/rank-recalc + hàm submit*Review_ + ScoringEngine.gs + mọi call scoreUseCase_ (create/update/weekly/approve-milestone); dashboard SPTD tab/JS; FE api/routes bỏ entry H1.
+- [ ] **[P0] [TT] redeploy GAS** (áp gỡ routes/ScoringEngine/call site). Trước redeploy: route H1 live cũ vô hại (FE không gọi).
+- [ ] **[TT] xác nhận thay đổi hành vi:** cập nhật tuần → milestone CHỈ theo đổi stage (bỏ auto-score-tăng). OK giữ, hay cần thiết kế lại milestone-theo-điểm trên nền H2?
+- [ ] (tùy chọn) gỡ dần CSS `.sptd-*` dead trong dashboard.css.
+
 ## 🆕 CR chấm điểm cá nhân theo THÁNG + rà soát UI (2026-08-26) — CODE XONG
 
 - [x] **CR#1** Điểm năng lực M-KPI-2 theo tháng (`PERSONAL_SCORE` +`Month`, upsert (Username,Month), M2 cuối kỳ = TB tháng đã chấm; khóa/lan tỏa/trừ lấy tháng mới nhất). Kỳ H2 08–12/2026.

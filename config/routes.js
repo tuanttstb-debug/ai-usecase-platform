@@ -73,10 +73,7 @@ var API = {
   milestoneApprove:() => `${_gasBase}?action=milestone-approve`,
   milestoneReject: () => `${_gasBase}?action=milestone-reject`,
   selfAssessment: () => `${_gasBase}?action=self-assessment`,
-  managerReview:  () => `${_gasBase}?action=manager-review`,
-  scoreRecalc:    () => `${_gasBase}?action=score-recalc`,
-  rankRecalc:     () => `${_gasBase}?action=rank-recalc`,
-  championReview: () => `${_gasBase}?action=champion-review`,
+  // H1 governance routes (managerReview/scoreRecalc/rankRecalc/championReview) đã GỠ — xem archive/h1.
 
   // ── H2 Giai đoạn 3: chấm điểm mới (hội đồng US + cá nhân) ──────────
   councilScoreSubmit: () => `${_gasBase}?action=council-score-submit`,

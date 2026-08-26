@@ -1,5 +1,14 @@
 # PROJECT STATE
 
+**DỌN DẸP H1 (cũ) — tách khỏi H2, giữ ghi chú — CODE XONG 2026-08-26 (main).**
+Mục tiêu: gỡ dấu vết mô hình H1 khỏi code đang chạy, lưu ghi chú ở `archive/h1/` (không deploy), không lẫn với H2.
+- **Archive** (`archive/h1/` + README): `ScoringEngine.gs` (auto-score 70/30), `scoring.js`, `sptd-scoring.js`, `manager-review.html`, HDSD H1 (`HDSD_Champion_*`, `HDSD_CapNhatTuan_*`, `HUONG_DAN_NHAP_LIEU.txt`), builder/capture H1 + `screenshots/` (9 ảnh), test H1 (`test-sptd-scoring.js`, `test-governance-ui.js`, `scoring-test.html`).
+- **Gỡ code đang chạy:** routes GAS `manager-review`/`champion-review`/`score-recalc`/`rank-recalc` + hàm `submitManagerReview_`/`submitChampionReview_` (AdminService) + toàn bộ `ScoringEngine.gs`; **ngừng gọi `scoreUseCase_`** khi tạo/sửa UC + cập nhật tuần + duyệt milestone. Dashboard: gỡ tab "Điểm SPTD" (ẩn) + `renderSPTDTab`/`_renderSPTD*`/`_exportSPTDCSV` + include `sptd-scoring.js`. FE api/routes bỏ entry H1.
+- **⚠️ Thay đổi hành vi (chủ đích, theo lựa chọn "gỡ hẳn"):** milestone khi cập nhật tuần nay CHỈ theo **đổi stage** (bỏ "điểm auto tăng"); UC mới có `Total_Score` rỗng đến khi hội đồng H2 chấm (đúng H2). Role `champion` vẫn nhận như `teamlead` (giữ shim `auth.js`).
+- **⚠️ [TT] cần redeploy GAS** (đã gỡ ScoringEngine.gs + routes + call site). Verify: unit scoring-h2 **71/71** + Playwright full (chạy lại sau dọn). Chi tiết: TECH_DEBT `H1-CLEANUP-01` + `archive/h1/README.md`.
+
+---
+
 **CR chấm điểm cá nhân theo THÁNG + rà soát UI chấm điểm — CODE XONG 2026-08-26 (main).**
 Theo yêu cầu [TT] (4 CR):
 - **CR#1 — Điểm năng lực (M-KPI-2) chấm THEO THÁNG.** `PERSONAL_SCORE` +cột `Month`; upsert theo **(Username, Month)** (nhiều dòng/member). M-KPI-2 cuối kỳ = **TRUNG BÌNH các tháng ĐÃ chấm** (tháng trống bỏ qua). Khóa học/lan tỏa/điểm trừ **không theo tháng** (đọc dòng tháng mới nhất). Kỳ H2 = **08–12/2026** (droplist). `_memberKpiFor_`/`listPersonalScores_`/`_buildKpiContext_` gộp theo member.
