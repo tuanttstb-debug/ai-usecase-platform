@@ -1,5 +1,16 @@
 # PROJECT STATE
 
+**CR ĐĂNG KÝ US + REVIEW-QUEUE — CODE XONG + PUSH 2026-08-26 (main `73bfde1`).**
+Sửa 3 CR do [TT] báo (sau khi [TT] đã deploy GAS):
+- **CR#1 — Đăng ký US "timeout giả" + KHÔNG ghi được.** Gốc: đường ghi **hidden-iframe POST (v3.15.0)** KHÔNG đọc được response → mọi lỗi create/update phía server (validate/lock/…) bị che thành **"Timeout"** và US không được ghi. Kiểm chứng LIVE: **không US nào ghi được từ ~16/08**; backend create thực tế **OK** (probe ghi thành công `AIUS-0337` qua GET). **Sửa: transport HYBRID (v3.16.0)** — ưu tiên **GET-JSONP** (đọc được success/lỗi THẬT của GAS) cho payload nhỏ (đa số US); chỉ fallback iframe-POST khi payload >7500 (link demo dài, giữ fix URL-limit). + **guard `Owner_Email`** ở app.js (server REQUIRED_FIELDS_CREATE bắt buộc nhưng FE Validator không kiểm) → chặn sớm với thông báo rõ.
+- **CR#2 — Tên US thành hyperlink** mở popup chi tiết ở bảng "Use case của tôi" + Explore (`.uc-name-link`).
+- **CR#3 — Filter theo Người đăng ký (Owner)** ở hàng đợi review (droplist `rqOwnerFilter`).
+- **FE-only — KHÔNG cần redeploy GAS** (backend đã chạy tốt); [TT] chỉ hard-refresh.
+- **[TT] cần:** hard-refresh + nghiệm thu đăng ký (US hiện ở "Của tôi") + **xoá tay dòng probe `AIUS-0337`** (`__CC_PROBE_DELETE_ME__`) trong Google Sheet.
+- **Verify:** Playwright **102/102** (viết lại `05-create-write-ops` cho hybrid GET-nhỏ/POST-lớn + test lõi: lỗi server hiện **message THẬT**, không "timeout" giả). **Residual:** payload >7500 vẫn đi POST — nếu POST hỏng thật trên live thì ca link-demo-dài hiếm *có thể* còn lỗi (nay hiện cảnh báo rõ); cần reproduce browser để đóng hẳn → TECH_DEBT `WRITE-TRANSPORT-01`.
+
+---
+
 **DỌN DẸP H1 (cũ) — tách khỏi H2, giữ ghi chú — CODE XONG 2026-08-26 (main).**
 Mục tiêu: gỡ dấu vết mô hình H1 khỏi code đang chạy, lưu ghi chú ở `archive/h1/` (không deploy), không lẫn với H2.
 - **Archive** (`archive/h1/` + README): `ScoringEngine.gs` (auto-score 70/30), `scoring.js`, `sptd-scoring.js`, `manager-review.html`, HDSD H1 (`HDSD_Champion_*`, `HDSD_CapNhatTuan_*`, `HUONG_DAN_NHAP_LIEU.txt`), builder/capture H1 + `screenshots/` (9 ảnh), test H1 (`test-sptd-scoring.js`, `test-governance-ui.js`, `scoring-test.html`).

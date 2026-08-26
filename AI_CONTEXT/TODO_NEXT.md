@@ -4,6 +4,16 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 CR đăng ký US + review-queue (2026-08-26) — CODE XONG + PUSH `73bfde1`
+- [x] **CR#1** Sửa đăng ký "timeout giả"/không ghi: truy gốc LIVE (không ghi từ ~16/08, backend OK) → transport **HYBRID** (`_writeHybrid`: GET-JSONP ≤7500 / iframe-POST >7500) + guard `Owner_Email`.
+- [x] **CR#2** Tên US → hyperlink mở chi tiết (bảng "Của tôi" + Explore).
+- [x] **CR#3** Droplist filter theo Người đăng ký (Owner) ở hàng đợi review.
+- [x] Verify Playwright **102/102** (05 viết lại + test lõi lỗi-server-hiện-message-thật).
+- [ ] **[P0] [TT]** hard-refresh site (GitHub Pages cache) → **đăng ký thử 1 US** → xác nhận hiện ngay ở "Use case của tôi".
+- [ ] **[P1] [TT]** xoá tay dòng probe `AIUS-0337` (`__CC_PROBE_DELETE_ME__`) trong Google Sheet (không có route xoá UC).
+- [ ] **[P2] [TT]** (tùy chọn, đóng residual) test 1 US **link demo dài** (payload >7500 → đi POST) — nếu vẫn lỗi báo [CC].
+- [ ] **[CC]** nếu US link-dài vẫn lỗi → reproduce browser (cần [TT] cấp tài khoản test) soi đường iframe-POST trên live; đóng `WRITE-TRANSPORT-01`.
+
 ## 🆕 Dọn dẹp H1 (cũ) — tách khỏi H2, giữ ghi chú (2026-08-26) — CODE XONG
 - [x] Archive toàn bộ dấu vết H1 vào `archive/h1/` (+README): ScoringEngine.gs · scoring.js · sptd-scoring.js · manager-review.html · HDSD/builder/capture/screenshots H1 · 3 test H1.
 - [x] Gỡ code chạy: routes GAS manager-review/champion-review/score-recalc/rank-recalc + hàm submit*Review_ + ScoringEngine.gs + mọi call scoreUseCase_ (create/update/weekly/approve-milestone); dashboard SPTD tab/JS; FE api/routes bỏ entry H1.

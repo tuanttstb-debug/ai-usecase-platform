@@ -4,6 +4,17 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
+## WRITE-TRANSPORT-01 — Đường iframe-POST create/update chưa xác định vì sao hỏng trên live (2026-08-26)
+
+**Bối cảnh (CR#1):** Đăng ký US báo "timeout" + không ghi. Truy gốc LIVE: **không US nào ghi được từ ~16/08** (đúng mốc v3.15.0 chuyển create/update sang **hidden-iframe POST**), nhưng **backend create OK** (probe payload hợp lệ qua **GET-JSONP** → ghi thành công `AIUS-0337`). `_submitViaPost` không đọc được response iframe → mọi lỗi bị che thành "Timeout".
+
+**Đã sửa (v3.16.0):** transport **HYBRID** (`Api._writeHybrid`) — ưu tiên **GET-JSONP** (payload ≤7500, đọc được lỗi thật) cho đa số US; **fallback iframe-POST khi payload >7500** (link demo dài). Đa số ca đăng ký nay dùng đường GET đã-proven.
+
+**Còn tồn (thấp, residual):**
+- **Chưa xác định 100% vì sao iframe-POST không hoàn tất write trên live** (curl không tái hiện được vì Google trả interstitial cho client không-phải-browser + 411 khi redirect POST). Cần **reproduce trong browser thật** (Claude-in-Chrome, cần [TT] cấp tài khoản test) để soi doPost nhận payload/CSP/redirect.
+- **Ca payload >7500** (link demo cực dài) vẫn đi iframe-POST → nếu POST hỏng thật thì ca hiếm này *có thể* còn lỗi. Giảm nhẹ: nay `_handleSubmitError` hiện **cảnh báo rõ + mã dự kiến** thay vì im lặng. Nếu cần đóng hẳn: nâng ngưỡng GET (rủi ro URL-limit) HOẶC sửa dứt điểm doPost.
+- **Guard `Owner_Email`** (app.js) là vá phòng thủ: FE `Validator.all` không kiểm `Owner_Email` dù server REQUIRED_FIELDS_CREATE bắt buộc — đã inject từ session + chặn sớm nếu thiếu.
+
 ## SHEET-SPAM-01 — GAS sinh nhiều sheet rỗng "SheetN" (2026-08-26) — ĐÃ VÁ PHÒNG THỦ
 
 **Triệu chứng:** [TT] thấy GG Sheet sinh liên tục sheet rỗng tên mặc định (đến "Sheet65").
