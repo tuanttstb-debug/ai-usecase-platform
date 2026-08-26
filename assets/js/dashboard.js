@@ -852,7 +852,7 @@
       var k = _cache(uc);
       return '<tr style="cursor:pointer" onclick="Dashboard._byKey(\'' + esc(k) + '\')">' +
         '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
-        '<td>' + esc(uc.name || '') + '</td>' +
+        '<td><a href="#" class="uc-name-link" onclick="event.stopPropagation();Dashboard._byKey(\'' + esc(k) + '\');return false">' + esc(uc.name || '') + '</a></td>' +
         '<td><span class="status-badge" style="background:' + cfg.color + '20;color:' + cfg.color + '">' + cfg.label + '</span></td>' +
         '<td>' + fmtDate(uc.submit_date || uc.submitted_at) + '</td>' +
         '<td>' + _btnDetail(uc, 'Chi tiết') + '</td>' +
@@ -890,7 +890,7 @@
       }
       return '<tr style="cursor:pointer" onclick="Dashboard._byKey(\'' + esc(k) + '\')">' +
         '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
-        '<td>' + esc(uc.name || '') + stageBadge + '</td>' +
+        '<td><a href="#" class="uc-name-link" onclick="event.stopPropagation();Dashboard._byKey(\'' + esc(k) + '\');return false">' + esc(uc.name || '') + '</a>' + stageBadge + '</td>' +
         '<td>' + esc(uc.team       || '--') + '</td>' +
         '<td>' + esc(uc.owner_name || '--') + '</td>' +
         '<td style="text-align:center">' + scoreHtml + '</td>' +

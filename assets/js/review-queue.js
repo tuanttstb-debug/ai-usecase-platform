@@ -18,7 +18,7 @@
   var _progress = {};    // recordId → { count, final, reviewers[] }
   var _councilSize = 4;
   var _currentUc = null; // uc being scored in the panel
-  var _filterState = { search: '', team: '', section: '' };
+  var _filterState = { search: '', team: '', owner: '', section: '' };
 
   /* ── Utilities ── */
   function esc(str) {
@@ -117,15 +117,32 @@
     if (_filterState.team) sel.value = _filterState.team;
   }
 
+  /* ── Filter theo Người đăng ký (Owner) — CR#3 ── */
+  function _populateOwnerFilter() {
+    var sel = document.getElementById('rqOwnerFilter');
+    if (!sel) return;
+    var owners = [];
+    _allUcs.forEach(function (uc) {
+      var o = String(uc.owner_name || uc.owner || '').trim();
+      if (o && owners.indexOf(o) === -1) owners.push(o);
+    });
+    owners.sort(function (a, b) { return a.localeCompare(b, 'vi'); });
+    sel.innerHTML = '<option value="">Tất cả người đăng ký</option>' +
+      owners.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('');
+    if (_filterState.owner) sel.value = _filterState.owner;
+  }
+
   function _applyFilters() {
     var base    = _filter(_allUcs);
     var q       = _norm(_filterState.search);
     var team    = _norm(_filterState.team);
+    var owner   = _norm(_filterState.owner);
     var section = _filterState.section;
 
     var list = base.filter(function (uc) {
       if (q && _norm(uc.name).indexOf(q) === -1 && _norm(uc.usecase_id).indexOf(q) === -1) return false;
       if (team && _norm(uc.team) !== team) return false;
+      if (owner && _norm(uc.owner_name || uc.owner) !== owner) return false;
       return true;
     });
 
@@ -172,6 +189,13 @@
         _applyFilters();
       });
     }
+    var ownerSel = document.getElementById('rqOwnerFilter');
+    if (ownerSel) {
+      ownerSel.addEventListener('change', function () {
+        _filterState.owner = ownerSel.value;
+        _applyFilters();
+      });
+    }
     var pills = document.querySelectorAll('.rq-pill');
     pills.forEach(function (pill) {
       pill.addEventListener('click', function () {
@@ -204,6 +228,7 @@
       _councilSize = prog.council_size || (APP_CONFIG.COUNCIL_USERS || []).length || 4;
 
       _populateTeamFilter();
+      _populateOwnerFilter();
       _render();
     } catch (e) {
       var l = document.getElementById('rqLoading');

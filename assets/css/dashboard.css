@@ -1379,6 +1379,15 @@
 }
 .rq-name-link:hover { text-decoration: underline; }
 
+/* Tên US dạng hyperlink mở chi tiết (My Cases / Explore) — CR#2 */
+.uc-name-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+.uc-name-link:hover { text-decoration: underline; }
+
 /* ═══════════════════════════════════════════════════
    Review Panel (slide-in from right)
    ═══════════════════════════════════════════════════ */

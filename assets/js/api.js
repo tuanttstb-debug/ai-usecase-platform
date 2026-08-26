@@ -198,6 +198,24 @@ var Api = {
     });
   },
 
+  // ── Write hybrid (v3.16.0) — FIX create/update "timeout giả" ──────
+  // Bối cảnh: đường iframe-POST (v3.15.0) KHÔNG đọc được response → mọi lỗi ghi
+  // phía server (validate/lock/…) đều bị che thành "Timeout" và US không được ghi.
+  // Sửa: ƯU TIÊN GET-JSONP (đọc được success/lỗi THẬT của GAS, đã kiểm chứng ghi OK);
+  //      CHỈ fallback iframe-POST khi payload vượt URL-limit (~link demo dài).
+  //   actionUrl : `${base}?action=create|update`
+  //   verify    : dùng cho nhánh POST (không đọc được response)
+  _writeHybrid(actionUrl, data, verify) {
+    var payload = null;
+    try { payload = Api._encodePayload(data); } catch (e) { /* để _request báo lỗi encode rõ */ }
+    // Nhỏ (hoặc encode lỗi) → GET-JSONP: resolve {record_id, usecase_id}; reject = message GAS thật.
+    if (payload === null || payload.length <= 7500) {
+      return Api._request(actionUrl, data, Api._writeTimeout());
+    }
+    // Payload lớn → iframe-POST + verify (giữ fix link demo dài của v3.15.0).
+    return Api._submitViaPost(actionUrl, data, verify, Api._writeTimeout());
+  },
+
   // ── Public API ──────────────────────────────────────────────────
 
   getLookup()         { return Api._request(API.lookup()); },
@@ -233,7 +251,7 @@ var Api = {
         };
       }, function() { return null; });
     };
-    return Api._submitViaPost(API.create(), data, verify, Api._writeTimeout());
+    return Api._writeHybrid(API.create(), data, verify);
   },
   updateUseCase(data) {
     var recordId = data.Record_ID || '';
@@ -246,7 +264,7 @@ var Api = {
         } : null;
       }, function() { return null; });
     };
-    return Api._submitViaPost(API.update(), data, verify, Api._writeTimeout());
+    return Api._writeHybrid(API.update(), data, verify);
   },
 
   duplicateCheck(name, pain) {

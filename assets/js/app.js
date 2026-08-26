@@ -200,10 +200,19 @@
       if (wg) data.Workflow_Group = wg;
     }
     // H2 Giai đoạn 3: bỏ inject BV/Innovation tự đánh giá (auto-score 70/30 ngưng dùng).
-    // Inject Owner_Email từ session (field ẩn, không render trên UI)
+    // Inject Owner từ session (field ẩn/không render) — server BẮT BUỘC Owner_Name + Owner_Email.
     if (typeof AuthService !== 'undefined') {
       var _u = AuthService.getUser();
-      if (_u && _u.email && !data.Owner_Email) data.Owner_Email = _u.email;
+      if (_u) {
+        if (!data.Owner_Email && _u.email) data.Owner_Email = _u.email;
+        if (!data.Owner_Name  && (_u.displayName || _u.email)) data.Owner_Name = _u.displayName || _u.email;
+      }
+    }
+    // Guard: thiếu Owner_Email (phiên hỏng) → chặn sớm với thông báo RÕ, tránh "timeout giả"
+    // (FE Validator không kiểm Owner_Email nhưng server REQUIRED_FIELDS_CREATE có → sẽ bị chặn).
+    if (!data.Owner_Email) {
+      Toast.show('Phiên đăng nhập thiếu thông tin người dùng (Owner_Email). Vui lòng đăng nhập lại rồi thử lại.', 'error');
+      return;
     }
     const errors = Validator.all(data);
     if (errors.length) {
