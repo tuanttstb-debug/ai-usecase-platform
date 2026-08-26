@@ -4,6 +4,23 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
+## SHEET-SPAM-01 — GAS sinh nhiều sheet rỗng "SheetN" (2026-08-26) — ĐÃ VÁ PHÒNG THỦ
+
+**Triệu chứng:** [TT] thấy GG Sheet sinh liên tục sheet rỗng tên mặc định (đến "Sheet65").
+**Gốc:** Toàn backend chỉ có 1 chỗ tạo sheet — `Utils.gs getOrCreateSheet_` → `ss.insertSheet(sheetName)`.
+Nếu `sheetName` rỗng/undefined, `insertSheet()` đặt tên mặc định 'SheetN' và `getSheetByName(undefined)`
+không bao giờ khớp → **mỗi request lại đẻ 1 sheet mới** (counter toàn cục nên số tăng dần).
+Trong repo mọi lời gọi đều truyền `SHEETS.*` hợp lệ → nguyên nhân gần chắc là **DEPLOY LỆCH**:
+code (ScoringServiceH2/Code) tham chiếu `SHEETS.UC_REUSE`/`PERSONAL` mà `Config.gs` đang deploy là bản
+CŨ thiếu key → `SHEETS.X = undefined`. `ensureScoringH2Sheets_()` chạy ở đầu mọi route chấm điểm → đẻ sheet.
+**Vá (repo):** (1) `getOrCreateSheet_` **ném lỗi rõ** khi sheetName rỗng/undefined (không tạo sheet mặc định).
+(2) Hàm dọn `cleanupEmptyDefaultSheets()`/`dryRunCleanupEmptySheets()` (chạy tay GAS Editor) xóa sheet
+'SheetN' rỗng (an toàn: không đụng tên nghiệp vụ, không xóa sheet cuối).
+**[TT] cần:** redeploy **TẤT CẢ** .gs cùng lúc (đảm bảo Config.gs mới nhất → SHEETS đủ key + guard active),
+rồi chạy `cleanupEmptyDefaultSheets()` dọn 65 sheet rác. Sau redeploy đủ, lỗi không tái phát.
+
+---
+
 ## SCORING-H2-MONTHLY-01 — Nợ nhẹ sau CR chấm điểm theo tháng (2026-08-26)
 
 - **Nguồn nhập `Evidence_Link` (EVD ổ share) CHƯA có** — panel cá nhân chỉ **hiển thị** cột `Evidence_Link` (đọc-only); chưa có nơi để member/teamlead nhập link. Backend đã hỗ trợ nhận `Evidence_Link` trong `personal-score-submit` (giữ giá trị cũ nếu không gửi). **Hướng:** khi [TT] chốt nguồn (member tự nhập ở đâu / link cố định theo team) → thêm 1 input ghi vào cột này. (CR#4 chủ đích chỉ hiển thị.)

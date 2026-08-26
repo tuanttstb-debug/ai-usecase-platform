@@ -73,6 +73,14 @@ function normalizeUser_(str) {
 }
 
 function getOrCreateSheet_(sheetName) {
+  // GUARD (fix "sinh nhiều Sheet rỗng"): tên rỗng/undefined → insertSheet() đặt tên mặc định
+  // 'SheetN' và getSheetByName(undefined) không bao giờ khớp → MỖI lần gọi lại tạo 1 sheet mới.
+  // Nguyên nhân thường gặp: deploy LỆCH phiên bản (code tham chiếu SHEETS.X mà Config.gs cũ
+  // chưa có key → SHEETS.X = undefined). Ném lỗi rõ thay vì đẻ sheet rác.
+  if (typeof sheetName !== 'string' || sheetName.trim() === '') {
+    throw new Error('getOrCreateSheet_: sheetName rỗng/không hợp lệ (' + JSON.stringify(sheetName) +
+      '). Có thể do SHEETS.* undefined vì deploy thiếu Config.gs — KHÔNG tạo sheet mặc định.');
+  }
   var ss    = getSpreadsheet_();
   var sheet = ss.getSheetByName(sheetName);
   if (sheet) return sheet;
@@ -109,6 +117,47 @@ function getOrCreateSheet_(sheetName) {
 
   return sheet;
 }
+
+/**
+ * DỌN SHEET RÁC — xóa các sheet tên mặc định 'SheetN' đang RỖNG (do bug insertSheet name rỗng).
+ * An toàn: CHỈ xóa sheet (a) tên khớp /^Sheet\d+$/, (b) không trùng bất kỳ tên nghiệp vụ trong SHEETS,
+ * (c) thực sự rỗng (0 dòng dữ liệu). Giữ tối thiểu 1 sheet (Sheets không cho xóa sheet cuối cùng).
+ * Chạy TAY trong GAS Editor: `cleanupEmptyDefaultSheets` (xóa) hoặc `dryRunCleanupEmptySheets` (chỉ liệt kê).
+ * @param {boolean} commit  true = xóa; false = chỉ liệt kê.
+ * @returns {{ candidates:string[], deleted:string[], kept:string[], message:string }}
+ */
+function _cleanupEmptyDefaultSheets_(commit) {
+  var ss = getSpreadsheet_();
+  var known = {};
+  Object.keys(SHEETS).forEach(function (k) { known[String(SHEETS[k])] = true; });
+  var sheets = ss.getSheets();
+  var candidates = [], deleted = [], kept = [];
+
+  sheets.forEach(function (sh) {
+    var name = sh.getName();
+    var isDefault = /^Sheet\d+$/.test(name);           // tên mặc định Google
+    var isKnown   = !!known[name];                      // sheet nghiệp vụ → KHÔNG đụng
+    var isEmpty   = sh.getLastRow() === 0 && sh.getLastColumn() === 0;
+    if (isDefault && !isKnown && isEmpty) candidates.push(name);
+  });
+
+  if (commit) {
+    candidates.forEach(function (name) {
+      if (ss.getSheets().length <= 1) { kept.push(name); return; } // không xóa sheet cuối cùng
+      try { ss.deleteSheet(ss.getSheetByName(name)); deleted.push(name); }
+      catch (e) { kept.push(name + ' (lỗi: ' + e.message + ')'); }
+    });
+  }
+
+  var msg = 'Sheet rỗng tên mặc định: ' + candidates.length + ' ứng viên'
+    + (commit ? (' → đã xóa ' + deleted.length + (kept.length ? ', giữ ' + kept.length : '')) : ' (dry-run, chưa xóa)');
+  Logger.log(msg + '\n  candidates: ' + candidates.join(', '));
+  return { candidates: candidates, deleted: deleted, kept: kept, message: msg };
+}
+/** Liệt kê (không xóa) sheet rỗng tên mặc định — chạy tay trong GAS Editor. */
+function dryRunCleanupEmptySheets() { return _cleanupEmptyDefaultSheets_(false); }
+/** XÓA sheet rỗng tên mặc định 'SheetN' — chạy tay trong GAS Editor sau khi đã redeploy đủ. */
+function cleanupEmptyDefaultSheets() { return _cleanupEmptyDefaultSheets_(true); }
 
 /**
  * Đảm bảo sheet có đủ các cột trong `wantHeaders`.
