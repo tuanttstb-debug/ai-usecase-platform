@@ -4,6 +4,14 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 TUNING BE Round 1 (cache reads theo version + tối ưu lookup ghi) (2026-08-26 #4) — CODE XONG
+- [x] **T1** version-gated cache `list`+`dashboard` (`CacheLayer.gs` + bump tập trung doGet/doPost); dashboard bỏ cache lossy 30' → full+tươi+nhanh.
+- [x] **T3** `findRowByKeyColumn_` (cột khóa + 1 dòng) cho `updateUseCase_` + `getUseCaseById_` (verify).
+- [x] Syntax OK 6/6; backend-only (0 FE) → không đụng Playwright.
+- [ ] **[P0] [TT] redeploy GAS** — dán TẤT CẢ .gs cùng lúc (có file MỚI `CacheLayer.gs`).
+- [ ] **[P1] [TT] nghiệm thu:** load `list`/`dashboard` lần 2 nhanh hẳn; ghi 1 UC → load kế tươi ngay; update UC nhanh hơn.
+- [ ] **[CC] Round 2 — T2:** idempotency `reqId` dedup (server, CacheService) + bật retry write an toàn (create/update GET-JSONP path) → trị timeout/mất/trùng. Cẩn trọng transport hybrid (CR#1).
+
 ## 🆕 CR bỏ validate URL Demo_Link (free text) (2026-08-26 #3) — CODE XONG
 - [x] Gỡ validate server-side Demo_Link (`ValidationService.gs` create+update) → link demo là free text (ổ chung/localhost/ghi chú).
 - [ ] **[P0] [TT] redeploy GAS** (dán lại ValidationService.gs — nên dán tất cả .gs cùng lúc) → thử đăng ký lại với link nội bộ, không còn *"Demo_Link phải là URL hợp lệ"*.

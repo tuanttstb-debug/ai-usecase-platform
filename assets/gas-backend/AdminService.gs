@@ -150,6 +150,11 @@ function changeUseCaseStatus_(recordId, newStatus, reviewerEmail, comment, logAc
 function listUseCases_(filters) {
   filters = filters || {};
 
+  // (Tuning T1) Cache theo version + bộ filter → bỏ đọc full MASTER + User_Master khi không đổi.
+  var _ck  = 'list:' + _aiusVer() + ':' + _aiusHashFilters_(filters);
+  var _hit = _aiusCacheGet(_ck);
+  if (_hit) return _hit;
+
   var all          = readSheetAsObjects_(SHEETS.MASTER);
   var filterPreset = String(filters.filter || '').trim().toLowerCase();
   var statusFilter = String(filters.status || '').trim();
@@ -206,7 +211,7 @@ function listUseCases_(filters) {
   // owner filter → full set; ngược lại limit<=0 → full, limit>0 → cắt
   var out = (hasOwnerF || limit <= 0) ? filtered : filtered.slice(0, limit);
 
-  return out.map(function(uc) {
+  var result = out.map(function(uc) {
     var ownerLogin = normalizeUser_(uc.Owner_Email || '');
     return {
       record_id:           uc.Record_ID,
@@ -249,6 +254,9 @@ function listUseCases_(filters) {
       innovation_score:    safeNum_(uc.Innovation_Score)
     };
   });
+
+  _aiusCachePut(_ck, result);
+  return result;
 }
 
 // ── Governance: Leaderboard ──────────────────────────────────────

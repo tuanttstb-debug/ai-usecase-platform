@@ -44,6 +44,9 @@ function doGet(e) {
     response = createResponse_(false, err.message || 'Lỗi server nội bộ');
   }
 
+  // (Tuning T1) write thành công → bump DATA_VERSION (vô hiệu cache list/dashboard)
+  _aiusBumpIfWrite(action, response);
+
   // Validate callback name (chỉ cho phép safe JS identifier)
   if (callback && /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(callback)) {
     return sendJsonP_(response, callback);
@@ -84,6 +87,9 @@ function doPost(e) {
     logError_('doPost action=' + action, err, { action: action });
     response = createResponse_(false, err.message || 'Lỗi server nội bộ');
   }
+
+  // (Tuning T1) write thành công → bump DATA_VERSION (vô hiệu cache list/dashboard)
+  _aiusBumpIfWrite(action, response);
 
   // FE iframe POST không đọc response, nhưng hỗ trợ JSONP callback nếu có (test/tương thích).
   if (callback && /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(callback)) {

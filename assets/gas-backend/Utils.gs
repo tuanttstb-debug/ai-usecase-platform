@@ -347,6 +347,44 @@ function findRowByField_(sheetName, field, value) {
   return null;
 }
 
+/**
+ * (Tuning T3) Như findRowByField_ nhưng đọc CHỈ cột khóa (N×1) để định vị dòng,
+ * rồi đọc DUY NHẤT dòng khớp (1×lastCol) — thay vì đọc toàn sheet (N×lastCol).
+ * Trên MASTER 99 cột × nhiều dòng, giảm mạnh thời gian đọc cho update + verify-sau-ghi.
+ * Trả cùng shape { obj, rowIndex, headers, sheet } để tương thích findRowByField_.
+ *
+ * @param {string} sheetName
+ * @param {string} field   Tên cột khóa (vd 'Record_ID' / 'UseCase_ID')
+ * @param {string} value   Giá trị cần khớp
+ * @returns {{ obj:Object, rowIndex:number, headers:string[], sheet:Sheet } | null}
+ */
+function findRowByKeyColumn_(sheetName, field, value) {
+  var sheet   = getOrCreateSheet_(sheetName);
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return null;
+
+  var headers  = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  var fieldCol = headers.indexOf(field);
+  if (fieldCol === -1) return null;
+
+  // Đọc CHỈ cột khóa để tìm dòng
+  var keyVals = sheet.getRange(2, fieldCol + 1, lastRow - 1, 1).getValues();
+  var target  = String(value);
+  for (var i = 0; i < keyVals.length; i++) {
+    if (String(keyVals[i][0]) === target) {
+      var rowIndex = i + 2;                                    // 0-based array → 1-based sheet row
+      var rowVals  = sheet.getRange(rowIndex, 1, 1, lastCol).getValues()[0];  // đọc 1 dòng
+      var obj = {};
+      headers.forEach(function(h, j) {
+        obj[h] = (rowVals[j] !== undefined && rowVals[j] !== null) ? rowVals[j] : '';
+      });
+      return { obj: obj, rowIndex: rowIndex, headers: headers, sheet: sheet };
+    }
+  }
+  return null;
+}
+
 // ── String & Math Utilities ───────────────────────────────────────
 
 /**

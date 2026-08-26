@@ -298,7 +298,7 @@ function updateUseCase_(recordId, data) {
   // findRowByField_ đọc MASTER_DATA một lần duy nhất và giữ sheet reference.
   // Ghi đè sau đó dùng found.sheet + found.rowIndex → không cần đọc lại lần 2.
   // (So với findObjectByField_ + updateRowByRecordId_ cũ: 2 full reads → 1 read)
-  var found = findRowByField_(SHEETS.MASTER, 'Record_ID', recordId);
+  var found = findRowByKeyColumn_(SHEETS.MASTER, 'Record_ID', recordId);  // (T3) đọc cột khóa + 1 dòng
   if (!found) throw new Error('Không tìm thấy use case với Record_ID: ' + recordId);
   var existing = found.obj;
 
@@ -381,10 +381,12 @@ function getUseCaseById_(recordId) {
   if (!recordId || String(recordId).trim() === '') {
     throw new Error('Record_ID không được để trống');
   }
-  var obj = findObjectByField_(SHEETS.MASTER, 'Record_ID', recordId);
+  // (T3) đọc cột khóa + 1 dòng thay vì full sheet — verify-sau-ghi gọi hàm này nên tối ưu quan trọng.
+  var found = findRowByKeyColumn_(SHEETS.MASTER, 'Record_ID', recordId);
   // Fallback: nếu id có dạng AIUS-… (hoặc không khớp Record_ID) → thử tra theo UseCase_ID
-  if (!obj) obj = findObjectByField_(SHEETS.MASTER, 'UseCase_ID', recordId);
-  if (!obj) throw new Error('Không tìm thấy use case với id: ' + recordId);
+  if (!found) found = findRowByKeyColumn_(SHEETS.MASTER, 'UseCase_ID', recordId);
+  if (!found) throw new Error('Không tìm thấy use case với id: ' + recordId);
+  var obj = found.obj;
 
   // Ẩn JSON_Backup trong response (quá lớn, không cần thiết cho edit mode)
   var result = {};

@@ -9,26 +9,18 @@
  * @returns {Object} Dashboard summary data
  */
 function getDashboardSummary_() {
-  var CACHE_TTL_MINUTES = 30;
+  // (Tuning T1) Cache theo VERSION (CacheService gzip) thay cache-theo-thời-gian 30' cũ.
+  // Ưu điểm: TƯƠI (mọi write bump version → cache tự vô hiệu) + NHANH (câu lặp dùng lại)
+  // + FULL data (trả computeDashboardSummary_ đầy đủ, không còn đường cache lossy).
+  var ck  = 'dash:' + _aiusVer();
+  var hit = _aiusCacheGet(ck);
+  if (hit) return hit;
 
-  // ── 1. Thử đọc cache từ DASHBOARD_READY ───────────────────────
-  try {
-    var cached = readDashboardCache_();
-    if (cached) return cached;
-  } catch (e) {
-    // Cache lỗi → tính lại
-    logError_('getDashboardSummary_ cache read', e);
-  }
-
-  // ── 2. Tính lại từ MASTER_DATA ────────────────────────────────
   var summary = computeDashboardSummary_();
+  _aiusCachePut(ck, summary);
 
-  // ── 3. Ghi cache vào DASHBOARD_READY ──────────────────────────
-  try {
-    writeDashboardCache_(summary);
-  } catch (e) {
-    logError_('getDashboardSummary_ cache write', e);
-  }
+  // Vẫn ghi DASHBOARD_READY sheet (cho trigger refreshDashboardCache/tương thích) — không chặn nếu lỗi.
+  try { writeDashboardCache_(summary); } catch (e) { logError_('getDashboardSummary_ cache write', e); }
 
   return summary;
 }

@@ -1,5 +1,16 @@
 # PROJECT STATE
 
+**TUNING BE — Round 1 (cache reads theo version + tối ưu lookup ghi) — CODE XONG 2026-08-26. ⚠️ CẦN [TT] REDEPLOY GAS.**
+[TT] báo hệ thống AIUS chậm (load rất chậm, hay mất kết nối, ghi chậm). Scan BE → tune (SHTD chỉ là tham chiếu). Backend-only (0 file FE).
+- **Chẩn đoán:** `list` đọc full MASTER (N×99) + User_Master **mỗi lần**; `dashboard` cache theo **thời gian 30' (stale sau ghi) + lossy** (mất top_performers…); `updateUseCase_` + verify-sau-ghi (`getUseCaseById_`) đọc **full sheet** chỉ để tìm 1 dòng. Không version-gate.
+- **T1 — Cache reads theo VERSION:** mới `CacheLayer.gs` (`AIUS_DATA_VER` + CacheService gzip). Bump version **tập trung** ở `doGet`/`doPost` khi action là write (danh sách `_AIUS_WRITE_ACTIONS`). `getDashboardSummary_` + `listUseCases_` cache theo `version(+filter)` → không đổi = trả cache (bỏ đọc sheet); ĐỔI = tính live. **Dashboard nay tươi + FULL + nhanh** (bỏ đường cache lossy 30').
+- **T3 — Tối ưu lookup ghi:** `findRowByKeyColumn_` (Utils) đọc **chỉ cột khóa (N×1) + 1 dòng (1×99)** thay full N×99; áp cho `updateUseCase_` + `getUseCaseById_` (verify-sau-ghi) → giảm mạnh thời gian update.
+- **⚠️ [TT] cần redeploy GAS** (dán TẤT CẢ .gs cùng lúc — có file MỚI `CacheLayer.gs`; bài học `SHEET-SPAM-01`). Backend-only, FE không đổi.
+- **Verify:** syntax `node --check` OK 6/6 file; không test nào (node) đụng hàm sửa; 0 file FE nên Playwright không ảnh hưởng. Nghiệm thu thật sau redeploy (đo thời gian load `list`/`dashboard` lần 2; update UC nhanh hơn).
+- **Còn lại (Round 2, chưa làm):** **T2 — idempotency (`reqId` dedup) + bật retry an toàn cho write** (trị "timeout/mất/trùng") — để riêng vì chạm transport hybrid vừa fix CR#1.
+
+---
+
 **CR BỎ VALIDATE URL cho Demo_Link (free text) — CODE XONG 2026-08-26. ⚠️ CẦN [TT] REDEPLOY GAS.**
 [TT] báo khi đăng ký US, nhập link demo ổ chung/nội bộ (không phải https://) bị server chặn: *"Lỗi gửi: Demo_Link phải là URL hợp lệ (bắt đầu bằng https://)"*.
 - **Gốc:** validate **server-side** ở `assets/gas-backend/ValidationService.gs` (`validateCreate_` + `validateUpdate_`) gọi `isValidUrl_` — FE không hề validate (đã là free text).
