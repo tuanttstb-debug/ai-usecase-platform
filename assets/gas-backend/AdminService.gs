@@ -368,14 +368,13 @@ function submitWeeklyUpdate_(recordId, data) {
   if (data.Current_Progress !== undefined) probe.Current_Progress = safeNum_(data.Current_Progress);
   if (stageChanged) probe.Current_Stage = proposedStage;
 
-  // H1 auto-score đã GỠ → bỏ "milestone theo điểm tăng"; milestone giờ CHỈ theo đổi stage.
+  // H1 auto-score đã GỠ → milestone CHỈ theo đổi Stage (bỏ hẳn "milestone theo điểm tăng").
+  // proposedScore giữ = prevScore (không đổi điểm) để tương thích schema WEEKLY_LOG.
   var proposedScore = prevScore;
-  var scoreRaised = false;
 
-  // ── Milestone = chuyển Stage HOẶC nâng điểm → cần Admin duyệt ──
-  var isMilestone   = stageChanged || scoreRaised;
-  var milestoneType = (stageChanged && scoreRaised) ? 'STAGE+SCORE'
-                    : (stageChanged ? 'STAGE' : (scoreRaised ? 'SCORE' : ''));
+  // ── Milestone = chuyển Stage → cần Admin duyệt ──
+  var isMilestone   = stageChanged;
+  var milestoneType = stageChanged ? 'STAGE' : '';
 
   // ── Ghi MASTER_DATA ───────────────────────────────────────────
   // Luôn ghi: ghi chú + tiến độ. Chỉ ghi số-liệu-điểm/stage/điểm khi KHÔNG milestone.
