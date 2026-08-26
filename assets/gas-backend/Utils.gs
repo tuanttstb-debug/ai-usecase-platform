@@ -133,9 +133,12 @@ function _cleanupEmptyDefaultSheets_(commit) {
   var sheets = ss.getSheets();
   var candidates = [], deleted = [], kept = [];
 
+  // Tên mặc định Google theo LOCALE: EN 'Sheet', VI 'Trang tính' + vài locale phổ biến.
+  // (Bug tạo sheet rỗng đặt tên mặc định theo ngôn ngữ của bảng tính — vd tiếng Việt 'Trang tính65'.)
+  var DEFAULT_NAME_RE = /^(Sheet|Trang tính|Trang tinh|Hoja|Feuille|Blatt|Foglio de cálculo|Foglio|Sayfa|Список|Лист|시트|シート|工作表)\s*\d+$/;
   sheets.forEach(function (sh) {
     var name = sh.getName();
-    var isDefault = /^Sheet\d+$/.test(name);           // tên mặc định Google
+    var isDefault = DEFAULT_NAME_RE.test(name);         // tên mặc định Google (đa ngôn ngữ)
     var isKnown   = !!known[name];                      // sheet nghiệp vụ → KHÔNG đụng
     var isEmpty   = sh.getLastRow() === 0 && sh.getLastColumn() === 0;
     if (isDefault && !isKnown && isEmpty) candidates.push(name);
