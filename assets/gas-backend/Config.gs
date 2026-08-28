@@ -145,7 +145,13 @@ var WEEKLY_LOG_HEADERS = [
   // Một dòng WEEKLY_LOG là "milestone" khi có chuyển Stage hoặc nâng điểm.
   // Milestone phải được Admin duyệt mới áp Stage/điểm lên MASTER + tính KPI.
   'Is_Milestone', 'Milestone_Type', 'Previous_Total_Score', 'Proposed_Total_Score',
-  'Approval_Status', 'Approved_By', 'Approved_At', 'Milestone_Comment'
+  'Approval_Status', 'Approved_By', 'Approved_At', 'Milestone_Comment',
+  // ── Snapshot Prompt & Luồng AI khi user cập nhật ở tuần này (Mục tiêu 1) ──
+  // Chụp lại nội dung tại thời điểm sửa để về sau xem đã đổi prompt/luồng ở tuần nào.
+  // Chỉ ghi khi Prompt_Updated=TRUE; các lần cập nhật tuần thường để trống.
+  'Prompt_Updated',
+  'Flow_Description', 'Prompt_Role', 'Prompt_Task', 'Prompt_Goal', 'Prompt_Context',
+  'Prompt_Input', 'Prompt_Steps', 'Prompt_Output_Format', 'Prompt_Evaluation'
 ];
 
 // ── ACTIVITY_LOG Column Headers ───────────────────────────────────

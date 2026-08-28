@@ -327,4 +327,35 @@ test.describe('Weekly Update — Feature Tests', () => {
     console.log('[T11] PASS — Stage transition thành công');
   });
 
+  // ── TEST 12: Accordion Prompt/Luồng AI mở + prefill (Mục tiêu 1) ──
+  // Read-only: chọn UC → chờ full detail nạp → mở accordion → kiểm prefill/flag.
+  // KHÔNG submit (tránh ghi thêm vào production).
+
+  test('T12 — Cập nhật Prompt/Luồng AI: accordion + prefill từ full detail', async ({ page }) => {
+    await page.goto('/weekly-update.html');
+    await openAndSelectFirstUc(page);
+
+    // Chờ full detail nạp xong (prefill prompt/luồng)
+    await page.waitForFunction(
+      () => typeof _fullDetailLoaded !== 'undefined' && _fullDetailLoaded === true,
+      { timeout: 30000 }
+    );
+
+    // Accordion mặc định đóng, panel ẩn
+    await expect(page.locator('#promptAccordion')).not.toHaveClass(/open/);
+    await expect(page.locator('#wuFlowDescription')).not.toBeVisible();
+
+    // Mở accordion → panel + textarea luồng AI hiển thị
+    await page.locator('#promptAccordionToggle').click();
+    await expect(page.locator('#promptAccordion')).toHaveClass(/open/);
+    await expect(page.locator('#wuFlowDescription')).toBeVisible();
+
+    // Đã đánh dấu touched → cho phép gửi prompt/luồng kèm submit
+    const touched = await page.evaluate(() => _promptTouched);
+    expect(touched).toBe(true);
+
+    await page.screenshot({ path: `${EVD}/T12-prompt-accordion.png`, fullPage: true });
+    console.log('[T12] PASS — Accordion Prompt/Luồng AI mở + prefill OK');
+  });
+
 });

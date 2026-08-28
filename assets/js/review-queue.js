@@ -285,12 +285,44 @@
     panel.style.display = ''; overlay.style.display = '';
     panel.classList.add('is-open');
 
+    // Cột trái: chi tiết US đầy đủ (fetch full data — list nhẹ không có prompt/luồng)
+    _loadDetail(uc);
+
     // Nạp trạng thái hội đồng của UC này
     Api.listCouncilScores(_rid(uc)).then(function (info) {
       _fillCouncilStatus(info);
     }).catch(function () {
       setTxt('rpCouncilStatus', 'Không tải được trạng thái hội đồng (có thể chưa ai chấm).');
       setTxt('rpCouncilFinal', '0');
+    });
+  }
+
+  /* ── Cột trái: chi tiết US (Mục tiêu 2) ── */
+  function _loadDetail(uc) {
+    var host = document.getElementById('rpDetail');
+    var copyBtn = document.getElementById('rpCopyPromptBtn');
+    if (copyBtn) copyBtn.style.display = 'none';
+    if (host) host.innerHTML = '<p class="empty-state-text" style="padding:var(--space-6)">Đang tải chi tiết…</p>';
+
+    // Render nhanh bằng dữ liệu list đã có, rồi làm giàu bằng full detail.
+    if (host && typeof UCDetailView !== 'undefined') host.innerHTML = UCDetailView.render(uc);
+
+    var rid = _rid(uc);
+    if (!rid || typeof Api.getUseCase !== 'function') return;
+    Api.getUseCase(rid).then(function (data) {
+      // Panel có thể đã đổi UC khác trong lúc chờ → chỉ áp nếu vẫn đúng UC.
+      if (!_currentUc || _rid(_currentUc) !== rid) return;
+      var full = UCDetailView.normalize(data);
+      // Giữ tên/owner từ list nếu full thiếu.
+      full.name = full.name || _currentUc.name;
+      full.owner_name = full.owner_name || _currentUc.owner_name || _currentUc.owner;
+      if (host) host.innerHTML = UCDetailView.render(full);
+      if (copyBtn && UCDetailView.hasPrompt(full)) {
+        copyBtn.style.display = '';
+        copyBtn.onclick = function () { UCDetailView.copyPrompt(full); };
+      }
+    }).catch(function () {
+      // GAS lỗi/không deploy — bản render từ list vẫn hiển thị (thiếu prompt/luồng).
     });
   }
 

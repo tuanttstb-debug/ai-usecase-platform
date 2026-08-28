@@ -4,6 +4,12 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
+## UC-DETAIL-DUP-01 — dashboard.js chưa dùng chung uc-detail-view.js (2026-08-28)
+CR review-panel (Mục tiêu 2) tách bộ render chi tiết UC ra **module dùng chung `assets/js/uc-detail-view.js`** (`UCDetailView.render/normalize/hasPrompt/copyPrompt`) cho `review-queue` dùng. Nhưng `dashboard.js` **vẫn giữ bản `_renderDetailBody` + `_normalizeFullData` + helpers riêng** (không refactor để giảm blast radius phiên này) → **trùng lặp logic render** ở 2 nơi; sửa layout chi tiết phải sửa 2 chỗ. **Hướng:** cho `dashboard.js` gọi `UCDetailView.render` (mục Điểm US/nút duyệt vẫn ở dashboard vì gắn action), gỡ bản nhân bản. Ưu tiên thấp — 2 bản hiện đồng bộ (cùng nguồn copy).
+
+## WEEKLY-PROMPT-01 — Cập nhật prompt/luồng ở tuần: "để trống giữ nguyên" (2026-08-28)
+Mục tiêu 1: prompt/luồng chỉ gửi khi user **mở accordion** (`_promptTouched`) VÀ đã prefill (`_fullDetailLoaded`) → an toàn không ghi đè rỗng. Hệ quả cố ý: nếu user mở accordion rồi **xóa trắng 1 ô** và gửi → ghi đè MASTER thành rỗng (đúng ý "sửa"). Không có xác nhận diff trước khi ghi. Snapshot WEEKLY_LOG giữ lịch sử nên hồi phục được. **Nếu cần**: thêm cảnh báo khi ô prefill-có-giá-trị bị xóa trắng. Ưu tiên thấp.
+
 ## WRITE-TRANSPORT-01 — Đường iframe-POST create/update chưa xác định vì sao hỏng trên live (2026-08-26)
 
 **Bối cảnh (CR#1):** Đăng ký US báo "timeout" + không ghi. Truy gốc LIVE: **không US nào ghi được từ ~16/08** (đúng mốc v3.15.0 chuyển create/update sang **hidden-iframe POST**), nhưng **backend create OK** (probe payload hợp lệ qua **GET-JSONP** → ghi thành công `AIUS-0337`). `_submitViaPost` không đọc được response iframe → mọi lỗi bị che thành "Timeout".

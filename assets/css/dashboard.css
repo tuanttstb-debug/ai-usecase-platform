@@ -1459,6 +1459,64 @@
   padding: var(--space-4) var(--space-5);
 }
 
+/* ── Panel 2 cột: chi tiết (trái) + chấm điểm (phải) — Mục tiêu 2 ── */
+.review-panel--split { width: min(1080px, 100vw); }
+
+.review-panel-body.rp-split {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;              /* mỗi cột tự cuộn */
+}
+.rp-split .rp-detail {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-5);
+  border-right: 1px solid var(--color-border);
+}
+.rp-split .rp-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.rp-split .rp-detail-head-title {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--color-text-secondary);
+}
+.rp-split .rp-score-col {
+  flex: 0 0 380px;
+  max-width: 380px;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-bg, #FAFAFB);
+}
+
+/* Màn hẹp → xếp dọc, panel chiếm gần full màn */
+@media (max-width: 860px) {
+  .review-panel--split { width: min(560px, 100vw); }
+  .review-panel-body.rp-split { flex-direction: column; overflow-y: auto; }
+  .rp-split .rp-detail {
+    flex: none;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    overflow-y: visible;
+  }
+  .rp-split .rp-score-col {
+    flex: none;
+    max-width: none;
+    overflow-y: visible;
+  }
+}
+
 .rp-score-section {
   margin-bottom: var(--space-4);
 }

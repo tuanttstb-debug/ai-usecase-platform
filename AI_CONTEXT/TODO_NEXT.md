@@ -4,6 +4,14 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 CR 2 mục: cập nhật Prompt/Luồng AI ở tuần + Review panel 2 cột (2026-08-28) — CODE XONG + TEST 104/104
+- [x] **Mục tiêu 1** — `weekly-update.html` accordion sửa `Flow_Description`+8 `Prompt_*` (prefill full detail; gửi khi `_fullDetailLoaded`&`_promptTouched`); `submitWeeklyUpdate_` ghi MASTER + snapshot WEEKLY_LOG (+10 cột `ensureSheetColumns_` tự thêm); timeline badge ✦.
+- [x] **Mục tiêu 2** — `review-queue` panel 2 cột (chi tiết trái + chấm điểm phải, mở rộng 1080px); module mới `uc-detail-view.js` (tách từ dashboard, dùng chung); fetch full detail + copy prompt.
+- [x] Verify Playwright **104/104** (03 +1, weekly +T12, + regression).
+- [ ] **[P0] [TT] REDEPLOY GAS** (Mục tiêu 1 — dán TẤT CẢ .gs; có `AdminService.gs`+`Config.gs` đổi). Mục tiêu 2 chỉ hard-refresh.
+- [ ] **[P1] [TT] nghiệm thu:** (a) cập nhật tuần → mở accordion Prompt/Luồng → sửa → gửi → timeline hiện ✦ + MASTER cập nhật (mở lại UC thấy bản mới); (b) Review panel: bấm US → chi tiết + chấm điểm cùng hiện, cuộn chi tiết mượt, Copy prompt chạy.
+- [ ] **[CC]** (tùy chọn) refactor `dashboard.js` dùng chung `uc-detail-view.js` (hiện dashboard vẫn giữ bản `_renderDetailBody` riêng — trùng lặp nhẹ, chưa gộp để giảm blast radius); nguồn nhập `Evidence_Link` (SCORING-H2-MONTHLY-01) vẫn treo.
+
 ## 🆕 TUNING BE Round 1 (cache reads theo version + tối ưu lookup ghi) (2026-08-26 #4) — CODE XONG
 - [x] **T1** version-gated cache `list`+`dashboard` (`CacheLayer.gs` + bump tập trung doGet/doPost); dashboard bỏ cache lossy 30' → full+tươi+nhanh.
 - [x] **T3** `findRowByKeyColumn_` (cột khóa + 1 dòng) cho `updateUseCase_` + `getUseCaseById_` (verify).

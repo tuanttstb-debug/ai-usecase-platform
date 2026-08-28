@@ -148,6 +148,37 @@ test.describe('review-queue.html — Hội đồng chấm điểm US', () => {
     await expect(page.locator('#rpEvdRow .ps-evd-label')).toContainText('Bằng chứng');
   });
 
+  test('Panel review 2 cột: chi tiết US + chấm điểm đồng thời — Mục tiêu 2', async ({ page }) => {
+    const MOCK_UC_FULL = {
+      Record_ID: 'REC-001', UseCase_ID: 'AIUS-001', UseCase_Name: 'UC A',
+      Owner_Name: 'User A', Team: 'Team Số', Business_Category: 'Automation',
+      Current_Stage: 'S2 - Pilot', Status: 'Approved',
+      Pain_Point: 'Xử lý thủ công tốn thời gian mỗi ngày',
+      Flow_Description: 'Bước 1: nhập email; Bước 2: AI tóm tắt; Bước 3: trả kết quả',
+      Prompt_Role: 'Bạn là trợ lý phân tích tài chính',
+      Prompt_Task: 'Tóm tắt nội dung email khách hàng',
+      Demo_Link: 'https://example.com/demo'
+    };
+    await setSession(page, ADMIN_USER);
+    await mockGAS(page, Object.assign({}, BASE_MOCK, { usecase: MOCK_UC_FULL }));
+    await page.goto('/review-queue.html');
+    await page.waitForLoadState('networkidle');
+
+    await page.locator('#rqTablePending button').first().click();
+    await expect(page.locator('#reviewPanel')).toBeVisible();
+    // Panel dạng 2 cột (mở rộng)
+    await expect(page.locator('#reviewPanel')).toHaveClass(/review-panel--split/);
+    // Cột chi tiết + cột chấm điểm cùng hiển thị (vừa xem vừa duyệt)
+    await expect(page.locator('#rpDetailCol')).toBeVisible();
+    await expect(page.locator('#rpSubmitBtn')).toBeVisible();
+    // Chi tiết US được nạp từ full detail (luồng AI + prompt)
+    await expect(page.locator('#rpDetail')).toContainText('Luồng AI & Prompt');
+    await expect(page.locator('#rpDetail')).toContainText('Tóm tắt nội dung email khách hàng');
+    await expect(page.locator('#rpDetail')).toContainText('Xử lý thủ công tốn thời gian');
+    // Nút copy prompt hiện vì UC có prompt
+    await expect(page.locator('#rpCopyPromptBtn')).toBeVisible();
+  });
+
   test('Member score preview = 100 when all criteria = 10', async ({ page }) => {
     await setSession(page, ADMIN_USER);
     await mockGAS(page, BASE_MOCK);

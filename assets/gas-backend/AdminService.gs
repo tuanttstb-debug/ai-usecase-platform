@@ -351,6 +351,13 @@ function submitWeeklyUpdate_(recordId, data) {
   var SCORE_NUM_FIELDS = [
     'Active_User_Count', 'Monthly_Usage_Count', 'Hours_Saved_Actual', 'Reuse_Count_Tracked'
   ];
+  // Prompt & Luồng AI (Mục tiêu 1) — nội dung, KHÔNG phải điểm → ghi ngay khi user
+  // sửa (cờ Prompt_Updated). Không ảnh hưởng milestone/KPI.
+  var PROMPT_FIELDS = [
+    'Flow_Description', 'Prompt_Role', 'Prompt_Task', 'Prompt_Goal', 'Prompt_Context',
+    'Prompt_Input', 'Prompt_Steps', 'Prompt_Output_Format', 'Prompt_Evaluation'
+  ];
+  var promptUpdated = data.Prompt_Updated === true || String(data.Prompt_Updated) === 'true';
 
   // ── Stage transition đề xuất ───────────────────────────────────
   var prevStage     = sanitizeStr_(existing.Current_Stage || '');
@@ -392,6 +399,13 @@ function submitWeeklyUpdate_(recordId, data) {
   });
   if (data.Current_Progress !== undefined) updates.Current_Progress = safeNum_(data.Current_Progress);
 
+  // Prompt/Luồng AI: ghi ngay khi user sửa (không gate theo milestone — là nội dung).
+  if (promptUpdated) {
+    PROMPT_FIELDS.forEach(function(f) {
+      if (data[f] !== undefined) updates[f] = sanitizeStr_(String(data[f]), 5000);
+    });
+  }
+
   if (!isMilestone) {
     SCORE_NUM_FIELDS.forEach(function(f) {
       if (data[f] !== undefined) updates[f] = safeNum_(data[f]);
@@ -430,7 +444,18 @@ function submitWeeklyUpdate_(recordId, data) {
     Approval_Status:      isMilestone ? MILESTONE_STATUS.PENDING : MILESTONE_STATUS.NA,
     Approved_By:          '',
     Approved_At:          '',
-    Milestone_Comment:    ''
+    Milestone_Comment:    '',
+    // ── Snapshot Prompt & Luồng AI (Mục tiêu 1) — chỉ ghi khi user sửa ──
+    Prompt_Updated:       promptUpdated ? 'TRUE' : 'FALSE',
+    Flow_Description:     promptUpdated ? sanitizeStr_(String(data.Flow_Description     || ''), 5000) : '',
+    Prompt_Role:          promptUpdated ? sanitizeStr_(String(data.Prompt_Role          || ''), 5000) : '',
+    Prompt_Task:          promptUpdated ? sanitizeStr_(String(data.Prompt_Task          || ''), 5000) : '',
+    Prompt_Goal:          promptUpdated ? sanitizeStr_(String(data.Prompt_Goal          || ''), 5000) : '',
+    Prompt_Context:       promptUpdated ? sanitizeStr_(String(data.Prompt_Context       || ''), 5000) : '',
+    Prompt_Input:         promptUpdated ? sanitizeStr_(String(data.Prompt_Input         || ''), 5000) : '',
+    Prompt_Steps:         promptUpdated ? sanitizeStr_(String(data.Prompt_Steps         || ''), 5000) : '',
+    Prompt_Output_Format: promptUpdated ? sanitizeStr_(String(data.Prompt_Output_Format || ''), 5000) : '',
+    Prompt_Evaluation:    promptUpdated ? sanitizeStr_(String(data.Prompt_Evaluation    || ''), 5000) : ''
   };
   appendRowFromObject_(SHEETS.WEEKLY_LOG, logRow);
 
@@ -501,7 +526,8 @@ function getWeeklyLog_(recordId) {
       milestone_type:      String(row.Milestone_Type || ''),
       previous_total_score:safeNum_(row.Previous_Total_Score),
       proposed_total_score:safeNum_(row.Proposed_Total_Score),
-      approval_status:     String(row.Approval_Status || 'N/A')
+      approval_status:     String(row.Approval_Status || 'N/A'),
+      prompt_updated:      row.Prompt_Updated === 'TRUE' || row.Prompt_Updated === true
     });
   }
 

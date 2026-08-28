@@ -1,5 +1,15 @@
 # PROJECT STATE
 
+**CR 2 mục — CODE XONG + TEST 104/104 PASS 2026-08-28. ⚠️ Mục tiêu 1 CẦN [TT] REDEPLOY GAS; Mục tiêu 2 chỉ hard-refresh.**
+Hai CR do [TT] giao (sau khi đã redeploy GAS tuning R1 + smoke test OK):
+- **Mục tiêu 1 — Cập nhật tuần cho phép sửa Prompt & Luồng xử lý AI.** Form `weekly-update.html` thêm **mục accordion "Cập nhật Prompt & Luồng xử lý AI (nếu có thay đổi)"** (mặc định đóng): 1 ô Luồng AI (`Flow_Description`) + 8 ô Prompt (`Prompt_*`). Chọn UC → **fetch full detail** (`Api.getUseCase`) prefill giá trị hiện tại. Gửi kèm submit tuần **chỉ khi** đã nạp full (`_fullDetailLoaded`) VÀ user đã mở mục (`_promptTouched`) → **không ghi đè rỗng** khi fetch lỗi/không đụng. Backend `submitWeeklyUpdate_` (AdminService.gs): ghi `Flow_Description`+`Prompt_*` thẳng MASTER (nội dung, KHÔNG gate milestone/KPI) + **snapshot vào WEEKLY_LOG** (10 cột mới, `ensureSheetColumns_` tự thêm — không cần setup tay). Timeline hiện badge **"✦ Cập nhật Prompt/Luồng AI"** ở kỳ có sửa. [TT] chốt: ghi đè + lưu snapshot lịch sử.
+- **Mục tiêu 2 — Hàng đợi Review: vừa xem chi tiết US vừa duyệt (panel 2 cột).** CR cũ "bấm US xem chi tiết" thực chất **chưa làm** (panel chỉ chấm điểm). Nay `review-panel` mở rộng `min(1080px)` + thân **2 cột**: TRÁI = chi tiết US đầy đủ (nghiệp vụ · luồng AI & prompt · demo · HDSD, cuộn dọc) + nút **Copy prompt**; PHẢI = khối chấm điểm hội đồng (dính). Màn ≤860px xếp dọc. Chi tiết nạp qua **module mới `assets/js/uc-detail-view.js`** (tách render từ dashboard.js → dùng chung, tránh trùng); fetch full detail (`Api.getUseCase`), render nhanh từ list rồi làm giàu. **FE-only** — không đụng GAS.
+- **Files:** *(FE)* `assets/js/uc-detail-view.js` (MỚI), `review-queue.html`, `assets/js/review-queue.js`, `assets/css/dashboard.css` (+CSS `.review-panel--split`/`.rp-split`), `weekly-update.html`. *(GAS — Mục tiêu 1)* `AdminService.gs` (`submitWeeklyUpdate_` + `getWeeklyLog_`), `Config.gs` (`WEEKLY_LOG_HEADERS` +10 cột). *(test)* `tests/03-review-queue.spec.js` +1, `tests/weekly-update.spec.js` +1 (T12).
+- **Verify:** Playwright **104/104 PASS** (03 +panel-2-cột/detail/copy-prompt · weekly T12 accordion+prefill · +01/04/05/06/07/08/09/T10/T11 regression). Syntax `node --check`/`new Function` OK.
+- **⚠️ [TT] cần:** **Redeploy GAS** (áp Mục tiêu 1 — `AdminService.gs`+`Config.gs`; dán TẤT CẢ .gs, bài học `SHEET-SPAM-01`). Mục tiêu 2 chỉ hard-refresh. Sau redeploy: nghiệm thu sửa prompt ở cập nhật tuần (mở accordion → sửa → gửi → timeline badge ✦ · MASTER cập nhật) + review panel 2 cột.
+
+---
+
 **TUNING BE — Round 1 (cache reads theo version + tối ưu lookup ghi) — CODE XONG 2026-08-26. ⚠️ CẦN [TT] REDEPLOY GAS.**
 [TT] báo hệ thống AIUS chậm (load rất chậm, hay mất kết nối, ghi chậm). Scan BE → tune (SHTD chỉ là tham chiếu). Backend-only (0 file FE).
 - **Chẩn đoán:** `list` đọc full MASTER (N×99) + User_Master **mỗi lần**; `dashboard` cache theo **thời gian 30' (stale sau ghi) + lossy** (mất top_performers…); `updateUseCase_` + verify-sau-ghi (`getUseCaseById_`) đọc **full sheet** chỉ để tìm 1 dòng. Không version-gate.
