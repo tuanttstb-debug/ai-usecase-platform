@@ -81,6 +81,49 @@ function peekNextUseCaseId_() {
 }
 
 /**
+ * RESET bộ đếm UseCase_ID (chạy TAY trong GAS Editor — dùng sau khi xóa sạch DB cũ).
+ * Đặt CONFIG.NEXT_ID = startAt (mặc định 1 → US kế tiếp = AIUS-0001).
+ * AN TOÀN: `generateUseCaseId_` luôn lấy max(NEXT_ID, maxExisting+1) nên nếu MASTER còn US,
+ * ID mới vẫn né trùng (không cần lo collision); reset chỉ có tác dụng "về 1" khi DB rỗng.
+ * @param {number} [startAt=1]
+ * @returns {{ next_id_counter:number, max_existing:number, effective_next:string }}
+ */
+function resetUseCaseIdCounter(startAt) {
+  var start = parseInt(startAt, 10);
+  if (isNaN(start) || start < 1) start = CONFIG_DEFAULTS.NEXT_ID; // 1
+  var lock = LockService.getScriptLock();
+  lock.waitLock(LOCK_TIMEOUT_MS);
+  try {
+    var sheet = getOrCreateSheet_(SHEETS.CONFIG);
+    var data  = sheet.getDataRange().getValues();
+    var keyCol = data.length ? data[0].map(String).indexOf('Key')   : -1;
+    var valCol = data.length ? data[0].map(String).indexOf('Value') : -1;
+    var done = false;
+    if (keyCol !== -1 && valCol !== -1) {
+      for (var i = 1; i < data.length; i++) {
+        if (String(data[i][keyCol]).trim() === 'NEXT_ID') {
+          sheet.getRange(i + 1, valCol + 1).setValue(start);
+          done = true; break;
+        }
+      }
+    }
+    if (!done) sheet.appendRow(['NEXT_ID', start, 'Auto-increment ID counter']);
+  } finally {
+    lock.releaseLock();
+  }
+  var maxExisting = _getMaxExistingIdNum_();
+  var effective   = Math.max(start, maxExisting + 1);
+  var result = {
+    next_id_counter: start,
+    max_existing:    maxExisting,
+    effective_next:  ID_PREFIX + ('0000' + effective).slice(-ID_PADDING)
+  };
+  Logger.log('resetUseCaseIdCounter → ' + JSON.stringify(result) +
+    (maxExisting >= start ? '  (LƯU Ý: MASTER còn US → ID mới sẽ né trùng, không về ' + start + ')' : ''));
+  return result;
+}
+
+/**
  * Sinh UseCase_ID dạng AIUS-NNNN với atomic increment.
  * FIX v2: Đồng bộ với MASTER_DATA trước khi gán → tránh trùng dù counter lệch.
  * - Lấy max(CONFIG.NEXT_ID, maxExisting + 1) làm điểm bắt đầu

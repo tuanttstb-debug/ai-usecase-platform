@@ -87,6 +87,26 @@ test.describe('review-queue.html — Hội đồng chấm điểm US', () => {
     await expect(page.locator('#rqBadgeDone')).toHaveText('1');
   });
 
+  test('US nộp xong (Submitted) vào review luôn; Rejected/Draft bị loại (bỏ bước duyệt)', async ({ page }) => {
+    const MIXED = [
+      { record_id: 'REC-S', usecase_id: 'AIUS-S', name: 'UC Submitted',   team: 'Số', owner_name: 'U', status: 'Submitted' },
+      { record_id: 'REC-A', usecase_id: 'AIUS-A', name: 'UC Approved',    team: 'Số', owner_name: 'U', status: 'Approved' },
+      { record_id: 'REC-U', usecase_id: 'AIUS-U', name: 'UC UnderReview', team: 'Số', owner_name: 'U', status: 'Under Review' },
+      { record_id: 'REC-R', usecase_id: 'AIUS-R', name: 'UC Rejected',    team: 'Số', owner_name: 'U', status: 'Rejected' },
+      { record_id: 'REC-D', usecase_id: 'AIUS-D', name: 'UC Draft',       team: 'Số', owner_name: 'U', status: 'Draft' },
+    ];
+    await setSession(page, ADMIN_USER);
+    await mockGAS(page, Object.assign({}, BASE_MOCK, { list: MIXED, 'council-progress': { map: {}, council_size: 4 } }));
+    await page.goto('/review-queue.html');
+    await page.waitForLoadState('networkidle');
+    // 3 US "đã nộp" (Submitted + Approved + Under Review) vào review; Rejected + Draft bị loại.
+    await expect(page.locator('#rqResultCount')).toHaveText('3 use case');
+    await expect(page.locator('#rqContent')).toContainText('UC Submitted');
+    await expect(page.locator('#rqContent')).toContainText('UC Approved');
+    await expect(page.locator('#rqContent')).not.toContainText('UC Rejected');
+    await expect(page.locator('#rqContent')).not.toContainText('UC Draft');
+  });
+
   test('navReviewQueue is marked as active', async ({ page }) => {
     await setSession(page, CHAMPION_USER);
     await mockGAS(page, BASE_MOCK);

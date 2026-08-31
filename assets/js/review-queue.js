@@ -1,14 +1,15 @@
 // ─────────────────────────────────────────────────────────────────
 // review-queue.js — H2 Giai đoạn 3: Hội đồng chấm điểm US
 //
-// Hội đồng (4 teamlead, APP_CONFIG.COUNCIL_USERS) chấm mỗi UC ĐÃ DUYỆT theo 3 tiêu chí
+// Hội đồng (4 teamlead, APP_CONFIG.COUNCIL_USERS) chấm mỗi UC ĐÃ NỘP theo 3 tiêu chí
 // 0–10 (Tiết kiệm 30% · Tự động 40% · Sáng tạo 30%). Điểm US cuối = bình quân điểm
 // các thành viên đã chấm. Mỗi thành viên 1 dòng/UC (chấm lại = ghi đè).
+// (2026-08-31: BỎ bước duyệt — US đăng ký xong (Submitted) vào review luôn; chỉ loại Draft/Rejected.)
 //
-// 3 nhóm (theo góc nhìn người đang đăng nhập):
-//   pending     — UC duyệt, chưa đủ hội đồng & BẠN chưa chấm  → "Cần bạn chấm"
-//   underReview — UC duyệt, BẠN đã chấm nhưng chưa đủ hội đồng → "Đã chấm — chờ đủ"
-//   done        — UC duyệt, đã đủ hội đồng (đủ số thành viên)   → "Đã đủ hội đồng"
+// 3 nhóm (theo tiến độ chấm hội đồng, KHÔNG theo status US):
+//   pending     — chưa đủ hội đồng & BẠN chưa chấm  → "Cần bạn chấm"
+//   underReview — BẠN đã chấm nhưng chưa đủ hội đồng → "Đã chấm — chờ đủ"
+//   done        — đã đủ hội đồng (đủ số thành viên)   → "Đã đủ hội đồng"
 // ─────────────────────────────────────────────────────────────────
 (function () {
   'use strict';
@@ -215,13 +216,14 @@
     if (filterBar) filterBar.style.display = 'none';
     try {
       var results = await Promise.all([
-        Api.listUseCases({ status: 'Approved', limit: 0 }),
+        Api.listUseCases({ limit: 0 }),   // bỏ gate 'Approved' — US nộp xong vào review luôn (bỏ bước duyệt)
         Api.getCouncilProgress()
       ]);
       var raw = results[0];
       var all = Array.isArray(raw) ? raw : (raw.items || raw.data || []);
-      // chỉ giữ UC đã duyệt (phòng khi filter server không áp)
-      _allUcs = all.filter(function (uc) { return _norm(uc.status) === 'approved'; });
+      // Hội đồng chấm mọi US ĐÃ NỘP. Loại Draft (chưa nộp) + Rejected (đã loại) — còn lại vào review.
+      var RQ_EXCLUDE = ['draft', 'rejected'];
+      _allUcs = all.filter(function (uc) { return RQ_EXCLUDE.indexOf(_norm(uc.status)) === -1; });
 
       var prog = results[1] || {};
       _progress    = prog.map || {};

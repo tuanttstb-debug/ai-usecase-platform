@@ -1,5 +1,14 @@
 # SESSION HANDOVER
 
+## Session: 2026-08-31 #4 — BỎ bước duyệt: US nộp xong vào review luôn (DEBUG "AIUS-0343 không hiện ở Review")
+- **Task completed:** [TT] báo US vừa nộp `AIUS-0343` không hiện ở màn Review. **Truy vết (đọc LIVE):** AIUS-0343 CÓ trong `list` (Status=Submitted, Pending_Review) → không phải lỗi Round 2 T2/cache. **Gốc:** `review-queue.js._load` cố ý chỉ nạp US `status==='Approved'` (thiết kế cũ: hội đồng chấm US ĐÃ DUYỆT). [TT] chốt **bỏ bước duyệt** → sửa `_load`: `Api.listUseCases({limit:0})` (bỏ gate Approved) + loại client `['draft','rejected']` → US nộp xong (Submitted/Under Review/Approved) vào review luôn. Xác minh backend `submitCouncilScore_` KHÔNG gate status (chấm US Submitted chạy trọn) → **FE-only, không redeploy GAS**.
+- **Files changed:** *(FE)* `assets/js/review-queue.js` (_load + comment header). *(test)* `tests/03-review-queue.spec.js` (+1: Submitted hiện / Rejected+Draft loại). *(GAS helper)* `assets/gas-backend/UseCaseService.gs` — MỚI `resetUseCaseIdCounter()` (chạy tay Editor: [TT] xóa DB cũ → clear bộ đếm NEXT_ID về 1 → US kế = AIUS-0001).
+- **[TT] clear bộ đếm (đã xóa DB cũ):** cách nhanh = sửa TAY sheet CONFIG ô `NEXT_ID`=1; hoặc dán `UseCaseService.gs` vào Editor + chạy `resetUseCaseIdCounter()`. (An toàn: generateUseCaseId_ luôn né trùng theo maxExisting.)
+- **Decision made:** [TT] bỏ bước Admin duyệt. Review = mọi US ĐÃ NỘP (loại Draft chưa nộp + Rejected đã loại). 3 mục Chờ/Đang/Đã chấm vẫn theo tiến độ hội đồng (không theo status). Giữ nút approve/reject ở dashboard (không còn là gate; reject vẫn dùng để loại khỏi review) — không gỡ để giảm blast radius.
+- **Blocker:** **Không.** FE-only → [TT] chỉ hard-refresh màn Review; AIUS-0343 sẽ hiện.
+- **Next step:** [TT] hard-refresh review-queue → xác nhận AIUS-0343 (+ US Submitted khác) hiện ở "Cần chấm". [CC] (tùy chọn) nếu muốn gỡ hẳn nút duyệt ở dashboard.
+- **Regression risk:** **Thấp → Playwright 112/112.** `limit:0`=all + no-status=all (xác minh AdminService.gs L142/192); council scoring không gate status (ScoringServiceH2 L200). Data đọc LIVE khớp. Data-boundary: chỉ metadata.
+
 ## Session: 2026-08-31 #3 — Verify LIVE production Round 2 T2 (sau [TT] redeploy GAS, link không đổi)
 - **Task completed:** Test LIVE trên GAS production + đo hiệu quả thực tế. Probe gọi thẳng endpoint (GET-JSONP, plain JSON). **KẾT QUẢ PASS:** (A) dedup create — cùng reqId ×3 → **1 record** `AIUS-0341`, 0 trùng (trước fix = 3 dòng); (B) control reqId khác → record mới (không over-block); (C) dedup update — cùng reqId ×2 → Edit_Version chỉ +1 (không double-apply). **Latency thực:** create cold 7,989ms → dedup-hit 1,716–1,905ms (~4× nhanh); update ghi 5,085ms → dedup-hit 1,717ms; list 3,385→1,259ms (cache R1).
 - **Files changed:** *(không đổi code — thuần verify)* Round 2 T2 code đã ở `849a026`. Probe chạy qua node stdin (không tạo file trong repo).

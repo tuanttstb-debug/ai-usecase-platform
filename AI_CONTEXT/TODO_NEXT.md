@@ -4,6 +4,13 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 Bỏ bước duyệt — US nộp xong vào review luôn (2026-08-31 #4)
+- [x] `review-queue.js._load` nạp `listUseCases({limit:0})` + loại draft/rejected (bỏ gate Approved). FE-only.
+- [x] Test `03-review-queue` (+1) + full **112/112**. Backend council không gate status (verify).
+- [x] Helper GAS `resetUseCaseIdCounter()` (clear bộ đếm sau khi [TT] xóa DB).
+- [ ] **[TT] hard-refresh màn Review** → xác nhận US Submitted hiện ở "Cần chấm".
+- [ ] **[TT] clear bộ đếm**: sửa tay `CONFIG!NEXT_ID`=1, HOẶC dán `UseCaseService.gs` + chạy `resetUseCaseIdCounter()` → US kế = AIUS-0001.
+
 ## 🆕 Verify LIVE production Round 2 T2 (2026-08-31 #3) — PASS
 - [x] Test LIVE: dedup create (3→1 record, 0 trùng) · control · dedup update (Edit_Version +1) · latency đo thật.
 - [ ] **[TT] xóa tay 2 dòng probe** (đã reject): `AIUS-0341` (`a04e4df3-9d6a-47ad-a39a-2cf8756c2178`) + `71d9b560-c18f-4ec6-aa64-f5ebcaa991fe` (tên `__CC_IDEM_PROBE_DELETE_ME__`).

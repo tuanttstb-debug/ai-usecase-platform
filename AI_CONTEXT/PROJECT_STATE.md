@@ -1,5 +1,9 @@
 # PROJECT STATE
 
+**2026-08-31 #4 — BỎ bước duyệt: US nộp xong vào REVIEW luôn.** DEBUG "AIUS-0343 không hiện ở Review" → gốc `review-queue.js._load` chỉ nạp `status==='Approved'`. [TT] chốt bỏ bước duyệt → `_load` nạp `listUseCases({limit:0})` + loại `draft/rejected` → US Submitted vào review ngay. Backend council scoring không gate status → **FE-only, không redeploy**. Verify **Playwright 112/112**. Kèm helper GAS `resetUseCaseIdCounter()` ([TT] xóa DB cũ → clear bộ đếm về AIUS-0001; hoặc sửa tay CONFIG!NEXT_ID=1).
+
+---
+
 **2026-08-31 #3 — VERIFY LIVE PRODUCTION Round 2 T2: PASS.** Sau [TT] redeploy GAS (link không đổi): dedup create cùng reqId ×3 → **1 record** (0 trùng); control reqId khác → record mới; dedup update → Edit_Version chỉ +1. Latency thật: create cold 7,989ms → dedup-hit ~1,800ms; list 3,385→1,259ms (cache R1). REQ_DEDUP tự sinh OK. **[TT] xóa tay 2 dòng probe** `__CC_IDEM_PROBE_DELETE_ME__` (đã reject).
 
 ---
