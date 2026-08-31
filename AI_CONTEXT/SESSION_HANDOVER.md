@@ -1,5 +1,13 @@
 # SESSION HANDOVER
 
+## Session: 2026-08-31 #6 — [TT] redeploy GAS + smoke test OK → 4 CR (#5) LIVE
+- **Task completed:** [TT] xác nhận **redeploy GAS + smoke test production OK** (đúng thứ tự: GAS trước, FE sau) → 4 CR ở phiên #5 nay **hiệu lực trên production**: CR1 Team tự điền · CR2a đăng ký không còn Lĩnh vực (gửi OK, backend hết bắt buộc Business_Category) · CR2b dashboard "Nhóm workflow" · CR2c trang Độ phủ Workflow. Blocker "chờ [TT] redeploy" (coupling CR2a) **đã đóng**.
+- **Files changed:** *(không đổi code — chốt trạng thái)* code ở `cdb44dc` (phiên #5). Chỉ cập nhật AI_CONTEXT.
+- **Decision made:** Không có mới; xác nhận 4 CR vận hành đúng trên production.
+- **Blocker:** **Không.**
+- **Next step:** [CC] (tùy chọn) propagate nav "Độ phủ Workflow" sang các trang còn lại; thêm Workflow vào uc-detail-view. [TT] dùng thực tế, báo nếu cần chỉnh.
+- **Regression risk:** **Không** (thuần xác nhận; code đã verify Playwright 118/118 + [TT] smoke OK).
+
 ## Session: 2026-08-31 #5 — 2 CR: Team mặc định theo user + bỏ Lĩnh vực · Dashboard theo Workflow · trang Độ phủ Workflow
 - **Task completed:** 4 hạng mục (phỏng vấn [TT] chốt 4 quyết định). **CR1** — form đăng ký tự chọn Team = team user đăng nhập (normalize lệch tên, vẫn sửa được): `app.js.rebuildLookupFields` + helper `_resolveSessionTeamOption`. **CR2a** — BỎ "Lĩnh vực nghiệp vụ" (Business_Category) khỏi đăng ký: gỡ khỏi `STEPS` (constants) + `Validator.step1` + `REQUIRED_FIELDS_CREATE` (GAS); Explore table cột "Lĩnh vực"→"Workflow". **CR2b** — Dashboard tổng hợp theo **Nhóm workflow** thay Lĩnh vực: `renderStackedChart('categoryChart','workflow_group')` + title + `_openListByField`; heading "Phân bổ theo Nhóm workflow". **CR2c** — trang MỚI **Độ phủ Workflow** (`workflow-coverage.html/js`): đối chiếu WORKFLOW_CATALOG (`Api.listWorkflowCatalog`) vs US đăng ký → ma trận Nhóm×workflow (đã có US/chưa + đếm), drill xuống US catalog chưa đăng ký; nav link ở dashboard/leaderboard. **BE (CR2b/2c cần):** `listUseCases_` output +`workflow`+`workflow_group`.
 - **Files changed:** *(FE)* `app.js`, `constants.js`, `validation.js`, `dashboard.js`, `dashboard.html`, `leaderboard.html`; MỚI `workflow-coverage.html`, `assets/js/workflow-coverage.js`. *(GAS — CẦN REDEPLOY)* `AdminService.gs` (list +workflow/workflow_group), `Config.gs` (REQUIRED_FIELDS_CREATE −Business_Category). *(test)* `05` +CR1; MỚI `11-dashboard-workflow` (2), `12-workflow-coverage` (3). Verify **Playwright 118/118**.

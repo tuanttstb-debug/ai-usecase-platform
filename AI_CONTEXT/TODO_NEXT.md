@@ -14,8 +14,7 @@ Thứ tự ưu tiên cho session tiếp theo.
 ## 🆕 2 CR (2026-08-31 #5): Team default + bỏ Lĩnh vực · Dashboard/Coverage theo Workflow — Playwright 118/118
 - [x] CR1 Team mặc định = team user (app.js) · CR2a bỏ Lĩnh vực (FE + REQUIRED_FIELDS_CREATE) · CR2b dashboard theo Nhóm workflow · CR2c trang Độ phủ Workflow (mới).
 - [x] BE: listUseCases_ +workflow/workflow_group. Test 05+CR1, 11(2), 12(3).
-- [ ] **[TT] REDEPLOY GAS TRƯỚC** (dán TẤT CẢ .gs — AdminService + Config đổi) **rồi hard-refresh FE** (thứ tự quan trọng: FE mới trên GAS cũ → đăng ký fail vì còn bắt buộc Business_Category).
-- [ ] **[TT] nghiệm thu:** Team tự điền · đăng ký không còn Lĩnh vực · dashboard "Nhóm workflow" · trang "Độ phủ Workflow".
+- [x] **[TT] redeploy GAS + smoke test OK (2026-08-31 #6)** → 4 CR LIVE (Team tự điền · không còn Lĩnh vực · dashboard Nhóm workflow · trang Độ phủ Workflow). Blocker coupling CR2a đóng.
 - [ ] [CC] (tùy chọn) propagate nav "Độ phủ Workflow" sang các trang còn lại; thêm Workflow vào uc-detail-view.
 
 ## 🆕 Verify LIVE production Round 2 T2 (2026-08-31 #3) — PASS

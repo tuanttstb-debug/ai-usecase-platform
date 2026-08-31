@@ -1,5 +1,9 @@
 # PROJECT STATE
 
+**2026-08-31 #6 — [TT] REDEPLOY GAS + SMOKE OK → 4 CR (#5) LIVE.** CR1 Team tự điền · CR2a đăng ký không còn Lĩnh vực · CR2b dashboard "Nhóm workflow" · CR2c trang Độ phủ Workflow — đều hiệu lực production. Blocker coupling CR2a đã đóng.
+
+---
+
 **2026-08-31 #5 — 2 CR: Team default + bỏ Lĩnh vực · Dashboard theo Workflow · trang Độ phủ Workflow.** CR1 form đăng ký tự chọn Team=team user (sửa được). CR2a bỏ "Lĩnh vực" (Business_Category) khỏi đăng ký + gỡ `REQUIRED_FIELDS_CREATE`. CR2b dashboard tổng hợp theo **Nhóm workflow** (thay Lĩnh vực). CR2c trang MỚI **Độ phủ Workflow** (ma trận catalog vs US đăng ký + drill). BE: `listUseCases_` +workflow/workflow_group. Verify **Playwright 118/118**. **⚠️ [TT] redeploy GAS TRƯỚC rồi hard-refresh FE** (CR2a: FE mới trên GAS cũ → đăng ký fail; GAS mới backward-compat). Xem SESSION_HANDOVER #5.
 
 ---
