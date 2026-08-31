@@ -4,6 +4,16 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 Clear tech debt (2026-08-31) — XONG phần A+B (Playwright 107/107)
+- [x] Đóng **UC-DETAIL-DUP-01** (dashboard.js dùng chung `uc-detail-view.js`).
+- [x] Gỡ dead code: `isValidUrl_` · CSS `.sptd-*` · doc H1 `SCORING_ENGINE_DESIGN.md`→archive.
+- [x] Đóng deploy-gated: H1-CLEANUP-01 + SCORING-H2-MONTHLY migration (sau [TT] redeploy GAS + smoke OK).
+- [ ] **[TT] chốt nguồn nhập `Evidence_Link`** (member nhập ở đâu / link cố định theo team) → [CC] thêm input ghi cột.
+- [ ] **[CC] Round 2 T2** (idempotency `reqId` server + retry write) — feature, tách phiên riêng (chạm transport hybrid CR#1).
+- [ ] **[CC] WRITE-TRANSPORT-01 residual** — cần [TT] cấp tài khoản test → reproduce browser đường iframe-POST payload >7500.
+
+---
+
 ## 🆕 CR 2 mục: cập nhật Prompt/Luồng AI ở tuần + Review panel 2 cột (2026-08-28) — CODE XONG + TEST 104/104
 - [x] **Mục tiêu 1** — `weekly-update.html` accordion sửa `Flow_Description`+8 `Prompt_*` (prefill full detail; gửi khi `_fullDetailLoaded`&`_promptTouched`); `submitWeeklyUpdate_` ghi MASTER + snapshot WEEKLY_LOG (+10 cột `ensureSheetColumns_` tự thêm); timeline badge ✦.
 - [x] **Mục tiêu 2** — `review-queue` panel 2 cột (chi tiết trái + chấm điểm phải, mở rộng 1080px); module mới `uc-detail-view.js` (tách từ dashboard, dùng chung); fetch full detail + copy prompt.

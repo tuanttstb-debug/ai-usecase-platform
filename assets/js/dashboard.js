@@ -1255,63 +1255,11 @@
     // Khối "Nội dung điều chỉnh" khi mở ở chế độ duyệt milestone (v3.15.0)
     if (_detailMilestone) html += _renderMilestoneChangeBlock(_detailMilestone);
 
-    // ── Section 1: Thông tin nghiệp vụ ──────────────────────────────
-    html += _dsection('1', 'Thông tin nghiệp vụ', [
-      _dgrid([
-        ['Người đăng ký', uc.owner_name],
-        ['Team',          uc.team],
-        ['Lĩnh vực',      uc.category],
-        ['Giai đoạn',     uc.stage],
-        ['Ngày nộp',      fmtDate(uc.submit_date || uc.submitted_at)],
-      ]),
-      _dfield('Điểm đau nghiệp vụ', uc.pain_point,      true),
-      _dfield('Quy trình hiện tại',  uc.current_process, true),
-      _dgrid([
-        ['Thời gian xử lý hiện tại', uc.current_time_min ? uc.current_time_min + ' phút' : ''],
-        ['Hệ quả / Rủi ro',          uc.current_problem],
-      ]),
-      _dfield('Đối tượng sử dụng', uc.user_type,      false),
-      _dfield('Mục tiêu kỳ vọng',  uc.expected_goals, false),
-    ]);
-
-    // ── Section 2: Luồng AI & Prompt ────────────────────────────────
-    var s2 = _dfield('Mô tả luồng xử lý AI', uc.flow_description, true) +
-             _dfield('Loại dữ liệu đầu vào',  uc.input_types,      false) +
-             _dsubsec('Thiết kế Prompt', [
-               _dfield('Vai trò AI (Role)',              uc.prompt_role,          true),
-               _dfield('Nhiệm vụ cụ thể (Task)',         uc.prompt_task,          true),
-               _dfield('Mục tiêu đầu ra (Goal)',         uc.prompt_goal,          true),
-               _dfield('Ngữ cảnh bổ sung (Context)',     uc.prompt_context,       true),
-               _dfield('Mô tả đầu vào (Input)',          uc.prompt_input,         true),
-               _dfield('Các bước xử lý (Steps)',         uc.prompt_steps,         true),
-               _dfield('Định dạng đầu ra (Output)',      uc.prompt_output_format, true),
-               _dfield('Tiêu chí đánh giá (Evaluation)', uc.prompt_evaluation,   true),
-             ]);
-    if (s2.trim()) html += _dsection('2', 'Luồng AI & Prompt', [s2]);
-
-    // ── Section 3: Demo & Tái sử dụng ───────────────────────────────
-    var timeSaved = '';
-    if (uc.before_time_min && uc.after_time_min) {
-      var before = parseFloat(uc.before_time_min), after = parseFloat(uc.after_time_min);
-      if (before > 0) timeSaved = ' (' + Math.round(((before - after) / before) * 100) + '% tiết kiệm)';
-    }
-    var s3 = _dgrid([
-               ['Trạng thái demo',           uc.demo_status],
-               ['Thời gian trước khi có AI', uc.before_time_min ? uc.before_time_min + ' phút' : ''],
-               ['Thời gian sau khi có AI',   uc.after_time_min  ? uc.after_time_min  + ' phút' + timeSaved : ''],
-             ]) +
-             _demoField('Link demo / tài liệu', uc.demo_link) +
-             _dfield('Cải thiện chất lượng',                  uc.quality_improvement, true) +
-             _dfield('Ghi chú thêm về hiệu quả',              uc.improvement_note,    true) +
-             _dfield('Phạm vi tái sử dụng',                   uc.reuse_level,         false) +
-             _dfield('Hướng dẫn điều chỉnh khi tái sử dụng', uc.reuse_adjustment,    true);
-    if (s3.trim()) html += _dsection('3', 'Demo & Tái sử dụng', [s3]);
-
-    // ── Section 4: Hướng dẫn sử dụng ────────────────────────────────
-    var s4 = _dfield('Khi nào nên dùng use case này?', uc.when_to_use, true) +
-             _dfield('Hướng dẫn thực hiện từng bước',  uc.usage_steps, true) +
-             _dfield('Lưu ý & hạn chế',                uc.usage_notes, true);
-    if (s4.trim()) html += _dsection('4', 'Hướng dẫn sử dụng', [s4]);
+    // ── Section 1–4: Nghiệp vụ · Luồng AI & Prompt · Demo & Tái sử dụng · HDSD ──
+    // Dùng chung module UCDetailView (uc-detail-view.js) — 1 nguồn layout duy nhất
+    // (trước đây trùng lặp ở dashboard + review-queue; UC-DETAIL-DUP-01 đã gỡ).
+    // noEmptyFallback: dashboard tự nối tiếp mục ✓ phê duyệt + ★ điểm US bên dưới.
+    html += UCDetailView.render(uc, { noEmptyFallback: true });
 
     // ── Section 5: Thông tin phê duyệt ──────────────────────────────
     var s5 = _dgrid([['Người duyệt', uc.reviewer_email]]) +
@@ -1367,15 +1315,6 @@
     '</div>';
   }
 
-  function _dsubsec(title, parts) {
-    var body = parts.join('');
-    if (!body.trim()) return '';
-    return '<div class="detail-subsection">' +
-      '<div class="detail-subsection-title">' + esc(title) + '</div>' +
-      '<div class="detail-section-body">' + body + '</div>' +
-    '</div>';
-  }
-
   function _dgrid(pairs) {
     var cells = pairs.filter(function (p) { return p[1] && String(p[1]).trim(); });
     if (!cells.length) return '';
@@ -1416,15 +1355,6 @@
     }
     var copyBtn = b64 ? ' <button type="button" class="demo-copy-btn" onclick="Dashboard._copyB64(\'' + b64 + '\')">📋 Copy</button>' : '';
     return body + copyBtn;
-  }
-
-  function _demoField(label, url) {
-    var inner = _demoLinkHtml(url);
-    if (!inner) return '';
-    return '<div class="detail-field detail-field--full">' +
-      '<div class="detail-label">' + esc(label) + '</div>' +
-      '<div class="detail-value detail-value--demo">' + inner + '</div>' +
-    '</div>';
   }
 
   function _copyText(text) {

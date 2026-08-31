@@ -510,11 +510,3 @@ function toSheetValue_(val) {
   if (/^[=+\-@|]/.test(val)) return "'" + val;
   return val;
 }
-
-/**
- * Kiểm tra URL hợp lệ (bắt đầu bằng http:// hoặc https://).
- */
-function isValidUrl_(url) {
-  if (!url) return true; // optional field
-  return /^https?:\/\/.+\..+/.test(String(url).trim());
-}

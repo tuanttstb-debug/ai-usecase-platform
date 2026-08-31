@@ -1,5 +1,9 @@
 # PROJECT STATE
 
+**2026-08-31 — CLEAR TECH DEBT (sau [TT] redeploy GAS + smoke OK).** ✅ UC-DETAIL-DUP-01 ĐÓNG (dashboard.js dùng chung `uc-detail-view.js`) · ✅ gỡ dead code (`isValidUrl_`, CSS `.sptd-*` −193 dòng, doc H1→archive) · ✅ đóng deploy-gated (H1-CLEANUP-01 + SCORING-H2-MONTHLY migration). Verify **Playwright 107/107**. Còn treo (Nhóm C — cần [TT]/phiên riêng): nguồn nhập `Evidence_Link`, Round 2 T2 (feature), WRITE-TRANSPORT-01 residual. Xem TECH_DEBT delta 2026-08-31.
+
+---
+
 **CR 2 mục — CODE XONG + TEST 104/104 PASS 2026-08-28. ⚠️ Mục tiêu 1 CẦN [TT] REDEPLOY GAS; Mục tiêu 2 chỉ hard-refresh.**
 Hai CR do [TT] giao (sau khi đã redeploy GAS tuning R1 + smoke test OK):
 - **Mục tiêu 1 — Cập nhật tuần cho phép sửa Prompt & Luồng xử lý AI.** Form `weekly-update.html` thêm **mục accordion "Cập nhật Prompt & Luồng xử lý AI (nếu có thay đổi)"** (mặc định đóng): 1 ô Luồng AI (`Flow_Description`) + 8 ô Prompt (`Prompt_*`). Chọn UC → **fetch full detail** (`Api.getUseCase`) prefill giá trị hiện tại. Gửi kèm submit tuần **chỉ khi** đã nạp full (`_fullDetailLoaded`) VÀ user đã mở mục (`_promptTouched`) → **không ghi đè rỗng** khi fetch lỗi/không đụng. Backend `submitWeeklyUpdate_` (AdminService.gs): ghi `Flow_Description`+`Prompt_*` thẳng MASTER (nội dung, KHÔNG gate milestone/KPI) + **snapshot vào WEEKLY_LOG** (10 cột mới, `ensureSheetColumns_` tự thêm — không cần setup tay). Timeline hiện badge **"✦ Cập nhật Prompt/Luồng AI"** ở kỳ có sửa. [TT] chốt: ghi đè + lưu snapshot lịch sử.

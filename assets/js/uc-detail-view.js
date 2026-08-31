@@ -227,7 +227,10 @@
              _dfield('Lưu ý & hạn chế',                uc.usage_notes, true);
     if (s4.trim()) html += _dsection('4', 'Hướng dẫn sử dụng', [s4]);
 
-    return html || '<p class="empty-state-text" style="padding:var(--space-6)">Không có nội dung chi tiết</p>';
+    // opts.noEmptyFallback: caller (vd dashboard) tự nối thêm mục riêng (điểm US /
+    // phê duyệt) nên không muốn trả chuỗi fallback rỗng ở đây — trả '' để nối tiếp.
+    if (html) return html;
+    return opts.noEmptyFallback ? '' : '<p class="empty-state-text" style="padding:var(--space-6)">Không có nội dung chi tiết</p>';
   }
 
   function _copyText(text) {
