@@ -151,7 +151,7 @@ var STEPS = [
       FIELDS.USE_CASE_NAME,
       FIELDS.OWNER_NAME,
       FIELDS.TEAM,
-      FIELDS.BUSINESS_CATEGORY,
+      // CR2a (2026-08-31): BUSINESS_CATEGORY (Lĩnh vực) đã bỏ khỏi form đăng ký.
       FIELDS.CURRENT_STAGE,       // ← Stage S1-S4
       FIELDS.PAIN_POINT,
       FIELDS.CURRENT_PROCESS,

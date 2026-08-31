@@ -142,6 +142,20 @@
     return '';
   }
 
+  /* ── CR1: resolve option Team khớp team của user đăng nhập (normalize lệch tên) ── */
+  function _resolveSessionTeamOption(options) {
+    if (typeof AuthService === 'undefined') return '';
+    var u = AuthService.getUser();
+    var t = u && u.team ? String(u.team).trim() : '';
+    if (!t) return '';
+    var norm = function (s) { return String(s).trim().toLowerCase().replace(/^team\s+/, ''); };
+    var nt = norm(t);
+    var i, no;
+    for (i = 0; i < options.length; i++) { if (norm(options[i]) === nt) return options[i]; }      // khớp chính xác (đã normalize)
+    for (i = 0; i < options.length; i++) { no = norm(options[i]); if (no && (no.indexOf(nt) !== -1 || nt.indexOf(no) !== -1)) return options[i]; } // chứa nhau
+    return '';
+  }
+
   /* ── Rebuild select/checkbox sau khi lookup load xong ── */
   function rebuildLookupFields() {
     const lookup = window.__LOOKUP;
@@ -160,7 +174,13 @@
         opt.value = v; opt.textContent = v;
         select.appendChild(opt);
       });
-      if (currentVal) select.value = currentVal;
+      if (currentVal) {
+        select.value = currentVal;
+      } else if (key === FIELDS.TEAM) {
+        // CR1: form mới (không edit/nháp) → mặc định Team = team của user đăng nhập (vẫn cho đổi).
+        const dTeam = _resolveSessionTeamOption(options);
+        if (dTeam) select.value = dTeam;
+      }
     });
 
     // Rebuild checkbox groups dùng lookupKey

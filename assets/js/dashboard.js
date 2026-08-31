@@ -222,7 +222,7 @@
         renderKPI(_dashData);
         renderStatusChart(_dashData.status_breakdown   || {});
         renderStackedChart('teamChart',     'team');
-        renderStackedChart('categoryChart', 'category');
+        renderStackedChart('categoryChart', 'workflow_group');  // CR2b: tổng hợp theo Nhóm workflow (thay Lĩnh vực)
         renderRecentTable(_dashData.recent_submissions || []);
         renderRejectedCard(_rejectedList);
         if (_dashData.refreshed_at) updateRefreshedAt(_dashData.refreshed_at);
@@ -248,7 +248,7 @@
       renderKPI(_dashData);
       renderStatusChart(_dashData.status_breakdown   || {});
       renderStackedChart('teamChart',     'team');
-      renderStackedChart('categoryChart', 'category');
+      renderStackedChart('categoryChart', 'workflow_group');  // CR2b: tổng hợp theo Nhóm workflow (thay Lĩnh vực)
       renderRecentTable(_dashData.recent_submissions || []);
       updatePendingBadge(_pendingList.length);
       updateRefreshedAt(_dashData.refreshed_at);
@@ -467,7 +467,9 @@
 
     if (!keys.length) { container.innerHTML = emptyChart(); return; }
 
-    var titlePrefix = fieldKey === 'team' ? 'Team: ' : 'Lĩnh vực: ';
+    var titlePrefix = fieldKey === 'team' ? 'Team: '
+                    : fieldKey === 'workflow_group' ? 'Nhóm workflow: '
+                    : 'Lĩnh vực: ';
 
     if (typeof Chart === 'undefined') {
       _renderStackedChartCSS(container, keys, stacked, totals, fieldKey, titlePrefix);
@@ -549,7 +551,9 @@
       var total = totals[key];
       var fn    = fieldKey === 'team'
         ? 'Dashboard._openListByTeam(\'' + esc(key) + '\')'
-        : 'Dashboard._openListByCategory(\'' + esc(key) + '\')';
+        : fieldKey === 'workflow_group'
+          ? 'Dashboard._openListByField(\'workflow_group\',\'' + esc(key) + '\')'
+          : 'Dashboard._openListByCategory(\'' + esc(key) + '\')';
       var pct   = ((total / maxTotal) * 100).toFixed(0) + '%';
       var badges = statusOrder.map(function (status) {
         var count = stacked[key][status] || 0;
@@ -895,7 +899,7 @@
         '<td>' + esc(uc.owner_name || '--') + '</td>' +
         '<td style="text-align:center">' + scoreHtml + '</td>' +
         '<td>' + rankHtml + '</td>' +
-        '<td>' + esc(uc.category   || '--') + '</td>' +
+        '<td>' + esc(uc.workflow   || '--') + '</td>' +   // CR2a/2b: cột Workflow thay Lĩnh vực
         '<td>' + _btnDetail(uc, 'Xem') + '</td>' +
       '</tr>';
     }).join('');
@@ -2225,6 +2229,14 @@
         return String(uc.category == null ? '' : uc.category).trim() === String(cat).trim();
       });
       openListModal('Lĩnh vực: ' + cat, items);
+    },
+    // CR2b: mở list theo field bất kỳ (dùng cho Nhóm workflow ở CSS-fallback chart)
+    _openListByField: function (fieldKey, key) {
+      var items = _allList.filter(function (uc) {
+        return String(uc[fieldKey] == null ? '' : uc[fieldKey]).trim() === String(key).trim();
+      });
+      var prefix = fieldKey === 'workflow_group' ? 'Nhóm workflow: ' : (fieldKey + ': ');
+      openListModal(prefix + key, items);
     },
     // Legacy compat
     _openDetail:        openDetail,

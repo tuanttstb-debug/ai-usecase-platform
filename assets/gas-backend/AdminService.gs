@@ -224,6 +224,8 @@ function listUseCases_(filters) {
       team:                uc.Team,
       category:            uc.Business_Category,
       usecase_category:    uc.UseCase_Category    || '',
+      workflow:            uc.Workflow            || '',   // CR2b/2c: tổng hợp + độ phủ theo workflow
+      workflow_group:      uc.Workflow_Group      || '',
       status:              uc.Status,
       stage:               uc.Current_Stage,
       demo_status:         uc.Demo_Status         || '',

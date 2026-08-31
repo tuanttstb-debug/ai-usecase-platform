@@ -179,7 +179,7 @@ var DASHBOARD_HEADERS = [
 // Các trường bắt buộc khi tạo use case mới
 var REQUIRED_FIELDS_CREATE = [
   'UseCase_Name', 'Owner_Name', 'Owner_Email',
-  'Team', 'Business_Category',
+  'Team',                          // CR2a (2026-08-31): bỏ 'Business_Category' — Lĩnh vực gỡ khỏi đăng ký
   'Pain_Point', 'Current_Process',
   'Flow_Description'
 ];

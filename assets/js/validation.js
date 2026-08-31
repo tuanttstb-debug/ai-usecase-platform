@@ -15,7 +15,7 @@ var Validator = {
     if (!data[FIELDS.USE_CASE_NAME])   err.push('Tên Use Case không được để trống');
     if (!data[FIELDS.OWNER_NAME])      err.push('Họ tên người đăng ký không được để trống');
     if (!data[FIELDS.TEAM])            err.push('Vui lòng chọn Team');
-    if (!data[FIELDS.BUSINESS_CATEGORY]) err.push('Vui lòng chọn Lĩnh vực nghiệp vụ');
+    // CR2a (2026-08-31): bỏ Lĩnh vực nghiệp vụ khỏi đăng ký — không còn bắt buộc.
     if (!data[FIELDS.PAIN_POINT])      err.push('Vui lòng mô tả Điểm đau nghiệp vụ');
     if (!data[FIELDS.CURRENT_PROCESS]) err.push('Vui lòng mô tả Quy trình hiện tại');
     return err;
@@ -41,7 +41,6 @@ var Validator = {
       'Tên Use Case': FIELDS.USE_CASE_NAME,
       'người đăng ký': FIELDS.OWNER_NAME,
       'Team': FIELDS.TEAM,
-      'Lĩnh vực': FIELDS.BUSINESS_CATEGORY,
       'Điểm đau': FIELDS.PAIN_POINT,
       'Quy trình': FIELDS.CURRENT_PROCESS,
       'luồng xử lý': FIELDS.FLOW_DESC,

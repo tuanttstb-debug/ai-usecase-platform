@@ -156,6 +156,22 @@ async function fillAndGoToSubmit(page, data) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// CR1 — Team mặc định = team của user đăng nhập (vẫn sửa được)
+// ═══════════════════════════════════════════════════════════════════════
+test.describe('CR1 — Team default theo user', () => {
+  test('Team select tự chọn team của user sau khi lookup nạp', async ({ page }) => {
+    await loadRegister(page); // ADMIN_USER.team = 'Team Số'; MOCK_LOOKUP.Team=['Team Số','Team Khác']
+    await page.waitForFunction(() => {
+      const s = document.querySelector('[name="Team"]');
+      return s && s.options.length > 1;
+    });
+    await expect(page.locator('[name="Team"]')).toHaveValue('Team Số');
+    // vẫn sửa được (không disabled)
+    await expect(page.locator('[name="Team"]')).toBeEnabled();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
 // A — Encode + ngưỡng 7500 cho đường GET-JSONP
 // ═══════════════════════════════════════════════════════════════════════
 

@@ -1,5 +1,9 @@
 # PROJECT STATE
 
+**2026-08-31 #5 — 2 CR: Team default + bỏ Lĩnh vực · Dashboard theo Workflow · trang Độ phủ Workflow.** CR1 form đăng ký tự chọn Team=team user (sửa được). CR2a bỏ "Lĩnh vực" (Business_Category) khỏi đăng ký + gỡ `REQUIRED_FIELDS_CREATE`. CR2b dashboard tổng hợp theo **Nhóm workflow** (thay Lĩnh vực). CR2c trang MỚI **Độ phủ Workflow** (ma trận catalog vs US đăng ký + drill). BE: `listUseCases_` +workflow/workflow_group. Verify **Playwright 118/118**. **⚠️ [TT] redeploy GAS TRƯỚC rồi hard-refresh FE** (CR2a: FE mới trên GAS cũ → đăng ký fail; GAS mới backward-compat). Xem SESSION_HANDOVER #5.
+
+---
+
 **2026-08-31 #4 — BỎ bước duyệt: US nộp xong vào REVIEW luôn.** DEBUG "AIUS-0343 không hiện ở Review" → gốc `review-queue.js._load` chỉ nạp `status==='Approved'`. [TT] chốt bỏ bước duyệt → `_load` nạp `listUseCases({limit:0})` + loại `draft/rejected` → US Submitted vào review ngay. Backend council scoring không gate status → **FE-only, không redeploy**. Verify **Playwright 112/112**. Kèm helper GAS `resetUseCaseIdCounter()` ([TT] xóa DB cũ → clear bộ đếm về AIUS-0001; hoặc sửa tay CONFIG!NEXT_ID=1).
 
 ---
