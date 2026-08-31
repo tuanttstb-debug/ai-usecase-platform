@@ -1,5 +1,9 @@
 # PROJECT STATE
 
+**2026-08-31 #3 — VERIFY LIVE PRODUCTION Round 2 T2: PASS.** Sau [TT] redeploy GAS (link không đổi): dedup create cùng reqId ×3 → **1 record** (0 trùng); control reqId khác → record mới; dedup update → Edit_Version chỉ +1. Latency thật: create cold 7,989ms → dedup-hit ~1,800ms; list 3,385→1,259ms (cache R1). REQ_DEDUP tự sinh OK. **[TT] xóa tay 2 dòng probe** `__CC_IDEM_PROBE_DELETE_ME__` (đã reject).
+
+---
+
 **2026-08-31 #2 — ROUND 2 T2: CHỐNG TIMEOUT/MẤT/TRÙNG KHI GHI (TRIỆT ĐỂ).** Idempotency `Req_ID`: server dedup 2 tầng (sheet `REQ_DEDUP` bền + CacheService) trong `IdempotencyService.gs`; `createUseCase_` lock+dedup, `updateUseCase_` dedup lock-free. Client: reqId ổn định theo phiên form + khóa nút Gửi + retry an toàn (GET-JSONP, chỉ khi có reqId). Verify **Playwright 111/111** (+4 test `10-idempotency`). **⚠️ [TT] redeploy GAS** (dán TẤT CẢ .gs — MỚI `IdempotencyService.gs`, `Config.gs` +`REQ_DEDUP`); sheet tự tạo khi ghi lần đầu / `setupReqDedupSheet()`; verify `testIdempotencyStore()`. Xem TECH_DEBT delta 2026-08-31 #2.
 
 ---

@@ -4,6 +4,10 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 Verify LIVE production Round 2 T2 (2026-08-31 #3) — PASS
+- [x] Test LIVE: dedup create (3→1 record, 0 trùng) · control · dedup update (Edit_Version +1) · latency đo thật.
+- [ ] **[TT] xóa tay 2 dòng probe** (đã reject): `AIUS-0341` (`a04e4df3-9d6a-47ad-a39a-2cf8756c2178`) + `71d9b560-c18f-4ec6-aa64-f5ebcaa991fe` (tên `__CC_IDEM_PROBE_DELETE_ME__`).
+
 ## 🆕 Round 2 T2 (2026-08-31 #2) — chống timeout/mất/trùng khi ghi — XONG (Playwright 111/111)
 - [x] Idempotency `Req_ID`: server dedup hybrid (sheet `REQ_DEDUP` bền + CacheService) — `IdempotencyService.gs`; create lock+dedup, update dedup lock-free.
 - [x] Client: reqId theo phiên form + khóa nút Gửi + retry an toàn (GET-JSONP, chỉ khi có reqId).

@@ -1,5 +1,13 @@
 # SESSION HANDOVER
 
+## Session: 2026-08-31 #3 — Verify LIVE production Round 2 T2 (sau [TT] redeploy GAS, link không đổi)
+- **Task completed:** Test LIVE trên GAS production + đo hiệu quả thực tế. Probe gọi thẳng endpoint (GET-JSONP, plain JSON). **KẾT QUẢ PASS:** (A) dedup create — cùng reqId ×3 → **1 record** `AIUS-0341`, 0 trùng (trước fix = 3 dòng); (B) control reqId khác → record mới (không over-block); (C) dedup update — cùng reqId ×2 → Edit_Version chỉ +1 (không double-apply). **Latency thực:** create cold 7,989ms → dedup-hit 1,716–1,905ms (~4× nhanh); update ghi 5,085ms → dedup-hit 1,717ms; list 3,385→1,259ms (cache R1).
+- **Files changed:** *(không đổi code — thuần verify)* Round 2 T2 code đã ở `849a026`. Probe chạy qua node stdin (không tạo file trong repo).
+- **Decision made:** Xác nhận idempotency hoạt động đúng trên production; cold-start create ~8s là lý do timeout hay xảy ra → retry cùng reqId nay an toàn tuyệt đối (0 trùng).
+- **Blocker:** **Không.** **[TT] cần xóa tay 2 dòng probe** (đã auto-reject, vô hại): `AIUS-0341` (rec `a04e4df3-9d6a-47ad-a39a-2cf8756c2178`) + rec `71d9b560-c18f-4ec6-aa64-f5ebcaa991fe`, tên `__CC_IDEM_PROBE_DELETE_ME__`.
+- **Next step:** [TT] xóa 2 dòng probe. [CC] (tùy chọn) drive UI thật qua Chrome để anh xem trực quan khóa nút + 1 dòng (tạo thêm 1 probe → auto-reject).
+- **Regression risk:** **Không** (thuần đọc/probe + reject; không đụng code/schema). REQ_DEDUP tự sinh khi ghi lần đầu — xác nhận hoạt động (dedup-hit trả record cũ).
+
 ## Session: 2026-08-31 #2 — Round 2 T2: chống timeout/mất/trùng khi ghi (idempotency reqId) — TRIỆT ĐỂ
 - **Task completed:** Fix gốc timeout/mất/trùng bằng **idempotency `Req_ID`** (phỏng vấn [TT] chốt 3: Hybrid cache+sheet · reqId theo phiên form + khóa nút · phạm vi create+update). **Server:** mới `IdempotencyService.gs` (`_idemLookup_` cache→sheet, `_idemRemember_` cache+sheet REQ_DEDUP, prune, `setupReqDedupSheet()`, `testIdempotencyStore()`); `Config.gs` +`SHEETS.REQ_DEDUP`+`REQ_DEDUP_HEADERS`; `UseCaseService.gs` — `createUseCase_` bọc script lock + dedup theo reqId (tách `_createUseCaseCore_` + ID helper no-lock `_generateUseCaseIdNoLock_`/`_assignUseCaseIdNoLock_` tránh nested lock), `updateUseCase_` dedup lock-free. **Client:** `app.js` reqId ổn định theo phiên form (lazy-gen, xóa sau success, giữ khi lỗi) + khóa nút `#submitBtn` khi bay; `api.js._writeHybrid` retry an toàn (chỉ GET-JSONP, chỉ khi có reqId, lỗi transient) — cùng reqId → server dedup.
 - **Files changed:** *(GAS — CẦN REDEPLOY)* MỚI `IdempotencyService.gs`; `Config.gs`; `UseCaseService.gs`. *(FE)* `api.js`, `app.js`. *(test)* MỚI `tests/10-idempotency.spec.js` (4 test).
