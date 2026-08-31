@@ -4,6 +4,12 @@ Các vấn đề kỹ thuật đã biết, chưa ưu tiên xử lý ngay.
 
 ---
 
+> **Delta 2026-08-31 #2 (Round 2 T2 — chống timeout/mất/trùng khi ghi, TRIỆT ĐỂ):** Fix gốc bằng **idempotency reqId** (Playwright **111/111**, +4 test `10-idempotency`). Gốc: transport timeout MƠ HỒ + create sinh `Record_ID` UUID mới mỗi lần → retry/bấm-lại = trùng dòng; không retry = mất.
+> - **Server:** sheet `REQ_DEDUP` (bền) + CacheService (fast) — `IdempotencyService.gs` (`_idemLookup_`/`_idemRemember_`/prune). `createUseCase_` bọc **script lock** + dedup theo `Req_ID` (ID assign no-lock tránh nested lock); `updateUseCase_` dedup lock-free (idempotent theo Record_ID). `Req_ID` KHÔNG ghi vào MASTER (ngoài HEADERS).
+> - **Client:** `Req_ID` (uuid) **ổn định theo phiên form** (giữ qua retry/bấm-lại, xóa sau success) + **khóa nút Gửi** khi đang bay + **retry an toàn** (`_writeHybrid`, CHỈ GET-JSONP, chỉ khi có Req_ID, lỗi transient) → retry trả record cũ (server dedup), không trùng.
+> - **✅ Đóng deploy-gated cũ**: "Round 2 T2 chưa làm" (SESSION_HANDOVER trước) nay XONG. **WRITE-TRANSPORT-01 giảm nhẹ mạnh** — kể cả ca POST payload>7500 (link demo dài) nếu user gửi lại thủ công thì reqId dedup chống trùng (dù POST không auto-retry). **⚠️ [TT] redeploy GAS** (dán TẤT CẢ .gs — có MỚI `IdempotencyService.gs` + `Config.gs` thêm `REQ_DEDUP`); sheet `REQ_DEDUP` tự tạo khi ghi lần đầu (hoặc chạy `setupReqDedupSheet()`). Verify live: `testIdempotencyStore()` trong GAS Editor.
+> - **Residual nhỏ:** GET-JSONP retry dùng writeTimeout 90s → ca true-timeout (GAS treo 90s) retry 2× có thể tới ~270s (hiếm; ca thường là onerror nhanh). `_aiusBumpIfWrite` bump version cả khi dedup-hit (vô hại, chỉ 1 cache miss).
+
 > **Delta 2026-08-31 (Clear tech debt — [TT] redeploy GAS + smoke test XONG):** [TT] đã redeploy toàn bộ GAS + smoke OK → đóng các nợ deploy-gated; [CC] gỡ dead code + refactor (Playwright **107/107 PASS**).
 > - ✅ **UC-DETAIL-DUP-01 ĐÓNG** — `dashboard.js._renderDetailBody` nay gọi `UCDetailView.render(uc, {noEmptyFallback:true})` cho sections 1–4 (1 nguồn layout); dashboard chỉ giữ mục riêng ✓ phê duyệt + ★ điểm US + milestone block. Gỡ helper nhân bản `_dsubsec`/`_demoField` (chỉ dùng ở 1–4); thêm include `uc-detail-view.js` vào `dashboard.html`; option `noEmptyFallback` additive (review-queue không đổi).
 > - ✅ **Dead code GỠ:** `isValidUrl_` (Utils.gs, 0 caller sau bỏ validate Demo_Link) · **CSS `.sptd-*`** (dashboard.css, 193 dòng, tab SPTD đã ẩn) · doc H1 `SCORING_ENGINE_DESIGN.md` → `archive/h1/`.

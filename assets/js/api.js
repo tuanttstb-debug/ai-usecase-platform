@@ -208,12 +208,38 @@ var Api = {
   _writeHybrid(actionUrl, data, verify) {
     var payload = null;
     try { payload = Api._encodePayload(data); } catch (e) { /* để _request báo lỗi encode rõ */ }
-    // Nhỏ (hoặc encode lỗi) → GET-JSONP: resolve {record_id, usecase_id}; reject = message GAS thật.
-    if (payload === null || payload.length <= 7500) {
-      return Api._request(actionUrl, data, Api._writeTimeout());
+    var isSmall = (payload === null || payload.length <= 7500);
+
+    // Round 2 T2: RETRY AN TOÀN — chỉ bật khi có Req_ID (server dedup theo reqId →
+    // request lặp trả record cũ, KHÔNG tạo dòng trùng). Không Req_ID → giữ hành vi cũ.
+    // CHỈ retry đường GET-JSONP (isSmall): timeout ngắn + ca phổ biến. Đường iframe-POST
+    // (payload lớn) đã có verify-polling tự bắt success; retry ở đó vô nghĩa mà trễ lâu
+    // (mỗi lần tới 90s) — giữ 1 lần, reqId vẫn bảo vệ nếu user chủ động gửi lại.
+    var hasReqId  = !!(data && (data.Req_ID || data.req_id));
+    var maxRetry  = (hasReqId && isSmall) ? 2 : 0;   // tối đa 3 lần thử (1 + 2 retry)
+    var backoffMs = 1500;
+
+    function once() {
+      // Nhỏ (hoặc encode lỗi) → GET-JSONP: resolve {record_id, usecase_id}; reject = message GAS thật.
+      // Lớn → iframe-POST + verify (giữ fix link demo dài của v3.15.0).
+      return isSmall
+        ? Api._request(actionUrl, data, Api._writeTimeout())
+        : Api._submitViaPost(actionUrl, data, verify, Api._writeTimeout());
     }
-    // Payload lớn → iframe-POST + verify (giữ fix link demo dài của v3.15.0).
-    return Api._submitViaPost(actionUrl, data, verify, Api._writeTimeout());
+
+    function attempt(n) {
+      return once().catch(function (err) {
+        var msg = (err && err.message) || '';
+        // Chỉ retry lỗi TRANSPORT (timeout / script load / không trả dữ liệu) — KHÔNG retry
+        // lỗi nghiệp vụ thật (validate, status transition…) để hiện message ngay.
+        var transient = /Timeout|script load thất bại|GAS không trả về dữ liệu|GAS script load/.test(msg);
+        if (n > 0 && transient && hasReqId) {
+          return new Promise(function (res) { setTimeout(res, backoffMs); }).then(function () { return attempt(n - 1); });
+        }
+        throw err;
+      });
+    }
+    return attempt(maxRetry);
   },
 
   // ── Public API ──────────────────────────────────────────────────

@@ -17,8 +17,16 @@ var SHEETS = {
   TEAM_GROUP:  'TEAM_GROUP_MAP', // H2 Giai đoạn 2: map Team → Nhóm workflow được thấy
   UC_COUNCIL:  'UC_COUNCIL_SCORE',// H2 Giai đoạn 3: điểm US do hội đồng teamlead chấm (1 row/reviewer/UC)
   PERSONAL:    'PERSONAL_SCORE', // H2 Giai đoạn 3: điểm cá nhân do teamlead chấm (1 row/member, cuối kỳ)
-  UC_REUSE:    'UC_REUSE'        // H2 (T05/M05): xác nhận tái dùng UC (1 row/người-tái-dùng/UC) → lan tỏa M-KPI-4
+  UC_REUSE:    'UC_REUSE',       // H2 (T05/M05): xác nhận tái dùng UC (1 row/người-tái-dùng/UC) → lan tỏa M-KPI-4
+  REQ_DEDUP:   'REQ_DEDUP'       // Round 2 T2: idempotency — 1 row/reqId đã ghi (create/update) → retry an toàn, chống trùng bền
 };
+
+// ── REQ_DEDUP Column Headers (Round 2 T2 — idempotency) ────────────
+// Mỗi row = 1 request write đã xử lý xong (theo reqId client gửi). Dùng để:
+//   • create: nếu reqId đã có → trả record cũ, KHÔNG ghi lần 2 (chống trùng dòng bền vĩnh viễn).
+//   • update: nếu reqId đã có → trả kết quả cũ, không áp lại (khỏi bump Edit_Version 2 lần).
+// Kết hợp CacheService (fast-path) — xem IdempotencyService.gs.
+var REQ_DEDUP_HEADERS = ['Req_ID', 'Action', 'Record_ID', 'UseCase_ID', 'Created_At'];
 
 // ── WORKFLOW_CATALOG Column Headers (H2 Giai đoạn 2) ───────────────
 // Mỗi row = 1 Use case thuộc 1 Workflow thuộc 1 Nhóm.

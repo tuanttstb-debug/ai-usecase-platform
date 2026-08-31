@@ -92,48 +92,57 @@ function generateUseCaseId_() {
   var lock = LockService.getScriptLock();
   lock.waitLock(LOCK_TIMEOUT_MS);
   try {
-    var sheet          = getOrCreateSheet_(SHEETS.CONFIG);
-    var data           = sheet.getDataRange().getValues();
-    var nextFromConfig = CONFIG_DEFAULTS.NEXT_ID;
-    var configRowIndex = -1; // 1-based row index trong sheet
-
-    if (data.length >= 2) {
-      var keyCol = data[0].map(String).indexOf('Key');
-      var valCol = data[0].map(String).indexOf('Value');
-      if (keyCol !== -1 && valCol !== -1) {
-        for (var i = 1; i < data.length; i++) {
-          if (String(data[i][keyCol]).trim() === 'NEXT_ID') {
-            nextFromConfig = parseInt(data[i][valCol], 10) || CONFIG_DEFAULTS.NEXT_ID;
-            configRowIndex = i + 1; // 0-based array → 1-based sheet row
-            break;
-          }
-        }
-      }
-    }
-
-    // Đồng bộ với dữ liệu thực tế: dùng max(CONFIG, maxExisting + 1)
-    var maxExisting = _getMaxExistingIdNum_();
-    var candidate   = Math.max(nextFromConfig, maxExisting + 1);
-
-    // Tìm ID chưa tồn tại (xử lý collision hiếm gặp do import/migration)
-    var existingIds = _getAllUseCaseIds_();
-    var idStr;
-    do {
-      idStr     = ID_PREFIX + ('0000' + candidate).slice(-ID_PADDING);
-      candidate = candidate + 1;
-    } while (existingIds.indexOf(idStr) !== -1);
-
-    // Lưu counter tiếp theo vào CONFIG sheet
-    if (configRowIndex > 0) {
-      sheet.getRange(configRowIndex, 2).setValue(candidate);
-    } else {
-      sheet.appendRow(['NEXT_ID', candidate, 'Auto-increment ID counter']);
-    }
-
-    return idStr;
+    return _generateUseCaseIdNoLock_();
   } finally {
     lock.releaseLock();
   }
+}
+
+/**
+ * Thân sinh ID — GIẢ ĐỊNH caller đã giữ script lock (dùng khi create đã lock sẵn cho
+ * idempotency, tránh nested lock). KHÔNG gọi trực tiếp nếu chưa giữ lock.
+ * @returns {string} VD 'AIUS-0001'
+ */
+function _generateUseCaseIdNoLock_() {
+  var sheet          = getOrCreateSheet_(SHEETS.CONFIG);
+  var data           = sheet.getDataRange().getValues();
+  var nextFromConfig = CONFIG_DEFAULTS.NEXT_ID;
+  var configRowIndex = -1; // 1-based row index trong sheet
+
+  if (data.length >= 2) {
+    var keyCol = data[0].map(String).indexOf('Key');
+    var valCol = data[0].map(String).indexOf('Value');
+    if (keyCol !== -1 && valCol !== -1) {
+      for (var i = 1; i < data.length; i++) {
+        if (String(data[i][keyCol]).trim() === 'NEXT_ID') {
+          nextFromConfig = parseInt(data[i][valCol], 10) || CONFIG_DEFAULTS.NEXT_ID;
+          configRowIndex = i + 1; // 0-based array → 1-based sheet row
+          break;
+        }
+      }
+    }
+  }
+
+  // Đồng bộ với dữ liệu thực tế: dùng max(CONFIG, maxExisting + 1)
+  var maxExisting = _getMaxExistingIdNum_();
+  var candidate   = Math.max(nextFromConfig, maxExisting + 1);
+
+  // Tìm ID chưa tồn tại (xử lý collision hiếm gặp do import/migration)
+  var existingIds = _getAllUseCaseIds_();
+  var idStr;
+  do {
+    idStr     = ID_PREFIX + ('0000' + candidate).slice(-ID_PADDING);
+    candidate = candidate + 1;
+  } while (existingIds.indexOf(idStr) !== -1);
+
+  // Lưu counter tiếp theo vào CONFIG sheet
+  if (configRowIndex > 0) {
+    sheet.getRange(configRowIndex, 2).setValue(candidate);
+  } else {
+    sheet.appendRow(['NEXT_ID', candidate, 'Auto-increment ID counter']);
+  }
+
+  return idStr;
 }
 
 // ── ID Assignment ─────────────────────────────────────────────────
@@ -167,6 +176,22 @@ function _assignUseCaseId_(hint) {
     }
   }
   return generateUseCaseId_();
+}
+
+/**
+ * Như _assignUseCaseId_ nhưng GIẢ ĐỊNH caller đã giữ script lock (create idempotent
+ * đã lock quanh toàn bộ để tránh nested lock). KHÔNG tự acquire lock.
+ * @param {string} hint
+ * @returns {string} UseCase_ID
+ */
+function _assignUseCaseIdNoLock_(hint) {
+  var hintStr = hint ? String(hint).trim() : '';
+  var idPattern = new RegExp('^' + ID_PREFIX + '\\d{' + ID_PADDING + ',}$');
+  if (hintStr && idPattern.test(hintStr) && _getAllUseCaseIds_().indexOf(hintStr) === -1) {
+    _ensureCounterAhead_(hintStr);
+    return hintStr;
+  }
+  return _generateUseCaseIdNoLock_();
 }
 
 /**
@@ -205,6 +230,36 @@ function _ensureCounterAhead_(useCaseId) {
  * @returns {{ record_id: string, usecase_id: string }}
  */
 function createUseCase_(data) {
+  // ── Round 2 T2: idempotency theo Req_ID ───────────────────────
+  // Nếu FE gửi Req_ID (uuid ổn định theo phiên form) → dedup: request lặp (retry
+  // khi timeout / user bấm lại) trả record CŨ thay vì sinh dòng trùng.
+  // Bọc trong script lock để 2 request cùng Req_ID chạy chồng nhau vẫn an toàn
+  // (check-then-write nguyên tử). Không Req_ID → giữ hành vi cũ.
+  var reqId = sanitizeStr_(data.Req_ID || data.req_id || '', 80);
+  if (!reqId) return _createUseCaseCore_(data, false);
+
+  var lock = LockService.getScriptLock();
+  var locked = false;
+  try { lock.waitLock(LOCK_TIMEOUT_MS); locked = true; } catch (_lk) { /* không lấy được lock → best-effort */ }
+  try {
+    var prior = _idemLookup_(reqId);
+    if (prior && prior.record_id) return prior;      // DEDUP HIT — KHÔNG ghi lần 2
+    var result = _createUseCaseCore_(data, locked);   // locked → ID assign no-lock (tránh nested lock)
+    _idemRemember_(reqId, 'create', result);
+    return result;
+  } finally {
+    if (locked) lock.releaseLock();
+  }
+}
+
+/**
+ * Thân tạo use case. `insideLock` = true khi caller đã giữ script lock (create
+ * idempotent) → dùng _assignUseCaseIdNoLock_ để tránh nested lock.
+ * @param {Object}  data
+ * @param {boolean} insideLock
+ * @returns {{ record_id: string, usecase_id: string }}
+ */
+function _createUseCaseCore_(data, insideLock) {
   // ── 1. Validation ─────────────────────────────────────────────
   var errors = validateCreate_(data);
   if (errors.length) throw new Error(errors.join(' | '));
@@ -214,7 +269,9 @@ function createUseCase_(data) {
   var recordId  = Utilities.getUuid();
   // Dùng ID hint từ FE nếu còn free (kiểm tra trong lock), ngược lại generate mới.
   // Fix: tránh duplicate khi nhiều user submit đồng thời.
-  var useCaseId = _assignUseCaseId_(sanitizeStr_(data.UseCase_ID));
+  var useCaseId = insideLock
+    ? _assignUseCaseIdNoLock_(sanitizeStr_(data.UseCase_ID))
+    : _assignUseCaseId_(sanitizeStr_(data.UseCase_ID));
 
   // ── 3. Build record object ─────────────────────────────────────
   var obj = {};
@@ -289,6 +346,18 @@ function createUseCase_(data) {
 function updateUseCase_(recordId, data) {
   if (!recordId) throw new Error('Record_ID là bắt buộc');
 
+  // ── Round 2 T2: idempotency theo Req_ID ───────────────────────
+  // Update ghi cùng dòng (idempotent theo Record_ID) nên retry vốn an toàn về dữ liệu;
+  // dedup ở đây để retry/bấm-lại KHÔNG bump Edit_Version 2 lần + trả kết quả nhất quán.
+  // Không cần lock: update tuần tự theo phiên form (nút khóa) → không chạy chồng.
+  var _reqId = sanitizeStr_(data.Req_ID || data.req_id || '', 80);
+  if (_reqId) {
+    var _prior = _idemLookup_(_reqId);
+    if (_prior && _prior.record_id) {
+      return { record_id: _prior.record_id, usecase_id: _prior.usecase_id, deduped: true };
+    }
+  }
+
   // ── 1. Validation ─────────────────────────────────────────────
   data.Record_ID = recordId; // Đảm bảo Record_ID có trong data để validate
   var errors = validateUpdate_(data); // FIX: thực sự gọi validateUpdate_
@@ -361,6 +430,9 @@ function updateUseCase_(recordId, data) {
   found.sheet.getRange(found.rowIndex, 1, 1, found.headers.length).setValues([row]);
   logActivity_(merged.UseCase_ID, recordId, 'UPDATED', 'Cập nhật qua API',
                merged.Owner_Email, prevStatus, newStatus);
+
+  // Nhớ reqId để retry/bấm-lại không áp lại (idempotent)
+  if (_reqId) _idemRemember_(_reqId, 'update', { record_id: recordId, usecase_id: merged.UseCase_ID });
 
   // Trả về minimal response — FE không dùng merged object sau update.
   // Trả full merged (7,000+ chars khi Prompt_Context đầy) làm JSONP body quá lớn →

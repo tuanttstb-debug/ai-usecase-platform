@@ -7,6 +7,15 @@
   // Pre-fetch lúc load để không block submit critical path (phương án 3 — giảm timeout)
   var _preloadedNextId = null;
 
+  // Round 2 T2: Req_ID ổn định theo PHIÊN SOẠN FORM (page load này). Giữ nguyên qua
+  // mọi lần retry / bấm-lại → server dedup theo reqId (không tạo dòng trùng). Cấp mới
+  // (lazy) khi null; XÓA (=null) sau khi ghi THÀNH CÔNG → lần soạn/sửa kế được reqId mới.
+  var _submitReqId = null;
+  function _genReqId() {
+    try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (_e) {}
+    return 'req-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+  }
+
   // H2 Giai đoạn 3: gỡ Scoring Preview (auto-score 70/30 + tự đánh giá BV/Innovation).
   // Điểm nay theo mô hình mới: Điểm US do hội đồng chấm (review-queue) + Điểm cá nhân (personal-score).
 
@@ -219,6 +228,12 @@
       Toast.show(errors.join('\n'), 'error');
       return;
     }
+    // Round 2 T2: gắn Req_ID ổn định theo phiên form (cấp mới nếu chưa có, giữ qua retry/bấm-lại).
+    if (!_submitReqId) _submitReqId = _genReqId();
+    data.Req_ID = _submitReqId;
+    // Khóa nút Gửi khi đang bay → chống bấm nhiều lần (kết hợp reqId dedup = an toàn tuyệt đối).
+    var _submitBtn = document.getElementById('submitBtn');
+    if (_submitBtn) _submitBtn.disabled = true;
     showLoading(true, 'Đang gửi...');
     var submitHintId = null; // Lưu hint ID để dùng trong timeout recovery (create mode)
     try {
@@ -226,6 +241,7 @@
         data.Record_ID = currentRecordId;
         data.Status    = data.Status || 'Submitted';
         await Api.updateUseCase(data);
+        _submitReqId = null; // ghi xong → phiên sửa kế được reqId mới
         Storage.clear();
         Toast.show('Cập nhật thành công!', 'success');
         showSuccessScreen('Đã cập nhật');
@@ -253,6 +269,7 @@
           if (badge) badge.style.display = 'none';
         }
         const result = await Api.createUseCase(data);
+        _submitReqId = null; // ghi xong → lần đăng ký kế được reqId mới
         Storage.clear();
         showSuccessScreen(result.usecase_id || 'AIUS-????');
       }
@@ -260,6 +277,9 @@
       await _handleSubmitError(err, currentRecordId, submitHintId);
     } finally {
       showLoading(false);
+      // Mở khóa nút để user có thể thử lại (nếu lỗi) — retry dùng LẠI _submitReqId
+      // (chưa xóa khi lỗi) → server dedup, không trùng.
+      if (_submitBtn) _submitBtn.disabled = false;
     }
   }
 
@@ -293,6 +313,7 @@
       try {
         var verified = await Api.getUseCase(recordId);
         if (verified && verified.Record_ID) {
+          _submitReqId = null; // đã xác nhận ghi xong
           Storage.clear();
           Toast.show('Cập nhật thành công!', 'success');
           showSuccessScreen('Đã cập nhật');

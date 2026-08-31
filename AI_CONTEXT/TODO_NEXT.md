@@ -4,6 +4,13 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 Round 2 T2 (2026-08-31 #2) — chống timeout/mất/trùng khi ghi — XONG (Playwright 111/111)
+- [x] Idempotency `Req_ID`: server dedup hybrid (sheet `REQ_DEDUP` bền + CacheService) — `IdempotencyService.gs`; create lock+dedup, update dedup lock-free.
+- [x] Client: reqId theo phiên form + khóa nút Gửi + retry an toàn (GET-JSONP, chỉ khi có reqId).
+- [x] Test `tests/10-idempotency.spec.js` (4/4) + full 111/111.
+- [ ] **[TT] REDEPLOY GAS** (dán TẤT CẢ .gs — MỚI `IdempotencyService.gs`, `Config.gs` +`REQ_DEDUP`) → chạy `testIdempotencyStore()` + smoke (đăng ký ngắt mạng/bấm nhiều lần → 1 dòng).
+- [ ] [CC] (tùy chọn) rút ngắn writeTimeout cho GET-retry (giảm worst-case true-timeout ~270s).
+
 ## 🆕 Clear tech debt (2026-08-31) — XONG phần A+B (Playwright 107/107)
 - [x] Đóng **UC-DETAIL-DUP-01** (dashboard.js dùng chung `uc-detail-view.js`).
 - [x] Gỡ dead code: `isValidUrl_` · CSS `.sptd-*` · doc H1 `SCORING_ENGINE_DESIGN.md`→archive.
