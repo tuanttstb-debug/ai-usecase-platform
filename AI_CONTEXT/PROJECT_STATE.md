@@ -1,5 +1,15 @@
 # PROJECT STATE
 
+**2026-09-08 — CHUẨN HÓA THIẾT KẾ theo hệ SHTD (skill `design-system` của hub AIOS) — Pha 1. Thuần CSS, KHÔNG đổi kiến trúc/class/logic. [TT] ĐÃ DUYỆT bản sắc.**
+Anh Tuân giao chuẩn hóa UIUX các dự án theo SHTD (sản phẩm hài lòng nhất); AIUS là dự án đầu. AIUS vốn có "TPBank BIZ DS v3.0" riêng (token-hóa, multi-page 12 trang) nhưng **lệch** SHTD (tím `#7B2CBF`+gold, font Inter, không dark). Áp **Trung dung** (rủi ro thấp — vì token-hóa nên chỉ sửa 3 file CSS nền, giữ nguyên kiến trúc+class+118 test):
+- `assets/css/variables.css`: palette → tím SHTD `#4B1FAF` + accent **cam `#FF7A00`** (thay tím nhạt + gold); sidebar gradient SHTD `linear-gradient(175deg,#3B0D9B,#220A6B)`; `--font-family` → **DM Sans** (+`--font-mono` DM Mono); `--radius-xl` 20→18 (card khớp SHTD radius-lg); shadow → bóng mềm SHTD; **+khối `[data-theme="dark"]`** token dark sẵn (chưa bật — chờ pha 2 toggle).
+- `assets/css/base.css`: `@import` Google Font Inter → **DM Sans + DM Mono** (đổi 1 dòng, KHÔNG đụng 12 file HTML).
+- `assets/css/layout.css`: thanh active menu (`.sidebar-nav-item.is-active::before`) trắng → **cam** (dấu ấn SHTD).
+- **Verify: Playwright 118/118 PASS** (4.9') + ảnh chụp xác nhận đúng "gu" (sidebar tím + active bar cam + DM Sans). Thuần trình bày → 0 chạm DOM/logic/GAS.
+- **CỐ Ý chưa làm (pha 2, chờ [TT] khi cần):** nút primary vẫn **tím** (SHTD dùng cam cho hành động chính — chưa đổi để tránh thay đổi thị giác lớn) · **dark-mode toggle** 12 trang (token đã sẵn, thiếu nút+persist).
+
+---
+
 **2026-08-31 #6 — [TT] REDEPLOY GAS + SMOKE OK → 4 CR (#5) LIVE.** CR1 Team tự điền · CR2a đăng ký không còn Lĩnh vực · CR2b dashboard "Nhóm workflow" · CR2c trang Độ phủ Workflow — đều hiệu lực production. Blocker coupling CR2a đã đóng.
 
 ---

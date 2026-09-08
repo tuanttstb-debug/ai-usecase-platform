@@ -4,6 +4,13 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 Chuẩn hóa thiết kế theo hệ SHTD (design-system) — Pha 1 XONG + PUSH (2026-09-08, thuần CSS)
+- [x] `variables.css`: palette tím `#4B1FAF`+cam `#FF7A00` · sidebar gradient SHTD · font DM Sans+DM Mono · radius-xl 20→18 · shadow bóng mềm · +dark tokens sẵn.
+- [x] `base.css`: @import Inter→DM Sans+DM Mono. `layout.css`: active bar trắng→cam.
+- [x] **Playwright 118/118 pass** + ảnh chụp. [TT] duyệt bản sắc → commit+push.
+- [ ] **[TT]** hard-refresh production nghiệm thu tổng thể.
+- [ ] **[CC] Pha 2 (tùy chọn):** dark-mode toggle 12 trang (token sẵn) · đổi nút primary tím→cam (nguyên tắc SHTD "1 sắc nhấn cho hành động") nếu [TT] muốn khớp trọn.
+
 ## 🆕 Bỏ bước duyệt — US nộp xong vào review luôn (2026-08-31 #4)
 - [x] `review-queue.js._load` nạp `listUseCases({limit:0})` + loại draft/rejected (bỏ gate Approved). FE-only.
 - [x] Test `03-review-queue` (+1) + full **112/112**. Backend council không gate status (verify).

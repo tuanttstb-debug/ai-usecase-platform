@@ -1,19 +1,20 @@
 :root {
   /* ══════════════════════════════════════════
-     TPBank BIZ Design System — v3.0
-     Purple-first enterprise banking UI
+     TPBank BIZ Design System — v3.1
+     Chuẩn hóa theo hệ thiết kế SHTD (REF-UIUX-DESIGN-SYSTEM)
+     Lớp BRAND (đổi được): primary tím + accent cam — cùng "gu" SHTD
      ══════════════════════════════════════════ */
 
-  /* ── Brand Purple ── */
-  --color-primary:         #7B2CBF;
-  --color-primary-dark:    #6F2DBD;
-  --color-primary-darker:  #5A1E9A;
-  --color-primary-mid:     #8E44EC;
-  --color-primary-light:   #EDE9FE;
-  --color-primary-surface: #F5F0FF;
+  /* ── Brand Purple (chuẩn SHTD #4B1FAF) ── */
+  --color-primary:         #4B1FAF;
+  --color-primary-dark:    #3A178E;
+  --color-primary-darker:  #2E1270;
+  --color-primary-mid:     #7E57C2;
+  --color-primary-light:   #ECE7FA;
+  --color-primary-surface: #F4F1FC;
 
-  /* ── Sidebar Gradient ── */
-  --sidebar-gradient: linear-gradient(180deg, #7B2CBF 0%, #6622B4 100%);
+  /* ── Sidebar Gradient (chuẩn SHTD) ── */
+  --sidebar-gradient: linear-gradient(175deg, #3B0D9B 0%, #220A6B 100%);
 
   /* ── Semantic Colors ── */
   --color-success:       #4CAF50;
@@ -48,13 +49,14 @@
   --sidebar-item-active:  rgba(255, 255, 255, 0.18);
   --sidebar-border:       rgba(255, 255, 255, 0.12);
 
-  /* ── Accent (Gold / CTA highlight) ── */
-  --color-accent:         #F6B100;
-  --color-accent-dark:    #D4970A;
-  --color-accent-light:   #FFF8E1;
+  /* ── Accent (Cam — hành động chính / CTA highlight, chuẩn SHTD) ── */
+  --color-accent:         #FF7A00;
+  --color-accent-dark:    #E06A00;
+  --color-accent-light:   #FFF1E0;
 
-  /* ── Typography ── */
-  --font-family:           'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  /* ── Typography (chuẩn SHTD: DM Sans + DM Mono) ── */
+  --font-family:           'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-mono:             'DM Mono', ui-monospace, 'SFMono-Regular', monospace;
 
   --text-xs:   0.6875rem;   /* 11px */
   --text-sm:   0.8125rem;   /* 13px */
@@ -93,17 +95,17 @@
   --radius-sm:     6px;
   --radius-md:     12px;   /* inputs, buttons */
   --radius-lg:     16px;
-  --radius-xl:     20px;   /* cards */
+  --radius-xl:     18px;   /* cards (khớp SHTD radius-lg) */
   --radius-2xl:    24px;
   --radius-full:   9999px;
   --border-radius: var(--radius-md); /* legacy compat */
 
-  /* ── Shadows — minimal, enterprise ── */
+  /* ── Shadows — bóng mềm chuẩn SHTD ── */
   --shadow-xs:  0 1px 4px rgba(0, 0, 0, 0.04);
-  --shadow-sm:  0 2px 10px rgba(0, 0, 0, 0.03);
-  --shadow-md:  0 4px 20px rgba(0, 0, 0, 0.05);
-  --shadow-lg:  0 8px 32px rgba(0, 0, 0, 0.08);
-  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.03);
+  --shadow-sm:  0 1px 4px rgba(0, 0, 0, 0.06);
+  --shadow-md:  0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg:  0 16px 40px rgba(0, 0, 0, 0.14);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.05);
   --shadow:     var(--shadow-sm); /* legacy compat */
 
   /* ── Z-index ── */
@@ -140,4 +142,27 @@
   --color-purple-mid:     var(--color-primary-mid);
   --color-purple-light:   var(--color-primary-light);
   --color-purple-surface: var(--color-primary-surface);
+}
+
+/* ══════════════════════════════════════════
+   DARK MODE — token nền sẵn sàng (chuẩn SHTD)
+   Kích hoạt: đặt <html data-theme="dark"> + nút toggle (pha sau).
+   Chỉ có hiệu lực khi data-theme="dark" — không ảnh hưởng light hiện tại.
+   ══════════════════════════════════════════ */
+[data-theme="dark"] {
+  --color-bg:             #0D1117;
+  --color-bg-alt:         #12161F;
+  --color-surface:        #161B22;
+  --color-border:         #2D3748;
+  --color-overlay:        rgba(255,255,255,0.04);
+  --color-text:           #E2E8F0;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted:     #64748B;
+  --color-primary-surface: rgba(75,31,175,0.16);
+  --color-primary-light:   rgba(75,31,175,0.24);
+  --sidebar-gradient:     linear-gradient(175deg, #1E0D5C 0%, #0D0729 100%);
+  --shadow-sm:  0 1px 4px rgba(0,0,0,0.30);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.40);
+  --shadow-lg:  0 16px 40px rgba(0,0,0,0.50);
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.35);
 }

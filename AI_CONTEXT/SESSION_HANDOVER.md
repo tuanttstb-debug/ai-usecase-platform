@@ -1,5 +1,13 @@
 # SESSION HANDOVER
 
+## Session: 2026-09-08 — Chuẩn hóa thiết kế theo hệ SHTD (design-system) — Pha 1 (thuần CSS)
+- **Task completed:** Anh Tuân giao chuẩn hóa UIUX các dự án theo SHTD; AIUS là dự án đầu. Khảo sát AIUS (đã có "TPBank BIZ DS v3.0", token-hóa, multi-page) → **lệch** SHTD (tím `#7B2CBF`+gold, Inter, không dark). Áp bản sắc SHTD **Trung dung** (thuần CSS, giữ kiến trúc+class+test): palette tím `#4B1FAF`+cam `#FF7A00` · sidebar gradient SHTD · font DM Sans (qua @import) · active bar cam · radius-xl 20→18 · shadow bóng mềm · +dark tokens sẵn (chưa bật).
+- **Files changed:** *(ĐÃ COMMIT+PUSH origin/main phiên này)* `assets/css/variables.css` (palette+sidebar+font+radius+shadow + khối `[data-theme=dark]`) · `assets/css/base.css` (@import Inter→DM Sans+DM Mono) · `assets/css/layout.css` (active bar trắng→cam) · ảnh regenerated `evd/weekly-update/*` + `screenshots/h2/*` (test capture đổi theo design) · 4 `AI_CONTEXT/`.
+- **Decision made:** Chọn **Trung dung** (không tái cấu trúc sang class SHTD — giữ 118 test + 12 trang, rủi ro thấp). Đưa AIUS về **đúng palette SHTD** (không giữ tím/gold cũ) để "cùng một nhà". Bộ design-system hub theo mô hình khung-chung + brand-đổi-được nên AIUS chỉ cần remap `variables.css`. **[TT] duyệt bản sắc qua 2 ảnh** (home + leaderboard). **CỐ Ý hoãn pha 2:** nút primary tím→cam · dark toggle.
+- **Blocker:** **Không.** Thuần FE/CSS — KHÔNG cần redeploy GAS. [TT] hard-refresh để thấy.
+- **Next step:** [TT] hard-refresh production (`https://tuanttstb-debug.github.io/ai-usecase-platform/`) nghiệm thu tổng thể. [CC] (pha 2 tùy chọn): dark-mode toggle 12 trang (token sẵn) · đổi nút primary sang cam theo nguyên tắc "1 sắc nhấn cho hành động" nếu [TT] muốn khớp trọn SHTD. Hub AIOS đã cross-ref (CROSS_REPO_LOG điền hash).
+- **Regression risk:** **Thấp** — thuần CSS trình bày, 0 chạm DOM/class/logic/GAS. **Playwright 118/118 pass** (4.9') + ảnh chụp xác nhận thị giác. Rủi ro còn lại chỉ là thẩm mỹ (đã [TT] duyệt). Data-boundary: 0 secret/PII.
+
 ## Session: 2026-08-31 #6 — [TT] redeploy GAS + smoke test OK → 4 CR (#5) LIVE
 - **Task completed:** [TT] xác nhận **redeploy GAS + smoke test production OK** (đúng thứ tự: GAS trước, FE sau) → 4 CR ở phiên #5 nay **hiệu lực trên production**: CR1 Team tự điền · CR2a đăng ký không còn Lĩnh vực (gửi OK, backend hết bắt buộc Business_Category) · CR2b dashboard "Nhóm workflow" · CR2c trang Độ phủ Workflow. Blocker "chờ [TT] redeploy" (coupling CR2a) **đã đóng**.
 - **Files changed:** *(không đổi code — chốt trạng thái)* code ở `cdb44dc` (phiên #5). Chỉ cập nhật AI_CONTEXT.
