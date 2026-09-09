@@ -4,6 +4,17 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 Tái kiến trúc SPA-lite + gỡ duyệt US (2026-09-09 #2, nhánh feat/spa-shell) — Playwright 118/118
+- [x] Shell `index.html` 1 nguồn + `router.js` + `shell.js` + concept `docs/DESIGN_Topbar_Button_Layout.md`; topbar chuẩn (dark+user-pill+logout), sidebar RBAC `data-roles` → **hết drift menu**.
+- [x] Gộp 10 view vào `<section data-view>` + `Router.register`; tách 2 inline lớn (leaderboard/weekly)→module IIFE+CSS.
+- [x] Gỡ duyệt US (FE+api+routes+GAS AdminService/Code.gs); giữ milestone. Cache-bust `?v=` + 12 trang cũ→stub.
+- [x] Vá test SPA (nav-id→data-view, URL, expose global weekly) → 118/118 (đang chạy full lần cuối).
+- [ ] **[CC]** full xanh → cross-ref hub + **merge feat/spa-shell → main + push**.
+- [ ] **[TT] REDEPLOY GAS** (AdminService.gs+Code.gs gỡ route approve/reject US — milestone không đổi) + hard-refresh nghiệm thu: chuyển tab menu KHÔNG đổi/nhấp nháy; đăng ký US→review luôn (không nút duyệt); logout topbar; Ctrl+D dark.
+- [ ] **[CC] (tùy chọn)** TD-DS-03 re-theme Chart.js dark; xóa hẳn dead code renderRejectedCard/updatePendingBadge tự-guard (đã vô hại).
+
+---
+
 ## 🆕 Chuẩn hóa thiết kế Pha 2 — nút primary→CAM + DARK MODE toggle (2026-09-09) — XONG, Playwright 118/118
 - [x] **TD-DS-01** nút `.btn-primary` tím→**cam** (`--color-accent` + hover accent-dark + glow cam). Tím còn cho cấu trúc.
 - [x] **TD-DS-02** dark mode: MỚI `assets/js/theme.js` (apply sớm chống FOUC · nhớ `aius_theme` · nút toggle topbar SVG trăng/mặt trời + fallback nút nổi · Ctrl+D) + `<script>` vào `<head>` **12 trang**.

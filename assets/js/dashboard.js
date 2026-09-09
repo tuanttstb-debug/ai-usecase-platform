@@ -230,7 +230,7 @@
   async function _loadAdminOverview() {
     showLoading(true);
     try {
-      _dashData = await Api.getDashboard();
+      _dashData = (await Api.getDashboard()) || {};
 
       renderKPI(_dashData);
       renderStatusChart(_dashData.status_breakdown   || {});

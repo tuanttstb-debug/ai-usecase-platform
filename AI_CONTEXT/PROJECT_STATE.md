@@ -1,5 +1,16 @@
 # PROJECT STATE
 
+**2026-09-09 #2 — TÁI KIẾN TRÚC SPA-lite (gộp 12 trang → 1 shell) + GỠ DUYỆT US. Nhánh `feat/spa-shell` (chờ merge main). ⚠️ [TT] REDEPLOY GAS.**
+Anh báo: chuyển tab AIUS thấy **left-menu hiện thêm/thiếu button** → rà soát: gốc là **multi-page nhân bản khung** — sidebar copy 12 file HTML đã **drift** (dashboard 12 mục · personal-score/library 10). Anh chốt hướng **Full SPA** (như SHTD). Đã làm trọn (commit từng bước trên nhánh):
+- **Shell 1 nguồn** `index.html`: 1 sidebar (hash nav `#view` + RBAC `data-roles` 1 nguồn → **hết drift**) + 1 topbar chuẩn SHTD (title router-set + dark toggle + **user-pill** + **logout icon-btn**; gỡ logout ghost sidebar). MỚI `router.js` (hash router: show/hide `<section data-view>`, RBAC guard, lazy-init 1 lần, active nav) + `shell.js` (auth guard + populate user + RBAC nav + logout + home portal). MỚI `docs/DESIGN_Topbar_Button_Layout.md` (concept bố cục nút/topbar chưng từ SHTD).
+- **10 view gộp vào shell** + đổi mỗi module bỏ tự-boot `DOMContentLoaded` → `Router.register(view,{title,roles,init/show})`: home·library·workflow-coverage·workflow-catalog·personal-score·leaderboard·weekly-update·review-queue·register(wizard)·dashboard. Tách 2 inline khổng lồ (leaderboard 620 + weekly-update 758 dòng) → module IIFE + `.css` riêng. `change-password`+`login` giữ standalone (layout login riêng). Chart.js CDN cho dashboard.
+- **Gỡ duyệt US** (giữ milestone): FE dashboard.js (approve/reject/pending list/rejected card/approval modal) + api.js + routes.js + GAS `AdminService.gs` (`approveUseCase_/rejectUseCase_/changeUseCaseStatus_`) + `Code.gs` route. Tab "Chờ duyệt"→"Milestone chờ duyệt". **GIỮ NGUYÊN** `approveMilestone_/rejectMilestone_` + luồng KPI tuần. **⚠️ [TT] redeploy GAS.**
+- **Cache-bust** `?v=` (40 asset) + **12 trang cũ → redirect stub** `index.html#view` (giữ `?tab=`/`?edit=`→hash param) → bookmark cũ vẫn chạy; demo link không đổi.
+- **Verify:** Playwright **118/118** (sau vá nav-id `#navX`→`[data-view]`, URL assertion, expose global weekly cho test); mỗi view chụp ảnh 0 lỗi console; RBAC 1-nguồn (admin 12 nav · user 8). **Full suite xác nhận 118/118 xanh (4.6').**
+- **Blocker:** chờ (a) test full xanh → merge main + push; (b) **[TT] redeploy GAS** (gỡ route duyệt US). Bug drift **đã trị tận gốc** (1 sidebar).
+
+---
+
 **2026-09-09 — CHUẨN HÓA THIẾT KẾ Pha 2: nút primary tím→CAM + DARK MODE toggle (12 trang). Thuần CSS+1 JS mới, KHÔNG đổi kiến trúc/logic/GAS. Playwright 118/118.**
 Tiếp nối pha 1, đóng 2 nợ pha 2 (TD-DS-01/02) theo REF-UIUX-DESIGN-SYSTEM (Nguyên tắc 2 "nút chính = accent cam" + Nguyên tắc 8 "dark mode mặc định"):
 - **TD-DS-01 — Nút primary tím→cam:** `components.css .btn-primary` dùng `--color-accent` (cam) + hover `--color-accent-dark` + glow cam. Tím (`--color-primary`) nay chỉ cho cấu trúc (sidebar/link/focus/tab underline). Đúng "1 sắc nhấn cho hành động".
