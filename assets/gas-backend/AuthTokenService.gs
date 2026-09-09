@@ -90,9 +90,72 @@ function _normRole_(role) {
   return (r === 'admin' || r === 'teamlead') ? r : 'user';
 }
 
-// Tách chuỗi "CV1, CV2" → ['CV1','CV2'] (dùng cho Backup_Teams — team teamlead backup chéo).
+// Tách chuỗi "CV1, CV2" → ['CV1','CV2'].
 function _splitList_(v) {
   return String(v || '').split(/[,;]/).map(function (s) { return s.trim(); }).filter(function (s) { return s; });
+}
+
+// ── Backup chéo team (sheet BackupTeam trên spreadsheet SHTD — master quản lý) ──
+// 1 DÒNG = 1 CẶP backup 2 CHIỀU: Teamlead_A (Team_A) ↔ Teamlead_B (Team_B).
+//   → A được chấm điểm cá nhân cho Team_B, VÀ B được chấm cho Team_A. Chỉ khi Active=TRUE.
+var BACKUP_TEAM_SHEET   = 'BackupTeam';
+var BACKUP_TEAM_HEADERS = ['Teamlead_A', 'Team_A', 'Teamlead_B', 'Team_B', 'Active', 'Note', 'Updated_At'];
+
+/** Trả danh sách team mà `username` được backup (2 chiều). Sheet vắng → [] (backward-compat). */
+function getBackupTeamsFor_(username) {
+  var uname = String(username || '').trim().toLowerCase();
+  if (!uname) return [];
+  try {
+    var sheet = SpreadsheetApp.openById(USER_SPREADSHEET_ID).getSheetByName(BACKUP_TEAM_SHEET);
+    if (!sheet) return [];
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 2) return [];
+    var H   = data[0].map(function (h) { return String(h).trim(); });
+    var iA  = H.indexOf('Teamlead_A'), iTA = H.indexOf('Team_A');
+    var iB  = H.indexOf('Teamlead_B'), iTB = H.indexOf('Team_B');
+    var iAct = H.indexOf('Active');
+    var out = [];
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (iAct >= 0 && (row[iAct] === false || String(row[iAct]).toUpperCase() === 'FALSE')) continue; // chỉ dòng bật
+      var a = String(row[iA] || '').trim().toLowerCase();
+      var b = String(row[iB] || '').trim().toLowerCase();
+      if (a === uname) { var tb = String(row[iTB] || '').trim(); if (tb && out.indexOf(tb) === -1) out.push(tb); }
+      if (b === uname) { var ta = String(row[iTA] || '').trim(); if (ta && out.indexOf(ta) === -1) out.push(ta); }
+    }
+    return out;
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * Tạo sheet `BackupTeam` (idempotent) trên spreadsheet SHTD (cùng nơi User_Master).
+ * Chạy tay 1 lần trong GAS Editor sau redeploy. Header + 1 dòng ví dụ (Active=FALSE).
+ */
+function setupBackupTeamSheet() {
+  var ss     = SpreadsheetApp.openById(USER_SPREADSHEET_ID);
+  var sheet  = ss.getSheetByName(BACKUP_TEAM_SHEET);
+  var created = false;
+  if (!sheet) { sheet = ss.insertSheet(BACKUP_TEAM_SHEET); created = true; }
+
+  var first = sheet.getRange(1, 1, 1, BACKUP_TEAM_HEADERS.length).getValues()[0];
+  var hasHeader = String(first[0]).trim() === 'Teamlead_A';
+  if (!hasHeader) {
+    sheet.getRange(1, 1, 1, BACKUP_TEAM_HEADERS.length).setValues([BACKUP_TEAM_HEADERS])
+         .setFontWeight('bold').setBackground('#4B1FAF').setFontColor('#FFFFFF');
+    sheet.setFrozenRows(1);
+    sheet.appendRow(['tutv3', 'CV2', '<username_lead_CV1>', 'CV1', false,
+                     'VD: cặp backup 2 chiều CV1↔CV2 — đặt Active=TRUE để bật', new Date().toISOString()]);
+    try { sheet.autoResizeColumns(1, BACKUP_TEAM_HEADERS.length); } catch (e) {}
+  }
+  return {
+    sheet: BACKUP_TEAM_SHEET,
+    spreadsheet_id: USER_SPREADSHEET_ID,
+    created: created,
+    headers: BACKUP_TEAM_HEADERS,
+    message: '1 dòng = 1 cặp backup 2 CHIỀU (A↔B). Đặt Active=TRUE để bật. Sheet vắng = không ai backup (an toàn).'
+  };
 }
 
 /**
@@ -115,7 +178,6 @@ function authLogin_(username, password) {
   var iActive = H.indexOf('Active');
   var iHash   = H.indexOf('Password_Hash');
   var iLogin  = H.indexOf('Last_Login');
-  var iBackup = H.indexOf('Backup_Teams'); // teamlead backup chéo team (tùy chọn)
 
   var inputHash  = _sha256Hex_(password);
   var inputLower = String(username).trim().toLowerCase();
@@ -141,11 +203,11 @@ function authLogin_(username, password) {
     var role  = _normRole_(row[iRole]);
     var team  = String(row[iTeam] || '').trim();
     var email = iEmail >= 0 ? String(row[iEmail] || '').trim() : '';
-    var backup = iBackup >= 0 ? _splitList_(row[iBackup]) : [];
 
     return {
       token: _makeToken_(uName, dName, role, team),
-      user:  { username: uName, displayName: dName, role: role, team: team, email: email, backup_teams: backup }
+      user:  { username: uName, displayName: dName, role: role, team: team, email: email,
+               backup_teams: getBackupTeamsFor_(uName) } // team backup chéo (sheet BackupTeam, 2 chiều)
     };
   }
 
@@ -199,7 +261,6 @@ function getAllUsersFromMaster_() {
   var iActive = H.indexOf('Active');
   var iCreated= H.indexOf('Created_At');
   var iLogin  = H.indexOf('Last_Login');
-  var iBackup = H.indexOf('Backup_Teams');
 
   var out = [];
   for (var i = 1; i < data.length; i++) {
@@ -214,8 +275,7 @@ function getAllUsersFromMaster_() {
       email:        iEmail  >= 0 ? String(row[iEmail]  || '').trim() : '',
       active:       (row[iActive] === true || String(row[iActive]).toUpperCase() === 'TRUE'),
       created_at:   iCreated >= 0 ? String(row[iCreated] || '') : '',
-      last_login:   iLogin   >= 0 ? String(row[iLogin]   || '') : '',
-      backup_teams: iBackup  >= 0 ? _splitList_(row[iBackup]) : []
+      last_login:   iLogin   >= 0 ? String(row[iLogin]   || '') : ''
     });
   }
   return out;
