@@ -699,7 +699,10 @@ function isChampionForTeam_(email, team) {
       var uRole   = String(u.role || '').toLowerCase().trim();
       var uActive = u.active === true;
       var uTeam   = String(u.team || '').toLowerCase().trim();
-      if (uEmail === normalizedEmail && (uRole === 'teamlead' || uRole === 'champion') && uActive && uTeam === normalizedTeam) {
+      var uBackup = (u.backup_teams || []).map(function (t) { return String(t).toLowerCase().trim(); });
+      // Teamlead của đúng team, HOẶC team đó nằm trong Backup_Teams (backup chéo).
+      if (uEmail === normalizedEmail && (uRole === 'teamlead' || uRole === 'champion') && uActive &&
+          (uTeam === normalizedTeam || uBackup.indexOf(normalizedTeam) !== -1)) {
         return true;
       }
     }

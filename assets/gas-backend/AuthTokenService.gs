@@ -90,6 +90,11 @@ function _normRole_(role) {
   return (r === 'admin' || r === 'teamlead') ? r : 'user';
 }
 
+// Tách chuỗi "CV1, CV2" → ['CV1','CV2'] (dùng cho Backup_Teams — team teamlead backup chéo).
+function _splitList_(v) {
+  return String(v || '').split(/[,;]/).map(function (s) { return s.trim(); }).filter(function (s) { return s; });
+}
+
 /**
  * Đăng nhập bằng username + password → { token, user }.
  * Throw Error với message tiếng Việt nếu thất bại.
@@ -110,6 +115,7 @@ function authLogin_(username, password) {
   var iActive = H.indexOf('Active');
   var iHash   = H.indexOf('Password_Hash');
   var iLogin  = H.indexOf('Last_Login');
+  var iBackup = H.indexOf('Backup_Teams'); // teamlead backup chéo team (tùy chọn)
 
   var inputHash  = _sha256Hex_(password);
   var inputLower = String(username).trim().toLowerCase();
@@ -135,10 +141,11 @@ function authLogin_(username, password) {
     var role  = _normRole_(row[iRole]);
     var team  = String(row[iTeam] || '').trim();
     var email = iEmail >= 0 ? String(row[iEmail] || '').trim() : '';
+    var backup = iBackup >= 0 ? _splitList_(row[iBackup]) : [];
 
     return {
       token: _makeToken_(uName, dName, role, team),
-      user:  { username: uName, displayName: dName, role: role, team: team, email: email }
+      user:  { username: uName, displayName: dName, role: role, team: team, email: email, backup_teams: backup }
     };
   }
 
@@ -192,6 +199,7 @@ function getAllUsersFromMaster_() {
   var iActive = H.indexOf('Active');
   var iCreated= H.indexOf('Created_At');
   var iLogin  = H.indexOf('Last_Login');
+  var iBackup = H.indexOf('Backup_Teams');
 
   var out = [];
   for (var i = 1; i < data.length; i++) {
@@ -206,7 +214,8 @@ function getAllUsersFromMaster_() {
       email:        iEmail  >= 0 ? String(row[iEmail]  || '').trim() : '',
       active:       (row[iActive] === true || String(row[iActive]).toUpperCase() === 'TRUE'),
       created_at:   iCreated >= 0 ? String(row[iCreated] || '') : '',
-      last_login:   iLogin   >= 0 ? String(row[iLogin]   || '') : ''
+      last_login:   iLogin   >= 0 ? String(row[iLogin]   || '') : '',
+      backup_teams: iBackup  >= 0 ? _splitList_(row[iBackup]) : []
     });
   }
   return out;

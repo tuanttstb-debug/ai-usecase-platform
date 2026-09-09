@@ -158,6 +158,7 @@ var AuthService = (function () {
         displayName: src.displayName || _buildDisplayName(src.username || ''),
         role:        role,
         team:        src.team || '',
+        backup_teams: Array.isArray(src.backup_teams) ? src.backup_teams : [], // team backup chéo
         token:       authResp.token || '',
         loginAt:     new Date().toISOString()
       };

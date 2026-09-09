@@ -45,16 +45,19 @@
       var me = AuthService.getUser();
       var isAdmin = AuthService.isAdmin();
       var myTeam = me ? _norm(me.team) : '';
+      var myBackup = ((me && me.backup_teams) || []).map(_norm); // team backup chéo (Tutv3 backup CV1…)
       var excl = _excluded();
 
       _members = users.filter(function (u) {
         if (String(u.role).toLowerCase() !== 'user') return false;   // chỉ thành viên
         if (u.active === false) return false;
         if (excl.indexOf(_norm(u.username)) !== -1) return false;
-        if (!isAdmin && _norm(u.team) !== myTeam) return false;      // teamlead chỉ team mình
+        // teamlead: team mình HOẶC team backup; admin: mọi team
+        if (!isAdmin && _norm(u.team) !== myTeam && myBackup.indexOf(_norm(u.team)) === -1) return false;
         return true;
       }).map(function (u) {
-        return { username: _norm(u.username), display_name: u.display_name || u.username, team: u.team || '' };
+        return { username: _norm(u.username), display_name: u.display_name || u.username, team: u.team || '',
+                 backup: !isAdmin && _norm(u.team) !== myTeam }; // đánh dấu đang chấm hộ team khác
       });
 
       _scoreMap = {};
@@ -107,7 +110,7 @@
         return '<tr>' +
           '<td style="font-family:monospace;font-weight:600">' + esc(m.username) + '</td>' +
           '<td>' + esc(m.display_name) + '</td>' +
-          '<td>' + esc(m.team || '—') + '</td>' +
+          '<td>' + esc(m.team || '—') + (m.backup ? ' <span class="badge badge-warning" style="font-size:10px">backup</span>' : '') + '</td>' +
           '<td style="text-align:center">' + scoreCell + '</td>' +
           '<td>' + statusCell + '</td>' +
           '<td><button class="btn btn--ghost btn--sm" onclick="PersonalScore._open(\'' + esc(m.username) + '\');return false">' +
@@ -157,7 +160,7 @@
 
     setTxt('psMemberUser', m.username);
     setTxt('psMemberName', m.display_name);
-    setTxt('psMemberMeta', 'Team: ' + (m.team || '—'));
+    setTxt('psMemberMeta', 'Team: ' + (m.team || '—') + (m.backup ? ' · (đang chấm hộ — backup)' : ''));
 
     var s = _scoreMap[m.username];
 

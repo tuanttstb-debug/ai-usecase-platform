@@ -1,5 +1,10 @@
 # PROJECT STATE
 
+**2026-09-09 #3 — Dọn dead code (xóa archive/h1) + TÍNH NĂNG Backup chéo team (Backup_Teams). ⚠️ [TT] redeploy GAS + thêm cột.**
+Sau khi SPA + gỡ duyệt US live (smoke OK): (1) **Dọn** — xóa `archive/h1/` (mô hình H1 nghỉ, git giữ history) + gỡ dead code duyệt US sót (`renderRejectedCard`/`REJECTED_PREVIEW`/`_rejectedList`). (2) **Backup chéo team** (anh hỏi: Tutv3 lead CV2 backup cho lead CV1) — chọn cách **gọn nhất = +1 cột `Backup_Teams` trên User_Master** (không sheet mới, không nới admin). Scope teamlead đổi `team===myTeam` → `team===myTeam OR team∈backup_teams` ở: GAS `AuthTokenService` (trả `backup_teams` trong user + list) · GAS `isChampionForTeam_` (gate submit điểm cá nhân `ScoringServiceH2:399`) · FE `auth.js` (persist session) · FE `personal-score.js` (filter + nhãn "backup"). **Verify:** teamlead CV2+backup[CV1] thấy member CV1(nhãn backup)+CV2, KHÔNG CV3; personal-score test 9/9 (4/4) pass; syntax FE+GAS OK. **⚠️ [TT]:** redeploy GAS (AuthTokenService+AdminService) + thêm cột `Backup_Teams` vào User_Master, điền `CV1` cho Tutv3 (muốn 2 chiều: điền `CV2` cho lead CV1). Cột vắng = backward-compat (không backup).
+
+---
+
 **2026-09-09 #2 — TÁI KIẾN TRÚC SPA-lite (gộp 12 trang → 1 shell) + GỠ DUYỆT US. Nhánh `feat/spa-shell` (chờ merge main). ⚠️ [TT] REDEPLOY GAS.**
 Anh báo: chuyển tab AIUS thấy **left-menu hiện thêm/thiếu button** → rà soát: gốc là **multi-page nhân bản khung** — sidebar copy 12 file HTML đã **drift** (dashboard 12 mục · personal-score/library 10). Anh chốt hướng **Full SPA** (như SHTD). Đã làm trọn (commit từng bước trên nhánh):
 - **Shell 1 nguồn** `index.html`: 1 sidebar (hash nav `#view` + RBAC `data-roles` 1 nguồn → **hết drift**) + 1 topbar chuẩn SHTD (title router-set + dark toggle + **user-pill** + **logout icon-btn**; gỡ logout ghost sidebar). MỚI `router.js` (hash router: show/hide `<section data-view>`, RBAC guard, lazy-init 1 lần, active nav) + `shell.js` (auth guard + populate user + RBAC nav + logout + home portal). MỚI `docs/DESIGN_Topbar_Button_Layout.md` (concept bố cục nút/topbar chưng từ SHTD).
