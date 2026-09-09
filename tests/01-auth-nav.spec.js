@@ -19,11 +19,11 @@ for (const page_path of PAGES_WITH_NAV) {
       await page.waitForLoadState('networkidle');
 
       // navReviewQueue visible for admin
-      const navRQ = page.locator('#navReviewQueue');
+      const navRQ = page.locator('.sidebar-nav-item[data-view="review-queue"]');
       await expect(navRQ).toBeVisible();
 
       // navWorkflowCatalog visible for admin
-      const navUsers = page.locator('#navWorkflowCatalog');
+      const navUsers = page.locator('.sidebar-nav-item[data-view="workflow-catalog"]');
       await expect(navUsers).toBeVisible();
     });
 
@@ -38,8 +38,8 @@ for (const page_path of PAGES_WITH_NAV) {
       await page.goto(`/${page_path}`);
       await page.waitForLoadState('networkidle');
 
-      const navRQ    = page.locator('#navReviewQueue');
-      const navUsers = page.locator('#navWorkflowCatalog');
+      const navRQ    = page.locator('.sidebar-nav-item[data-view="review-queue"]');
+      const navUsers = page.locator('.sidebar-nav-item[data-view="workflow-catalog"]');
       await expect(navRQ).toBeVisible();
       await expect(navUsers).not.toBeVisible();
     });
@@ -55,8 +55,8 @@ for (const page_path of PAGES_WITH_NAV) {
       await page.goto(`/${page_path}`);
       await page.waitForLoadState('networkidle');
 
-      await expect(page.locator('#navReviewQueue')).not.toBeVisible();
-      await expect(page.locator('#navWorkflowCatalog')).not.toBeVisible();
+      await expect(page.locator('.sidebar-nav-item[data-view="review-queue"]')).not.toBeVisible();
+      await expect(page.locator('.sidebar-nav-item[data-view="workflow-catalog"]')).not.toBeVisible();
     });
 
     test('Sidebar shows correct role label', async ({ page }) => {

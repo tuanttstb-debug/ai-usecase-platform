@@ -63,6 +63,7 @@ function loadMyUseCases() {
       return (uc.owner_email && uc.owner_email.toLowerCase().indexOf(email) !== -1) ||
              (uc.owner_name  && uc.owner_name.toLowerCase().indexOf(email)  !== -1);
     });
+    window._myUseCases = _myUseCases; // expose cho test (module IIFE)
 
     // Scope label cho picker header
     var scopeEl = document.getElementById('pickerScope');
@@ -243,12 +244,13 @@ function togglePromptAccordion() {
   var toggle = document.getElementById('promptAccordionToggle');
   var open = acc.classList.toggle('open');
   toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-  if (open) _promptTouched = true; // đã mở để sửa → cho phép gửi prompt/luồng
+  if (open) { _promptTouched = true; window._promptTouched = true; } // đã mở để sửa → cho phép gửi prompt/luồng
 }
 
 function _resetPromptSection() {
   _fullDetailLoaded = false;
   _promptTouched    = false;
+  window._fullDetailLoaded = false; window._promptTouched = false; // sync test
   var acc = document.getElementById('promptAccordion');
   if (acc) acc.classList.remove('open');
   var toggle = document.getElementById('promptAccordionToggle');
@@ -280,7 +282,7 @@ function _loadPromptFields(recordId) {
       var el = document.getElementById(id);
       if (el) el.value = map[id] || '';
     });
-    _fullDetailLoaded = true;
+    _fullDetailLoaded = true; window._fullDetailLoaded = true; // sync test
   }).catch(function () {
     // GAS lỗi → không prefill; guard _fullDetailLoaded=false chặn gửi (không ghi đè rỗng).
   });

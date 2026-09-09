@@ -39,7 +39,7 @@ test.describe('review-queue.html — Hội đồng chấm điểm US', () => {
     await mockGAS(page, BASE_MOCK);
     await page.goto('/review-queue.html');
     await page.waitForLoadState('networkidle');
-    await expect(page).toHaveURL(/review-queue\.html/);
+    await expect(page).toHaveURL(/#review-queue/);
   });
 
   test('Teamlead can access page', async ({ page }) => {
@@ -47,7 +47,7 @@ test.describe('review-queue.html — Hội đồng chấm điểm US', () => {
     await mockGAS(page, BASE_MOCK);
     await page.goto('/review-queue.html');
     await page.waitForLoadState('networkidle');
-    await expect(page).toHaveURL(/review-queue\.html/);
+    await expect(page).toHaveURL(/#review-queue/);
   });
 
   test('Regular user is redirected away', async ({ page }) => {
@@ -112,7 +112,7 @@ test.describe('review-queue.html — Hội đồng chấm điểm US', () => {
     await mockGAS(page, BASE_MOCK);
     await page.goto('/review-queue.html');
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('#navReviewQueue')).toHaveClass(/is-active/);
+    await expect(page.locator('.sidebar-nav-item[data-view="review-queue"]')).toHaveClass(/is-active/);
   });
 
   test('Council panel opens when clicking Chấm điểm button', async ({ page }) => {

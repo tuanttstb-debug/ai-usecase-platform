@@ -27,7 +27,7 @@ async function gotoLibrary(page, user) {
 
 test('T01: Library loads for any authenticated user', async ({ page }) => {
   await gotoLibrary(page, REGULAR_USER);
-  await expect(page).toHaveURL(/library\.html/);
+  await expect(page).toHaveURL(/#library/);
   await expect(page.locator('#libContent')).toBeVisible();
 });
 
@@ -64,7 +64,7 @@ test('T05: Open prompt modal fetches and renders prompt', async ({ page }) => {
 
 test('T06: navLibrary present in sidebar', async ({ page }) => {
   await gotoLibrary(page, REGULAR_USER);
-  await expect(page.locator('#navLibrary')).toHaveClass(/is-active/);
+  await expect(page.locator('.sidebar-nav-item[data-view="library"]')).toHaveClass(/is-active/);
 });
 
 test('T07: Reuse badge shows count + "Lan tỏa đạt" khi ≥3', async ({ page }) => {
