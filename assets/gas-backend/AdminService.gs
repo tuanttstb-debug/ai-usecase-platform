@@ -712,6 +712,65 @@ function isChampionForTeam_(email, team) {
   return false;
 }
 
+// ── Backup chéo team (sheet BackupTeam trên SPREADSHEET AIUS — chuẩn SHEETS/getOrCreateSheet_) ──
+// 1 DÒNG = 1 CẶP backup 2 CHIỀU: Teamlead_A (Team_A) ↔ Teamlead_B (Team_B).
+//   → A được chấm điểm cá nhân cho Team_B, VÀ B được chấm cho Team_A. Chỉ khi Active=TRUE.
+var BACKUP_TEAM_HEADERS = ['Teamlead_A', 'Team_A', 'Teamlead_B', 'Team_B', 'Active', 'Note', 'Updated_At'];
+
+/** Danh sách team mà `username` được backup (2 chiều). Sheet vắng → [] (backward-compat, không auto-tạo). */
+function getBackupTeamsFor_(username) {
+  var uname = String(username || '').trim().toLowerCase();
+  if (!uname) return [];
+  try {
+    var sheet = getSpreadsheet_().getSheetByName(SHEETS.BACKUP_TEAM);
+    if (!sheet) return [];
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 2) return [];
+    var H    = data[0].map(function (h) { return String(h).trim(); });
+    var iA   = H.indexOf('Teamlead_A'), iTA = H.indexOf('Team_A');
+    var iB   = H.indexOf('Teamlead_B'), iTB = H.indexOf('Team_B');
+    var iAct = H.indexOf('Active');
+    var out = [];
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (iAct >= 0 && (row[iAct] === false || String(row[iAct]).toUpperCase() === 'FALSE')) continue;
+      var a = String(row[iA] || '').trim().toLowerCase();
+      var b = String(row[iB] || '').trim().toLowerCase();
+      if (a === uname) { var tb = String(row[iTB] || '').trim(); if (tb && out.indexOf(tb) === -1) out.push(tb); }
+      if (b === uname) { var ta = String(row[iTA] || '').trim(); if (ta && out.indexOf(ta) === -1) out.push(ta); }
+    }
+    return out;
+  } catch (e) {
+    logError_('getBackupTeamsFor_', e, { username: username });
+    return [];
+  }
+}
+
+/**
+ * Tạo sheet `BackupTeam` (idempotent) trên SPREADSHEET AIUS — chuẩn getOrCreateSheet_/SHEETS.
+ * Chạy tay 1 lần trong GAS Editor sau redeploy. Header (đậm/tím + freeze) + 1 dòng ví dụ Active=FALSE.
+ */
+function setupBackupTeamSheet() {
+  var sheet = getOrCreateSheet_(SHEETS.BACKUP_TEAM);
+  var first = sheet.getRange(1, 1, 1, BACKUP_TEAM_HEADERS.length).getValues()[0];
+  var hasHeader = String(first[0]).trim() === 'Teamlead_A';
+  if (!hasHeader) {
+    sheet.getRange(1, 1, 1, BACKUP_TEAM_HEADERS.length).setValues([BACKUP_TEAM_HEADERS])
+         .setFontWeight('bold').setBackground('#4B1FAF').setFontColor('#FFFFFF');
+    sheet.setFrozenRows(1);
+    sheet.appendRow(['tutv3', 'CV2', '<username_lead_CV1>', 'CV1', false,
+                     'VD: cặp backup 2 chiều CV1↔CV2 — đặt Active=TRUE để bật', new Date().toISOString()]);
+    try { sheet.autoResizeColumns(1, BACKUP_TEAM_HEADERS.length); } catch (e) {}
+  }
+  return {
+    sheet: SHEETS.BACKUP_TEAM,
+    spreadsheet_id: SPREADSHEET_ID,
+    created: !hasHeader,
+    headers: BACKUP_TEAM_HEADERS,
+    message: '1 dòng = 1 cặp backup 2 CHIỀU (A↔B). Đặt Active=TRUE để bật. Sheet vắng = không ai backup.'
+  };
+}
+
 /**
  * Champion review: scores Quality/BusinessValue/Innovation, re-calculates total.
  * Auth: admin OR champion whose team matches the UC's team.
