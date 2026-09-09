@@ -385,8 +385,71 @@
           </aside>
         </section>
 
-        <!-- Các view khác được gộp tiếp ở S1 (dashboard, register, leaderboard,
-             review-queue, weekly-update). -->
+        <!-- ═══ VIEW: leaderboard ═══ -->
+        <section data-view="leaderboard" hidden>
+          <div class="lb-header">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--space-4)">
+              <div>
+                <h1 style="font-size:var(--text-2xl); font-weight:var(--font-weight-bold); color:var(--color-text); margin:0">Leaderboard</h1>
+                <p style="font-size:var(--text-sm); color:var(--color-text-secondary); margin:4px 0 0">Xếp hạng hiệu suất AI Use Case — TT SPTD</p>
+              </div>
+              <button class="btn btn-outline" id="btnRefresh" onclick="loadLeaderboard()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                Làm mới
+              </button>
+            </div>
+            <div class="lb-filters" style="margin-top:var(--space-4)">
+              <label style="font-size:var(--text-sm); color:var(--color-text-secondary)">Lọc theo:</label>
+              <select class="lb-filter-select" id="filterCategory" onchange="loadLeaderboard()" style="display:none"><option value="">Tất cả category</option></select>
+              <select class="lb-filter-select" id="filterTeam" onchange="loadLeaderboard()"><option value="">Tất cả team</option></select>
+            </div>
+            <div class="lb-tabs">
+              <div class="lb-tab is-active" data-tab="top" onclick="switchTab('top', this)">Điểm US (hội đồng)</div>
+              <div class="lb-tab" data-tab="personal" onclick="switchTab('personal', this)">Điểm cá nhân</div>
+              <div class="lb-tab" data-tab="kpiMember" onclick="switchTab('kpiMember', this)">KPI tổng hợp</div>
+              <div class="lb-tab" data-tab="kpiTeamlead" onclick="switchTab('kpiTeamlead', this)">KPI Teamlead</div>
+              <div class="lb-tab" data-tab="heatmap" onclick="switchTab('heatmap', this)">Heatmap</div>
+            </div>
+          </div>
+          <div style="padding: var(--space-6) 0">
+            <div id="pmKpiCard" class="section-panel" style="display:none;margin-bottom:var(--space-5);border:1px solid var(--color-primary)">
+              <div class="section-panel-header">
+                <span class="section-panel-title">🎯 KPI PM (bản A) — 30/20/30/20</span>
+                <span id="pmKpiFinal" style="font-size:var(--text-lg);font-weight:700;color:var(--color-primary)">—</span>
+              </div>
+              <div class="section-panel-body" style="padding:var(--space-4)">
+                <div style="display:flex;flex-wrap:wrap;gap:var(--space-4);align-items:flex-end">
+                  <div><div style="font-size:var(--text-xs);color:var(--color-text-secondary)">A1 · KPI cá nhân PM (30%)</div><div style="font-weight:600" id="pmA1">—</div><small style="color:var(--color-text-muted)">tự động</small></div>
+                  <div><div style="font-size:var(--text-xs);color:var(--color-text-secondary)">A2 · Bình quân toàn TT (20%)</div><div style="font-weight:600" id="pmA2">—</div><small style="color:var(--color-text-muted)">tự động</small></div>
+                  <div><div style="font-size:var(--text-xs);color:var(--color-text-secondary)">A3 · Milestone Action Plan đúng hạn (30%)</div><input type="number" id="pmA3" class="form-control" min="0" max="100" step="1" value="0" style="width:90px"><small style="color:var(--color-text-muted)">nhập tay (từ SHTD/hub)</small></div>
+                  <div><div style="font-size:var(--text-xs);color:var(--color-text-secondary)">A4 · Đóng góp hệ sinh thái (20%)</div><input type="number" id="pmA4" class="form-control" min="0" max="100" step="1" value="0" style="width:90px"><small style="color:var(--color-text-muted)">nhập tay (checklist)</small></div>
+                </div>
+                <p style="margin-top:var(--space-3);font-size:var(--text-xs);color:var(--color-text-muted)">A3 = tỷ lệ milestone Action Plan đúng hạn (%) lấy từ SHTD DB / workspace hub <code>binh-dan-hoa-ai-H2</code>. A4 = checklist đóng góp.</p>
+              </div>
+            </div>
+            <div id="tabTop"><div class="section-panel"><div class="section-panel-header"><span class="section-panel-title">🏆 Điểm US — bình quân hội đồng (30/40/30)</span><span id="topCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span></div><div class="section-panel-body" id="topTable"><div class="lb-loading"><div class="spinner"></div> Đang tải...</div></div></div></div>
+            <div id="tabPersonal" style="display:none"><div class="section-panel"><div class="section-panel-header"><span class="section-panel-title">👤 Điểm cá nhân — teamlead chấm (30/20/30/20)</span><span id="personalCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span></div><div class="section-panel-body" id="personalTable"><div class="lb-loading"><div class="spinner"></div> Đang tải...</div></div></div></div>
+            <div id="tabKpiMember" style="display:none"><div class="section-panel"><div class="section-panel-header"><span class="section-panel-title">📊 KPI tổng hợp Member — M1·40 + M2·30 + M3·15 + M4·15 − trừ</span><span id="kpiMemberCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span></div><div class="section-panel-body" id="kpiMemberTable"><div class="lb-loading"><div class="spinner"></div> Đang tải...</div></div></div></div>
+            <div id="tabKpiTeamlead" style="display:none"><div class="section-panel"><div class="section-panel-header"><span class="section-panel-title">🧭 KPI Teamlead — T1 (KPI cá nhân) 60% + T2 (% team ≥70%) 40%</span><span id="kpiTeamleadCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span></div><div class="section-panel-body" id="kpiTeamleadTable"><div class="lb-loading"><div class="spinner"></div> Đang tải...</div></div></div></div>
+            <div id="tabHeatmap" style="display:none"><div class="section-panel"><div class="section-panel-header"><span class="section-panel-title">🔥 Heatmap KPI — team & cá nhân (xanh–vàng–đỏ)</span><span id="heatmapLegend" style="font-size:var(--text-xs);color:var(--color-text-secondary)"></span></div><div class="section-panel-body" id="heatmapBody"><div class="lb-loading"><div class="spinner"></div> Đang tải...</div></div></div></div>
+          </div>
+
+          <div id="lbDetailModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="lbDetailTitle">
+            <div class="modal-card modal-card--wide">
+              <div class="modal-header">
+                <div style="display:flex;align-items:center;gap:var(--space-3);flex:1;min-width:0">
+                  <h3 id="lbDetailTitle" style="margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Chi tiết Use Case</h3>
+                  <span id="lbDetailId" class="id-badge" style="flex-shrink:0"></span>
+                </div>
+                <button class="modal-close" onclick="lbCloseDetail()" aria-label="Đóng">&times;</button>
+              </div>
+              <div class="modal-body" id="lbDetailView"></div>
+              <div class="modal-footer"><div style="flex:1"></div><button class="btn btn-outline" onclick="lbCloseDetail()">Đóng</button></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Các view khác được gộp tiếp ở S1 (dashboard, register, review-queue, weekly-update). -->
 
       </div><!-- /app-content -->
     </div><!-- /app-main -->
@@ -398,6 +461,7 @@
   <script src="config/env.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="config/routes.js"></script>
+  <script src="assets/js/constants.js"></script>
   <script src="assets/js/helpers.js"></script>
   <script src="assets/js/storage.js"></script>
   <script src="assets/js/toast.js"></script>
@@ -410,6 +474,7 @@
   <script src="assets/js/workflow-coverage.js"></script>
   <script src="assets/js/workflow-catalog.js"></script>
   <script src="assets/js/personal-score.js"></script>
+  <script src="assets/js/leaderboard.js"></script>
   <!-- shell cuối -->
   <script src="assets/js/shell.js"></script>
 </body>
