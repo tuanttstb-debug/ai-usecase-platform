@@ -55,7 +55,6 @@
     _bindSearch();
     _bindRefresh();
     _bindDetailModal();
-    _bindApprovalModal();
     _bindExploreSearch();
     _bindListModal();
     _bindKPIClicks();
@@ -210,21 +209,14 @@
 
       if (_isAdmin) {
         _dashData     = results[1] || {};
-        _pendingList  = _allList.filter(function (uc) {
-          return uc.status === 'Submitted' || uc.status === 'Under Review';
-        });
-        _rejectedList = _allList.filter(function (uc) { return uc.status === 'Rejected'; });
 
         _populateTeamFilter();
         _applyAllTableFilters();
-        renderPendingList(_pendingList);
-        updatePendingBadge(_pendingList.length);
         renderKPI(_dashData);
         renderStatusChart(_dashData.status_breakdown   || {});
         renderStackedChart('teamChart',     'team');
         renderStackedChart('categoryChart', 'workflow_group');  // CR2b: tổng hợp theo Nhóm workflow (thay Lĩnh vực)
         renderRecentTable(_dashData.recent_submissions || []);
-        renderRejectedCard(_rejectedList);
         if (_dashData.refreshed_at) updateRefreshedAt(_dashData.refreshed_at);
       }
     } catch (err) {
@@ -238,19 +230,13 @@
   async function _loadAdminOverview() {
     showLoading(true);
     try {
-      var results = await Promise.all([
-        Api.getDashboard(),
-        Api.listUseCases({ filter: 'pending', limit: 0 })
-      ]);
-      _dashData    = results[0];
-      _pendingList = results[1] || [];
+      _dashData = await Api.getDashboard();
 
       renderKPI(_dashData);
       renderStatusChart(_dashData.status_breakdown   || {});
       renderStackedChart('teamChart',     'team');
       renderStackedChart('categoryChart', 'workflow_group');  // CR2b: tổng hợp theo Nhóm workflow (thay Lĩnh vực)
       renderRecentTable(_dashData.recent_submissions || []);
-      updatePendingBadge(_pendingList.length);
       updateRefreshedAt(_dashData.refreshed_at);
     } catch (err) {
       showToast('Lỗi tải dữ liệu: ' + err.message, 'error');
@@ -263,12 +249,9 @@
   async function _loadPending() {
     showLoading(true);
     try {
-      _pendingList = (await Api.listUseCases({ filter: 'pending', limit: 0 })) || [];
-      renderPendingList(_pendingList);
-      updatePendingBadge(_pendingList.length);
-      await _loadMilestones();
+      await _loadMilestones(); // đã bỏ duyệt US — tab này chỉ còn milestone chờ duyệt
     } catch (err) {
-      showToast('Lỗi tải danh sách chờ duyệt: ' + err.message, 'error');
+      showToast('Lỗi tải milestone chờ duyệt: ' + err.message, 'error');
     } finally {
       showLoading(false);
     }
@@ -590,12 +573,7 @@
   function _btnDetail(uc, label, cls) {
     return '<button class="btn btn-sm ' + (cls||'btn-outline') + '" onclick="event.stopPropagation();Dashboard._byKey(\'' + esc(_cache(uc)) + '\')">' + label + '</button>';
   }
-  function _btnApprove(uc) {
-    return '<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Dashboard._approveByKey(\'' + esc(_cache(uc)) + '\')">✓ Duyệt</button>';
-  }
-  function _btnReject(uc) {
-    return '<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();Dashboard._rejectByKey(\'' + esc(_cache(uc)) + '\')">✕ Từ chối</button>';
-  }
+  // (đã gỡ _btnApprove/_btnReject — bỏ duyệt US)
 
   // ── Recent Submissions Table ──────────────────────────────────────
   function renderRecentTable(items) {
@@ -625,37 +603,7 @@
     }).join('');
   }
 
-  // ── Pending List ──────────────────────────────────────────────────
-  function renderPendingList(items) {
-    var container = document.getElementById('pendingList');
-    if (!container) return;
-    if (!items.length) { container.innerHTML = '<div class="empty-state"><p class="empty-state-text">Không có use case nào đang chờ duyệt ✓</p></div>'; return; }
-    container.innerHTML = items.map(function (uc) {
-      var cfg = STATUS_CFG[uc.status] || { label: uc.status, color: '#5f6368' };
-      var excerpt = uc.pain_point
-        ? '<div class="pending-card-excerpt">' + esc(uc.pain_point.substring(0, 150)) + (uc.pain_point.length > 150 ? '…' : '') + '</div>'
-        : '';
-      return '<div class="pending-card">' +
-        '<div class="pending-card-header">' +
-          '<span class="id-badge">' + esc(uc.usecase_id || '--') + '</span>' +
-          '<span class="status-badge" style="background:' + cfg.color + '20;color:' + cfg.color + ';border:1px solid ' + cfg.color + '40">' + cfg.label + '</span>' +
-        '</div>' +
-        '<div class="pending-card-title">' + esc(uc.name || 'Không có tên') + '</div>' +
-        '<div class="pending-card-meta">' +
-          '<span>' + esc(uc.owner_name || '--') + '</span>' +
-          '<span>' + esc(uc.team || '--') + '</span>' +
-          '<span>' + esc(uc.category || '--') + '</span>' +
-          '<span>' + fmtDate(uc.submit_date) + '</span>' +
-        '</div>' +
-        excerpt +
-        '<div class="pending-card-actions">' +
-          _btnDetail(uc, 'Xem chi tiết') +
-          _btnApprove(uc) +
-          _btnReject(uc) +
-        '</div>' +
-      '</div>';
-    }).join('');
-  }
+  // (đã gỡ renderPendingList — bỏ duyệt US; tab "chờ duyệt" nay chỉ còn milestone)
 
   // ── Milestone approval (v3.14.0) ──────────────────────────────────
   function _cacheMilestone(m) {
@@ -665,9 +613,10 @@
   }
 
   function _refreshPendingBadge() {
-    updatePendingBadge(_pendingList.length + _milestonePending.length);
+    var n = _milestonePending.length; // bỏ duyệt US → badge tab = số milestone chờ duyệt
+    updatePendingBadge(n);
     var mb = document.getElementById('milestoneBadge');
-    if (mb) mb.textContent = _milestonePending.length ? String(_milestonePending.length) : '';
+    if (mb) mb.textContent = n ? String(n) : '';
   }
 
   // Load milestone lists. Approved feed KPI cho MỌI user; pending queue chỉ admin.
@@ -1152,9 +1101,7 @@
       editBtn.href = 'register.html?edit=' + encodeURIComponent(uc.record_id || uc.usecase_id || '');
     }
 
-    // Approve/Reject buttons.
-    // - Milestone mode: admin duyệt/từ chối milestone bất kể status US (thường đã Approved).
-    // - US mode: admin only, trên status hợp lệ.
+    // Approve/Reject buttons — CHỈ cho milestone (đã bỏ duyệt US).
     var apBtn = document.getElementById('detailApproveBtn');
     var rjBtn = document.getElementById('detailRejectBtn');
     if (_detailMilestone) {
@@ -1163,11 +1110,8 @@
       apBtn.textContent = '✓ Duyệt milestone';
       rjBtn.textContent = '✕ Từ chối milestone';
     } else {
-      var canApprove = _isAdmin && ['Submitted', 'Under Review'].includes(uc.status);
-      apBtn.style.display = canApprove ? '' : 'none';
-      rjBtn.style.display = canApprove ? '' : 'none';
-      apBtn.textContent = '✓ Duyệt';
-      rjBtn.textContent = '✕ Từ chối';
+      apBtn.style.display = 'none';
+      rjBtn.style.display = 'none';
     }
 
     // Copy prompt button: visible when prompt data exists
@@ -1483,22 +1427,9 @@
           await Api.rejectMilestone(mp);
           showToast('Đã từ chối milestone', 'info');
         }
-      } else {
-        var payload = {
-          record_id:      _detailUc.record_id,
-          reviewer_email: _user ? _user.email : '',
-          comment:        comment
-        };
-        if (_detailAction === 'approve') {
-          await Api.approveUseCase(payload);
-          showToast('Đã duyệt use case thành công', 'success');
-        } else {
-          await Api.rejectUseCase(payload);
-          showToast('Đã từ chối use case', 'info');
-        }
       }
       _closeDetail();
-      _allList = []; _pendingList = []; _dashData = null;
+      _allList = []; _dashData = null;
       await _loadStartupData();
     } catch (err) {
       showToast('Lỗi: ' + err.message, 'error');
@@ -1516,67 +1447,7 @@
     _detailMilestone = null;
   }
 
-  // ── Legacy Approval Modal (kept for backward compat) ──────────────
-  function _bindApprovalModal() {
-    var cancelBtn  = document.getElementById('modalCancelBtn');
-    var confirmBtn = document.getElementById('modalConfirmBtn');
-    if (cancelBtn)  cancelBtn.addEventListener('click',  _closeModal);
-    if (confirmBtn) confirmBtn.addEventListener('click', _confirmModalApproval);
-    var modal = document.getElementById('approvalModal');
-    if (modal) modal.addEventListener('click', function (e) { if (e.target === this) _closeModal(); });
-  }
-
-  var _modal = { action: null, recordId: null };
-
-  function _openModalApprove(recordId, name) {
-    _modal = { action: 'approve', recordId: recordId };
-    document.getElementById('modalConfirmBtn').className     = 'btn btn-success';
-    document.getElementById('modalConfirmBtn').textContent   = 'Xác nhận duyệt';
-    document.getElementById('modalTitle').textContent        = 'Xác nhận duyệt use case';
-    document.getElementById('modalBody').innerHTML           = 'Duyệt use case: <strong>' + esc(name) + '</strong>';
-    document.getElementById('modalComment').value            = '';
-    document.getElementById('rejectNote').classList.add('hidden');
-    document.getElementById('approvalModal').classList.remove('hidden');
-  }
-
-  function _openModalReject(recordId, name) {
-    _modal = { action: 'reject', recordId: recordId };
-    document.getElementById('modalConfirmBtn').className     = 'btn btn-danger';
-    document.getElementById('modalConfirmBtn').textContent   = 'Xác nhận từ chối';
-    document.getElementById('modalTitle').textContent        = 'Từ chối use case';
-    document.getElementById('modalBody').innerHTML           = 'Từ chối use case: <strong>' + esc(name) + '</strong>';
-    document.getElementById('modalComment').value            = '';
-    document.getElementById('rejectNote').classList.remove('hidden');
-    document.getElementById('approvalModal').classList.remove('hidden');
-  }
-
-  function _closeModal() {
-    document.getElementById('approvalModal').classList.add('hidden');
-    _modal = { action: null, recordId: null };
-  }
-
-  async function _confirmModalApproval() {
-    if (!_modal.action || !_modal.recordId) return;
-    var comment    = (document.getElementById('modalComment').value || '').trim();
-    var confirmBtn = document.getElementById('modalConfirmBtn');
-    if (_modal.action === 'reject' && !comment) { showToast('Vui lòng nhập lý do từ chối', 'error'); return; }
-    confirmBtn.disabled = true; confirmBtn.textContent = 'Đang xử lý...';
-    showLoading(true);
-    try {
-      var payload = { record_id: _modal.recordId, reviewer_email: _user ? _user.email : '', comment: comment };
-      if (_modal.action === 'approve') { await Api.approveUseCase(payload); showToast('Đã duyệt use case thành công', 'success'); }
-      else                             { await Api.rejectUseCase(payload);  showToast('Đã từ chối use case', 'info'); }
-      _closeModal();
-      _pendingList = []; _dashData = null;
-      await _loadAdminOverview();
-    } catch (err) {
-      showToast('Lỗi: ' + err.message, 'error');
-      confirmBtn.disabled = false;
-      confirmBtn.textContent = _modal.action === 'approve' ? 'Xác nhận duyệt' : 'Xác nhận từ chối';
-    } finally {
-      showLoading(false);
-    }
-  }
+  // (đã gỡ toàn bộ Legacy Approval Modal — duyệt/từ chối US không còn)
 
   // ── Search (Explore tab) ─────────────────────────────────────────
   function _bindExploreSearch() {
@@ -2200,12 +2071,6 @@
     _byKey: function (key) {
       var uc = _ucCache[key]; if (uc) openDetail(uc);
     },
-    _approveByKey: function (key) {
-      var uc = _ucCache[key]; if (uc) { openDetail(uc); _showActionArea('approve'); }
-    },
-    _rejectByKey: function (key) {
-      var uc = _ucCache[key]; if (uc) { openDetail(uc); _showActionArea('reject'); }
-    },
     // Milestone approval (v3.14.0; v3.15.0: xem chi tiết trước khi duyệt)
     _approveMilestone:    _approveMilestone,
     _rejectMilestone:     _rejectMilestone,
@@ -2240,8 +2105,6 @@
     },
     // Legacy compat
     _openDetail:        openDetail,
-    _approve:           function (recordId, name) { _openModalApprove(recordId, name); },
-    _reject:            function (recordId, name) { _openModalReject(recordId, name); },
     // KPI user drill-down
     _openKPIUserList: _openKPIUserList,
     // KPI view mode toggle (total / week)

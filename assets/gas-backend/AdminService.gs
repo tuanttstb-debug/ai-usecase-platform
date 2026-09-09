@@ -51,82 +51,9 @@ function isAdminEmail_(email) {
   return getAdminEmails_().indexOf(String(email).trim().toLowerCase()) !== -1;
 }
 
-// ── Approve / Reject ──────────────────────────────────────────────
-
-/**
- * Duyệt một use case.
- * Chỉ admin mới được gọi. Chỉ status Submitted/Under Review mới được duyệt.
- * @param {string} recordId       - Record_ID của use case
- * @param {string} reviewerEmail  - Email admin thực hiện duyệt
- * @param {string} [comment]      - Nhận xét (tùy chọn)
- * @returns {{ record_id, new_status }}
- */
-function approveUseCase_(recordId, reviewerEmail, comment) {
-  if (!isAdminEmail_(reviewerEmail)) {
-    throw new Error('Email không có quyền duyệt use case: ' + reviewerEmail);
-  }
-  return changeUseCaseStatus_(recordId, STATUS.APPROVED, reviewerEmail, comment || '', 'APPROVED');
-}
-
-/**
- * Từ chối một use case.
- * Bắt buộc có comment (lý do từ chối).
- * @param {string} recordId
- * @param {string} reviewerEmail
- * @param {string} comment         - Lý do từ chối (bắt buộc)
- * @returns {{ record_id, new_status }}
- */
-function rejectUseCase_(recordId, reviewerEmail, comment) {
-  if (!isAdminEmail_(reviewerEmail)) {
-    throw new Error('Email không có quyền từ chối use case: ' + reviewerEmail);
-  }
-  if (!comment || String(comment).trim() === '') {
-    throw new Error('Lý do từ chối là bắt buộc');
-  }
-  return changeUseCaseStatus_(recordId, STATUS.REJECTED, reviewerEmail, comment, 'REJECTED');
-}
-
-/**
- * Internal: thay đổi status + ghi reviewer info + audit log.
- */
-function changeUseCaseStatus_(recordId, newStatus, reviewerEmail, comment, logAction) {
-  var existing = findObjectByField_(SHEETS.MASTER, 'Record_ID', recordId);
-  if (!existing) throw new Error('Không tìm thấy use case: ' + recordId);
-
-  var allowedFrom = [STATUS.SUBMITTED, 'Under Review'];
-  if (allowedFrom.indexOf(existing.Status) === -1) {
-    throw new Error(
-      'Chỉ duyệt/từ chối được khi trạng thái là Submitted hoặc Under Review. ' +
-      'Hiện tại: "' + existing.Status + '"'
-    );
-  }
-
-  var now    = new Date().toISOString();
-  var merged = {};
-  Object.keys(existing).forEach(function(k) { merged[k] = existing[k]; });
-
-  merged.Status         = newStatus;
-  merged.Reviewer       = reviewerEmail;
-  merged.Review_Date    = now;
-  merged.Review_Comment = comment;
-  merged.Updated_At     = now;
-  merged.Edit_Version   = (parseInt(merged.Edit_Version, 10) || 0) + 1;
-
-  // JSON_Backup
-  var backupData = {};
-  HEADERS.forEach(function(h) { if (h !== 'JSON_Backup') backupData[h] = merged[h]; });
-  merged.JSON_Backup = JSON.stringify(backupData);
-
-  updateRowByRecordId_(SHEETS.MASTER, recordId, merged);
-  logActivity_(
-    merged.UseCase_ID, recordId, logAction,
-    (logAction === 'APPROVED' ? 'Duyệt' : 'Từ chối') + ' bởi ' + reviewerEmail +
-      (comment ? ': ' + comment.substring(0, 200) : ''),
-    reviewerEmail, existing.Status, newStatus
-  );
-
-  return { record_id: recordId, new_status: newStatus };
-}
+// ── (Đã gỡ duyệt US: approveUseCase_ / rejectUseCase_ / changeUseCaseStatus_) ──
+//     US nộp xong vào review thẳng, không qua bước duyệt. Duyệt MILESTONE vẫn giữ
+//     (approveMilestone_ / rejectMilestone_ bên dưới).
 
 // ── List Use Cases ────────────────────────────────────────────────
 

@@ -242,26 +242,8 @@ function route_(action, params, body) {
   //    Mô hình chấm H2 = Điểm US hội đồng (council) + Điểm cá nhân (personal) trong ScoringServiceH2.gs.
   //    Xem archive/h1 + ScoringEngine.gs (đã xóa).
 
-  // ── Approval endpoints (data qua base64url payload) ──────────────
-  if (action === 'approve') {
-    var approveRecordId = body.record_id || body.Record_ID;
-    var approveEmail    = body.reviewer_email || body.Reviewer;
-    var approveComment  = body.comment || body.Review_Comment || '';
-    if (!approveRecordId) return createResponse_(false, 'Thiếu record_id');
-    if (!approveEmail)    return createResponse_(false, 'Thiếu reviewer_email');
-    return createResponse_(true, 'Use case đã được duyệt',
-      approveUseCase_(approveRecordId, approveEmail, approveComment));
-  }
-
-  if (action === 'reject') {
-    var rejectRecordId = body.record_id || body.Record_ID;
-    var rejectEmail    = body.reviewer_email || body.Reviewer;
-    var rejectComment  = body.comment || body.Review_Comment || '';
-    if (!rejectRecordId) return createResponse_(false, 'Thiếu record_id');
-    if (!rejectEmail)    return createResponse_(false, 'Thiếu reviewer_email');
-    return createResponse_(true, 'Use case đã bị từ chối',
-      rejectUseCase_(rejectRecordId, rejectEmail, rejectComment));
-  }
+  // ── (Đã gỡ route approve/reject US — bỏ bước duyệt use case) ──────
+  // Duyệt MILESTONE vẫn giữ (milestone-approve / milestone-reject bên dưới).
 
   // ── Auth dùng chung với SHTD (H2) ──────────────────────────────
 

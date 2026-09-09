@@ -297,10 +297,8 @@ var Api = {
     return Api._request(API.duplicateCheck(), { UseCase_Name: name, Pain_Point: pain });
   },
 
-  // Dashboard & Approval
+  // Dashboard (đã bỏ duyệt US — approveUseCase/rejectUseCase gỡ)
   listUseCases(filters) { return Api._request(API.list(filters)); },
-  approveUseCase(data)  { return Api._request(API.approve(), data); },
-  rejectUseCase(data)   { return Api._request(API.reject(),  data); },
 
   // Auth dùng chung SHTD (H2) — username + password → { token, user }
   authLogin(username, password) { return Api._request(API.authLogin(), { username: username, password: password }); },

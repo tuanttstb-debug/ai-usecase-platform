@@ -29,8 +29,7 @@ var API = {
   },
 
   // Approval endpoints (payload qua JSONP base64)
-  approve: () => `${_gasBase}?action=approve`,
-  reject:  () => `${_gasBase}?action=reject`,
+  // (đã gỡ approve/reject US — bỏ bước duyệt use case)
 
   // Auth dùng chung với SHTD (H2) — username + password, trả token HMAC
   authLogin:          () => `${_gasBase}?action=auth-login`,
