@@ -40,19 +40,15 @@
     'Archived':     { label: 'Lưu trữ',      color: '#A4A4B2' }
   };
 
-  // ── Init ─────────────────────────────────────────────────────────
-  window.addEventListener('DOMContentLoaded', function () {
-
-    // Auth check: all logged-in users allowed
+  // ── Init (SPA) ───────────────────────────────────────────────────
+  var _dashInited = false;
+  function _dashInit() {
+    if (_dashInited) return;
+    _dashInited = true;
     if (typeof AuthService !== 'undefined') {
-      if (!AuthService.isLoggedIn()) {
-        window.location.replace('login.html?return=dashboard.html');
-        return;
-      }
       _user    = AuthService.getUser();
       _isAdmin = AuthService.isAdmin();
     }
-
     _populateSidebar();
     _setupLayout();
     _bindTabs();
@@ -64,14 +60,18 @@
     _bindListModal();
     _bindKPIClicks();
     _initAllFilters();
-
-    // Determine initial tab from URL param
-    var sp       = new URLSearchParams(window.location.search);
-    var initTab  = sp.get('tab') || (_isAdmin ? 'overview' : 'my');
-    _activateTab(initTab);
-
-    // Load all data on startup — no waiting for tab clicks
     _loadStartupData();
+  }
+  // show mỗi lần vào #dashboard(/tab): sub = tab (my/explore/kpi/overview/all/pending)
+  function _dashShow(sub) {
+    var initTab = sub || (_isAdmin ? 'overview' : 'my');
+    _activateTab(initTab);
+    _loadTabData(initTab);
+  }
+  if (window.Router) window.Router.register('dashboard', {
+    title: 'Dashboard',
+    init: _dashInit,
+    show: _dashShow
   });
 
   // ── Layout setup (role-based visibility) ─────────────────────────

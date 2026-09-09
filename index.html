@@ -761,7 +761,159 @@
           </main>
         </section>
 
-        <!-- Các view khác được gộp tiếp ở S1 (dashboard). -->
+        <!-- ═══ VIEW: dashboard ═══ -->
+        <section data-view="dashboard" hidden>
+          <div id="dashboardContent">
+            <div class="kpi-row" role="list" aria-label="Thống kê tổng quan" id="kpiRow" style="display:none">
+              <div class="kpi-card" id="kpiTotal" role="listitem">
+                <div class="kpi-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="22" height="22"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" /></svg></div>
+                <div class="kpi-value">--</div><div class="kpi-label">Tổng use case</div>
+              </div>
+              <div class="kpi-card kpi-success" id="kpiApproved" role="listitem">
+                <div class="kpi-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="22" height="22"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+                <div class="kpi-value">--</div><div class="kpi-label">Đã duyệt</div>
+              </div>
+              <div class="kpi-card kpi-warning" id="kpiPending" role="listitem">
+                <div class="kpi-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="22" height="22"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+                <div class="kpi-value">--</div><div class="kpi-label">Chờ duyệt</div>
+              </div>
+              <div class="kpi-card kpi-info" id="kpiHours" role="listitem">
+                <div class="kpi-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="22" height="22"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg></div>
+                <div class="kpi-value">--</div><div class="kpi-label">Giờ tiết kiệm/tháng</div>
+              </div>
+            </div>
+
+            <div class="dash-tabs" role="tablist" aria-label="Phần dashboard">
+              <button class="dash-tab admin-only" data-tab="overview" role="tab" aria-selected="false" id="tab-btn-overview" style="display:none">Tổng quan</button>
+              <button class="dash-tab admin-only" data-tab="pending" role="tab" aria-selected="false" id="tab-btn-pending" style="display:none">Chờ duyệt <span class="tab-badge" id="pendingBadge" aria-label="số use case chờ duyệt"></span></button>
+              <button class="dash-tab admin-only" data-tab="all" role="tab" aria-selected="false" id="tab-btn-all" style="display:none">Tất cả use case</button>
+              <button class="dash-tab" data-tab="my" role="tab" aria-selected="true" id="tab-btn-my">Use Case của tôi</button>
+              <button class="dash-tab" data-tab="explore" role="tab" aria-selected="false" id="tab-btn-explore">Khám phá</button>
+              <button class="dash-tab" data-tab="kpi" role="tab" aria-selected="false" id="tab-btn-kpi">KPI &amp; Tiến độ</button>
+            </div>
+
+            <div id="tab-overview" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-overview">
+              <div class="dash-grid-2">
+                <div class="dash-card"><div class="dash-card-header"><h3>Phân bổ trạng thái</h3></div><div id="statusChart" class="chart-container"><canvas aria-label="Biểu đồ phân bổ trạng thái" role="img"></canvas></div></div>
+                <div class="dash-card"><div class="dash-card-header"><h3>Phân bổ theo Team</h3></div><div id="teamChart" class="chart-container"><canvas aria-label="Biểu đồ phân bổ theo team" role="img"></canvas></div></div>
+              </div>
+              <div class="dash-card"><div class="dash-card-header"><h3>Phân bổ theo Nhóm workflow</h3></div><div id="categoryChart" class="chart-container"><canvas aria-label="Biểu đồ phân bổ theo lĩnh vực" role="img"></canvas></div></div>
+              <div class="dash-card dash-card--rejected" id="rejectedCard" style="display:none">
+                <div class="dash-card-header">
+                  <div style="display:flex;align-items:center;gap:var(--space-3)"><h3>Use Case bị từ chối</h3><span id="rejectedCountBadge" class="tab-badge tab-badge--danger">0</span></div>
+                  <button class="btn btn-sm btn-outline" id="viewAllRejectedBtn" style="display:none">Xem tất cả →</button>
+                </div>
+                <table id="rejectedTable" class="dash-table" aria-label="Danh sách use case bị từ chối">
+                  <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Người đăng ký</th><th>Team</th><th>Ngày nộp</th><th></th></tr></thead>
+                  <tbody><tr><td colspan="6" class="empty-cell">Đang tải...</td></tr></tbody>
+                </table>
+              </div>
+              <div class="dash-card">
+                <div class="dash-card-header"><h3>Nộp gần đây</h3><span id="refreshedAt" class="dash-card-meta"></span></div>
+                <table id="recentTable" class="dash-table" aria-label="Danh sách use case nộp gần đây">
+                  <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Team</th><th>Ngày nộp</th><th></th></tr></thead>
+                  <tbody><tr><td colspan="5" class="empty-cell">Đang tải...</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="tab-pending" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-pending">
+              <div id="pendingMilestoneSection" style="display:none;margin-bottom:var(--space-6)">
+                <div class="dash-card-header" style="margin-bottom:var(--space-3)">
+                  <h3>⏳ Milestone cập nhật tuần chờ duyệt <span class="tab-badge tab-badge--danger" id="milestoneBadge"></span></h3>
+                  <p class="section-hint" style="margin:0;font-size:var(--text-xs);color:var(--color-text-secondary)">Duyệt để áp Stage/điểm mới lên use case và ghi nhận vào KPI của người sở hữu.</p>
+                </div>
+                <div id="pendingMilestoneList"></div>
+              </div>
+              <h3 style="margin:0 0 var(--space-3)">Use case chờ duyệt</h3>
+              <div id="pendingList"><div class="empty-state"><p class="empty-state-text">Đang tải...</p></div></div>
+            </div>
+
+            <div id="tab-all" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-all">
+              <div class="dash-card">
+                <div class="dash-card-header">
+                  <h3>Tất cả use case <span id="allTableCount" class="all-count-badge"></span></h3>
+                  <div class="search-box"><input type="search" id="searchInput" class="search-input" placeholder="Tìm theo tên, người đăng ký, team..." aria-label="Tìm kiếm use case"></div>
+                </div>
+                <div class="filter-bar" role="group" aria-label="Bộ lọc use case">
+                  <div class="filter-bar-group"><span class="filter-bar-label">Trạng thái</span><div class="filter-pills" id="statusFilterPills" role="group" aria-label="Lọc theo trạng thái"></div></div>
+                  <div class="filter-bar-group"><label class="filter-bar-label" for="teamFilter">Team</label><select id="teamFilter" class="filter-select" aria-label="Lọc theo team"><option value="">Tất cả</option></select></div>
+                </div>
+                <table id="allTable" class="dash-table" aria-label="Danh sách tất cả use case">
+                  <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Người đăng ký</th><th>Team</th><th>Trạng thái</th><th></th></tr></thead>
+                  <tbody><tr><td colspan="6" class="empty-cell">Đang tải...</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="tab-my" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-my">
+              <div class="dash-card">
+                <div class="dash-card-header"><h3>Use Case của tôi</h3><a href="#register" class="btn btn-sm btn-primary">+ Đăng ký mới</a></div>
+                <table id="myTable" class="dash-table" aria-label="Danh sách use case của tôi">
+                  <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Trạng thái</th><th>Ngày nộp</th><th></th></tr></thead>
+                  <tbody><tr><td colspan="5" class="empty-cell">Đang tải...</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="tab-explore" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-explore">
+              <div class="dash-card">
+                <div class="dash-card-header"><h3>Khám phá Use Case</h3><div class="search-box"><input type="search" id="exploreSearch" class="search-input" placeholder="Tìm theo tên, team, lĩnh vực..." aria-label="Tìm kiếm use case"></div></div>
+                <table id="exploreTable" class="dash-table" aria-label="Danh sách use case đã được duyệt">
+                  <thead><tr><th>Mã</th><th>Tên Use Case</th><th>Team</th><th>Người đăng ký</th><th style="text-align:center">Điểm</th><th>Xếp hạng</th><th>Workflow</th><th></th></tr></thead>
+                  <tbody><tr><td colspan="8" class="empty-cell">Đang tải...</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="tab-kpi" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-kpi">
+              <div id="kpiTabContent"><div class="empty-state"><p class="empty-state-text">Đang tải...</p></div></div>
+            </div>
+          </div>
+
+          <!-- List Popup Modal -->
+          <div id="listModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="listModalTitle">
+            <div class="modal-card modal-card--list">
+              <div class="modal-header">
+                <div style="display:flex;align-items:center;gap:var(--space-3);flex:1;min-width:0"><h3 id="listModalTitle" style="margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Danh sách Use Case</h3><span id="listModalCount" class="id-badge" style="flex-shrink:0"></span></div>
+                <button class="modal-close" id="listModalCloseBtn" aria-label="Đóng">×</button>
+              </div>
+              <div class="modal-body" id="listModalBody"></div>
+            </div>
+          </div>
+
+          <!-- US Detail Modal -->
+          <div id="usDetailModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle">
+            <div class="modal-card modal-card--wide">
+              <div class="modal-header">
+                <div style="display:flex;align-items:center;gap:var(--space-3);flex:1;min-width:0"><h3 id="detailModalTitle" style="margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Chi tiết Use Case</h3><span id="detailModalId" class="id-badge" style="flex-shrink:0"></span><span id="detailModalStatus" class="status-badge" style="flex-shrink:0"></span></div>
+                <button class="modal-close" id="detailModalCloseBtn" aria-label="Đóng">×</button>
+              </div>
+              <div class="modal-body" id="detailView"></div>
+              <div id="detailActionArea" style="display:none;padding:var(--space-5);border-top:1px solid var(--color-border)">
+                <div class="form-group" style="margin-bottom:var(--space-3)"><label class="field-label" for="detailActionComment">Nhận xét <span id="detailActionNote" class="field-required-mark" style="display:none">*</span></label><textarea id="detailActionComment" rows="3" class="form-control" placeholder="Nhận xét về use case này..."></textarea></div>
+                <div style="display:flex;gap:var(--space-3);justify-content:flex-end"><button class="btn btn-outline" id="detailActionCancelBtn">← Hủy</button><button class="btn btn-primary" id="detailActionConfirmBtn">Xác nhận</button></div>
+              </div>
+              <div class="modal-footer" id="detailModalFooter">
+                <a id="detailEditBtn" href="#" class="btn btn-outline" style="display:none">✏️ Chỉnh sửa</a>
+                <div style="flex:1"></div>
+                <button class="btn btn-outline" id="detailCopyPromptBtn" style="display:none">📋 Copy Prompt</button>
+                <button class="btn btn-outline" id="detailCloseBtn">Đóng</button>
+                <button class="btn btn-danger" id="detailRejectBtn" style="display:none">✕ Từ chối</button>
+                <button class="btn btn-success" id="detailApproveBtn" style="display:none">✓ Duyệt</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Approval Confirm Modal (legacy) -->
+          <div id="approvalModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="modal-card">
+              <div class="modal-header"><h3 id="modalTitle">Xác nhận</h3><button class="modal-close" id="modalCancelBtn" aria-label="Đóng">×</button></div>
+              <div class="modal-body"><p id="modalBody"></p><div class="form-group"><label class="field-label" for="modalComment">Nhận xét <span id="rejectNote" class="reject-required hidden">(bắt buộc khi từ chối)</span></label><textarea id="modalComment" rows="3" placeholder="Nhận xét về use case này..."></textarea></div></div>
+              <div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('modalCancelBtn').click()">Hủy</button><button class="btn btn-success" id="modalConfirmBtn">Xác nhận duyệt</button></div>
+            </div>
+          </div>
+        </section>
 
       </div><!-- /app-content -->
     </div><!-- /app-main -->
@@ -795,6 +947,8 @@
   <script src="assets/js/weekly-update.js"></script>
   <script src="assets/js/review-queue.js"></script>
   <script src="assets/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="assets/js/dashboard.js"></script>
   <!-- shell cuối -->
   <script src="assets/js/shell.js"></script>
 </body>
