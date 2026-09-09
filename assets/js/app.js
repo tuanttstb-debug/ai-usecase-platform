@@ -20,7 +20,8 @@
   // Điểm nay theo mô hình mới: Điểm US do hội đồng chấm (review-queue) + Điểm cá nhân (personal-score).
 
   /* ── Entry Point ── */
-  async function init() {
+  var _bound = false; // guard: bind autosave/submit 1 lần dù re-enter view
+  async function init(sub) {
     showLoading(true, 'Đang khởi tạo...');
     try {
 
@@ -36,8 +37,9 @@
 
       // 3. Edit mode hay new mode
       const params = new URLSearchParams(window.location.search);
-      if (params.has('edit')) {
-        currentRecordId = params.get('edit');
+      const editId = sub || (params.has('edit') ? params.get('edit') : '');
+      if (editId) {
+        currentRecordId = editId;
         showLoading(true, 'Đang tải use case...');
         try {
           const data = await Api.getUseCase(currentRecordId);
@@ -55,14 +57,15 @@
         // ID sẽ được fetch và gắn vào payload lúc submit (không hiện sớm để tránh stale)
       }
 
-      // 4. Autosave
-      document.getElementById('useCaseForm').addEventListener('change', () => {
-        Storage.save(FormMapper.collectData());
-        showAutosaveBadge();
-      });
-
-      // 5. Submit
-      document.getElementById('submitBtn').addEventListener('click', submitForm);
+      // 4/5. Autosave + Submit — bind 1 lần (tránh double khi re-enter view SPA)
+      if (!_bound) {
+        document.getElementById('useCaseForm').addEventListener('change', () => {
+          Storage.save(FormMapper.collectData());
+          showAutosaveBadge();
+        });
+        document.getElementById('submitBtn').addEventListener('click', submitForm);
+        _bound = true;
+      }
 
     } catch (err) {
       Toast.show('Lỗi khởi tạo: ' + err.message, 'error');
@@ -425,5 +428,9 @@
     if (labelEl && label) labelEl.textContent = label;
   }
 
-  window.addEventListener('DOMContentLoaded', init);
+  // SPA: init/refresh mỗi lần vào view #register (form tươi; sub = recordId khi edit)
+  if (window.Router) window.Router.register('register', {
+    title: 'Đăng ký AI Use Case',
+    show: function (sub) { init(sub); }
+  });
 })();

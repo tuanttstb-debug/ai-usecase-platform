@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="assets/css/layout.css">
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/forms.css">
+  <link rel="stylesheet" href="assets/css/wizard.css">
   <link rel="stylesheet" href="assets/css/states.css">
   <link rel="stylesheet" href="assets/css/responsive.css">
   <link rel="stylesheet" href="assets/css/portal.css">
@@ -702,7 +703,65 @@
           </aside>
         </section>
 
-        <!-- Các view khác được gộp tiếp ở S1 (dashboard, register). -->
+        <!-- ═══ VIEW: register (Đăng ký AI Use Case — wizard) ═══ -->
+        <section data-view="register" hidden>
+          <main class="app-container">
+            <div class="wizard" id="wizardCard">
+              <div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
+              <div id="draftBanner" class="draft-banner hidden" role="alert" aria-live="polite">
+                <div class="draft-banner-content">
+                  <span style="font-size:1.2rem;">📝</span>
+                  <div class="draft-banner-text">
+                    <span class="draft-banner-title">Bạn có bản nháp chưa hoàn thành</span>
+                    <span class="draft-banner-sub">Tiếp tục từ lần trước hay bắt đầu lại?</span>
+                  </div>
+                </div>
+                <div class="draft-banner-actions">
+                  <button id="draftRestoreBtn" class="btn btn-sm btn-primary">Tiếp tục</button>
+                  <button id="draftDiscardBtn" class="btn btn-sm btn-ghost">Bỏ qua</button>
+                </div>
+              </div>
+              <div id="editModeBanner" class="edit-mode-banner hidden" role="status">
+                <span class="edit-mode-banner-icon">✏️</span>
+                <span class="edit-mode-banner-text">Đang chỉnh sửa use case — <strong id="editModeId"></strong></span>
+              </div>
+              <div class="step-indicators" id="stepIndicators" role="navigation" aria-label="Các bước điền form"></div>
+              <div class="wizard-meta">
+                <span class="step-counter" id="stepCounter" aria-live="polite">Bước 1 / 4</span>
+                <span class="nextid-badge" id="nextIdBadge" aria-label="Mã dự kiến sẽ được cấp" style="display:none"></span>
+                <span class="autosave-badge" id="autosaveBadge" aria-live="polite" aria-atomic="true"></span>
+              </div>
+              <div class="wizard-body">
+                <form id="useCaseForm" novalidate aria-label="Form đăng ký AI Use Case"><!-- Steps injected by Wizard.renderSteps() --></form>
+              </div>
+              <div id="successScreen" class="success-screen hidden" role="region" aria-label="Đăng ký thành công">
+                <div class="success-icon-wrap" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+                <h2 class="success-title">Đăng ký thành công!</h2>
+                <div class="success-id-badge" id="successIdBadge">--</div>
+                <p class="success-desc">Use case của bạn đã được ghi nhận.<br>Team sẽ review và liên hệ sớm nhất.</p>
+                <div class="success-actions">
+                  <button onclick="location.href='register.html'" class="btn btn-primary">Đăng ký thêm</button>
+                  <a href="#dashboard/my" class="btn btn-outline">Xem Use Case của tôi →</a>
+                </div>
+              </div>
+              <div class="wizard-nav-wrapper" id="wizardNavWrapper">
+                <div class="wizard-nav-left">
+                  <button type="button" id="prevBtn" class="btn btn-outline" disabled aria-label="Bước trước">← Trước</button>
+                </div>
+                <div class="wizard-nav-right">
+                  <button type="button" id="nextBtn" class="btn btn-primary" aria-label="Bước tiếp theo">Tiếp →</button>
+                  <button type="button" id="submitBtn" class="btn btn-success" style="display:none;" aria-label="Gửi đăng ký">Gửi đăng ký ✓</button>
+                </div>
+              </div>
+            </div>
+            <div id="loadingOverlay" class="loading-overlay hidden" role="status" aria-label="Đang tải">
+              <div class="spinner" aria-hidden="true"></div>
+              <span class="loading-label" id="loadingLabel">Đang tải...</span>
+            </div>
+          </main>
+        </section>
+
+        <!-- Các view khác được gộp tiếp ở S1 (dashboard). -->
 
       </div><!-- /app-content -->
     </div><!-- /app-main -->
@@ -719,6 +778,10 @@
   <script src="assets/js/storage.js"></script>
   <script src="assets/js/toast.js"></script>
   <script src="assets/js/api.js"></script>
+  <script src="assets/js/validation.js"></script>
+  <script src="assets/js/duplicate-check.js"></script>
+  <script src="assets/js/form-mapper.js"></script>
+  <script src="assets/js/wizard.js"></script>
   <script src="assets/js/scoring-h2.js"></script>
   <script src="assets/js/score-slider.js"></script>
   <script src="assets/js/uc-detail-view.js"></script>
@@ -731,6 +794,7 @@
   <script src="assets/js/leaderboard.js"></script>
   <script src="assets/js/weekly-update.js"></script>
   <script src="assets/js/review-queue.js"></script>
+  <script src="assets/js/app.js"></script>
   <!-- shell cuối -->
   <script src="assets/js/shell.js"></script>
 </body>
