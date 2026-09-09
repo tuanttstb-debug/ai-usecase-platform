@@ -239,7 +239,12 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', function () { _bind(); _load(); });
+  // SPA: lazy-init khi router mở #workflow-catalog (admin)
+  if (window.Router) window.Router.register('workflow-catalog', {
+    title: 'Cấu hình Workflow & Use case',
+    roles: ['admin'],
+    init: function () { _bind(); _load(); }
+  });
 
   window.WorkflowCatalog = {
     _edit: function (key) { var r = _cache[key]; if (r) _openModal(r); }

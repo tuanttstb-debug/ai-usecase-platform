@@ -186,5 +186,9 @@
   function closeModal() { document.getElementById('wfcModal').classList.add('hidden'); }
 
   window.WorkflowCoverage = { openWf: openWf, closeModal: closeModal, _build: _build, _groups: function () { return _groups; } };
-  document.addEventListener('DOMContentLoaded', load);
+  // SPA: lazy-init khi router mở #workflow-coverage
+  if (window.Router) window.Router.register('workflow-coverage', {
+    title: 'Độ phủ Workflow',
+    init: load
+  });
 })();

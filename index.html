@@ -98,7 +98,7 @@
           <span class="sidebar-nav-label">Cập nhật tuần</span>
         </a>
 
-        <a href="#change-password" class="sidebar-nav-item" data-view="change-password" role="menuitem">
+        <a href="change-password.html" class="sidebar-nav-item" role="menuitem">
           <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" /></svg></i>
           <span class="sidebar-nav-label">Đổi mật khẩu</span>
         </a>
@@ -148,9 +148,245 @@
           </main>
         </section>
 
-        <!-- Các view khác được gộp vào ở bước S1 (dashboard, register, leaderboard,
-             review-queue, personal-score, library, workflow-catalog, workflow-coverage,
-             weekly-update, change-password). -->
+        <!-- ═══ VIEW: library (Thư viện AI) ═══ -->
+        <section data-view="library" hidden>
+          <p style="color:var(--color-text-secondary);margin-bottom:var(--space-4)">
+            Thư viện Prompt / Workflow / Quick Win dùng chung — gom từ Use Case đã được duyệt. Lọc theo Workflow/Team, tìm kiếm, và <strong>Copy Prompt</strong> để tái sử dụng ngay.
+          </p>
+          <div id="libLoading" class="empty-state">Đang tải thư viện…</div>
+          <div class="rq-filter-bar" id="libFilterBar" style="display:none">
+            <input type="search" id="libSearch" class="rq-search-input" placeholder="Tìm theo tên UC / workflow / người đăng ký…" autocomplete="off">
+            <select id="libWorkflowFilter" class="rq-team-select"><option value="">Tất cả workflow</option></select>
+            <select id="libTeamFilter" class="rq-team-select"><option value="">Tất cả team</option></select>
+            <span class="rq-result-count" id="libResultCount"></span>
+          </div>
+          <div id="libContent" style="display:none"></div>
+
+          <div id="libModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+            <div class="modal-card modal-card--wide">
+              <div class="modal-header">
+                <div style="display:flex;align-items:center;gap:var(--space-3);flex:1;min-width:0">
+                  <h3 id="libModalTitle" style="margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Prompt</h3>
+                  <span id="libModalId" class="id-badge" style="flex-shrink:0"></span>
+                </div>
+                <button class="modal-close" onclick="Library.closeModal()" aria-label="Đóng">&times;</button>
+              </div>
+              <div class="modal-body" id="libModalBody"></div>
+              <div class="modal-footer">
+                <button class="btn btn-primary" id="libCopyBtn" onclick="Library.copyPrompt()">📋 Copy toàn bộ Prompt</button>
+                <button class="btn btn-outline" onclick="Library.closeModal()">Đóng</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ VIEW: workflow-coverage (Độ phủ Workflow) ═══ -->
+        <section data-view="workflow-coverage" hidden>
+          <p style="color:var(--color-text-secondary);margin-bottom:var(--space-4)">
+            Đối chiếu <strong>danh mục Workflow chuẩn</strong> (WORKFLOW_CATALOG) với Use Case <strong>đã đăng ký</strong> — xem nhóm/workflow nào đã có US, cái nào còn trống. Bấm 1 workflow để xem các Use Case catalog chưa được đăng ký.
+          </p>
+          <div id="wfcSummary" class="kpi-row" style="display:none;margin-bottom:var(--space-4)"></div>
+          <div id="wfcLoading" class="empty-state">Đang tải độ phủ workflow…</div>
+          <div id="wfcContent" style="display:none"></div>
+
+          <div id="wfcModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+            <div class="modal-card modal-card--wide">
+              <div class="modal-header">
+                <div style="display:flex;align-items:center;gap:var(--space-3);flex:1;min-width:0">
+                  <h3 id="wfcModalTitle" style="margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Workflow</h3>
+                  <span id="wfcModalCount" class="id-badge" style="flex-shrink:0"></span>
+                </div>
+                <button class="modal-close" onclick="WorkflowCoverage.closeModal()" aria-label="Đóng">&times;</button>
+              </div>
+              <div class="modal-body" id="wfcModalBody"></div>
+              <div class="modal-footer">
+                <button class="btn btn-outline" onclick="WorkflowCoverage.closeModal()">Đóng</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ VIEW: workflow-catalog (Cấu hình Workflow, admin) ═══ -->
+        <section data-view="workflow-catalog" hidden>
+          <div class="page-header" style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-5)">
+            <div style="flex:1;min-width:240px">
+              <h2 style="margin:0;font-size:var(--text-xl);font-weight:600">Danh mục Workflow → Use case</h2>
+              <p style="margin:var(--space-1) 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)">
+                Nguồn droplist khi đăng ký Use case. Lọc theo Team qua sheet <code>TEAM_GROUP_MAP</code>.
+              </p>
+            </div>
+            <div style="display:flex;gap:var(--space-2);flex-wrap:wrap">
+              <input type="search" id="wfSearch" class="form-control" placeholder="Tìm workflow / use case…" style="min-width:220px">
+              <button id="wfRenameBtn" class="btn btn-outline btn--sm" type="button">Đổi tên Workflow</button>
+              <button id="wfAddBtn" class="btn btn-primary btn--sm" type="button">+ Thêm Use case</button>
+            </div>
+          </div>
+          <div id="wfTableWrap"><p class="empty-state">Đang tải danh mục…</p></div>
+
+          <div class="modal-overlay hidden" id="wfModal" role="dialog" aria-modal="true" aria-labelledby="wfModalTitle">
+            <div class="modal-card" style="max-width:520px;width:100%">
+              <div class="modal-header">
+                <h3 class="modal-title" id="wfModalTitle">Thêm Use case</h3>
+                <button class="modal-close-btn" id="wfModalCloseBtn" aria-label="Đóng">&times;</button>
+              </div>
+              <div class="modal-body" style="display:flex;flex-direction:column;gap:var(--space-3)">
+                <div class="form-group">
+                  <label class="form-label" for="wfNhom">Nhóm <span style="color:var(--color-error)">*</span></label>
+                  <select id="wfNhom" class="form-control"></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="wfWorkflow">Workflow <span style="color:var(--color-error)">*</span></label>
+                  <input type="text" id="wfWorkflow" class="form-control" list="wfWorkflowList" placeholder="Tên workflow lớn" autocomplete="off">
+                  <datalist id="wfWorkflowList"></datalist>
+                  <p style="font-size:var(--text-xs);color:var(--color-text-muted);margin:4px 0 0">Gõ tên mới để tạo workflow mới, hoặc chọn workflow đã có.</p>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="wfUseCase">Use case</label>
+                  <input type="text" id="wfUseCase" class="form-control" placeholder="Tên use case (để trống nếu chỉ tạo workflow rỗng)">
+                </div>
+                <div class="form-group" style="display:flex;align-items:center;gap:var(--space-2)">
+                  <input type="checkbox" id="wfActive" style="width:16px;height:16px;accent-color:var(--color-primary)" checked>
+                  <label for="wfActive" class="form-label" style="margin:0">Hiển thị ở droplist đăng ký (Active)</label>
+                </div>
+              </div>
+              <div class="modal-footer" style="display:flex;justify-content:space-between;gap:var(--space-2)">
+                <button type="button" id="wfDeleteBtn" class="btn btn-outline" style="color:var(--color-error);display:none">Xóa</button>
+                <div style="display:flex;gap:var(--space-2);margin-left:auto">
+                  <button type="button" id="wfModalCancelBtn" class="btn btn-outline">Hủy</button>
+                  <button type="button" id="wfModalSaveBtn" class="btn btn-primary">Lưu</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-overlay hidden" id="wfRenameModal" role="dialog" aria-modal="true" aria-labelledby="wfRenameTitle">
+            <div class="modal-card" style="max-width:520px;width:100%">
+              <div class="modal-header">
+                <h3 class="modal-title" id="wfRenameTitle">Đổi tên Workflow</h3>
+                <button class="modal-close-btn" id="wfRenameCloseBtn" aria-label="Đóng">&times;</button>
+              </div>
+              <div class="modal-body" style="display:flex;flex-direction:column;gap:var(--space-3)">
+                <div class="form-group"><label class="form-label" for="rnNhom">Nhóm</label><select id="rnNhom" class="form-control"></select></div>
+                <div class="form-group"><label class="form-label" for="rnWorkflow">Workflow hiện tại</label><select id="rnWorkflow" class="form-control"></select></div>
+                <div class="form-group"><label class="form-label" for="rnNewName">Tên workflow mới <span style="color:var(--color-error)">*</span></label><input type="text" id="rnNewName" class="form-control" placeholder="Tên mới" autocomplete="off"></div>
+                <div class="form-group"><label class="form-label" for="rnNewNhom">Chuyển sang Nhóm (tùy chọn)</label><select id="rnNewNhom" class="form-control"></select></div>
+                <p style="font-size:var(--text-xs);color:var(--color-text-muted);margin:0">Áp dụng cho tất cả Use case thuộc workflow này.</p>
+              </div>
+              <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:var(--space-2)">
+                <button type="button" id="wfRenameCancelBtn" class="btn btn-outline">Hủy</button>
+                <button type="button" id="wfRenameSaveBtn" class="btn btn-primary">Đổi tên</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ VIEW: personal-score (Chấm điểm cá nhân, teamlead/admin) ═══ -->
+        <section data-view="personal-score" hidden>
+          <p style="color:var(--color-text-secondary);margin-bottom:var(--space-4)">
+            Teamlead chấm <strong>điểm năng lực (M-KPI-2)</strong> cho thành viên team mình theo <strong>từng tháng</strong> — 4 tiêu chí (thang 0–10):
+            <strong>Đa dạng 30% · Thành thạo AI 20% · Chất lượng SP 30% · Số lượng đủ 20%</strong>.
+            Điểm năng lực cuối kỳ = <strong>trung bình các tháng đã chấm</strong>. Chấm lại 1 tháng sẽ ghi đè tháng đó.
+          </p>
+          <div id="psLoading" class="empty-state">Đang tải danh sách thành viên…</div>
+          <div class="rq-filter-bar" id="psFilterBar" style="display:none">
+            <input type="search" id="psSearch" class="rq-search-input" placeholder="Tìm theo tên/username…" autocomplete="off">
+            <select id="psTeamFilter" class="rq-team-select"><option value="">Tất cả team</option></select>
+            <span class="rq-result-count" id="psResultCount"></span>
+          </div>
+          <div id="psContent" style="display:none"><div id="psTable" class="rq-table-wrap"></div></div>
+
+          <div class="review-panel-overlay" id="psPanelOverlay" style="display:none"></div>
+          <aside class="review-panel" id="psPanel" role="complementary" aria-label="Chấm điểm cá nhân" style="display:none">
+            <div class="review-panel-header">
+              <div>
+                <div class="review-panel-uc-id" id="psMemberUser"></div>
+                <div class="review-panel-uc-name" id="psMemberName"></div>
+                <div class="review-panel-uc-meta" id="psMemberMeta"></div>
+              </div>
+              <button class="review-panel-close" id="psPanelClose" aria-label="Đóng">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div class="review-panel-body">
+              <div class="ps-group ps-group--us">
+                <div class="ps-group-head">
+                  <span class="ps-group-tag ps-tag-us">M-KPI-1</span>
+                  <span class="ps-group-title">Điểm US (hội đồng chấm · 40%)</span>
+                  <span class="ps-group-score" id="psUsScore">—</span>
+                </div>
+                <div class="ps-group-note" id="psUsNote">Bình quân điểm hội đồng các UC do thành viên sở hữu. Teamlead không chấm mục này.</div>
+              </div>
+              <div class="ps-group ps-group--m2">
+                <div class="ps-group-head">
+                  <span class="ps-group-tag ps-tag-m2">M-KPI-2</span>
+                  <span class="ps-group-title">Điểm năng lực (teamlead chấm · 30%)</span>
+                  <span class="ps-group-score" id="psProjected">—</span>
+                  <span class="rank-chip" id="psRankChip"></span>
+                </div>
+                <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between;margin-bottom:var(--space-3)">
+                  <label class="rp-score-label" style="flex:1;margin:0"><strong>Kỳ chấm (tháng)</strong></label>
+                  <select id="psMonth" class="form-control" style="width:170px"></select>
+                </div>
+                <div class="ps-month-hint" id="psMonthHint"></div>
+                <div class="rp-score-section" style="margin-top:var(--space-2)">
+                  <div class="rp-score-row"><label class="rp-score-label">Mức độ đa dạng (30%)</label><input type="range" id="psSliderDiv" class="score-slider" min="0" max="10" step="1" value="0"></div>
+                  <div class="rp-score-row"><label class="rp-score-label">Thành thạo ứng dụng AI (20%)</label><input type="range" id="psSliderAi" class="score-slider" min="0" max="10" step="1" value="0"></div>
+                  <div class="rp-score-row"><label class="rp-score-label">Chất lượng sản phẩm (30%)</label><input type="range" id="psSliderPq" class="score-slider" min="0" max="10" step="1" value="0"></div>
+                  <div class="rp-score-row"><label class="rp-score-label">Số lượng đủ theo yêu cầu (20%)</label><input type="range" id="psSliderQt" class="score-slider" min="0" max="10" step="1" value="0"></div>
+                </div>
+                <div class="ps-group-note">Điểm năng lực cuối kỳ (M-KPI-2) = <strong>trung bình các tháng đã chấm</strong>. Hiện: <strong id="psAvgInfo">chưa có tháng nào</strong>.</div>
+              </div>
+              <div class="ps-group ps-group--other">
+                <div class="ps-group-head">
+                  <span class="ps-group-tag ps-tag-other">M-KPI-3/4</span>
+                  <span class="ps-group-title">KPI khác + điểm trừ (nhập 1 lần)</span>
+                </div>
+                <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between">
+                  <label class="rp-score-label" style="flex:1">Số khóa học AI đã hoàn thành</label>
+                  <input type="number" id="psCourses" class="form-control" min="0" max="50" step="1" value="0" style="width:80px">
+                </div>
+                <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between">
+                  <label class="rp-score-label" style="flex:1">Trong đó khóa <strong>trả phí</strong> (hệ số x2)</label>
+                  <input type="number" id="psCoursesPaid" class="form-control" min="0" max="50" step="1" value="0" style="width:80px">
+                </div>
+                <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3)">
+                  <input type="checkbox" id="psSharing" style="width:18px;height:18px">
+                  <label class="rp-score-label" for="psSharing" style="flex:1;margin:0">Lan tỏa AI đạt (≥1 buổi chia sẻ HOẶC UC được team khác tái dùng — xác nhận ≥3 người)</label>
+                </div>
+                <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between">
+                  <label class="rp-score-label" style="flex:1">Số milestone chậm (do cá nhân phụ trách)</label>
+                  <input type="number" id="psLate" class="form-control" min="0" max="20" step="1" value="0" style="width:80px">
+                </div>
+                <div class="ps-kpi-preview">
+                  <div>M-KPI-3 (khóa học, 15%): <strong id="psM3">0</strong>/100</div>
+                  <div>M-KPI-4 (lan tỏa, 15%): <strong id="psM4">0</strong>/100</div>
+                  <div>Điểm trừ milestone: <strong id="psPenalty" style="color:var(--color-error,#c62828)">0</strong>%</div>
+                </div>
+              </div>
+              <div class="ps-evd-row" id="psEvdRow">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
+                <span class="ps-evd-label">Bằng chứng (EVD):</span>
+                <span class="ps-evd-value" id="psEvdValue">—</span>
+              </div>
+              <div class="ps-group ps-group--final">
+                <div class="ps-group-head">
+                  <span class="ps-group-title">KPI tổng hợp (dự kiến)</span>
+                  <span class="ps-group-score ps-final-score" id="psFinalKpi">—</span>
+                  <span class="rank-chip" id="psFinalRank"></span>
+                </div>
+                <div class="ps-group-note" id="psFinalBreakdown"></div>
+              </div>
+              <div class="rp-score-section">
+                <div class="rp-section-label">Nhận xét (tháng này)</div>
+                <textarea id="psComment" class="form-control" rows="3" placeholder="Nhận xét cho thành viên này…" style="resize:vertical"></textarea>
+              </div>
+              <button class="btn btn-primary" id="psSubmitBtn" style="width:100%;margin-top:var(--space-4)">Lưu điểm tháng này</button>
+            </div>
+          </aside>
+        </section>
+
+        <!-- Các view khác được gộp tiếp ở S1 (dashboard, register, leaderboard,
+             review-queue, weekly-update). -->
 
       </div><!-- /app-content -->
     </div><!-- /app-main -->
@@ -158,10 +394,23 @@
 
   <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>
 
-  <!-- ── JS: env → auth → router → (view modules S1) → shell ── -->
+  <!-- ── JS: env → auth → shared libs → router → view modules → shell ── -->
   <script src="config/env.js"></script>
   <script src="assets/js/auth.js"></script>
+  <script src="config/routes.js"></script>
+  <script src="assets/js/helpers.js"></script>
+  <script src="assets/js/storage.js"></script>
+  <script src="assets/js/toast.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/scoring-h2.js"></script>
+  <script src="assets/js/score-slider.js"></script>
   <script src="assets/js/router.js"></script>
+  <!-- view modules (đăng ký với Router) -->
+  <script src="assets/js/library.js"></script>
+  <script src="assets/js/workflow-coverage.js"></script>
+  <script src="assets/js/workflow-catalog.js"></script>
+  <script src="assets/js/personal-score.js"></script>
+  <!-- shell cuối -->
   <script src="assets/js/shell.js"></script>
 </body>
 </html>

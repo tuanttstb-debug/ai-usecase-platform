@@ -234,7 +234,11 @@
     if (t) t.addEventListener('change', function () { _filter.team = t.value; _render(); });
   }
 
-  document.addEventListener('DOMContentLoaded', function () { _bind(); _load(); });
+  // SPA: lazy-init khi router mở view #library (thay tự-boot DOMContentLoaded)
+  if (window.Router) window.Router.register('library', {
+    title: 'Thư viện AI',
+    init: function () { _bind(); _load(); }
+  });
 
   window.Library = { open: open, copyPrompt: copyPrompt, closeModal: closeModal, reuse: reuse };
 

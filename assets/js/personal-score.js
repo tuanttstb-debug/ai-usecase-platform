@@ -401,7 +401,12 @@
     if (teamSel) teamSel.addEventListener('change', function () { _filter.team = teamSel.value; _render(); });
   }
 
-  document.addEventListener('DOMContentLoaded', function () { _bind(); _load(); });
+  // SPA: lazy-init khi router mở #personal-score (teamlead/admin)
+  if (window.Router) window.Router.register('personal-score', {
+    title: 'Chấm điểm cá nhân',
+    roles: ['admin', 'champion', 'teamlead'],
+    init: function () { _bind(); _load(); }
+  });
 
   window.PersonalScore = { _open: _open };
 
