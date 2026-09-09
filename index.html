@@ -624,7 +624,85 @@
           </div>
         </section>
 
-        <!-- Các view khác được gộp tiếp ở S1 (dashboard, register, review-queue). -->
+        <!-- ═══ VIEW: review-queue (Hàng đợi Review, champion/admin) ═══ -->
+        <section data-view="review-queue" hidden>
+          <div id="rqLoading" class="empty-state">Đang tải hàng đợi review…</div>
+          <div class="rq-filter-bar" id="rqFilterBar" style="display:none">
+            <input type="search" id="rqSearch" class="rq-search-input" placeholder="Tìm theo tên hoặc mã UC…" autocomplete="off">
+            <select id="rqTeamFilter" class="rq-team-select"><option value="">Tất cả team</option></select>
+            <select id="rqOwnerFilter" class="rq-team-select"><option value="">Tất cả người đăng ký</option></select>
+            <div class="rq-filter-pills">
+              <button class="rq-pill active" data-section="">Tất cả</button>
+              <button class="rq-pill" data-section="pending">Cần bạn chấm</button>
+              <button class="rq-pill" data-section="underReview">Đã chấm — chờ đủ</button>
+              <button class="rq-pill" data-section="done">Đã đủ hội đồng</button>
+            </div>
+            <span class="rq-result-count" id="rqResultCount"></span>
+          </div>
+          <div id="rqContent" style="display:none">
+            <section class="rq-section" id="rqSectionPending">
+              <div class="rq-section-header"><span class="rq-section-title">Cần bạn chấm</span><span class="rq-badge rq-badge--pending" id="rqBadgePending">0</span></div>
+              <div id="rqTablePending" class="rq-table-wrap"></div>
+            </section>
+            <section class="rq-section" id="rqSectionUnderReview">
+              <div class="rq-section-header"><span class="rq-section-title">Bạn đã chấm — chờ đủ hội đồng</span><span class="rq-badge rq-badge--review" id="rqBadgeUnderReview">0</span></div>
+              <div id="rqTableUnderReview" class="rq-table-wrap"></div>
+            </section>
+            <section class="rq-section" id="rqSectionDone">
+              <div class="rq-section-header"><span class="rq-section-title">Đã đủ hội đồng</span><span class="rq-badge rq-badge--done" id="rqBadgeDone">0</span></div>
+              <div id="rqTableDone" class="rq-table-wrap"></div>
+            </section>
+          </div>
+
+          <div class="review-panel-overlay" id="reviewPanelOverlay" style="display:none"></div>
+          <aside class="review-panel review-panel--split" id="reviewPanel" role="complementary" aria-label="Review Use Case" style="display:none">
+            <div class="review-panel-header">
+              <div>
+                <div class="review-panel-uc-id" id="rpUcId"></div>
+                <div class="review-panel-uc-name" id="rpUcName"></div>
+                <div class="review-panel-uc-meta" id="rpUcMeta"></div>
+              </div>
+              <button class="review-panel-close" id="reviewPanelClose" aria-label="Đóng">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div class="review-panel-body rp-split">
+              <div class="rp-detail" id="rpDetailCol">
+                <div class="rp-detail-head">
+                  <span class="rp-detail-head-title">Chi tiết Use Case</span>
+                  <button type="button" class="btn btn-ghost btn--sm" id="rpCopyPromptBtn" style="display:none">📋 Copy prompt</button>
+                </div>
+                <div id="rpDetail"><p class="empty-state-text" style="padding:var(--space-6)">Đang tải chi tiết…</p></div>
+              </div>
+              <div class="rp-score-col" id="rpScoreCol">
+                <div class="rp-score-section">
+                  <div class="rp-section-label">Điểm US hội đồng (bình quân)</div>
+                  <div class="rp-auto-score-row"><span>Điểm US hiện tại:</span><strong id="rpCouncilFinal">—</strong><span> / 100</span><span class="rank-chip" id="rpCouncilRank" style="margin-left:auto"></span></div>
+                  <div class="rp-council-status" id="rpCouncilStatus" style="margin-top:var(--space-2);font-size:var(--text-sm);color:var(--color-text-secondary)"></div>
+                </div>
+                <div class="ps-evd-row" id="rpEvdRow">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
+                  <span class="ps-evd-label">Bằng chứng (EVD):</span><span class="ps-evd-value" id="rpEvdValue">—</span>
+                </div>
+                <div class="rp-score-section">
+                  <div class="rp-section-label">Bạn chấm (3 tiêu chí, thang 0–10)</div>
+                  <div class="rp-score-row"><label class="rp-score-label">Tiết kiệm thời gian (30%)</label><input type="range" id="rpSliderTime" class="score-slider" min="0" max="10" step="1" value="0"></div>
+                  <div class="rp-score-row"><label class="rp-score-label">Mức độ tự động hóa (40%)</label><input type="range" id="rpSliderAuto" class="score-slider" min="0" max="10" step="1" value="0"></div>
+                  <div class="rp-score-row"><label class="rp-score-label">Tính sáng tạo (30%)</label><input type="range" id="rpSliderCreative" class="score-slider" min="0" max="10" step="1" value="0"></div>
+                </div>
+                <div class="rp-score-projected"><span>Điểm bạn chấm:</span><span class="rp-projected-val" id="rpProjectedTotal">—</span><span class="rank-chip" id="rpRankChip"></span></div>
+                <div class="rp-score-section">
+                  <div class="rp-section-label">Nhận xét</div>
+                  <textarea id="rpComment" class="form-control" rows="3" placeholder="Nhận xét cho use case này…" style="resize:vertical"></textarea>
+                </div>
+                <button class="btn btn-primary" id="rpSubmitBtn" style="width:100%;margin-top:var(--space-4)">Gửi điểm hội đồng</button>
+                <p id="rpNotCouncil" style="display:none;margin-top:var(--space-3);color:var(--color-error);font-size:var(--text-sm)">Chỉ thành viên hội đồng mới được chấm điểm US.</p>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <!-- Các view khác được gộp tiếp ở S1 (dashboard, register). -->
 
       </div><!-- /app-content -->
     </div><!-- /app-main -->
@@ -643,6 +721,7 @@
   <script src="assets/js/api.js"></script>
   <script src="assets/js/scoring-h2.js"></script>
   <script src="assets/js/score-slider.js"></script>
+  <script src="assets/js/uc-detail-view.js"></script>
   <script src="assets/js/router.js"></script>
   <!-- view modules (đăng ký với Router) -->
   <script src="assets/js/library.js"></script>
@@ -651,6 +730,7 @@
   <script src="assets/js/personal-score.js"></script>
   <script src="assets/js/leaderboard.js"></script>
   <script src="assets/js/weekly-update.js"></script>
+  <script src="assets/js/review-queue.js"></script>
   <!-- shell cuối -->
   <script src="assets/js/shell.js"></script>
 </body>

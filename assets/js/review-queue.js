@@ -464,11 +464,11 @@
     if (submitBtn) submitBtn.addEventListener('click', _submitScore);
   }
 
-  /* ── Init ── */
-  document.addEventListener('DOMContentLoaded', function () {
-    _bind();
-    _bindFilters();
-    _load();
+  /* ── Init (SPA: lazy-init khi router mở #review-queue) ── */
+  if (window.Router) window.Router.register('review-queue', {
+    title: 'Hàng đợi Review',
+    roles: ['admin', 'champion', 'teamlead'],
+    init: function () { _bind(); _bindFilters(); _load(); }
   });
 
   /* ── Public API ── */
