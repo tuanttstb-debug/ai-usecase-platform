@@ -4,6 +4,14 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 Chuẩn hóa thiết kế Pha 2 — nút primary→CAM + DARK MODE toggle (2026-09-09) — XONG, Playwright 118/118
+- [x] **TD-DS-01** nút `.btn-primary` tím→**cam** (`--color-accent` + hover accent-dark + glow cam). Tím còn cho cấu trúc.
+- [x] **TD-DS-02** dark mode: MỚI `assets/js/theme.js` (apply sớm chống FOUC · nhớ `aius_theme` · nút toggle topbar SVG trăng/mặt trời + fallback nút nổi · Ctrl+D) + `<script>` vào `<head>` **12 trang**.
+- [x] Vá token dark: `color-scheme`, `--overlay-loading` đảo, `*-light`→tint, `--color-border-focus` sửa lệch; dark-polish chữ badge/alert/rq-badge/kpi-badge; 3 nền trắng literal→token.
+- [x] **Playwright 118/118** (test không đổi) + chụp ảnh dark/light 5 màn xác nhận. Ngoặc CSS 5/5, theme.js node --check OK.
+- [ ] **[TT]** hard-refresh production nghiệm thu: nút chính cam · Ctrl+D/nút topbar đổi sáng-tối, F5 nhớ · login/đổi-mật-khẩu nút nổi.
+- [ ] **[CC] TD-DS-03 (tùy chọn, LOW):** re-theme màu Chart.js theo dark (nhãn/lưới đang tối trên nền tối) · rà status-chip sâu ở trang phụ.
+
 ## 🆕 Chuẩn hóa thiết kế theo hệ SHTD (design-system) — Pha 1 XONG + PUSH (2026-09-08, thuần CSS)
 - [x] `variables.css`: palette tím `#4B1FAF`+cam `#FF7A00` · sidebar gradient SHTD · font DM Sans+DM Mono · radius-xl 20→18 · shadow bóng mềm · +dark tokens sẵn.
 - [x] `base.css`: @import Inter→DM Sans+DM Mono. `layout.css`: active bar trắng→cam.

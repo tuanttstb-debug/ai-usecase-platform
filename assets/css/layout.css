@@ -430,7 +430,7 @@
 .loading-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(255,255,255,0.88);
+  background: var(--overlay-loading);
   display: flex;
   align-items: center;
   justify-content: center;

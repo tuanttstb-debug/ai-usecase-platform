@@ -33,15 +33,17 @@
 }
 
 /* Primary — Purple */
+/* Primary = ACCENT (cam) — hành động chính, chuẩn SHTD Nguyên tắc 2.
+   Cấu trúc (sidebar/link/focus) dùng --color-primary (tím). */
 .btn-primary {
-  background: var(--color-primary);
+  background: var(--color-accent);
   color: white;
-  border-color: var(--color-primary);
+  border-color: var(--color-accent);
 }
 .btn-primary:hover {
-  background: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
-  box-shadow: 0 2px 12px rgba(123, 44, 191, 0.32);
+  background: var(--color-accent-dark);
+  border-color: var(--color-accent-dark);
+  box-shadow: 0 2px 12px rgba(255, 122, 0, 0.32);
 }
 
 /* Success */
@@ -625,3 +627,40 @@
   font-size: 1rem;
   pointer-events: none;
 }
+
+/* ── Dark-mode toggle (nút nổi cho trang không nạp layout.css: login, đổi mật khẩu) ── */
+.theme-toggle-floating {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  z-index: var(--z-toast);
+  transition: background var(--transition-fast), color var(--transition-fast),
+              border-color var(--transition-fast);
+}
+.theme-toggle-floating:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary-light);
+  background: var(--color-primary-surface);
+}
+.theme-toggle svg, .theme-toggle-floating svg { display: block; }
+
+/* ── Dark polish: badge/alert dùng chữ đậm trên nền tint → sáng lên khi dark ── */
+[data-theme="dark"] .badge-success { color: #81C784; }
+[data-theme="dark"] .badge-warning { color: #FFD54F; }
+[data-theme="dark"] .badge-error   { color: #EF9A9A; }
+[data-theme="dark"] .badge-primary { color: #B39DDB; }
+[data-theme="dark"] .alert-success { color: #A5D6A7; border-color: rgba(76,175,80,0.40); }
+[data-theme="dark"] .alert-warning { color: #FFD54F; border-color: rgba(246,177,0,0.40); }
+[data-theme="dark"] .alert-error   { color: #EF9A9A; border-color: rgba(244,67,54,0.40); }
+[data-theme="dark"] .alert-info    { color: #B39DDB; }

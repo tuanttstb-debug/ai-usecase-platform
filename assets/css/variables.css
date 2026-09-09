@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   /* ══════════════════════════════════════════
      TPBank BIZ Design System — v3.1
      Chuẩn hóa theo hệ thiết kế SHTD (REF-UIUX-DESIGN-SYSTEM)
@@ -31,9 +32,10 @@
   --color-bg-alt:         #FAFAFC;
   --color-surface:        #FFFFFF;
   --color-border:         #E9E9EF;
-  --color-border-focus:   #7B2CBF;
+  --color-border-focus:   var(--color-primary);
   --color-border-error:   #F44336;
   --color-overlay:        rgba(31, 31, 44, 0.04);
+  --overlay-loading:      rgba(255, 255, 255, 0.88); /* nền lớp loading (đảo ở dark) */
 
   /* ── Text ── */
   --color-text:           #1F1F2C;
@@ -150,16 +152,25 @@
    Chỉ có hiệu lực khi data-theme="dark" — không ảnh hưởng light hiện tại.
    ══════════════════════════════════════════ */
 [data-theme="dark"] {
+  color-scheme: dark;
   --color-bg:             #0D1117;
   --color-bg-alt:         #12161F;
   --color-surface:        #161B22;
   --color-border:         #2D3748;
   --color-overlay:        rgba(255,255,255,0.04);
+  --overlay-loading:      rgba(9, 12, 18, 0.86);
   --color-text:           #E2E8F0;
   --color-text-secondary: #94A3B8;
   --color-text-muted:     #64748B;
   --color-primary-surface: rgba(75,31,175,0.16);
   --color-primary-light:   rgba(75,31,175,0.24);
+  /* Semantic *-light dùng làm NỀN tint (KPI card, badge, callout, input lỗi)
+     → chuyển sang tint trong suốt để hợp nền tối, không lóa */
+  --color-success-light:  rgba(76,175,80,0.16);
+  --color-warning-light:  rgba(246,177,0,0.16);
+  --color-error-light:    rgba(244,67,54,0.16);
+  --color-info-light:     rgba(33,150,243,0.16);
+  --color-accent-light:   rgba(255,122,0,0.16);
   --sidebar-gradient:     linear-gradient(175deg, #1E0D5C 0%, #0D0729 100%);
   --shadow-sm:  0 1px 4px rgba(0,0,0,0.30);
   --shadow-md:  0 4px 16px rgba(0,0,0,0.40);

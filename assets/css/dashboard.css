@@ -1677,8 +1677,8 @@
   margin-top: var(--space-2);
 }
 .score-component {
-  background: #fff;
-  border: 1px solid var(--color-border-light, rgba(0,0,0,.07));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm, 4px);
   padding: var(--space-2) var(--space-3);
   text-align: center;
@@ -1739,8 +1739,8 @@
   gap: var(--space-3);
   margin-bottom: var(--space-5);
   padding: var(--space-3) var(--space-4);
-  background: var(--color-bg-card, #fff);
-  border: 1px solid var(--color-border-light, rgba(0,0,0,.08));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md, 8px);
 }
 .rq-search-input {
@@ -1795,3 +1795,9 @@
   color: var(--color-text-muted);
   margin-left: auto;
 }
+
+/* ── Dark polish: status pills/labels chữ đậm literal → sáng lên khi dark ── */
+[data-theme="dark"] .kpi-badge--no     { color: #E0B84D; }
+[data-theme="dark"] .rq-badge--pending { color: #E0B84D; }
+[data-theme="dark"] .rq-badge--review  { color: #64B5F6; }
+[data-theme="dark"] .rq-badge--done    { color: #81C784; }

@@ -97,7 +97,7 @@ label.field-label {
 .form-group.has-error select,
 .form-group.has-error textarea {
   border-color: var(--color-error);
-  background: #FFFAFA;
+  background: var(--color-error-light);
 }
 .form-group.has-error input:not([type="checkbox"]):not([type="radio"]):focus,
 .form-group.has-error select:focus,

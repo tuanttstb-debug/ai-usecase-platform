@@ -1,5 +1,16 @@
 # PROJECT STATE
 
+**2026-09-09 — CHUẨN HÓA THIẾT KẾ Pha 2: nút primary tím→CAM + DARK MODE toggle (12 trang). Thuần CSS+1 JS mới, KHÔNG đổi kiến trúc/logic/GAS. Playwright 118/118.**
+Tiếp nối pha 1, đóng 2 nợ pha 2 (TD-DS-01/02) theo REF-UIUX-DESIGN-SYSTEM (Nguyên tắc 2 "nút chính = accent cam" + Nguyên tắc 8 "dark mode mặc định"):
+- **TD-DS-01 — Nút primary tím→cam:** `components.css .btn-primary` dùng `--color-accent` (cam) + hover `--color-accent-dark` + glow cam. Tím (`--color-primary`) nay chỉ cho cấu trúc (sidebar/link/focus/tab underline). Đúng "1 sắc nhấn cho hành động".
+- **TD-DS-02 — Dark mode toggle:** MỚI `assets/js/theme.js` (tự chứa, 0 lib ngoài): apply theme sớm trong `<head>` chống FOUC · nhớ localStorage key `aius_theme` · chèn nút toggle vào `.topbar-actions` (SVG trăng/mặt trời), fallback **nút nổi** cho trang không có topbar (login, đổi mật khẩu) · phím tắt **Ctrl+D**. Thêm `<script src="assets/js/theme.js">` vào `<head>` **12 trang app**.
+- **Vá token dark** (`variables.css`): `color-scheme` light/dark (native select/scrollbar) · `--overlay-loading` đảo màu · `*-light` (success/warning/error/info/accent) → tint trong suốt ở dark (đẹp cho ô icon KPI/stat) · `--color-border-focus` sửa lệch `#7B2CBF`→`var(--color-primary)`. **Dark-polish** (components/dashboard.css, chỉ áp `[data-theme=dark]`): sáng chữ badge/alert/rq-badge/kpi-badge (chữ đậm literal trên nền tint → sáng lên cho đủ tương phản). Vá 3 chỗ nền trắng literal (`score-component`, `rq-filter-bar`, input lỗi `#FFFAFA`) → token.
+- **Verify:** Playwright **118/118 PASS** (không đổi test — thuần trình bày) + chụp ảnh dark/light (dashboard, leaderboard, register, login floating, panel component mẫu): nút cam đúng, badge/alert đọc tốt cả 2 theme, sidebar/topbar/KPI dark chuẩn, toggle đúng icon. CSS ngoặc cân bằng 5/5 file, `theme.js` node --check OK.
+- **Blocker:** Không. Thuần FE/CSS+JS trình bày — **KHÔNG cần redeploy GAS**. [TT] hard-refresh để thấy; bấm nút góc phải topbar (hoặc Ctrl+D) đổi sáng/tối, lựa chọn được nhớ.
+- **Residual (LOW, mở TD-DS-03):** biểu đồ Chart.js chưa re-theme màu chữ/lưới theo dark (nhãn tối trên nền tối — canvas do JS vẽ, tách sau); một số status-chip sâu ở trang phụ có thể còn tông chưa tối ưu (chưa gặp lỗi đọc).
+
+---
+
 **2026-09-08 — CHUẨN HÓA THIẾT KẾ theo hệ SHTD (skill `design-system` của hub AIOS) — Pha 1. Thuần CSS, KHÔNG đổi kiến trúc/class/logic. [TT] ĐÃ DUYỆT bản sắc.**
 Anh Tuân giao chuẩn hóa UIUX các dự án theo SHTD (sản phẩm hài lòng nhất); AIUS là dự án đầu. AIUS vốn có "TPBank BIZ DS v3.0" riêng (token-hóa, multi-page 12 trang) nhưng **lệch** SHTD (tím `#7B2CBF`+gold, font Inter, không dark). Áp **Trung dung** (rủi ro thấp — vì token-hóa nên chỉ sửa 3 file CSS nền, giữ nguyên kiến trúc+class+118 test):
 - `assets/css/variables.css`: palette → tím SHTD `#4B1FAF` + accent **cam `#FF7A00`** (thay tím nhạt + gold); sidebar gradient SHTD `linear-gradient(175deg,#3B0D9B,#220A6B)`; `--font-family` → **DM Sans** (+`--font-mono` DM Mono); `--radius-xl` 20→18 (card khớp SHTD radius-lg); shadow → bóng mềm SHTD; **+khối `[data-theme="dark"]`** token dark sẵn (chưa bật — chờ pha 2 toggle).
