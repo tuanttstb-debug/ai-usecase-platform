@@ -21,7 +21,6 @@
   var _detailAction    = null; // 'approve' | 'reject'
   var _detailMilestone = null; // khi mở modal chi tiết ở chế độ duyệt milestone (v3.15.0)
   var _ucCache      = {}; // key → uc object (safe alternative to inline JSON)
-  var _rejectedList = [];
   var _milestonePending  = []; // milestone cập nhật tuần chờ Admin duyệt (v3.14.0)
   var _milestoneApproved = []; // milestone đã duyệt — feed KPI
   var _msCache      = {}; // key(log_id) → milestone object
@@ -996,43 +995,7 @@
     renderAllTable(result);
   }
 
-  // ── Rejected Card (Overview tab) ──────────────────────────────────
-  var REJECTED_PREVIEW = 5;
-
-  function renderRejectedCard(items) {
-    var card = document.getElementById('rejectedCard');
-    if (!card) return;
-
-    card.style.display = items.length ? '' : 'none';
-
-    var badge = document.getElementById('rejectedCountBadge');
-    if (badge) badge.textContent = String(items.length);
-
-    var viewAllBtn = document.getElementById('viewAllRejectedBtn');
-    if (viewAllBtn) {
-      viewAllBtn.style.display = items.length > REJECTED_PREVIEW ? '' : 'none';
-      viewAllBtn.onclick = function () { openListModal('Đã từ chối', items); };
-    }
-
-    var tbody = document.querySelector('#rejectedTable tbody');
-    if (!tbody) return;
-    if (!items.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Không có use case nào bị từ chối</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = items.slice(0, REJECTED_PREVIEW).map(function (uc) {
-      var k = _cache(uc);
-      return '<tr style="cursor:pointer" onclick="Dashboard._byKey(\'' + esc(k) + '\')">' +
-        '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
-        '<td>' + esc(uc.name || '') + '</td>' +
-        '<td>' + esc(uc.owner_name || '--') + '</td>' +
-        '<td>' + esc(uc.team || '--') + '</td>' +
-        '<td>' + fmtDate(uc.submit_date || uc.submitted_at) + '</td>' +
-        '<td>' + _btnDetail(uc, 'Chi tiết') + '</td>' +
-      '</tr>';
-    }).join('');
-  }
+  // (đã gỡ renderRejectedCard + REJECTED_PREVIEW — bỏ duyệt US, không còn "Use Case bị từ chối")
 
   // ── KPI Drill-down ────────────────────────────────────────────────
   function _bindKPIClicks() {
