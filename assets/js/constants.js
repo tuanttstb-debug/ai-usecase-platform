@@ -411,7 +411,7 @@ var FIELD_CONFIG = {
     type: 'number',
     placeholder: '0',
     suffix: 'người',
-    helper: 'Số người đang thực sự dùng use case này. Điền ước lượng khi đăng ký; cập nhật số thực qua "Cập nhật tuần". Dùng để chấm điểm Adoption (Người dùng).',
+    helper: 'Số người đang thực sự dùng use case này. Điền ước lượng khi đăng ký; cập nhật số thực qua "Cập nhật US". Dùng để chấm điểm Adoption (Người dùng).',
     group: 'impact'
   },
   Monthly_Usage_Count: {
@@ -419,7 +419,7 @@ var FIELD_CONFIG = {
     type: 'number',
     placeholder: '0',
     suffix: 'lần/tháng',
-    helper: 'Số lần use case được dùng mỗi tháng. Điền ước lượng khi đăng ký; cập nhật số thực qua "Cập nhật tuần". Dùng để chấm điểm Frequency (Tần suất).',
+    helper: 'Số lần use case được dùng mỗi tháng. Điền ước lượng khi đăng ký; cập nhật số thực qua "Cập nhật US". Dùng để chấm điểm Frequency (Tần suất).',
     group: 'impact'
   },
   Quality_Improvement: {

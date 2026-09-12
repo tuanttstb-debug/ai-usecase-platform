@@ -305,6 +305,14 @@ var Api = {
   createExercise(data)  { return Api._request(API.exerciseCreate(), data, 30000); },
   updateExercise(data)  { return Api._request(API.exerciseUpdate(), data, 30000); },
   deleteExercise(data)  { return Api._request(API.exerciseDelete(), data, 30000); },
+  // CR (2026-09-12 #3): Chấm điểm cá nhân (member tự chấm) + Lan tỏa AI
+  submitSelfScore(data)     { return Api._request(API.selfScoreSubmit(),  data, 30000); },
+  getSelfScoreMine(data)    { return Api._request(API.selfScoreMine(),    data, 30000); },
+  listSelfScorePending(data){ return Api._request(API.selfScorePending(), data, 30000); },
+  reviewSelfScore(data)     { return Api._request(API.selfScoreReview(),  data, 30000); },
+  submitSharingClaim(data)  { return Api._request(API.sharingClaimSubmit(), data, 30000); },
+  listSharingClaims(data)   { return Api._request(API.sharingClaimList(),   data, 30000); },
+  reviewSharingClaim(data)  { return Api._request(API.sharingClaimReview(), data, 30000); },
 
   // Auth dùng chung SHTD (H2) — username + password → { token, user }
   authLogin(username, password) { return Api._request(API.authLogin(), { username: username, password: password }); },

@@ -192,6 +192,29 @@ function route_(action, params, body) {
     return createResponse_(true, 'Xóa bài tập AI thành công', deleteExercise_(body));
   }
 
+  // ── CR (2026-09-12 #3): Chấm điểm cá nhân (member tự chấm) + Lan tỏa AI ──
+  if (action === 'self-score-submit') {
+    return createResponse_(true, 'Đã ghi tự chấm', submitSelfScore_(body));
+  }
+  if (action === 'self-score-mine') {
+    return createResponse_(true, 'Self-score', getSelfScoreMine_(body, params));
+  }
+  if (action === 'self-score-pending') {
+    return createResponse_(true, 'Self-score pending', listSelfScorePending_(body, params));
+  }
+  if (action === 'self-score-review') {
+    return createResponse_(true, 'Đã duyệt tự chấm', reviewSelfScore_(body));
+  }
+  if (action === 'sharing-claim-submit') {
+    return createResponse_(true, 'Đã ghi lan tỏa', submitSharingClaim_(body));
+  }
+  if (action === 'sharing-claim-list') {
+    return createResponse_(true, 'Sharing claims', listSharingClaims_(body, params));
+  }
+  if (action === 'sharing-claim-review') {
+    return createResponse_(true, 'Đã duyệt lan tỏa', reviewSharingClaim_(body));
+  }
+
   // ── Governance: Weekly Report ──────────────────────────────────
   if (action === 'weekly-report') {
     var weekOptions = { week_start: params.week_start || body.week_start || '' };

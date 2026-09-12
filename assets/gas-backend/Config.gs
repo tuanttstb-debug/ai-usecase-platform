@@ -21,8 +21,32 @@ var SHEETS = {
   UC_REUSE:    'UC_REUSE',       // H2 (T05/M05): xác nhận tái dùng UC (1 row/người-tái-dùng/UC) → lan tỏa M-KPI-4
   REQ_DEDUP:   'REQ_DEDUP',      // Round 2 T2: idempotency — 1 row/reqId đã ghi (create/update) → retry an toàn, chống trùng bền
   BACKUP_TEAM: 'BackupTeam',     // Backup chéo team: 1 row = 1 cặp teamlead backup 2 chiều (A↔B)
-  AI_EXERCISE: 'AI_EXERCISE'     // CR (2026-09-12): "Bài tập AI" — chia sẻ thao tác nhỏ (không thành US), KHÔNG tính KPI
+  AI_EXERCISE: 'AI_EXERCISE',    // CR (2026-09-12): "Bài tập AI" — chia sẻ thao tác nhỏ (không thành US), KHÔNG tính KPI
+  PERSONAL_SELF: 'PERSONAL_SELF',// CR (2026-09-12 #3): member TỰ CHẤM M2/M3 (staging) → teamlead duyệt → chốt sang PERSONAL_SCORE
+  SHARING_CLAIM: 'SHARING_CLAIM' // CR (2026-09-12 #3): member tự khai LAN TỎA AI (M4) + bằng chứng → teamlead duyệt
 };
+
+// ── PERSONAL_SELF Column Headers (CR 2026-09-12 #3) ────────────────
+// Staging: 1 dòng / (member × Month). Member tự chấm 4 tiêu chí M2 (0–10) + số khóa (M3) +
+// link bằng chứng theo KPI. Status: Draft/Submitted/Approved/Rejected. Approve → backend ghi
+// giá trị chốt sang PERSONAL_SCORE (engine KPI đọc PERSONAL_SCORE như cũ — KHÔNG đổi engine).
+var PERSONAL_SELF_HEADERS = [
+  'Self_ID', 'Username', 'Display_Name', 'Team', 'Month',
+  'Diversity', 'AI_Proficiency', 'Product_Quality', 'Quantity_Met', // M-KPI-2 (member tự chấm 0–10)
+  'Courses_Completed', 'Courses_Paid',                               // M-KPI-3 (member khai)
+  'Evidence_M2', 'Evidence_M3',                                      // link bằng chứng tách theo KPI2/KPI3
+  'Status', 'Submitted_At', 'Reviewed_By', 'Reviewed_At', 'Review_Comment'
+];
+
+// ── SHARING_CLAIM Column Headers (CR 2026-09-12 #3) ────────────────
+// Member tự khai lan tỏa AI (M-KPI-4) + bằng chứng (KPI4). 1 dòng / (member × Month × lần khai).
+// Approve → backend set Sharing_Achieved=TRUE trên PERSONAL_SCORE tháng đó (bổ sung SONG SONG
+// với auto UC_REUSE ≥3 — engine M4 giữ nguyên: đạt nếu Sharing_Achieved HOẶC reuse≥3).
+var SHARING_CLAIM_HEADERS = [
+  'Claim_ID', 'Username', 'Display_Name', 'Team', 'Month',
+  'Claim_Type', 'Description', 'Evidence_Link',
+  'Status', 'Submitted_At', 'Reviewed_By', 'Reviewed_At', 'Review_Comment'
+];
 
 // ── AI_EXERCISE Column Headers (CR 2026-09-12) ─────────────────────
 // "Bài tập AI": mỗi row = 1 bài chia sẻ nhẹ. Demo = link ổ chung (không upload file).

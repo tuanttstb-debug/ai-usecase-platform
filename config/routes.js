@@ -37,6 +37,15 @@ var API = {
   exerciseUpdate: () => `${_gasBase}?action=exercise-update`,
   exerciseDelete: () => `${_gasBase}?action=exercise-delete`,
 
+  // CR (2026-09-12 #3): Chấm điểm cá nhân (member tự chấm) + Lan tỏa AI
+  selfScoreSubmit:    () => `${_gasBase}?action=self-score-submit`,
+  selfScoreMine:      () => `${_gasBase}?action=self-score-mine`,
+  selfScorePending:   () => `${_gasBase}?action=self-score-pending`,
+  selfScoreReview:    () => `${_gasBase}?action=self-score-review`,
+  sharingClaimSubmit: () => `${_gasBase}?action=sharing-claim-submit`,
+  sharingClaimList:   () => `${_gasBase}?action=sharing-claim-list`,
+  sharingClaimReview: () => `${_gasBase}?action=sharing-claim-review`,
+
   // Approval endpoints (payload qua JSONP base64)
   // (đã gỡ approve/reject US — bỏ bước duyệt use case)
 

@@ -7,20 +7,20 @@
   <title>AI Use Case Platform — TT SPTD</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234B1FAF' stroke-width='1.5'><path stroke-linecap='round' stroke-linejoin='round' d='M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z'/></svg>">
 
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260912b">
-  <link rel="stylesheet" href="assets/css/base.css?v=20260912b">
-  <link rel="stylesheet" href="assets/css/typography.css?v=20260912b">
-  <link rel="stylesheet" href="assets/css/layout.css?v=20260912b">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260912b">
-  <link rel="stylesheet" href="assets/css/forms.css?v=20260912b">
-  <link rel="stylesheet" href="assets/css/wizard.css?v=20260912b">
-  <link rel="stylesheet" href="assets/css/states.css?v=20260912b">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260912b">
-  <link rel="stylesheet" href="assets/css/portal.css?v=20260912b">
-  <link rel="stylesheet" href="assets/css/dashboard.css?v=20260912b">
-  <link rel="stylesheet" href="assets/css/leaderboard.css?v=20260912b">
-  <link rel="stylesheet" href="assets/css/weekly-update.css?v=20260912b">
-  <script src="assets/js/theme.js?v=20260912b"></script>
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260912c">
+  <link rel="stylesheet" href="assets/css/base.css?v=20260912c">
+  <link rel="stylesheet" href="assets/css/typography.css?v=20260912c">
+  <link rel="stylesheet" href="assets/css/layout.css?v=20260912c">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260912c">
+  <link rel="stylesheet" href="assets/css/forms.css?v=20260912c">
+  <link rel="stylesheet" href="assets/css/wizard.css?v=20260912c">
+  <link rel="stylesheet" href="assets/css/states.css?v=20260912c">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260912c">
+  <link rel="stylesheet" href="assets/css/portal.css?v=20260912c">
+  <link rel="stylesheet" href="assets/css/dashboard.css?v=20260912c">
+  <link rel="stylesheet" href="assets/css/leaderboard.css?v=20260912c">
+  <link rel="stylesheet" href="assets/css/weekly-update.css?v=20260912c">
+  <script src="assets/js/theme.js?v=20260912c"></script>
 </head>
 <body>
 
@@ -76,6 +76,14 @@
         <a href="#personal-score" class="sidebar-nav-item" data-view="personal-score" data-roles="admin champion teamlead" role="menuitem">
           <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg></i>
           <span class="sidebar-nav-label">Chấm điểm cá nhân</span>
+        </a>
+        <a href="#my-score" class="sidebar-nav-item" data-view="my-score" role="menuitem">
+          <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg></i>
+          <span class="sidebar-nav-label">Tự chấm KPI</span>
+        </a>
+        <a href="#score-review" class="sidebar-nav-item" data-view="score-review" data-roles="admin champion teamlead" role="menuitem">
+          <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></i>
+          <span class="sidebar-nav-label">Duyệt chấm điểm</span>
         </a>
 
         <div class="sidebar-divider" aria-hidden="true"></div>
@@ -729,6 +737,78 @@
           </div>
         </section>
 
+        <!-- ═══ VIEW: my-score (Member tự chấm KPI + khai Lan tỏa AI) ═══ -->
+        <section data-view="my-score" hidden>
+          <div class="app-container" style="max-width:840px;margin:0 auto;padding:var(--space-6) var(--space-4)">
+            <div style="margin-bottom:var(--space-4)">
+              <h1 style="margin:0;font-size:var(--text-2xl);font-weight:var(--font-weight-bold)">Tự chấm KPI của tôi</h1>
+              <p style="margin:4px 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)">Tự chấm KPI2 (năng lực AI) + KPI3 (khóa học) và khai Lan tỏa AI (KPI4) — nộp teamlead duyệt. Kỳ: <b id="myScoreMonth"></b>. Điểm chỉ tính vào KPI sau khi được duyệt.</p>
+            </div>
+
+            <div class="dash-card" style="padding:var(--space-5);margin-bottom:var(--space-6)">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:var(--space-3)">
+                <h3 style="margin:0;font-size:var(--text-lg)">KPI2 · Năng lực ứng dụng AI (tự chấm 0–10)</h3>
+                <span id="ssStatus"></span>
+              </div>
+              <div id="ssReviewMsg" style="color:var(--color-error);font-size:var(--text-sm);margin-bottom:6px"></div>
+              <div id="ssLockMsg" style="display:none;font-size:var(--text-sm);color:var(--color-success,#2e7d32);margin-bottom:6px">✓ Đã được duyệt — kỳ này đã khóa. Cần teamlead mở lại (từ chối) để sửa.</div>
+              <div class="form-row-2">
+                <div class="form-group"><label class="form-label">Đa dạng ứng dụng (0–10)</label><input type="number" id="ssDiv" class="form-input" min="0" max="10" step="0.5" placeholder="0"></div>
+                <div class="form-group"><label class="form-label">Thành thạo AI (0–10)</label><input type="number" id="ssAi" class="form-input" min="0" max="10" step="0.5" placeholder="0"></div>
+              </div>
+              <div class="form-row-2">
+                <div class="form-group"><label class="form-label">Chất lượng kết quả (0–10)</label><input type="number" id="ssPq" class="form-input" min="0" max="10" step="0.5" placeholder="0"></div>
+                <div class="form-group"><label class="form-label">Số lượng/tần suất (0–10)</label><input type="number" id="ssQm" class="form-input" min="0" max="10" step="0.5" placeholder="0"></div>
+              </div>
+              <div class="form-group"><label class="form-label">Link bằng chứng KPI2 (năng lực AI)</label><input type="text" id="ssEvM2" class="form-input" placeholder="https://... (ổ chung)"></div>
+              <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">Điểm KPI2 tự chấm dự kiến: <b id="ssPrevM2">0/100</b></div>
+
+              <h3 style="margin:var(--space-5) 0 var(--space-2);font-size:var(--text-lg)">KPI3 · Khóa học AI (≥4 khóa = 100%, khóa trả phí ×2)</h3>
+              <div class="form-row-2">
+                <div class="form-group"><label class="form-label">Số khóa đã hoàn thành</label><input type="number" id="ssCourses" class="form-input" min="0" step="1" placeholder="0"></div>
+                <div class="form-group"><label class="form-label">Trong đó số khóa trả phí</label><input type="number" id="ssCoursesPaid" class="form-input" min="0" step="1" placeholder="0"></div>
+              </div>
+              <div class="form-group"><label class="form-label">Link bằng chứng KPI3 (chứng chỉ khóa học)</label><input type="text" id="ssEvM3" class="form-input" placeholder="https://... (ổ chung)"></div>
+              <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">Điểm KPI3 dự kiến: <b id="ssPrevM3">0/100</b></div>
+
+              <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:var(--space-4)">
+                <button type="button" id="ssSaveDraftBtn" class="btn btn-outline">Lưu nháp</button>
+                <button type="button" id="ssSubmitBtn" class="btn btn-primary">Nộp cho teamlead</button>
+              </div>
+            </div>
+
+            <div class="dash-card" style="padding:var(--space-5)">
+              <h3 style="margin:0 0 var(--space-3);font-size:var(--text-lg)">KPI4 · Lan tỏa AI — khai + bằng chứng</h3>
+              <p style="margin:0 0 var(--space-3);font-size:var(--text-xs);color:var(--color-text-muted)">Khai buổi chia sẻ/đào tạo/UC được người khác tái dùng. Teamlead duyệt → tính đạt KPI4. (Vẫn tự động đạt nếu UC của bạn được ≥3 người xác nhận tái dùng.)</p>
+              <div class="form-row-2">
+                <div class="form-group"><label class="form-label">Loại hoạt động</label><input type="text" id="scType" class="form-input" placeholder="Đào tạo / Chia sẻ / UC tái dùng"></div>
+                <div class="form-group"><label class="form-label">Link bằng chứng KPI4 <span class="form-required">*</span></label><input type="text" id="scEvidence" class="form-input" placeholder="https://... (biên bản/ảnh/DS người áp dụng)"></div>
+              </div>
+              <div class="form-group"><label class="form-label">Mô tả <span class="form-required">*</span></label><textarea id="scDesc" class="form-input" rows="2" placeholder="Bạn đã lan tỏa AI như thế nào?"></textarea></div>
+              <div style="display:flex;justify-content:flex-end;margin-bottom:var(--space-4)"><button type="button" id="scSubmitBtn" class="btn btn-primary">Nộp khai lan tỏa</button></div>
+              <div id="scList" style="display:flex;flex-direction:column;gap:var(--space-2)"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ VIEW: score-review (Teamlead duyệt tự chấm + lan tỏa) ═══ -->
+        <section data-view="score-review" hidden>
+          <div class="app-container" style="max-width:960px;margin:0 auto;padding:var(--space-6) var(--space-4)">
+            <div style="margin-bottom:var(--space-4)">
+              <h1 style="margin:0;font-size:var(--text-2xl);font-weight:var(--font-weight-bold)">Duyệt chấm điểm</h1>
+              <p style="margin:4px 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)">Duyệt/từ chối bản tự chấm KPI và khai lan tỏa của thành viên team bạn. Duyệt → tính vào KPI. Từ chối bắt buộc nêu lý do.</p>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-2)">
+              <h3 style="margin:0;font-size:var(--text-lg)">Tự chấm KPI chờ duyệt</h3><span id="srSelfCount" style="font-size:var(--text-sm);color:var(--color-text-muted)"></span>
+            </div>
+            <div id="srSelfList" style="display:flex;flex-direction:column;gap:var(--space-3);margin-bottom:var(--space-6)"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-2)">
+              <h3 style="margin:0;font-size:var(--text-lg)">Lan tỏa AI chờ duyệt</h3><span id="srClaimCount" style="font-size:var(--text-sm);color:var(--color-text-muted)"></span>
+            </div>
+            <div id="srClaimList" style="display:flex;flex-direction:column;gap:var(--space-3)"></div>
+          </div>
+        </section>
+
         <!-- ═══ VIEW: review-queue (Hàng đợi Review, champion/admin) ═══ -->
         <section data-view="review-queue" hidden>
           <div id="rqLoading" class="empty-state">Đang tải hàng đợi review…</div>
@@ -1006,36 +1086,37 @@
   <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>
 
   <!-- ── JS: env → auth → shared libs → router → view modules → shell ── -->
-  <script src="config/env.js?v=20260912b"></script>
-  <script src="assets/js/auth.js?v=20260912b"></script>
-  <script src="config/routes.js?v=20260912b"></script>
-  <script src="assets/js/constants.js?v=20260912b"></script>
-  <script src="assets/js/helpers.js?v=20260912b"></script>
-  <script src="assets/js/storage.js?v=20260912b"></script>
-  <script src="assets/js/toast.js?v=20260912b"></script>
-  <script src="assets/js/api.js?v=20260912b"></script>
-  <script src="assets/js/validation.js?v=20260912b"></script>
-  <script src="assets/js/duplicate-check.js?v=20260912b"></script>
-  <script src="assets/js/form-mapper.js?v=20260912b"></script>
-  <script src="assets/js/wizard.js?v=20260912b"></script>
-  <script src="assets/js/scoring-h2.js?v=20260912b"></script>
-  <script src="assets/js/score-slider.js?v=20260912b"></script>
-  <script src="assets/js/uc-detail-view.js?v=20260912b"></script>
-  <script src="assets/js/router.js?v=20260912b"></script>
+  <script src="config/env.js?v=20260912c"></script>
+  <script src="assets/js/auth.js?v=20260912c"></script>
+  <script src="config/routes.js?v=20260912c"></script>
+  <script src="assets/js/constants.js?v=20260912c"></script>
+  <script src="assets/js/helpers.js?v=20260912c"></script>
+  <script src="assets/js/storage.js?v=20260912c"></script>
+  <script src="assets/js/toast.js?v=20260912c"></script>
+  <script src="assets/js/api.js?v=20260912c"></script>
+  <script src="assets/js/validation.js?v=20260912c"></script>
+  <script src="assets/js/duplicate-check.js?v=20260912c"></script>
+  <script src="assets/js/form-mapper.js?v=20260912c"></script>
+  <script src="assets/js/wizard.js?v=20260912c"></script>
+  <script src="assets/js/scoring-h2.js?v=20260912c"></script>
+  <script src="assets/js/score-slider.js?v=20260912c"></script>
+  <script src="assets/js/uc-detail-view.js?v=20260912c"></script>
+  <script src="assets/js/router.js?v=20260912c"></script>
   <!-- view modules (đăng ký với Router) -->
-  <script src="assets/js/library.js?v=20260912b"></script>
-  <script src="assets/js/workflow-coverage.js?v=20260912b"></script>
-  <script src="assets/js/workflow-catalog.js?v=20260912b"></script>
-  <script src="assets/js/personal-score.js?v=20260912b"></script>
-  <script src="assets/js/leaderboard.js?v=20260912b"></script>
-  <script src="assets/js/weekly-update.js?v=20260912b"></script>
-  <script src="assets/js/us-h1.js?v=20260912b"></script>
-  <script src="assets/js/ai-exercise.js?v=20260912b"></script>
-  <script src="assets/js/review-queue.js?v=20260912b"></script>
-  <script src="assets/js/app.js?v=20260912b"></script>
+  <script src="assets/js/library.js?v=20260912c"></script>
+  <script src="assets/js/workflow-coverage.js?v=20260912c"></script>
+  <script src="assets/js/workflow-catalog.js?v=20260912c"></script>
+  <script src="assets/js/personal-score.js?v=20260912c"></script>
+  <script src="assets/js/leaderboard.js?v=20260912c"></script>
+  <script src="assets/js/weekly-update.js?v=20260912c"></script>
+  <script src="assets/js/us-h1.js?v=20260912c"></script>
+  <script src="assets/js/ai-exercise.js?v=20260912c"></script>
+  <script src="assets/js/self-score.js?v=20260912c"></script>
+  <script src="assets/js/review-queue.js?v=20260912c"></script>
+  <script src="assets/js/app.js?v=20260912c"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <script src="assets/js/dashboard.js?v=20260912b"></script>
+  <script src="assets/js/dashboard.js?v=20260912c"></script>
   <!-- shell cuối -->
-  <script src="assets/js/shell.js?v=20260912b"></script>
+  <script src="assets/js/shell.js?v=20260912c"></script>
 </body>
 </html>

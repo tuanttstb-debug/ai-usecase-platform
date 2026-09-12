@@ -4,6 +4,17 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 CR Chấm điểm cá nhân (member tự chấm→teamlead duyệt) + Lan tỏa AI (2026-09-12 #3) — Playwright 124/124
+- [x] Sheet `PERSONAL_SELF` + `SHARING_CLAIM` + `SelfScoreService.gs` (submit/get/pending/review, Phương án B — không đụng engine KPI) + 7 route.
+- [x] FE `self-score.js`: view "Tự chấm KPI" (member: KPI2 0–10 + KPI3 khóa + KPI4 lan tỏa + trạng thái duyệt) + "Duyệt chấm điểm" (teamlead approve/reject).
+- [x] Polish nhãn "Cập nhật tuần"→"Cập nhật US" (menu/home/title/helper) + card home US H1/Bài tập AI.
+- [x] Test MỚI 15-self-score (4). Full **124/124**.
+- [ ] **[TT] 🔴 REDEPLOY GAS — nhớ THÊM FILE MỚI `SelfScoreService.gs`** + Config/Code (2 sheet tự tạo) → hard-refresh `?v=20260912c`.
+- [ ] **[TT] CR2 live** (từ test live): kiểm header sheet **MASTER_DATA** còn đủ cột định danh + dán lại trọn `AdminService.gs` khi deploy (action=list đang trả bản ghi thiếu cột định danh trên live — code repo nguyên vẹn).
+- [ ] **[CC]** sau redeploy: smoke member-nộp→teamlead-duyệt thật (kiểm PERSONAL_SELF/PERSONAL_SCORE/Sharing_Achieved); nghiệm thu lại CR2 sau khi anh sửa MASTER_DATA.
+
+---
+
 ## 🆕 Bài tập AI + US H1 (chi tiết + lọc) (2026-09-12 #2) — Playwright 120/120
 - [x] **Bài tập AI**: sheet `AI_EXERCISE` + `ExerciseService.gs` + routes exercise-* + module `ai-exercise.js` + menu. Form (Tiêu đề*/Mô tả/Prompt*/Link demo) + tra cứu + xem prompt/copy + sửa/xóa của mình. Không tính KPI; nhịp 1 bài/tuần chỉ khuyến khích.
 - [x] **US H1 nâng cấp**: modal xem chi tiết (bấm dòng) + lọc Team/Workflow/Stage + tìm kiếm rộng; mapper `listUseCasesH1_` +field nội dung.

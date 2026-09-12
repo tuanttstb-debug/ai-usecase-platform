@@ -749,5 +749,5 @@ function esc(s) {
   window.clearUcSelection = clearUcSelection; window.onPickerRowClick = onPickerRowClick;
   window.filterPickerTable = filterPickerTable; window.togglePromptAccordion = togglePromptAccordion;
   window.resetForm = resetForm; window.resetAll = resetAll; window.submitWeeklyUpdate = submitWeeklyUpdate;
-  if (window.Router) window.Router.register('weekly-update', { title: 'Cập nhật tiến độ tuần', init: _wuInit });
+  if (window.Router) window.Router.register('weekly-update', { title: 'Cập nhật US', init: _wuInit });
 })();
