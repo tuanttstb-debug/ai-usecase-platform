@@ -15,6 +15,19 @@ var Wizard = {
     this.updateNav();
     this.updateProgress();
     this.bindEvents();
+    this._applySingleStepChrome();
+  },
+
+  /* CR (2026-09-12): đăng ký tối giản 1 bước → ẩn thanh bước/đếm bước/progress
+     cho gọn (giữ DOM để không vỡ code cũ tham chiếu id). */
+  _applySingleStepChrome() {
+    if (this.totalSteps > 1) return;
+    ['stepIndicators', 'stepCounter'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    var track = document.querySelector('#wizardCard .progress-track');
+    if (track) track.style.display = 'none';
   },
 
   renderIndicators() {
@@ -109,9 +122,8 @@ var Wizard = {
 
     document.getElementById('nextBtn').addEventListener('click', () => {
       const data = FormMapper.collectData();
-      let errors = [];
-      if (this.currentStep === 1) errors = Validator.step1(data);
-      else if (this.currentStep === 2) errors = Validator.step2(data);
+      // CR (2026-09-12): đăng ký còn 1 bước → chỉ còn Validator.step1.
+      let errors = Validator.step1(data);
 
       if (errors.length) {
         Toast.show(errors.join('\n'), 'error');

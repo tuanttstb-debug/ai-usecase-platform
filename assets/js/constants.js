@@ -38,6 +38,12 @@ var FIELDS = {
   USAGE_STEPS:         'Usage_Steps',
   USAGE_NOTES:         'Usage_Notes',
 
+  // ── CR (2026-09-12) — Action Plan theo tháng (thay Stage khi đăng ký) ──
+  ACTION_PLAN_M09:     'Action_Plan_M09',
+  ACTION_PLAN_M10:     'Action_Plan_M10',
+  ACTION_PLAN_M11:     'Action_Plan_M11',
+  ACTION_PLAN_M12:     'Action_Plan_M12',
+
   // ── Governance v3.0 — Execution fields ──────────────────────
   USECASE_CATEGORY:    'UseCase_Category',
   EXECUTION_PLAN:      'Execution_Plan',
@@ -138,74 +144,27 @@ var CATEGORY_LABELS = {
 };
 
 /* ─────────────────────────────────────────
-   STEPS — cấu trúc wizard 4 bước
+   STEPS — CR (2026-09-12): Đăng ký TỐI GIẢN 1 bước.
+   Chỉ còn: chọn Workflow → chọn Use Case + Kế hoạch hành động theo tháng (T9–T12).
+   Toàn bộ nội dung nghiệp vụ / prompt-luồng AI / demo / hướng dẫn ĐÃ DỜI sang
+   màn "Cập nhật US đã đăng ký" (weekly-update view). Stage bỏ khỏi đăng ký
+   (US mới mặc định S1 do GAS gán); Team auto theo session (đổi được); Owner
+   inject từ session lúc submit (không render field).
    ───────────────────────────────────────── */
 var STEPS = [
   {
     id: 1,
-    title: 'Thông tin nghiệp vụ',
-    shortTitle: 'Nghiệp vụ',
-    subtitle: 'Mô tả bài toán cần giải quyết bằng AI',
+    title: 'Đăng ký nhanh AI Use Case',
+    shortTitle: 'Đăng ký',
+    subtitle: 'Chọn Workflow → Use Case, rồi nhập kế hoạch hành động theo tháng (T9–T12)',
     fields: [
       FIELDS.WORKFLOW,
       FIELDS.USE_CASE_NAME,
-      FIELDS.OWNER_NAME,
       FIELDS.TEAM,
-      // CR2a (2026-08-31): BUSINESS_CATEGORY (Lĩnh vực) đã bỏ khỏi form đăng ký.
-      FIELDS.CURRENT_STAGE,       // ← Stage S1-S4
-      FIELDS.PAIN_POINT,
-      FIELDS.CURRENT_PROCESS,
-      FIELDS.CURRENT_TIME_MIN,
-      FIELDS.CURRENT_PROBLEM,
-      FIELDS.USER_TYPE,
-      FIELDS.EXPECTED_GOALS
-    ]
-  },
-  {
-    id: 2,
-    title: 'Luồng AI & Prompt',
-    shortTitle: 'AI & Prompt',
-    subtitle: 'Mô tả cách AI xử lý bài toán',
-    fields: [
-      FIELDS.FLOW_DESC,
-      FIELDS.INPUT_TYPES,
-      FIELDS.PROMPT_ROLE,
-      FIELDS.PROMPT_TASK,
-      FIELDS.PROMPT_GOAL,
-      FIELDS.PROMPT_CONTEXT,
-      FIELDS.PROMPT_INPUT,
-      FIELDS.PROMPT_STEPS,
-      FIELDS.PROMPT_OUTPUT_FORMAT,
-      FIELDS.PROMPT_EVALUATION
-    ]
-  },
-  {
-    id: 3,
-    title: 'Demo & Tái sử dụng',
-    shortTitle: 'Demo',
-    subtitle: 'Đánh giá hiệu quả và khả năng nhân rộng',
-    fields: [
-      FIELDS.DEMO_STATUS,
-      FIELDS.DEMO_LINK,
-      FIELDS.BEFORE_TIME_MIN,
-      FIELDS.AFTER_TIME_MIN,
-      FIELDS.ACTIVE_USER_COUNT,
-      FIELDS.MONTHLY_USAGE_COUNT,
-      FIELDS.QUALITY_IMPROVEMENT,
-      FIELDS.IMPROVEMENT_NOTE,
-      FIELDS.REUSE_LEVEL,
-      FIELDS.REUSE_ADJUSTMENT
-    ]
-  },
-  {
-    id: 4,
-    title: 'Hướng dẫn sử dụng',
-    shortTitle: 'Hướng dẫn',
-    subtitle: 'Giúp đồng nghiệp tái sử dụng use case này',
-    fields: [
-      FIELDS.WHEN_TO_USE,
-      FIELDS.USAGE_STEPS,
-      FIELDS.USAGE_NOTES
+      FIELDS.ACTION_PLAN_M09,
+      FIELDS.ACTION_PLAN_M10,
+      FIELDS.ACTION_PLAN_M11,
+      FIELDS.ACTION_PLAN_M12
     ]
   }
 ];
@@ -227,7 +186,8 @@ var GROUP_CONFIG = {
   demo:     { label: 'Trạng thái Demo' },
   impact:   { label: 'Đánh giá tác động' },
   reuse:    { label: 'Tái sử dụng' },
-  guide:    { label: null }
+  guide:    { label: null },
+  plan:     { label: 'Kế hoạch hành động theo tháng (T9–T12) — bắt buộc ít nhất 1 tháng' }
 };
 
 /* ─────────────────────────────────────────
@@ -513,5 +473,33 @@ var FIELD_CONFIG = {
     rows: 3,
     placeholder: 'Không dùng cho email có thông tin bảo mật. Kết quả cần review trước khi gửi...',
     group: 'guide'
+  },
+
+  /* ── CR (2026-09-12): Kế hoạch hành động theo tháng (đăng ký tối giản) ── */
+  /* Bắt buộc điền ÍT NHẤT 1 tháng (kiểm ở Validator.step1, không đánh dấu * từng ô
+     để tránh ép đủ cả 4). */
+  Action_Plan_M09: {
+    label: 'Kế hoạch Tháng 9',
+    type: 'textarea', rows: 2,
+    placeholder: 'Việc dự kiến làm trong tháng 9…',
+    group: 'plan'
+  },
+  Action_Plan_M10: {
+    label: 'Kế hoạch Tháng 10',
+    type: 'textarea', rows: 2,
+    placeholder: 'Việc dự kiến làm trong tháng 10…',
+    group: 'plan'
+  },
+  Action_Plan_M11: {
+    label: 'Kế hoạch Tháng 11',
+    type: 'textarea', rows: 2,
+    placeholder: 'Việc dự kiến làm trong tháng 11…',
+    group: 'plan'
+  },
+  Action_Plan_M12: {
+    label: 'Kế hoạch Tháng 12',
+    type: 'textarea', rows: 2,
+    placeholder: 'Việc dự kiến làm trong tháng 12…',
+    group: 'plan'
   }
 };

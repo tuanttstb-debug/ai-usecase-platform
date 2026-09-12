@@ -7,20 +7,20 @@
   <title>AI Use Case Platform — TT SPTD</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234B1FAF' stroke-width='1.5'><path stroke-linecap='round' stroke-linejoin='round' d='M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z'/></svg>">
 
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260909a">
-  <link rel="stylesheet" href="assets/css/base.css?v=20260909a">
-  <link rel="stylesheet" href="assets/css/typography.css?v=20260909a">
-  <link rel="stylesheet" href="assets/css/layout.css?v=20260909a">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260909a">
-  <link rel="stylesheet" href="assets/css/forms.css?v=20260909a">
-  <link rel="stylesheet" href="assets/css/wizard.css?v=20260909a">
-  <link rel="stylesheet" href="assets/css/states.css?v=20260909a">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260909a">
-  <link rel="stylesheet" href="assets/css/portal.css?v=20260909a">
-  <link rel="stylesheet" href="assets/css/dashboard.css?v=20260909a">
-  <link rel="stylesheet" href="assets/css/leaderboard.css?v=20260909a">
-  <link rel="stylesheet" href="assets/css/weekly-update.css?v=20260909a">
-  <script src="assets/js/theme.js?v=20260909a"></script>
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260912a">
+  <link rel="stylesheet" href="assets/css/base.css?v=20260912a">
+  <link rel="stylesheet" href="assets/css/typography.css?v=20260912a">
+  <link rel="stylesheet" href="assets/css/layout.css?v=20260912a">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260912a">
+  <link rel="stylesheet" href="assets/css/forms.css?v=20260912a">
+  <link rel="stylesheet" href="assets/css/wizard.css?v=20260912a">
+  <link rel="stylesheet" href="assets/css/states.css?v=20260912a">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260912a">
+  <link rel="stylesheet" href="assets/css/portal.css?v=20260912a">
+  <link rel="stylesheet" href="assets/css/dashboard.css?v=20260912a">
+  <link rel="stylesheet" href="assets/css/leaderboard.css?v=20260912a">
+  <link rel="stylesheet" href="assets/css/weekly-update.css?v=20260912a">
+  <script src="assets/js/theme.js?v=20260912a"></script>
 </head>
 <body>
 
@@ -98,7 +98,11 @@
 
         <a href="#weekly-update" class="sidebar-nav-item" data-view="weekly-update" role="menuitem">
           <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg></i>
-          <span class="sidebar-nav-label">Cập nhật tuần</span>
+          <span class="sidebar-nav-label">Cập nhật US</span>
+        </a>
+        <a href="#us-h1" class="sidebar-nav-item" data-view="us-h1" role="menuitem">
+          <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg></i>
+          <span class="sidebar-nav-label">US H1</span>
         </a>
 
         <a href="change-password.html" class="sidebar-nav-item" role="menuitem">
@@ -455,8 +459,8 @@
         <!-- ═══ VIEW: weekly-update (Cập nhật tiến độ tuần) ═══ -->
         <section data-view="weekly-update" hidden>
           <div class="wu-container">
-            <h1 class="wu-page-title">Cập nhật tiến độ tuần</h1>
-            <p class="wu-page-sub">Báo cáo tiến độ, số liệu và rào cản — cập nhật mỗi tuần để duy trì điểm số. Có thể đề xuất nâng Stage khi đủ điều kiện.</p>
+            <h1 class="wu-page-title">Cập nhật US đã đăng ký</h1>
+            <p class="wu-page-sub">Chọn use case đã đăng ký để cập nhật nội dung: luồng xử lý AI &amp; prompt (đóng gói), kế hoạch hành động theo tháng, demo và số liệu thực tế.</p>
 
             <div class="uc-picker">
               <label class="uc-picker-label">Chọn Use Case cần cập nhật</label>
@@ -524,8 +528,8 @@
                   <input type="range" id="progressSlider" min="0" max="100" step="5" value="0" class="form-input" style="accent-color:var(--color-primary)">
                   <div class="progress-display"><div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div><span class="progress-label" id="progressLabel">0%</span></div>
                 </div>
-                <div class="form-group" style="margin-top:var(--space-4)"><label class="form-label">Cập nhật tuần này <span class="form-required">*</span></label><textarea id="weeklyUpdate" class="form-input" rows="4" placeholder="Tuần này đã làm gì?..."></textarea></div>
-                <div class="form-group"><label class="form-label">Milestone tiếp theo</label><input type="text" id="nextMilestone" class="form-input" placeholder="VD: Hoàn thành pilot với 5 người dùng trước 30/7"></div>
+                <div class="form-group" style="margin-top:var(--space-4)"><label class="form-label">Ghi chú cập nhật <span style="color:var(--color-text-muted);font-weight:400">(tùy chọn)</span></label><textarea id="weeklyUpdate" class="form-input" rows="3" placeholder="Ghi chú thay đổi lần này (dùng cho Lịch sử cập nhật)..."></textarea></div>
+                <div class="form-group"><label class="form-label">Việc/milestone tiếp theo <span style="color:var(--color-text-muted);font-weight:400">(tùy chọn)</span></label><input type="text" id="nextMilestone" class="form-input" placeholder="VD: Mở rộng cho 5 người dùng"></div>
               </div>
               <div class="wu-section">
                 <div class="wu-section-title">Số liệu thực tế</div>
@@ -544,10 +548,32 @@
                 <div class="form-group"><label class="form-label">Cần hỗ trợ từ quản lý</label><textarea id="managerSupport" class="form-input" rows="2" placeholder="Quản lý có thể hỗ trợ gì?..."></textarea></div>
               </div>
               <div class="wu-section">
+                <div class="wu-section-title">Kế hoạch hành động theo tháng (T9–T12)</div>
+                <div class="form-group"><label class="form-label">Kế hoạch Tháng 9</label><textarea id="wuPlanM09" class="form-input" rows="2" placeholder="Việc dự kiến làm trong tháng 9…"></textarea></div>
+                <div class="form-group"><label class="form-label">Kế hoạch Tháng 10</label><textarea id="wuPlanM10" class="form-input" rows="2" placeholder="Việc dự kiến làm trong tháng 10…"></textarea></div>
+                <div class="form-group"><label class="form-label">Kế hoạch Tháng 11</label><textarea id="wuPlanM11" class="form-input" rows="2" placeholder="Việc dự kiến làm trong tháng 11…"></textarea></div>
+                <div class="form-group"><label class="form-label">Kế hoạch Tháng 12</label><textarea id="wuPlanM12" class="form-input" rows="2" placeholder="Việc dự kiến làm trong tháng 12…"></textarea></div>
+              </div>
+              <div class="wu-section">
+                <div class="wu-section-title">Demo</div>
+                <div class="form-row-2">
+                  <div class="form-group"><label class="form-label">Trạng thái demo</label>
+                    <select id="wuDemoStatus" class="form-input">
+                      <option value="">— Chọn —</option>
+                      <option value="Chưa có">Chưa có</option>
+                      <option value="Đã có demo">Đã có demo</option>
+                      <option value="Đã triển khai thử">Đã triển khai thử</option>
+                      <option value="Đã triển khai chính thức">Đã triển khai chính thức</option>
+                    </select>
+                  </div>
+                  <div class="form-group"><label class="form-label">Link demo / tài liệu</label><input type="text" id="wuDemoLink" class="form-input" placeholder="https://... hoặc link nội bộ"></div>
+                </div>
+              </div>
+              <div class="wu-section">
                 <div class="wu-accordion" id="promptAccordion">
                   <button type="button" class="wu-accordion-toggle" id="promptAccordionToggle" onclick="togglePromptAccordion()" aria-expanded="false">
                     <span class="wu-accordion-toggle-ico"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg></span>
-                    <span class="wu-accordion-title">Cập nhật Prompt &amp; Luồng xử lý AI <span class="wu-accordion-hint">(nếu có thay đổi)</span></span>
+                    <span class="wu-accordion-title">Luồng xử lý AI &amp; Prompt (đóng gói US) <span class="wu-accordion-hint">(nội dung chính — mở để sửa)</span></span>
                     <svg class="wu-accordion-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
                   </button>
                   <div class="wu-accordion-panel" id="promptAccordionPanel">
@@ -622,6 +648,24 @@
               <span class="picker-count" id="pickerCount"></span>
             </div>
             <div class="picker-table-wrap"><div id="pickerTableContainer"></div></div>
+          </div>
+        </section>
+
+        <!-- ═══ VIEW: us-h1 (US kỳ H1 — chỉ đọc, đọc từ sheet Data H1) ═══ -->
+        <section data-view="us-h1" hidden>
+          <div class="app-container" style="max-width:1200px;margin:0 auto;padding:var(--space-6) var(--space-4)">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;margin-bottom:var(--space-4)">
+              <div>
+                <h1 style="margin:0;font-size:var(--text-2xl);font-weight:var(--font-weight-bold)">US H1</h1>
+                <p style="margin:4px 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)">Use case kỳ H1 — chỉ đọc (tách khỏi US H2 và KPI hiện hành).</p>
+              </div>
+              <span id="h1Count" style="font-size:var(--text-sm);color:var(--color-text-muted)"></span>
+            </div>
+            <div style="margin-bottom:var(--space-4)">
+              <input type="text" id="h1Search" class="form-input" placeholder="Tìm theo mã, tên US, team, owner, workflow..." autocomplete="off" style="max-width:420px">
+            </div>
+            <div id="h1Loading" style="padding:var(--space-8);text-align:center;color:var(--color-text-muted)">Đang tải danh sách US H1…</div>
+            <div id="h1Content" style="display:none"></div>
           </div>
         </section>
 
@@ -902,34 +946,35 @@
   <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>
 
   <!-- ── JS: env → auth → shared libs → router → view modules → shell ── -->
-  <script src="config/env.js?v=20260909a"></script>
-  <script src="assets/js/auth.js?v=20260909a"></script>
-  <script src="config/routes.js?v=20260909a"></script>
-  <script src="assets/js/constants.js?v=20260909a"></script>
-  <script src="assets/js/helpers.js?v=20260909a"></script>
-  <script src="assets/js/storage.js?v=20260909a"></script>
-  <script src="assets/js/toast.js?v=20260909a"></script>
-  <script src="assets/js/api.js?v=20260909a"></script>
-  <script src="assets/js/validation.js?v=20260909a"></script>
-  <script src="assets/js/duplicate-check.js?v=20260909a"></script>
-  <script src="assets/js/form-mapper.js?v=20260909a"></script>
-  <script src="assets/js/wizard.js?v=20260909a"></script>
-  <script src="assets/js/scoring-h2.js?v=20260909a"></script>
-  <script src="assets/js/score-slider.js?v=20260909a"></script>
-  <script src="assets/js/uc-detail-view.js?v=20260909a"></script>
-  <script src="assets/js/router.js?v=20260909a"></script>
+  <script src="config/env.js?v=20260912a"></script>
+  <script src="assets/js/auth.js?v=20260912a"></script>
+  <script src="config/routes.js?v=20260912a"></script>
+  <script src="assets/js/constants.js?v=20260912a"></script>
+  <script src="assets/js/helpers.js?v=20260912a"></script>
+  <script src="assets/js/storage.js?v=20260912a"></script>
+  <script src="assets/js/toast.js?v=20260912a"></script>
+  <script src="assets/js/api.js?v=20260912a"></script>
+  <script src="assets/js/validation.js?v=20260912a"></script>
+  <script src="assets/js/duplicate-check.js?v=20260912a"></script>
+  <script src="assets/js/form-mapper.js?v=20260912a"></script>
+  <script src="assets/js/wizard.js?v=20260912a"></script>
+  <script src="assets/js/scoring-h2.js?v=20260912a"></script>
+  <script src="assets/js/score-slider.js?v=20260912a"></script>
+  <script src="assets/js/uc-detail-view.js?v=20260912a"></script>
+  <script src="assets/js/router.js?v=20260912a"></script>
   <!-- view modules (đăng ký với Router) -->
-  <script src="assets/js/library.js?v=20260909a"></script>
-  <script src="assets/js/workflow-coverage.js?v=20260909a"></script>
-  <script src="assets/js/workflow-catalog.js?v=20260909a"></script>
-  <script src="assets/js/personal-score.js?v=20260909a"></script>
-  <script src="assets/js/leaderboard.js?v=20260909a"></script>
-  <script src="assets/js/weekly-update.js?v=20260909a"></script>
-  <script src="assets/js/review-queue.js?v=20260909a"></script>
-  <script src="assets/js/app.js?v=20260909a"></script>
+  <script src="assets/js/library.js?v=20260912a"></script>
+  <script src="assets/js/workflow-coverage.js?v=20260912a"></script>
+  <script src="assets/js/workflow-catalog.js?v=20260912a"></script>
+  <script src="assets/js/personal-score.js?v=20260912a"></script>
+  <script src="assets/js/leaderboard.js?v=20260912a"></script>
+  <script src="assets/js/weekly-update.js?v=20260912a"></script>
+  <script src="assets/js/us-h1.js?v=20260912a"></script>
+  <script src="assets/js/review-queue.js?v=20260912a"></script>
+  <script src="assets/js/app.js?v=20260912a"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <script src="assets/js/dashboard.js?v=20260909a"></script>
+  <script src="assets/js/dashboard.js?v=20260912a"></script>
   <!-- shell cuối -->
-  <script src="assets/js/shell.js?v=20260909a"></script>
+  <script src="assets/js/shell.js?v=20260912a"></script>
 </body>
 </html>

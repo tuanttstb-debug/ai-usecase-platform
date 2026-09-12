@@ -6,6 +6,10 @@
    ───────────────────────────────────────── */
 var Validator = {
 
+  // CR (2026-09-12): Đăng ký tối giản 1 bước.
+  // Bắt buộc: Workflow (khi catalog đã nạp) + Use Case + Team + Action Plan ≥1 tháng.
+  // Owner inject từ session lúc submit (không kiểm ở đây); nội dung nghiệp vụ/prompt/demo
+  // đã dời sang màn "Cập nhật US".
   step1(data) {
     const err = [];
     // H2: Workflow bắt buộc — nhưng chỉ khi catalog đã nạp (offline không chặn đăng ký)
@@ -13,24 +17,18 @@ var Validator = {
       err.push('Vui lòng chọn Workflow');
     }
     if (!data[FIELDS.USE_CASE_NAME])   err.push('Tên Use Case không được để trống');
-    if (!data[FIELDS.OWNER_NAME])      err.push('Họ tên người đăng ký không được để trống');
     if (!data[FIELDS.TEAM])            err.push('Vui lòng chọn Team');
-    // CR2a (2026-08-31): bỏ Lĩnh vực nghiệp vụ khỏi đăng ký — không còn bắt buộc.
-    if (!data[FIELDS.PAIN_POINT])      err.push('Vui lòng mô tả Điểm đau nghiệp vụ');
-    if (!data[FIELDS.CURRENT_PROCESS]) err.push('Vui lòng mô tả Quy trình hiện tại');
+    // Action Plan: bắt buộc điền ít nhất 1 tháng (T9–T12)
+    var _planFields = [FIELDS.ACTION_PLAN_M09, FIELDS.ACTION_PLAN_M10, FIELDS.ACTION_PLAN_M11, FIELDS.ACTION_PLAN_M12];
+    var _anyPlan = _planFields.some(function (f) { return data[f] && String(data[f]).trim(); });
+    if (!_anyPlan) err.push('Vui lòng nhập Kế hoạch hành động cho ít nhất 1 tháng (T9–T12)');
     return err;
   },
 
-  step2(data) {
-    const err = [];
-    if (!data[FIELDS.FLOW_DESC]) err.push('Vui lòng mô tả luồng xử lý AI');
-    return err;
-  },
-
-  // step3 & step4: no required fields (optional enrichment data)
+  // step2 đã gỡ (không còn bước Luồng AI trong đăng ký).
 
   all(data) {
-    return [...this.step1(data), ...this.step2(data)];
+    return this.step1(data);
   },
 
   /* Mark form fields as invalid after clicking Next/Submit */
@@ -39,11 +37,8 @@ var Validator = {
     const errorFieldMap = {
       'Workflow': FIELDS.WORKFLOW,
       'Tên Use Case': FIELDS.USE_CASE_NAME,
-      'người đăng ký': FIELDS.OWNER_NAME,
       'Team': FIELDS.TEAM,
-      'Điểm đau': FIELDS.PAIN_POINT,
-      'Quy trình': FIELDS.CURRENT_PROCESS,
-      'luồng xử lý': FIELDS.FLOW_DESC,
+      'Kế hoạch hành động': FIELDS.ACTION_PLAN_M09,
     };
 
     errors.forEach(errMsg => {

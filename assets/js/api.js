@@ -299,6 +299,7 @@ var Api = {
 
   // Dashboard (đã bỏ duyệt US — approveUseCase/rejectUseCase gỡ)
   listUseCases(filters) { return Api._request(API.list(filters)); },
+  listUseCasesH1()      { return Api._request(API.h1List()); },   // CR (2026-09-12): US kỳ H1 (chỉ đọc)
 
   // Auth dùng chung SHTD (H2) — username + password → { token, user }
   authLogin(username, password) { return Api._request(API.authLogin(), { username: username, password: password }); },

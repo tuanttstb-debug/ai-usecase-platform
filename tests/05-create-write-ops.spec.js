@@ -25,16 +25,17 @@ const MOCK_LOOKUP = {
   Reuse_Level:       ['Cá nhân', 'Team', 'Cross-team'],
 };
 
+// CR (2026-09-12): đăng ký tối giản — form chỉ còn Workflow / UseCase_Name / Team +
+// Action Plan theo tháng (bắt buộc ≥1 tháng). Pain_Point/Current_Process/Flow_Description
+// KHÔNG còn trong form (đã dời sang "Cập nhật US") — giữ trong object để test API-level
+// (bigify) vẫn ép được payload lớn ở tầng Api.createUseCase.
 const MIN_VALID = {
   UseCase_ID:        'AIUS-999',            // FE luôn gán UseCase_ID trước khi create (v3.6.3)
   UseCase_Name:      'Tóm tắt tài liệu nghiệp vụ tự động',
   Owner_Name:        'Nguyễn Văn Test',
   Owner_Email:       'test@tpb.com.vn',
   Team:              'Team Số',
-  Business_Category: 'Automation',
-  Pain_Point:        'Tốn nhiều thời gian xử lý hồ sơ thủ công.',
-  Current_Process:   'Đọc toàn bộ tài liệu và tóm tắt bằng tay.',
-  Flow_Description:  'Dùng Gemini để tóm tắt tài liệu PDF và email.',
+  Action_Plan_M09:   'T9: chạy thử use case với 1 nhóm nhỏ, đo thời gian tiết kiệm.',
   Status:            'Submitted',
 };
 
@@ -44,13 +45,19 @@ function viText(n) {
   return (unit.repeat(Math.ceil(n / unit.length))).slice(0, n);
 }
 
-// Ép payload > 7500 (sau base64url) → buộc đi nhánh iframe-POST.
+// Ép payload > 7500 (sau base64url) → buộc đi nhánh iframe-POST (API-level: object trực tiếp).
 function bigify(data) {
   return Object.assign({}, data, {
     Pain_Point:       viText(2500),
     Current_Process:  viText(2500),
     Flow_Description: viText(2500),
   });
+}
+
+// CR (2026-09-12): form mới không còn Pain/Process/Flow/Demo → ép payload lớn QUA UI
+// bằng cách nhồi Action Plan (field còn trong form). Dùng cho các test full-UI đường POST.
+function bigViaForm(data) {
+  return Object.assign({}, data, { Action_Plan_M09: viText(8000) });
 }
 
 // ── Route helper ──────────────────────────────────────────────────────
@@ -353,12 +360,11 @@ test.describe('D — Full UI submit flow', () => {
     await expect(page.locator('#successIdBadge')).toHaveText('AIUS-999');
   });
 
-  test('D2: Link demo dài (ổ chung) → POST path → vẫn tạo thành công', async ({ page }) => {
-    await loadRegister(page);
-    const longDemo = '\\\\fileserver\\Thư mục Chung\\AI\\' + viText(1500).replace(/\s/g, '_');
-    await fillAndGoToSubmit(page, Object.assign(bigify(MIN_VALID), {
-      Demo_Status: 'Đã có demo', Demo_Link: longDemo,
-    }));
+  test('D2: Action Plan dài → payload lớn → POST path → vẫn tạo thành công', async ({ page }) => {
+    // Form tối giản không còn field Owner → submit lấy Owner từ session (ADMIN_USER).
+    // Mock verify (đường POST) phải khớp owner session để Api xác nhận đúng UC.
+    await loadRegister(page, { verify: { Owner_Name: 'Tuan TT4', Owner_Email: 'tuantt4' } });
+    await fillAndGoToSubmit(page, bigViaForm(MIN_VALID));
     await page.click('#submitBtn');
     await expect(page.locator('#successScreen')).toBeVisible({ timeout: 12000 });
     await expect(page.locator('#successIdBadge')).toHaveText('AIUS-999');
@@ -367,7 +373,7 @@ test.describe('D — Full UI submit flow', () => {
   test('D3: POST không xác nhận → warning toast chứa "mã dự kiến: AIUS-999"', async ({ page }) => {
     test.setTimeout(20000);
     await loadRegister(page, { writeTimeout: 6000, verify: null });
-    await fillAndGoToSubmit(page, bigify(MIN_VALID));
+    await fillAndGoToSubmit(page, bigViaForm(MIN_VALID));
     await page.click('#submitBtn');
     const toast = page.locator('.toast-warning .toast-message');
     await expect(toast).toBeVisible({ timeout: 12000 });

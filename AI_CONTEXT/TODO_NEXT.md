@@ -4,6 +4,17 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 3 CR: Đăng ký tối giản + "Cập nhật US" + View "US H1" (2026-09-12) — Playwright 114/114
+- [x] **CR1** đăng ký 1 bước (Workflow→US + 4 Action Plan T9–T12, bắt buộc ≥1) · bỏ pain/process/audience/goal/prompt/demo/guide/Stage · +4 cột `Action_Plan_M09..M12` · REQUIRED_FIELDS_CREATE (bỏ pain/process/flow, +Workflow) · US mới default Stage S1.
+- [x] **CR2** "Cập nhật tuần"→"Cập nhật US": Prompt/Luồng mở sẵn (nội dung chính) + Demo + 4 Action Plan + số liệu · ghi chú không bắt buộc · bỏ nâng Stage/checklist · GAS ghi Action Plan+Demo.
+- [x] **CR3** menu "US H1" + route `h1-list` đọc sheet `Data H1` (read-only, tách H2).
+- [x] Test: weekly-update viết lại mock (5) · +13-us-h1 (3) · 05 cập nhật. Full **114/114**.
+- [ ] **[TT] 🔴 REDEPLOY GAS** (Config+UseCaseService+AdminService+Code) — CR1 LỖI trên GAS cũ (còn require Pain_Point).
+- [ ] **[TT]** đảm bảo tab **`Data H1`** tồn tại (cột giống MASTER_DATA); hard-refresh `?v=20260912a` nghiệm thu 3 CR.
+- [ ] **[CC] (tùy chọn)** sau redeploy: smoke tạo US thật + kiểm 4 cột action plan ghi vào MASTER_DATA · dọn dead-DOM stageSection (xem TECH_DEBT).
+
+---
+
 ## 🆕 Tái kiến trúc SPA-lite + gỡ duyệt US (2026-09-09 #2, nhánh feat/spa-shell) — Playwright 118/118
 - [x] Shell `index.html` 1 nguồn + `router.js` + `shell.js` + concept `docs/DESIGN_Topbar_Button_Layout.md`; topbar chuẩn (dark+user-pill+logout), sidebar RBAC `data-roles` → **hết drift menu**.
 - [x] Gộp 10 view vào `<section data-view>` + `Router.register`; tách 2 inline lớn (leaderboard/weekly)→module IIFE+CSS.

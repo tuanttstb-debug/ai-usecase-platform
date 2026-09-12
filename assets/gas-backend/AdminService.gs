@@ -188,6 +188,49 @@ function listUseCases_(filters) {
   return result;
 }
 
+// ── CR (2026-09-12): US kỳ H1 — CHỈ ĐỌC từ sheet 'Data H1' ────────
+// Cột giống MASTER_DATA. Tách hoàn toàn khỏi MASTER (H2) + KPI/leaderboard/chấm điểm.
+// Không cache, không filter phức tạp (bảng tra cứu nhẹ). Sheet vắng → trả [].
+function listUseCasesH1_() {
+  var all;
+  try {
+    all = readSheetAsObjects_(SHEETS.MASTER_H1);
+  } catch (e) {
+    return []; // sheet 'Data H1' chưa tồn tại → rỗng (backward-compat)
+  }
+  if (!all || !all.length) return [];
+
+  // Mới nhất lên đầu (nếu có Created_At), ngược lại giữ nguyên thứ tự sheet.
+  all.sort(function(a, b) {
+    return new Date(b.Created_At || 0) - new Date(a.Created_At || 0);
+  });
+
+  return all.map(function(uc) {
+    return {
+      record_id:        uc.Record_ID       || '',
+      usecase_id:       uc.UseCase_ID       || '',
+      name:             uc.UseCase_Name     || '',
+      owner_name:       uc.Owner_Name        || '',
+      owner_email:      uc.Owner_Email       || '',
+      team:             uc.Team              || '',
+      workflow:         uc.Workflow          || '',
+      workflow_group:   uc.Workflow_Group    || '',
+      status:           uc.Status            || '',
+      stage:            uc.Current_Stage     || '',
+      demo_status:      uc.Demo_Status       || '',
+      demo_link:        uc.Demo_Link         || '',
+      total_score:      safeNum_(uc.Total_Score),
+      current_progress: safeNum_(uc.Current_Progress),
+      created_at:       uc.Created_At        || '',
+      // Action Plan theo tháng (nếu H1 cũng có cột này; rỗng nếu không)
+      action_plan_m09:  uc.Action_Plan_M09   || '',
+      action_plan_m10:  uc.Action_Plan_M10   || '',
+      action_plan_m11:  uc.Action_Plan_M11   || '',
+      action_plan_m12:  uc.Action_Plan_M12   || ''
+    };
+  });
+}
+
 // ── Governance: Leaderboard ──────────────────────────────────────
 
 /**
@@ -334,6 +377,16 @@ function submitWeeklyUpdate_(recordId, data) {
       if (data[f] !== undefined) updates[f] = sanitizeStr_(String(data[f]), 5000);
     });
   }
+
+  // CR (2026-09-12): màn "Cập nhật US" cho sửa Action Plan theo tháng (T9–T12) + Demo.
+  // Đây là NỘI DUNG (không phải điểm) → ghi ngay khi có, không gate theo milestone.
+  var CONTENT_FIELDS = [
+    'Action_Plan_M09', 'Action_Plan_M10', 'Action_Plan_M11', 'Action_Plan_M12',
+    'Demo_Status', 'Demo_Link'
+  ];
+  CONTENT_FIELDS.forEach(function(f) {
+    if (data[f] !== undefined) updates[f] = sanitizeStr_(String(data[f]), 5000);
+  });
 
   if (!isMilestone) {
     SCORE_NUM_FIELDS.forEach(function(f) {

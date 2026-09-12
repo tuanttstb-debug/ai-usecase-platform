@@ -28,6 +28,9 @@ var API = {
     return url;
   },
 
+  // CR (2026-09-12): US kỳ H1 — chỉ đọc từ sheet 'Data H1' (view "US H1")
+  h1List: () => `${_gasBase}?action=h1-list`,
+
   // Approval endpoints (payload qua JSONP base64)
   // (đã gỡ approve/reject US — bỏ bước duyệt use case)
 

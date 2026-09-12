@@ -173,6 +173,11 @@ function route_(action, params, body) {
     return createResponse_(true, 'Use case list', listUseCases_(listFilters));
   }
 
+  // ── CR (2026-09-12): danh sách US kỳ H1 (chỉ đọc, sheet 'Data H1') ──
+  if (action === 'h1-list') {
+    return createResponse_(true, 'US H1 list', listUseCasesH1_());
+  }
+
   // ── Governance: Weekly Report ──────────────────────────────────
   if (action === 'weekly-report') {
     var weekOptions = { week_start: params.week_start || body.week_start || '' };

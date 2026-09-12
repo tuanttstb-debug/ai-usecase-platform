@@ -29,7 +29,7 @@ function _wuInit() {
   document.getElementById('progressSlider').addEventListener('input', function() {
     updateProgressDisplay(this.value);
   });
-  document.getElementById('upgradeToggle').addEventListener('change', onUpgradeToggle);
+  // CR (2026-09-12): bỏ luồng nâng Stage khỏi "Cập nhật US" (stageSection giữ ẩn).
   loadMyUseCases();
 }
 document.addEventListener('keydown', function(e) {
@@ -226,13 +226,12 @@ function onSelectUseCase(rid) {
   });
 
   renderUcCard(_selectedUc);
-  renderStageSection(_selectedUc);
+  // CR (2026-09-12): "Cập nhật US" bỏ nâng Stage → KHÔNG render/hiện stageSection.
   prefillForm(_selectedUc);
   checkOverdue(_selectedUc);
   _loadPromptFields(_selectedUc.record_id);
 
-  document.getElementById('wuForm').style.display       = '';
-  document.getElementById('stageSection').style.display = '';
+  document.getElementById('wuForm').style.display = '';
 
   loadTimeline(_selectedUc.record_id);
 }
@@ -282,7 +281,25 @@ function _loadPromptFields(recordId) {
       var el = document.getElementById(id);
       if (el) el.value = map[id] || '';
     });
+    // CR (2026-09-12): prefill Action Plan theo tháng (T9–T12) từ full detail.
+    var planMap = {
+      wuPlanM09: data.Action_Plan_M09, wuPlanM10: data.Action_Plan_M10,
+      wuPlanM11: data.Action_Plan_M11, wuPlanM12: data.Action_Plan_M12
+    };
+    Object.keys(planMap).forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.value = planMap[id] || '';
+    });
     _fullDetailLoaded = true; window._fullDetailLoaded = true; // sync test
+    // "Cập nhật US": Luồng/Prompt là nội dung CHÍNH → mở sẵn accordion + cho phép gửi
+    // (ghi lại giá trị đã prefill, người dùng sửa trực tiếp; không ghi đè rỗng nhờ _fullDetailLoaded).
+    var acc = document.getElementById('promptAccordion');
+    if (acc && !acc.classList.contains('open')) {
+      acc.classList.add('open');
+      var tgl = document.getElementById('promptAccordionToggle');
+      if (tgl) tgl.setAttribute('aria-expanded', 'true');
+    }
+    _promptTouched = true; window._promptTouched = true;
   }).catch(function () {
     // GAS lỗi → không prefill; guard _fullDetailLoaded=false chặn gửi (không ghi đè rỗng).
   });
@@ -464,6 +481,11 @@ function prefillForm(uc) {
   document.getElementById('blocker').value           = '';
   document.getElementById('managerSupport').value    = '';
   document.getElementById('reuseCount').value        = _safeNum(uc.reuse_count_tracked, 99999);
+  // CR (2026-09-12): prefill Demo (có sẵn trong summary list).
+  var demoStatusEl = document.getElementById('wuDemoStatus');
+  if (demoStatusEl) demoStatusEl.value = uc.demo_status || '';
+  var demoLinkEl = document.getElementById('wuDemoLink');
+  if (demoLinkEl) demoLinkEl.value = uc.demo_link || '';
   updateProgressDisplay(prog);
 }
 
@@ -494,47 +516,30 @@ function checkOverdue(uc) {
 function submitWeeklyUpdate() {
   if (!_selectedUc) { showToast('Vui lòng chọn use case', 'error'); return; }
 
-  var weeklyUpdate = document.getElementById('weeklyUpdate').value.trim();
-  if (!weeklyUpdate) { showToast('Vui lòng nhập nội dung cập nhật tuần này', 'error'); return; }
-
-  // Stage upgrade validation
-  var wantUpgrade = document.getElementById('upgradeToggle').checked;
-  if (wantUpgrade && !validateChecklist()) {
-    document.getElementById('checklistWarn').classList.add('visible');
-    document.getElementById('upgradePanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    return;
-  }
-
-  // S4 scale plan required
-  var targetStage = wantUpgrade ? getTargetStage() : null;
-  if (targetStage === 'S4 - Scale') {
-    var scalePlan = document.getElementById('scalePlan').value.trim();
-    if (!scalePlan) {
-      showToast('Vui lòng điền Kế hoạch scale-up (bắt buộc cho S4)', 'error');
-      document.getElementById('scalePlan').focus();
-      return;
-    }
-  }
+  // CR (2026-09-12): "Cập nhật US" — ghi chú KHÔNG còn bắt buộc; đã bỏ luồng nâng Stage.
+  function _v(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  var weeklyUpdate = _v('weeklyUpdate');
 
   var payload = {
     Record_ID:           _selectedUc.record_id,
     Current_Progress:    parseInt(document.getElementById('progressSlider').value, 10) || 0,
     Weekly_Update:       weeklyUpdate,
-    Next_Milestone:      document.getElementById('nextMilestone').value.trim(),
-    Blocker:             document.getElementById('blocker').value.trim(),
-    Manager_Support:     document.getElementById('managerSupport').value.trim(),
+    Next_Milestone:      _v('nextMilestone'),
+    Blocker:             _v('blocker'),
+    Manager_Support:     _v('managerSupport'),
     Active_User_Count:   parseInt(document.getElementById('activeUsers').value, 10) || 0,
     Monthly_Usage_Count: parseInt(document.getElementById('monthlyUsage').value, 10) || 0,
     Hours_Saved_Actual:  parseFloat(document.getElementById('hoursSaved').value) || 0,
     Reuse_Count_Tracked: parseInt(document.getElementById('reuseCount').value, 10) || 0,
+    // Action Plan theo tháng (T9–T12) + Demo — nội dung US
+    Action_Plan_M09:     _v('wuPlanM09'),
+    Action_Plan_M10:     _v('wuPlanM10'),
+    Action_Plan_M11:     _v('wuPlanM11'),
+    Action_Plan_M12:     _v('wuPlanM12'),
+    Demo_Status:         _v('wuDemoStatus'),
+    Demo_Link:           _v('wuDemoLink'),
     reporter_email:      _currentUser.email
   };
-
-  if (wantUpgrade && targetStage) {
-    payload.New_Stage   = targetStage;
-    payload.Scale_Plan  = document.getElementById('scalePlan')  ? document.getElementById('scalePlan').value.trim()  : '';
-    payload.Scale_Risks = document.getElementById('scaleRisks') ? document.getElementById('scaleRisks').value.trim() : '';
-  }
 
   // Prompt/Luồng AI: CHỈ gửi khi đã nạp được bản hiện tại (prefill) và user đã mở
   // mục để sửa → không ghi đè rỗng lên dữ liệu prompt cũ.

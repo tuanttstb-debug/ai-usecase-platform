@@ -7,7 +7,8 @@ var SPREADSHEET_ID = '1xLMQLTgj2sRf1l9C6s6AHCT5zWJLQOofL375t8Pv_NA';
 
 // ── Sheet Names ───────────────────────────────────────────────────
 var SHEETS = {
-  MASTER:      'MASTER_DATA',    // Bảng chính chứa toàn bộ use case
+  MASTER:      'MASTER_DATA',    // Bảng chính chứa toàn bộ use case (H2)
+  MASTER_H1:   'Data H1',        // CR (2026-09-12): US kỳ H1 (chỉ đọc, cột giống MASTER_DATA) — view "US H1"
   LOOKUP:      'LOOKUP',         // Dropdown options (Field / Value)
   ACTIVITY:    'ACTIVITY_LOG',   // Audit trail
   DASHBOARD:   'DASHBOARD_READY',// Pre-aggregated dashboard cache
@@ -136,7 +137,14 @@ var HEADERS = [
   // ── H2 Giai đoạn 2 — Nhập liệu theo Workflow ─────────────────────
   // Thêm CUỐI bảng để ensureSheetColumns_(SHEETS.MASTER, HEADERS) self-heal không lệch cột cũ.
   'Workflow',                // Workflow lớn user chọn khi đăng ký (từ WORKFLOW_CATALOG hoặc 'Khác')
-  'Workflow_Group'           // Nhóm workflow tương ứng (1/2/3), suy ra từ catalog lúc đăng ký
+  'Workflow_Group',          // Nhóm workflow tương ứng (1/2/3), suy ra từ catalog lúc đăng ký
+
+  // ── CR (2026-09-12) — Action Plan theo tháng (đăng ký tối giản, thay Stage) ──
+  // Thêm CUỐI bảng để ensureSheetColumns_(SHEETS.MASTER, HEADERS) self-heal không lệch cột cũ.
+  'Action_Plan_M09',         // Kế hoạch hành động Tháng 9
+  'Action_Plan_M10',         // Kế hoạch hành động Tháng 10
+  'Action_Plan_M11',         // Kế hoạch hành động Tháng 11
+  'Action_Plan_M12'          // Kế hoạch hành động Tháng 12
 ];
 
 // ── WEEKLY_LOG Column Headers ─────────────────────────────────────
@@ -178,11 +186,13 @@ var DASHBOARD_HEADERS = [
 
 // ── Validation ────────────────────────────────────────────────────
 // Các trường bắt buộc khi tạo use case mới
+// CR (2026-09-12): đăng ký tối giản → bỏ 'Pain_Point','Current_Process','Flow_Description'
+// (nội dung nghiệp vụ/luồng AI dời sang màn "Cập nhật US"); thêm 'Workflow' (bắt buộc chọn).
+// Owner_Name/Owner_Email inject từ session ở FE. Action Plan ≥1 tháng kiểm ở FE Validator.
 var REQUIRED_FIELDS_CREATE = [
   'UseCase_Name', 'Owner_Name', 'Owner_Email',
   'Team',                          // CR2a (2026-08-31): bỏ 'Business_Category' — Lĩnh vực gỡ khỏi đăng ký
-  'Pain_Point', 'Current_Process',
-  'Flow_Description'
+  'Workflow'
 ];
 
 // Các trường không được phép ghi đè khi update

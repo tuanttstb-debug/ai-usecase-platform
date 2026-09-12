@@ -341,6 +341,9 @@ function _createUseCaseCore_(data, insideLock) {
                ? requestedStatus
                : STATUS.DRAFT;
   // Current_Stage giữ nguyên giá trị S1-S4 từ form (không overwrite bằng Status)
+  // CR (2026-09-12): đăng ký tối giản không còn chọn Stage → mặc định 'S1 - Idea' nếu
+  // rỗng, để dashboard/thư viện/pill Stage không vỡ (Stage giữ để backward-compat).
+  if (!obj.Current_Stage) obj.Current_Stage = 'S1 - Idea';
 
   // Submit_Date chỉ set khi status = Submitted
   if (obj.Status === STATUS.SUBMITTED) {
