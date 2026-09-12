@@ -4,6 +4,15 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 Bài tập AI + US H1 (chi tiết + lọc) (2026-09-12 #2) — Playwright 120/120
+- [x] **Bài tập AI**: sheet `AI_EXERCISE` + `ExerciseService.gs` + routes exercise-* + module `ai-exercise.js` + menu. Form (Tiêu đề*/Mô tả/Prompt*/Link demo) + tra cứu + xem prompt/copy + sửa/xóa của mình. Không tính KPI; nhịp 1 bài/tuần chỉ khuyến khích.
+- [x] **US H1 nâng cấp**: modal xem chi tiết (bấm dòng) + lọc Team/Workflow/Stage + tìm kiếm rộng; mapper `listUseCasesH1_` +field nội dung.
+- [x] Test: +13-us-h1 T04/T05 · MỚI 14-ai-exercise (4). Full **120/120**.
+- [ ] **[TT] 🔴 REDEPLOY GAS** (ExerciseService + routes exercise-* + mapper H1 mở rộng) → hard-refresh `?v=20260912b`.
+- [ ] **[CC] (tùy chọn)** sau redeploy: smoke đăng 1 Bài tập AI thật (kiểm sheet `AI_EXERCISE` sinh EX-0001) · siết auth exercise bằng token nếu cần (hiện trust client email — xem TECH_DEBT).
+
+---
+
 ## 🆕 3 CR: Đăng ký tối giản + "Cập nhật US" + View "US H1" (2026-09-12) — Playwright 114/114
 - [x] **CR1** đăng ký 1 bước (Workflow→US + 4 Action Plan T9–T12, bắt buộc ≥1) · bỏ pain/process/audience/goal/prompt/demo/guide/Stage · +4 cột `Action_Plan_M09..M12` · REQUIRED_FIELDS_CREATE (bỏ pain/process/flow, +Workflow) · US mới default Stage S1.
 - [x] **CR2** "Cập nhật tuần"→"Cập nhật US": Prompt/Luồng mở sẵn (nội dung chính) + Demo + 4 Action Plan + số liệu · ghi chú không bắt buộc · bỏ nâng Stage/checklist · GAS ghi Action Plan+Demo.

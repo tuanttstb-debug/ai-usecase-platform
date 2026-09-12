@@ -222,11 +222,28 @@ function listUseCasesH1_() {
       total_score:      safeNum_(uc.Total_Score),
       current_progress: safeNum_(uc.Current_Progress),
       created_at:       uc.Created_At        || '',
+      submit_date:      uc.Submit_Date        || '',
+      business_category:uc.Business_Category   || '',
       // Action Plan theo tháng (nếu H1 cũng có cột này; rỗng nếu không)
       action_plan_m09:  uc.Action_Plan_M09   || '',
       action_plan_m10:  uc.Action_Plan_M10   || '',
       action_plan_m11:  uc.Action_Plan_M11   || '',
-      action_plan_m12:  uc.Action_Plan_M12   || ''
+      action_plan_m12:  uc.Action_Plan_M12   || '',
+      // Nội dung chi tiết (để xem lại/tra cứu — cột giống MASTER_DATA)
+      pain_point:          uc.Pain_Point          || '',
+      current_process:     uc.Current_Process     || '',
+      flow_description:    uc.Flow_Description     || '',
+      prompt_role:         uc.Prompt_Role          || '',
+      prompt_task:         uc.Prompt_Task          || '',
+      prompt_goal:         uc.Prompt_Goal          || '',
+      prompt_context:      uc.Prompt_Context       || '',
+      prompt_input:        uc.Prompt_Input         || '',
+      prompt_steps:        uc.Prompt_Steps         || '',
+      prompt_output_format:uc.Prompt_Output_Format || '',
+      prompt_evaluation:   uc.Prompt_Evaluation    || '',
+      when_to_use:         uc.When_To_Use          || '',
+      usage_steps:         uc.Usage_Steps          || '',
+      usage_notes:         uc.Usage_Notes          || ''
     };
   });
 }

@@ -178,6 +178,20 @@ function route_(action, params, body) {
     return createResponse_(true, 'US H1 list', listUseCasesH1_());
   }
 
+  // ── CR (2026-09-12): "Bài tập AI" — chia sẻ thao tác nhỏ (không tính KPI) ──
+  if (action === 'exercise-list') {
+    return createResponse_(true, 'Exercise list', listExercises_());
+  }
+  if (action === 'exercise-create') {
+    return createResponse_(true, 'Đăng bài tập AI thành công', createExercise_(body));
+  }
+  if (action === 'exercise-update') {
+    return createResponse_(true, 'Cập nhật bài tập AI thành công', updateExercise_(body));
+  }
+  if (action === 'exercise-delete') {
+    return createResponse_(true, 'Xóa bài tập AI thành công', deleteExercise_(body));
+  }
+
   // ── Governance: Weekly Report ──────────────────────────────────
   if (action === 'weekly-report') {
     var weekOptions = { week_start: params.week_start || body.week_start || '' };

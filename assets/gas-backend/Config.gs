@@ -20,8 +20,17 @@ var SHEETS = {
   PERSONAL:    'PERSONAL_SCORE', // H2 Giai đoạn 3: điểm cá nhân do teamlead chấm (1 row/member, cuối kỳ)
   UC_REUSE:    'UC_REUSE',       // H2 (T05/M05): xác nhận tái dùng UC (1 row/người-tái-dùng/UC) → lan tỏa M-KPI-4
   REQ_DEDUP:   'REQ_DEDUP',      // Round 2 T2: idempotency — 1 row/reqId đã ghi (create/update) → retry an toàn, chống trùng bền
-  BACKUP_TEAM: 'BackupTeam'      // Backup chéo team: 1 row = 1 cặp teamlead backup 2 chiều (A↔B)
+  BACKUP_TEAM: 'BackupTeam',     // Backup chéo team: 1 row = 1 cặp teamlead backup 2 chiều (A↔B)
+  AI_EXERCISE: 'AI_EXERCISE'     // CR (2026-09-12): "Bài tập AI" — chia sẻ thao tác nhỏ (không thành US), KHÔNG tính KPI
 };
+
+// ── AI_EXERCISE Column Headers (CR 2026-09-12) ─────────────────────
+// "Bài tập AI": mỗi row = 1 bài chia sẻ nhẹ. Demo = link ổ chung (không upload file).
+// Active=FALSE → xóa mềm (ẩn khỏi thư viện). KHÔNG liên quan điểm/KPI.
+var AI_EXERCISE_HEADERS = [
+  'Exercise_ID', 'Title', 'Description', 'Prompt', 'Demo_Link',
+  'Owner_Name', 'Owner_Email', 'Team', 'Created_At', 'Updated_At', 'Active'
+];
 
 // ── REQ_DEDUP Column Headers (Round 2 T2 — idempotency) ────────────
 // Mỗi row = 1 request write đã xử lý xong (theo reqId client gửi). Dùng để:

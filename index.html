@@ -7,20 +7,20 @@
   <title>AI Use Case Platform — TT SPTD</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234B1FAF' stroke-width='1.5'><path stroke-linecap='round' stroke-linejoin='round' d='M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z'/></svg>">
 
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260912a">
-  <link rel="stylesheet" href="assets/css/base.css?v=20260912a">
-  <link rel="stylesheet" href="assets/css/typography.css?v=20260912a">
-  <link rel="stylesheet" href="assets/css/layout.css?v=20260912a">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260912a">
-  <link rel="stylesheet" href="assets/css/forms.css?v=20260912a">
-  <link rel="stylesheet" href="assets/css/wizard.css?v=20260912a">
-  <link rel="stylesheet" href="assets/css/states.css?v=20260912a">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260912a">
-  <link rel="stylesheet" href="assets/css/portal.css?v=20260912a">
-  <link rel="stylesheet" href="assets/css/dashboard.css?v=20260912a">
-  <link rel="stylesheet" href="assets/css/leaderboard.css?v=20260912a">
-  <link rel="stylesheet" href="assets/css/weekly-update.css?v=20260912a">
-  <script src="assets/js/theme.js?v=20260912a"></script>
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260912b">
+  <link rel="stylesheet" href="assets/css/base.css?v=20260912b">
+  <link rel="stylesheet" href="assets/css/typography.css?v=20260912b">
+  <link rel="stylesheet" href="assets/css/layout.css?v=20260912b">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260912b">
+  <link rel="stylesheet" href="assets/css/forms.css?v=20260912b">
+  <link rel="stylesheet" href="assets/css/wizard.css?v=20260912b">
+  <link rel="stylesheet" href="assets/css/states.css?v=20260912b">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260912b">
+  <link rel="stylesheet" href="assets/css/portal.css?v=20260912b">
+  <link rel="stylesheet" href="assets/css/dashboard.css?v=20260912b">
+  <link rel="stylesheet" href="assets/css/leaderboard.css?v=20260912b">
+  <link rel="stylesheet" href="assets/css/weekly-update.css?v=20260912b">
+  <script src="assets/js/theme.js?v=20260912b"></script>
 </head>
 <body>
 
@@ -103,6 +103,10 @@
         <a href="#us-h1" class="sidebar-nav-item" data-view="us-h1" role="menuitem">
           <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg></i>
           <span class="sidebar-nav-label">US H1</span>
+        </a>
+        <a href="#ai-exercise" class="sidebar-nav-item" data-view="ai-exercise" role="menuitem">
+          <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg></i>
+          <span class="sidebar-nav-label">Bài tập AI</span>
         </a>
 
         <a href="change-password.html" class="sidebar-nav-item" role="menuitem">
@@ -661,11 +665,67 @@
               </div>
               <span id="h1Count" style="font-size:var(--text-sm);color:var(--color-text-muted)"></span>
             </div>
-            <div style="margin-bottom:var(--space-4)">
-              <input type="text" id="h1Search" class="form-input" placeholder="Tìm theo mã, tên US, team, owner, workflow..." autocomplete="off" style="max-width:420px">
+            <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;margin-bottom:var(--space-4)">
+              <input type="text" id="h1Search" class="form-input" placeholder="Tìm theo mã, tên US, owner, mô tả..." autocomplete="off" style="max-width:360px;flex:1 1 220px">
+              <select id="h1TeamFilter" class="form-input" style="max-width:200px"><option value="">Tất cả team</option></select>
+              <select id="h1WorkflowFilter" class="form-input" style="max-width:240px"><option value="">Tất cả workflow</option></select>
+              <select id="h1StageFilter" class="form-input" style="max-width:180px">
+                <option value="">Tất cả Stage</option>
+                <option value="S1 - Idea">S1 · Ý tưởng</option>
+                <option value="S2 - Pilot">S2 · Pilot</option>
+                <option value="S3 - Standardized">S3 · Chuẩn hóa</option>
+                <option value="S4 - Scale">S4 · Scale</option>
+              </select>
             </div>
             <div id="h1Loading" style="padding:var(--space-8);text-align:center;color:var(--color-text-muted)">Đang tải danh sách US H1…</div>
             <div id="h1Content" style="display:none"></div>
+          </div>
+
+          <!-- Modal chi tiết US H1 (chỉ đọc) -->
+          <div class="lib-modal-overlay hidden" id="h1Modal" onclick="if(event.target===this)UsH1.closeDetail()" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1000;padding:var(--space-4)">
+            <div class="lib-modal" style="background:var(--color-surface);border-radius:var(--radius-xl);max-width:760px;width:100%;max-height:88vh;overflow:auto;box-shadow:var(--shadow-xl,0 20px 60px rgba(0,0,0,.3))">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:var(--space-5);border-bottom:1px solid var(--color-border);position:sticky;top:0;background:var(--color-surface)">
+                <div>
+                  <div id="h1ModalTitle" style="font-weight:700;font-size:var(--text-lg)"></div>
+                  <div id="h1ModalMeta" style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px"></div>
+                </div>
+                <button type="button" class="btn btn--ghost btn--sm" onclick="UsH1.closeDetail()" aria-label="Đóng">✕</button>
+              </div>
+              <div id="h1ModalBody" style="padding:var(--space-5)"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ VIEW: ai-exercise (Bài tập AI — chia sẻ thao tác nhỏ, không tính KPI) ═══ -->
+        <section data-view="ai-exercise" hidden>
+          <div class="app-container" style="max-width:1100px;margin:0 auto;padding:var(--space-6) var(--space-4)">
+            <div style="margin-bottom:var(--space-4)">
+              <h1 style="margin:0;font-size:var(--text-2xl);font-weight:var(--font-weight-bold)">Bài tập AI</h1>
+              <p style="margin:4px 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)">Chia sẻ các thao tác AI nhỏ (chưa đủ thành Use Case): mô tả ngắn + prompt + link demo ổ chung. Không tính vào điểm/KPI.</p>
+            </div>
+
+            <div class="dash-card" id="exFormCard" style="padding:var(--space-5);margin-bottom:var(--space-6)">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:var(--space-3)">
+                <h3 id="exFormTitle" style="margin:0;font-size:var(--text-lg);font-weight:var(--font-weight-semibold)">Đăng bài tập AI</h3>
+                <span id="exWeekHint" style="font-size:var(--text-xs);color:var(--color-text-muted)"></span>
+              </div>
+              <div class="form-group"><label class="form-label">Tiêu đề <span class="form-required">*</span></label><input type="text" id="exTitle" class="form-input" placeholder="VD: Dùng AI tách ý chính từ email dài" maxlength="200"></div>
+              <div class="form-group"><label class="form-label">Mô tả ngắn gọn</label><textarea id="exDescription" class="form-input" rows="2" placeholder="Thao tác này giải quyết việc gì, dùng khi nào..."></textarea></div>
+              <div class="form-group"><label class="form-label">Prompt <span class="form-required">*</span></label><textarea id="exPrompt" class="form-input" rows="4" placeholder="Dán prompt để đồng nghiệp dùng lại..."></textarea></div>
+              <div class="form-group"><label class="form-label">Link demo (ổ chung)</label><input type="text" id="exDemoLink" class="form-input" placeholder="https://drive.google.com/... (tùy chọn)"></div>
+              <div id="exFormMsg" style="color:var(--color-error);font-size:var(--text-sm);min-height:18px"></div>
+              <div style="display:flex;gap:8px;justify-content:flex-end">
+                <button type="button" id="exCancelBtn" class="btn btn-outline" style="display:none">Hủy sửa</button>
+                <button type="button" id="exSubmitBtn" class="btn btn-primary">Đăng bài</button>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-3)">
+              <input type="text" id="exSearch" class="form-input" placeholder="Tìm theo tiêu đề, mô tả, người đăng, team..." autocomplete="off" style="max-width:420px">
+              <span id="exCount" style="font-size:var(--text-sm);color:var(--color-text-muted)"></span>
+            </div>
+            <div id="exLoading" style="padding:var(--space-8);text-align:center;color:var(--color-text-muted)">Đang tải Bài tập AI…</div>
+            <div id="exList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--space-4)"></div>
           </div>
         </section>
 
@@ -946,35 +1006,36 @@
   <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>
 
   <!-- ── JS: env → auth → shared libs → router → view modules → shell ── -->
-  <script src="config/env.js?v=20260912a"></script>
-  <script src="assets/js/auth.js?v=20260912a"></script>
-  <script src="config/routes.js?v=20260912a"></script>
-  <script src="assets/js/constants.js?v=20260912a"></script>
-  <script src="assets/js/helpers.js?v=20260912a"></script>
-  <script src="assets/js/storage.js?v=20260912a"></script>
-  <script src="assets/js/toast.js?v=20260912a"></script>
-  <script src="assets/js/api.js?v=20260912a"></script>
-  <script src="assets/js/validation.js?v=20260912a"></script>
-  <script src="assets/js/duplicate-check.js?v=20260912a"></script>
-  <script src="assets/js/form-mapper.js?v=20260912a"></script>
-  <script src="assets/js/wizard.js?v=20260912a"></script>
-  <script src="assets/js/scoring-h2.js?v=20260912a"></script>
-  <script src="assets/js/score-slider.js?v=20260912a"></script>
-  <script src="assets/js/uc-detail-view.js?v=20260912a"></script>
-  <script src="assets/js/router.js?v=20260912a"></script>
+  <script src="config/env.js?v=20260912b"></script>
+  <script src="assets/js/auth.js?v=20260912b"></script>
+  <script src="config/routes.js?v=20260912b"></script>
+  <script src="assets/js/constants.js?v=20260912b"></script>
+  <script src="assets/js/helpers.js?v=20260912b"></script>
+  <script src="assets/js/storage.js?v=20260912b"></script>
+  <script src="assets/js/toast.js?v=20260912b"></script>
+  <script src="assets/js/api.js?v=20260912b"></script>
+  <script src="assets/js/validation.js?v=20260912b"></script>
+  <script src="assets/js/duplicate-check.js?v=20260912b"></script>
+  <script src="assets/js/form-mapper.js?v=20260912b"></script>
+  <script src="assets/js/wizard.js?v=20260912b"></script>
+  <script src="assets/js/scoring-h2.js?v=20260912b"></script>
+  <script src="assets/js/score-slider.js?v=20260912b"></script>
+  <script src="assets/js/uc-detail-view.js?v=20260912b"></script>
+  <script src="assets/js/router.js?v=20260912b"></script>
   <!-- view modules (đăng ký với Router) -->
-  <script src="assets/js/library.js?v=20260912a"></script>
-  <script src="assets/js/workflow-coverage.js?v=20260912a"></script>
-  <script src="assets/js/workflow-catalog.js?v=20260912a"></script>
-  <script src="assets/js/personal-score.js?v=20260912a"></script>
-  <script src="assets/js/leaderboard.js?v=20260912a"></script>
-  <script src="assets/js/weekly-update.js?v=20260912a"></script>
-  <script src="assets/js/us-h1.js?v=20260912a"></script>
-  <script src="assets/js/review-queue.js?v=20260912a"></script>
-  <script src="assets/js/app.js?v=20260912a"></script>
+  <script src="assets/js/library.js?v=20260912b"></script>
+  <script src="assets/js/workflow-coverage.js?v=20260912b"></script>
+  <script src="assets/js/workflow-catalog.js?v=20260912b"></script>
+  <script src="assets/js/personal-score.js?v=20260912b"></script>
+  <script src="assets/js/leaderboard.js?v=20260912b"></script>
+  <script src="assets/js/weekly-update.js?v=20260912b"></script>
+  <script src="assets/js/us-h1.js?v=20260912b"></script>
+  <script src="assets/js/ai-exercise.js?v=20260912b"></script>
+  <script src="assets/js/review-queue.js?v=20260912b"></script>
+  <script src="assets/js/app.js?v=20260912b"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <script src="assets/js/dashboard.js?v=20260912a"></script>
+  <script src="assets/js/dashboard.js?v=20260912b"></script>
   <!-- shell cuối -->
-  <script src="assets/js/shell.js?v=20260912a"></script>
+  <script src="assets/js/shell.js?v=20260912b"></script>
 </body>
 </html>

@@ -31,6 +31,12 @@ var API = {
   // CR (2026-09-12): US kỳ H1 — chỉ đọc từ sheet 'Data H1' (view "US H1")
   h1List: () => `${_gasBase}?action=h1-list`,
 
+  // CR (2026-09-12): "Bài tập AI" — chia sẻ thao tác nhỏ (không tính KPI)
+  exerciseList:   () => `${_gasBase}?action=exercise-list`,
+  exerciseCreate: () => `${_gasBase}?action=exercise-create`,
+  exerciseUpdate: () => `${_gasBase}?action=exercise-update`,
+  exerciseDelete: () => `${_gasBase}?action=exercise-delete`,
+
   // Approval endpoints (payload qua JSONP base64)
   // (đã gỡ approve/reject US — bỏ bước duyệt use case)
 

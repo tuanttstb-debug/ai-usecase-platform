@@ -300,6 +300,11 @@ var Api = {
   // Dashboard (đã bỏ duyệt US — approveUseCase/rejectUseCase gỡ)
   listUseCases(filters) { return Api._request(API.list(filters)); },
   listUseCasesH1()      { return Api._request(API.h1List()); },   // CR (2026-09-12): US kỳ H1 (chỉ đọc)
+  // CR (2026-09-12): "Bài tập AI"
+  listExercises()       { return Api._request(API.exerciseList()); },
+  createExercise(data)  { return Api._request(API.exerciseCreate(), data, 30000); },
+  updateExercise(data)  { return Api._request(API.exerciseUpdate(), data, 30000); },
+  deleteExercise(data)  { return Api._request(API.exerciseDelete(), data, 30000); },
 
   // Auth dùng chung SHTD (H2) — username + password → { token, user }
   authLogin(username, password) { return Api._request(API.authLogin(), { username: username, password: password }); },
