@@ -76,11 +76,11 @@
     if (countEl) countEl.textContent = list.length + ' / ' + _all.length + ' bài';
 
     if (!_all.length) {
-      wrap.innerHTML = '<p class="empty-state" style="padding:var(--space-6);text-align:center;color:var(--color-text-muted)">Chưa có bài tập AI nào. Hãy là người đầu tiên chia sẻ!</p>';
+      wrap.innerHTML = '<p class="list-empty">Chưa có bài tập AI nào. Hãy là người đầu tiên chia sẻ!</p>';
       return;
     }
     if (!list.length) {
-      wrap.innerHTML = '<p class="empty-state" style="padding:var(--space-6);text-align:center;color:var(--color-text-muted)">Không có bài nào khớp tìm kiếm.</p>';
+      wrap.innerHTML = '<p class="list-empty">Không có bài nào khớp tìm kiếm.</p>';
       return;
     }
 
@@ -90,11 +90,11 @@
       var canManage = mine || admin;
       var demo = String(e.demo_link || '').trim();
       var demoHtml = demo
-        ? '<a href="' + esc(demo) + '" target="_blank" rel="noopener" class="btn btn--ghost btn--sm">▶ Xem demo (ổ chung)</a>'
+        ? '<a href="' + esc(demo) + '" target="_blank" rel="noopener" class="btn btn-outline btn-sm"><i class="fa-solid fa-play"></i> Xem demo (ổ chung)</a>'
         : '';
       var manageHtml = canManage
-        ? '<button class="btn btn--ghost btn--sm" onclick="AiExercise.edit(\'' + esc(e.exercise_id) + '\')">Sửa</button>' +
-          '<button class="btn btn--ghost btn--sm" onclick="AiExercise.del(\'' + esc(e.exercise_id) + '\')" style="color:var(--color-error)">Xóa</button>'
+        ? '<button class="btn btn-ghost btn-sm" onclick="AiExercise.edit(\'' + esc(e.exercise_id) + '\')"><i class="fa-solid fa-pen"></i> Sửa</button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="AiExercise.del(\'' + esc(e.exercise_id) + '\')" style="color:var(--color-error)"><i class="fa-solid fa-trash"></i> Xóa</button>'
         : '';
       return '<div class="dash-card" style="padding:var(--space-4);display:flex;flex-direction:column;gap:8px">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
@@ -105,7 +105,7 @@
         '<div style="font-size:12px;color:var(--color-text-muted)">' + esc(e.owner_name || e.owner_email || '—') + (e.team ? ' · ' + esc(e.team) : '') + '</div>' +
         '<details class="ex-prompt"><summary style="cursor:pointer;color:var(--color-primary);font-size:var(--text-sm);font-weight:600">Xem Prompt</summary>' +
           '<pre style="white-space:pre-wrap;background:var(--color-surface-alt,rgba(0,0,0,.03));padding:10px;border-radius:8px;margin-top:6px;font-family:var(--font-mono,monospace);font-size:12px">' + esc(e.prompt || '') + '</pre>' +
-          '<button class="btn btn--ghost btn--sm" onclick="AiExercise.copy(\'' + esc(e.exercise_id) + '\')">📋 Copy Prompt</button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="AiExercise.copy(\'' + esc(e.exercise_id) + '\')"><i class="fa-regular fa-copy"></i> Copy Prompt</button>' +
         '</details>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:2px">' + demoHtml + manageHtml + '</div>' +
       '</div>';
@@ -178,10 +178,18 @@
   }
 
   function del(id) {
-    var u = _user() || {};
-    Api.deleteExercise({ Exercise_ID: id, requester_email: u.email || '', is_admin: _isAdmin() ? 'true' : 'false' })
-      .then(function () { showToast('Đã xóa bài tập.', 'success'); if (_editId === id) _resetForm(); _load(); })
-      .catch(function (err) { showToast('Lỗi xóa: ' + ((err && err.message) || err), 'error'); });
+    var e = _all.filter(function (x) { return x.exercise_id === id; })[0];
+    var name = e && e.title ? ('"' + e.title + '"') : ('bài ' + id);
+    var ask = (typeof uiConfirm === 'function')
+      ? uiConfirm({ title: 'Xóa bài tập AI', body: 'Xóa ' + name + '? Thao tác này không thể hoàn tác.', okLabel: 'Xóa', danger: true })
+      : Promise.resolve(true);
+    ask.then(function (ok) {
+      if (!ok) return;
+      var u = _user() || {};
+      Api.deleteExercise({ Exercise_ID: id, requester_email: u.email || '', is_admin: _isAdmin() ? 'true' : 'false' })
+        .then(function () { showToast('Đã xóa bài tập.', 'success'); if (_editId === id) _resetForm(); _load(); })
+        .catch(function (err) { showToast('Lỗi xóa: ' + ((err && err.message) || err), 'error'); });
+    });
   }
 
   function copy(id) {

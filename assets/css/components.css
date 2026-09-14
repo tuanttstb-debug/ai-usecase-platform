@@ -501,6 +501,36 @@
   line-height: var(--leading-relaxed);
 }
 
+/* ── List empty / loading (nhẹ, dùng chung cho các danh sách trong-trang) ── */
+.list-empty,
+.list-loading {
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+.list-loading::before {
+  content: "";
+  display: inline-block;
+  width: 14px; height: 14px;
+  margin-right: var(--space-2);
+  vertical-align: -2px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ── Table wrap (bảng rộng cuộn trong khung, thân trang không tràn ngang) ── */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.table-wrap .data-table { border: none; }
+
 /* ── ID Badge ── */
 .id-badge {
   display: inline-block;

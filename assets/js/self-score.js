@@ -16,15 +16,16 @@
   function _clamp10(v) { v = parseFloat(v) || 0; return Math.max(0, Math.min(10, v)); }
   function _monthLabel() { var d = new Date(); return 'Tháng ' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + d.getFullYear(); }
 
+  // Badge trạng thái = component .badge + .badge-* (theo token, tự thích ứng dark mode)
   var STATUS_BADGE = {
-    Draft:     { t: 'Nháp',            bg:'#F5F5F7', fg:'#6D6D7A' },
-    Submitted: { t: 'Chờ duyệt',       bg:'#FFF4D6', fg:'#946200' },
-    Approved:  { t: 'Đã duyệt ✓',      bg:'#E6F4EA', fg:'#1E7B34' },
-    Rejected:  { t: 'Bị từ chối',      bg:'#FDECEC', fg:'#B3261E' }
+    Draft:     { t: 'Nháp',        cls: 'badge-muted'   },
+    Submitted: { t: 'Chờ duyệt',   cls: 'badge-warning' },
+    Approved:  { t: 'Đã duyệt',    cls: 'badge-success' },
+    Rejected:  { t: 'Bị từ chối',  cls: 'badge-error'   }
   };
   function _badge(status) {
     var b = STATUS_BADGE[status] || STATUS_BADGE.Draft;
-    return '<span style="font-size:var(--text-xs);font-weight:700;padding:2px 10px;border-radius:999px;background:'+b.bg+';color:'+b.fg+'">'+b.t+'</span>';
+    return '<span class="badge ' + b.cls + '">' + b.t + '</span>';
   }
 
   // ══════════════ VIEW: my-score (member) ══════════════
@@ -101,7 +102,7 @@
     Api.listSharingClaims({ token:_tok(), scope:'mine' }).then(function(res){
       var rows=Array.isArray(res)?res:(res&&(res.data||res.items))||[];
       var wrap=document.getElementById('scList'); if(!wrap) return;
-      if(!rows.length){ wrap.innerHTML='<p style="color:var(--color-text-muted);font-size:var(--text-sm)">Chưa có khai lan tỏa nào.</p>'; return; }
+      if(!rows.length){ wrap.innerHTML='<p class="list-empty">Chưa có khai lan tỏa nào.</p>'; return; }
       wrap.innerHTML = rows.map(function(c){
         return '<div class="dash-card" style="padding:var(--space-3);display:flex;flex-direction:column;gap:4px">'+
           '<div style="display:flex;justify-content:space-between;gap:8px"><span style="font-weight:600">'+esc(c.month)+(c.claim_type?(' · '+esc(c.claim_type)):'')+'</span>'+_badge(c.status)+'</div>'+
@@ -117,12 +118,12 @@
   function _revInit() { _loadPendingSelf(); _loadPendingClaims(); }
 
   function _loadPendingSelf() {
-    var wrap=document.getElementById('srSelfList'); if(wrap) wrap.innerHTML='<p style="color:var(--color-text-muted)">Đang tải…</p>';
+    var wrap=document.getElementById('srSelfList'); if(wrap) wrap.innerHTML='<p class="list-loading">Đang tải…</p>';
     Api.listSelfScorePending({ token:_tok(), status:'Submitted' }).then(function(res){
       var rows=Array.isArray(res)?res:(res&&(res.data||res.items))||[];
       if(!wrap) return;
       var cnt=document.getElementById('srSelfCount'); if(cnt) cnt.textContent=rows.length+' chờ duyệt';
-      if(!rows.length){ wrap.innerHTML='<p style="color:var(--color-text-muted)">Không có bản tự chấm nào chờ duyệt.</p>'; return; }
+      if(!rows.length){ wrap.innerHTML='<p class="list-empty">Không có bản tự chấm nào chờ duyệt.</p>'; return; }
       wrap.innerHTML = rows.map(function(r){
         var ev = [];
         if(r.evidence_m2) ev.push('<a href="'+esc(r.evidence_m2)+'" target="_blank" rel="noopener">BC KPI2 ↗</a>');
@@ -134,20 +135,20 @@
           (ev.length?'<div style="font-size:12px;display:flex;gap:10px">'+ev.join('')+'</div>':'<div style="font-size:12px;color:var(--color-text-muted)">(không đính bằng chứng)</div>')+
           '<div style="display:flex;gap:6px;align-items:center;margin-top:2px">'+
             '<input type="text" class="form-input srComment" placeholder="Lý do (bắt buộc khi từ chối)" style="flex:1;font-size:12px;padding:6px 8px">'+
-            '<button class="btn btn--sm" style="background:var(--color-success,#2e7d32);color:#fff" onclick="ScoreReview.approveSelf(\''+esc(r.self_id)+'\',this)">Duyệt</button>'+
-            '<button class="btn btn--sm btn--ghost" style="color:var(--color-error)" onclick="ScoreReview.rejectSelf(\''+esc(r.self_id)+'\',this)">Từ chối</button>'+
+            '<button class="btn btn-success btn-sm" onclick="ScoreReview.approveSelf(\''+esc(r.self_id)+'\',this)"><i class="fa-solid fa-check"></i> Duyệt</button>'+
+            '<button class="btn btn-ghost btn-sm" style="color:var(--color-error)" onclick="ScoreReview.rejectSelf(\''+esc(r.self_id)+'\',this)"><i class="fa-solid fa-xmark"></i> Từ chối</button>'+
           '</div></div>';
       }).join('');
     }).catch(function(e){ if(wrap) wrap.innerHTML='<p style="color:var(--color-error)">Lỗi tải: '+esc((e&&e.message)||e)+'</p>'; });
   }
 
   function _loadPendingClaims() {
-    var wrap=document.getElementById('srClaimList'); if(wrap) wrap.innerHTML='<p style="color:var(--color-text-muted)">Đang tải…</p>';
+    var wrap=document.getElementById('srClaimList'); if(wrap) wrap.innerHTML='<p class="list-loading">Đang tải…</p>';
     Api.listSharingClaims({ token:_tok(), scope:'review', status:'Submitted' }).then(function(res){
       var rows=Array.isArray(res)?res:(res&&(res.data||res.items))||[];
       if(!wrap) return;
       var cnt=document.getElementById('srClaimCount'); if(cnt) cnt.textContent=rows.length+' chờ duyệt';
-      if(!rows.length){ wrap.innerHTML='<p style="color:var(--color-text-muted)">Không có khai lan tỏa nào chờ duyệt.</p>'; return; }
+      if(!rows.length){ wrap.innerHTML='<p class="list-empty">Không có khai lan tỏa nào chờ duyệt.</p>'; return; }
       wrap.innerHTML = rows.map(function(c){
         return '<div class="dash-card" style="padding:var(--space-4);display:flex;flex-direction:column;gap:6px">'+
           '<div style="display:flex;justify-content:space-between;gap:8px"><span style="font-weight:600">'+esc(c.display_name||c.username)+' · '+esc(c.team)+'</span><span style="font-size:12px;color:var(--color-text-muted)">'+esc(c.month)+(c.claim_type?(' · '+esc(c.claim_type)):'')+'</span></div>'+
@@ -155,8 +156,8 @@
           (c.evidence_link?'<a href="'+esc(c.evidence_link)+'" target="_blank" rel="noopener" style="font-size:12px">Bằng chứng ↗</a>':'<span style="font-size:12px;color:var(--color-text-muted)">(không có link)</span>')+
           '<div style="display:flex;gap:6px;align-items:center;margin-top:2px">'+
             '<input type="text" class="form-input srComment" placeholder="Lý do (bắt buộc khi từ chối)" style="flex:1;font-size:12px;padding:6px 8px">'+
-            '<button class="btn btn--sm" style="background:var(--color-success,#2e7d32);color:#fff" onclick="ScoreReview.approveClaim(\''+esc(c.claim_id)+'\',this)">Duyệt</button>'+
-            '<button class="btn btn--sm btn--ghost" style="color:var(--color-error)" onclick="ScoreReview.rejectClaim(\''+esc(c.claim_id)+'\',this)">Từ chối</button>'+
+            '<button class="btn btn-success btn-sm" onclick="ScoreReview.approveClaim(\''+esc(c.claim_id)+'\',this)"><i class="fa-solid fa-check"></i> Duyệt</button>'+
+            '<button class="btn btn-ghost btn-sm" style="color:var(--color-error)" onclick="ScoreReview.rejectClaim(\''+esc(c.claim_id)+'\',this)"><i class="fa-solid fa-xmark"></i> Từ chối</button>'+
           '</div></div>';
       }).join('');
     }).catch(function(e){ if(wrap) wrap.innerHTML='<p style="color:var(--color-error)">Lỗi tải: '+esc((e&&e.message)||e)+'</p>'; });

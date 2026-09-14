@@ -74,7 +74,7 @@ test.describe('View US H1 (CR 2026-09-12)', () => {
     await expect(page.locator('#h1ModalBody')).toContainText('Soạn email chuyên nghiệp');          // prompt_task
     await expect(page.locator('#h1ModalBody a[href="https://drive.example.com/h1-1"]')).toBeVisible(); // demo
     // Đóng modal
-    await page.locator('#h1Modal button', { hasText: '✕' }).first().click();
+    await page.locator('#h1Modal .modal-close').first().click();
     await expect(page.locator('#h1Modal')).toBeHidden();
   });
 

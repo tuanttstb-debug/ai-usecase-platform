@@ -12,6 +12,7 @@
   var _search = '';
   var _filter = { team: '', workflow: '', stage: '' };
   var _byId = {}; // usecase_id → uc
+  var _escBound = false;
 
   function esc(s) {
     return String(s == null ? '' : s)
@@ -72,32 +73,32 @@
     if (countEl) countEl.textContent = list.length + ' / ' + _all.length + ' use case';
 
     if (!_all.length) {
-      content.innerHTML = '<p class="empty-state" style="padding:var(--space-6);text-align:center;color:var(--color-text-muted)">Chưa có dữ liệu US H1 (sheet “Data H1” trống hoặc chưa tồn tại).</p>';
+      content.innerHTML = '<p class="list-empty">Chưa có dữ liệu US H1 (sheet “Data H1” trống hoặc chưa tồn tại).</p>';
       return;
     }
     if (!list.length) {
-      content.innerHTML = '<p class="empty-state" style="padding:var(--space-6);text-align:center;color:var(--color-text-muted)">Không có use case nào khớp bộ lọc.</p>';
+      content.innerHTML = '<p class="list-empty">Không có use case nào khớp bộ lọc.</p>';
       return;
     }
 
     var rows = list.map(function (uc) {
       var id = uc.usecase_id || uc.record_id || '';
       return '<tr data-id="' + esc(id) + '" style="cursor:pointer" onclick="UsH1.openDetail(\'' + esc(id) + '\')">' +
-        '<td style="white-space:nowrap;padding:8px 10px"><span class="id-badge">' + esc(uc.usecase_id || '') + '</span></td>' +
-        '<td style="font-weight:600;color:var(--color-text);padding:8px 10px">' + esc(uc.name || '(không tên)') + '</td>' +
-        '<td style="padding:8px 10px">' + esc(uc.team || '—') + '</td>' +
-        '<td style="padding:8px 10px">' + esc(uc.owner_name || uc.owner_email || '—') + '</td>' +
-        '<td style="padding:8px 10px">' + esc(uc.workflow || '—') + '</td>' +
-        '<td style="white-space:nowrap;padding:8px 10px">' + _stagePill(uc.stage) + '</td>' +
-        '<td style="max-width:280px;color:var(--color-text-secondary);font-size:var(--text-xs);padding:8px 10px">' + esc(_planSummary(uc)) + '</td>' +
+        '<td style="white-space:nowrap"><span class="id-badge">' + esc(uc.usecase_id || '') + '</span></td>' +
+        '<td style="font-weight:600;color:var(--color-text)">' + esc(uc.name || '(không tên)') + '</td>' +
+        '<td>' + esc(uc.team || '—') + '</td>' +
+        '<td>' + esc(uc.owner_name || uc.owner_email || '—') + '</td>' +
+        '<td>' + esc(uc.workflow || '—') + '</td>' +
+        '<td style="white-space:nowrap">' + _stagePill(uc.stage) + '</td>' +
+        '<td style="max-width:280px;color:var(--color-text-secondary);font-size:var(--text-xs)">' + esc(_planSummary(uc)) + '</td>' +
       '</tr>';
     }).join('');
 
     content.innerHTML =
-      '<div style="overflow-x:auto"><table class="h1-table" style="width:100%;border-collapse:collapse;font-size:var(--text-sm)">' +
-        '<thead><tr style="text-align:left;border-bottom:2px solid var(--color-border)">' +
-          '<th style="padding:8px 10px">Mã</th><th style="padding:8px 10px">Tên Use Case</th><th style="padding:8px 10px">Team</th>' +
-          '<th style="padding:8px 10px">Owner</th><th style="padding:8px 10px">Workflow</th><th style="padding:8px 10px">Stage</th><th style="padding:8px 10px">Kế hoạch</th>' +
+      '<div class="table-wrap"><table class="data-table h1-table">' +
+        '<thead><tr>' +
+          '<th>Mã</th><th>Tên Use Case</th><th>Team</th>' +
+          '<th>Owner</th><th>Workflow</th><th>Stage</th><th>Kế hoạch</th>' +
         '</tr></thead><tbody>' + rows + '</tbody>' +
       '</table></div>';
   }
@@ -138,7 +139,7 @@
     var demo = String(uc.demo_link || '').trim();
     var demoHtml = demo
       ? '<div style="margin-bottom:var(--space-3)"><div style="font-size:var(--text-xs);font-weight:700;color:var(--color-text-muted);text-transform:uppercase;margin-bottom:3px">Demo</div>' +
-        '<a href="' + esc(demo) + '" target="_blank" rel="noopener" class="btn btn--ghost btn--sm">▶ Mở demo (ổ chung)</a></div>'
+        '<a href="' + esc(demo) + '" target="_blank" rel="noopener" class="btn btn-outline btn-sm"><i class="fa-solid fa-play"></i> Mở demo (ổ chung)</a></div>'
       : '';
 
     var html = '';
@@ -155,12 +156,11 @@
     if (body) body.innerHTML = html;
 
     modal.classList.remove('hidden');
-    modal.style.display = 'flex';
   }
 
   function closeDetail() {
     var modal = document.getElementById('h1Modal');
-    if (modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
+    if (modal) modal.classList.add('hidden');
   }
 
   function _load() {
@@ -194,7 +194,7 @@
       var el = document.getElementById(pair[0]);
       if (el && !el._bound) { el.addEventListener('change', function () { _filter[pair[1]] = el.value; _render(); }); el._bound = true; }
     });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDetail(); });
+    if (!_escBound) { document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDetail(); }); _escBound = true; }
   }
 
   if (window.Router) window.Router.register('us-h1', {

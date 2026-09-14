@@ -4,6 +4,13 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 Rà soát UI/UX + đồng nhất các màn CR (2026-09-14) — Playwright 124/124
+- [x] 10 phát hiện đồng nhất đã sửa (class nút canon · `.search-box` · modal chuẩn · badge token · nút Duyệt/Từ chối class · `uiConfirm()` xóa · `.list-empty`/`.list-loading`/`.table-wrap` · `.data-table` US H1 · Font Awesome 6 · guard keydown). Báo cáo `docs/UIUX_AUDIT_20260914.md`. Rule hub `REF-UIUX-COMPONENT-CONTRACT.md`.
+- [ ] **[TT]** hard-refresh `?v=20260914` nghiệm thu (không cần redeploy GAS): icon FA hiện; xóa Bài tập AI hỏi xác nhận; badge trạng thái đúng ở dark mode.
+- [ ] **[CC] (tùy chọn)** lan contract sang dashboard/leaderboard (nút cũ chưa theo canon); dọn `.btn--ghost` dead (TD-UI-01); self-host FA nếu cần (TD-UI-02).
+
+---
+
 ## 🆕 CR Chấm điểm cá nhân (member tự chấm→teamlead duyệt) + Lan tỏa AI (2026-09-12 #3) — Playwright 124/124
 - [x] Sheet `PERSONAL_SELF` + `SHARING_CLAIM` + `SelfScoreService.gs` (submit/get/pending/review, Phương án B — không đụng engine KPI) + 7 route.
 - [x] FE `self-score.js`: view "Tự chấm KPI" (member: KPI2 0–10 + KPI3 khóa + KPI4 lan tỏa + trạng thái duyệt) + "Duyệt chấm điểm" (teamlead approve/reject).
