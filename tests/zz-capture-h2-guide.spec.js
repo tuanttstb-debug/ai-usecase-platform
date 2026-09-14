@@ -1,6 +1,8 @@
 // ─────────────────────────────────────────────────────────────────
-// zz-capture-h2-guide.spec.js — Chụp ảnh minh họa cho HDSD H2 (teamlead + nhân sự)
-//   Render từng trang với dữ liệu MOCK (không lộ dữ liệu thật) → screenshots/h2/*.png
+// zz-capture-h2-guide.spec.js — Chụp ảnh minh họa cho HDSD (teamlead + nhân sự)
+//   Render từng màn với dữ liệu MOCK (không lộ dữ liệu thật) → screenshots/h2/*.png
+//   Luồng MỚI 2026-09: đăng ký tối giản · Cập nhật US · US H1 · Bài tập AI ·
+//   Tự chấm KPI (member) · Duyệt chấm điểm (teamlead).
 //   Chạy:  npx playwright test tests/zz-capture-h2-guide.spec.js
 //   Sau đó dựng .docx:  python build_h2_guide.py
 // ─────────────────────────────────────────────────────────────────
@@ -15,6 +17,8 @@ fs.mkdirSync(OUT, { recursive: true });
 // Tên HƯ CẤU cho ảnh minh họa (repo public — không dùng tên nhân sự thật).
 const MEMBER = { email: 'thanhvien.a', displayName: 'Nguyễn Văn A', role: 'user',  team: 'CV1', loginAt: new Date().toISOString() };
 const LEAD   = { email: 'teamlead.x', displayName: 'Trưởng nhóm X', role: 'admin', team: 'CV1', loginAt: new Date().toISOString() };
+
+const MONTH = 'Tháng ' + ('0' + (new Date().getMonth() + 1)).slice(-2) + '/' + new Date().getFullYear();
 
 // ── Dữ liệu mock theo action (tên hư cấu) ──
 const UC_LIST = [
@@ -34,18 +38,57 @@ const WORKFLOW_CATALOG = { groups: [
   ] },
 ] };
 
+// US kỳ H1 (chỉ đọc) — kèm field chi tiết cho modal
+const H1_LIST = [
+  { usecase_id: 'AIUS-H1-001', record_id: 'H1-001', name: 'Trợ lý soạn email nghiệp vụ', team: 'CV1', owner_name: 'Nguyễn Văn A', owner_email: 'thanhvien.a', workflow: 'Soạn thảo & xử lý thông tin', stage: 'S3 - Standardized', status: 'Đang dùng',
+    action_plan_m09: 'Chuẩn hóa prompt mẫu', action_plan_m10: 'Mở rộng sang CV2', action_plan_m11: '', action_plan_m12: '',
+    pain_point: 'Soạn email lặp lại tốn thời gian', current_process: 'Gõ tay từng email', flow_description: 'Nhập ý chính → AI soạn nháp → người chỉnh & gửi',
+    prompt_role: 'Bạn là trợ lý soạn thảo của ngân hàng', prompt_task: 'Soạn email chuyên nghiệp theo ý chính', prompt_goal: 'Email đúng văn phong, đủ ý', prompt_context: 'Khách hàng doanh nghiệp', prompt_input: 'Các ý chính cần truyền đạt', prompt_steps: '1. Đọc ý chính 2. Soạn nháp 3. Rà số liệu', prompt_output_format: 'Email hoàn chỉnh có tiêu đề', prompt_evaluation: 'Đúng văn phong + đủ thông tin',
+    when_to_use: 'Khi cần soạn email nghiệp vụ lặp lại', usage_steps: 'Dán ý chính vào prompt → chạy → chỉnh', usage_notes: 'Luôn kiểm số liệu trước khi gửi', demo_link: 'https://drive.example/h1-1' },
+  { usecase_id: 'AIUS-H1-002', record_id: 'H1-002', name: 'Radar tin tức ngành hàng tuần', team: 'BL', owner_name: 'Lê Văn C', owner_email: 'thanhvien.c', workflow: 'Nghiên cứu sản phẩm, đối thủ & định giá', stage: 'S2 - Pilot', status: 'Thử nghiệm',
+    action_plan_m09: 'Chạy thử 4 tuần', action_plan_m10: '', action_plan_m11: '', action_plan_m12: '',
+    pain_point: 'Bỏ lỡ thay đổi chính sách đối thủ', current_process: 'Đọc tin thủ công', flow_description: 'Thu thập tin → AI tóm tắt → lọc điểm cần chú ý',
+    prompt_role: 'Bạn là chuyên viên nghiên cứu thị trường', prompt_task: 'Tóm tắt tin ngành trong tuần', prompt_goal: '', prompt_context: '', prompt_input: 'Danh sách link tin', prompt_steps: '', prompt_output_format: 'Bản tin 5 gạch đầu dòng', prompt_evaluation: '',
+    when_to_use: 'Đầu tuần', usage_steps: 'Dán link → chạy', usage_notes: '', demo_link: '' },
+  { usecase_id: 'AIUS-H1-003', record_id: 'H1-003', name: 'Trợ lý phân loại yêu cầu khách hàng', team: 'CV2', owner_name: 'Phạm Thị D', owner_email: 'thanhvien.d', workflow: 'Quản trị & phân tích dữ liệu', stage: 'S1 - Idea', status: 'Ý tưởng',
+    action_plan_m09: 'Thu thập mẫu', action_plan_m10: '', action_plan_m11: '', action_plan_m12: '',
+    pain_point: 'Phân loại thủ công dễ sót', current_process: '', flow_description: '', prompt_role: '', prompt_task: '', prompt_goal: '', prompt_context: '', prompt_input: '', prompt_steps: '', prompt_output_format: '', prompt_evaluation: '',
+    when_to_use: '', usage_steps: '', usage_notes: '', demo_link: '' },
+];
+
+// Bài tập AI (thao tác nhỏ, không tính KPI)
+const EXERCISE_LIST = [
+  { exercise_id: 'EX-0001', title: 'Tách ý chính từ email dài', description: 'Dán email dài, AI tóm thành 3 gạch đầu dòng để xử lý nhanh.', prompt: 'Tóm tắt email sau thành đúng 3 ý chính, mỗi ý 1 câu:\n[dán email]', demo_link: 'https://drive.example/ex1', owner_name: 'Nguyễn Văn A', owner_email: 'thanhvien.a', team: 'CV1', created_at: new Date().toISOString() },
+  { exercise_id: 'EX-0002', title: 'Diễn giải bảng số liệu thành lời', description: 'Dán bảng số, AI viết đoạn mô tả xu hướng cho slide.', prompt: 'Từ bảng số sau, viết 1 đoạn mô tả xu hướng chính (<=80 từ):\n[dán bảng]', demo_link: '', owner_name: 'Trần Thị B', owner_email: 'thanhvien.b', team: 'CV1', created_at: new Date(Date.now() - 2 * 86400000).toISOString() },
+];
+
+// Member tự chấm — bản kỳ hiện tại (đang chờ duyệt)
+const SELF_MINE = [
+  { self_id: 'SS-A-01', month: MONTH, diversity: 8, ai_proficiency: 7, product_quality: 8, quantity_met: 7, courses_completed: 2, courses_paid: 1, evidence_m2: 'https://drive.example/evd-m2', evidence_m3: 'https://drive.example/evd-m3', status: 'Submitted', review_comment: '' },
+];
+
+// Hàng chờ duyệt tự chấm (teamlead)
+const SELF_PENDING = [
+  { self_id: 'SS-A-01', username: 'thanhvien.a', display_name: 'Nguyễn Văn A', team: 'CV1', month: MONTH, proposed_m2: 76, diversity: 8, ai_proficiency: 7, product_quality: 8, quantity_met: 7, courses_completed: 2, courses_paid: 1, proposed_m3: 75, evidence_m2: 'https://drive.example/evd-m2', evidence_m3: 'https://drive.example/evd-m3' },
+  { self_id: 'SS-B-01', username: 'thanhvien.b', display_name: 'Trần Thị B', team: 'CV1', month: MONTH, proposed_m2: 62, diversity: 6, ai_proficiency: 6, product_quality: 7, quantity_met: 6, courses_completed: 1, courses_paid: 0, proposed_m3: 25, evidence_m2: '', evidence_m3: '' },
+];
+
+// Khai lan tỏa (dùng cho cả member 'mine' lẫn teamlead 'review')
+const SHARING_CLAIMS = [
+  { claim_id: 'SC-001', username: 'thanhvien.a', display_name: 'Nguyễn Văn A', team: 'CV1', month: MONTH, claim_type: 'Buổi chia sẻ', description: 'Chia sẻ prompt soạn email cho team CV1 (8 người tham dự).', evidence_link: 'https://drive.example/share1', status: 'Submitted', review_comment: '' },
+];
+
 const PERSONAL_LIST = { team: 'all', count: 3, scores: [
   { username: 'thanhvien.a', display_name: 'Nguyễn Văn A', team: 'CV1', final_score: 76.5, rank_category: 'STRONG_CONTRIBUTOR', months_scored: 2, scored_by: 'teamlead.x',
-    months: [ { month: 'Tháng 08/2026', diversity: 8, ai_proficiency: 7, product_quality: 8, quantity_met: 7, final_score: 76.5, comment: '' } ],
+    months: [ { month: MONTH, diversity: 8, ai_proficiency: 7, product_quality: 8, quantity_met: 7, final_score: 76.5, comment: '' } ],
     courses_completed: 3, courses_paid: 1, sharing_achieved: true, milestones_late: 0, evidence_link: 'https://drive.example/evd/thanhvien.a' },
   { username: 'thanhvien.b', display_name: 'Trần Thị B', team: 'CV1', final_score: 64, rank_category: 'AVERAGE', months_scored: 1, scored_by: 'teamlead.x', months: [], courses_completed: 1, courses_paid: 0, sharing_achieved: false, milestones_late: 1, evidence_link: '' },
-  { username: 'thanhvien.c', display_name: 'Lê Văn C', team: 'BL', final_score: 0, rank_category: 'BOTTOM_PERFORMER', months_scored: 0, scored_by: '', months: [], courses_completed: 0, courses_paid: 0, sharing_achieved: false, milestones_late: 0, evidence_link: '' },
 ] };
 
 const USERS = [
   { username: 'teamlead.x',  display_name: 'Trưởng nhóm X', role: 'admin', team: 'CV1', active: true },
   { username: 'thanhvien.a', display_name: 'Nguyễn Văn A', role: 'user', team: 'CV1', active: true },
-  { username: 'thanhvien.b',   display_name: 'Trần Thị B',   role: 'user', team: 'CV1', active: true },
+  { username: 'thanhvien.b', display_name: 'Trần Thị B', role: 'user', team: 'CV1', active: true },
 ];
 
 const KPI_PREVIEW = { username: 'thanhvien.a', display_name: 'Nguyễn Văn A', team: 'CV1', m1: 80, m2: 76.5, m3: 75, m4: 100, penalty: 0, final: 82.6, rank_category: 'STRONG_CONTRIBUTOR', uc_count: 2, months_scored: 2, has_data: true };
@@ -59,7 +102,7 @@ const H2_LB = { uc_ranking: UC_LIST.map((u, i) => ({ record_id: u.record_id, use
 const KPI_LB = {
   member_ranking: [
     { username: 'thanhvien.a', display_name: 'Nguyễn Văn A', team: 'CV1', m1: 80, m2: 76.5, m3: 75, m4: 100, penalty: 0, final: 82.6, rank_category: 'STRONG_CONTRIBUTOR', uc_count: 2, months_scored: 2, rank: 1 },
-    { username: 'thanhvien.b',   display_name: 'Trần Thị B',   team: 'CV1', m1: 60, m2: 64, m3: 25, m4: 0, penalty: 2, final: 52.6, rank_category: 'AVERAGE', uc_count: 1, months_scored: 1, rank: 2 },
+    { username: 'thanhvien.b', display_name: 'Trần Thị B', team: 'CV1', m1: 60, m2: 64, m3: 25, m4: 0, penalty: 2, final: 52.6, rank_category: 'AVERAGE', uc_count: 1, months_scored: 1, rank: 2 },
   ],
   teamlead_ranking: [ { username: 'teamlead.x', display_name: 'Trưởng nhóm X', team: 'CV1', t1: 82.6, t2: 50, team_size: 2, pass_count: 1, final: 69.6, rank_category: 'AVERAGE', rank: 1 } ],
   center_avg: 67.6, kpi_pass: 70, council_size: 4, filter_team: 'all',
@@ -71,6 +114,11 @@ function dataFor(action) {
     case 'workflow-catalog': return WORKFLOW_CATALOG;
     case 'lookup': return { teams: ['CV1', 'CV2', 'BL'], categories: ['Tự động hóa', 'Phân tích'], stages: ['POC', 'Production'] };
     case 'next-id': case 'nextId': return { next_id: 'AIUS-104' };
+    case 'h1-list': return H1_LIST;
+    case 'exercise-list': return EXERCISE_LIST;
+    case 'self-score-mine': return SELF_MINE;
+    case 'self-score-pending': return SELF_PENDING;
+    case 'sharing-claim-list': return SHARING_CLAIMS;
     case 'personal-score-list': return PERSONAL_LIST;
     case 'member-kpi-preview': return KPI_PREVIEW;
     case 'users': return USERS;
@@ -99,68 +147,73 @@ async function shot(page, name) {
   await page.screenshot({ path: path.join(OUT, name + '.png'), fullPage: false });
 }
 
-test.describe.configure({ mode: 'serial' });
+// Điều hướng SPA-lite qua hash (fire hashchange kể cả khi hash trùng)
+async function goView(page, view) {
+  await page.goto('/index.html#' + view);
+  await page.waitForLoadState('networkidle');
+  await page.evaluate((v) => { location.hash = '#' + v; window.dispatchEvent(new HashChangeEvent('hashchange')); }, view);
+  await page.waitForTimeout(1000);
+}
 
+test.describe.configure({ mode: 'serial' });
 test.use({ viewport: { width: 1400, height: 900 } });
 
-test('capture — đăng nhập + trang chủ + đăng ký + tuần', async ({ page }) => {
+test('capture — nhân sự: login → home → đăng ký → cập nhật US', async ({ page }) => {
   await mock(page);
 
-  // 01 Login
   await page.goto('/login.html'); await page.waitForTimeout(700); await shot(page, '01_login');
 
-  // 02 Home (nhân sự)
-  await setSession(page, MEMBER); await page.goto('/index.html'); await page.waitForLoadState('networkidle'); await page.waitForTimeout(600); await shot(page, '02_home_member');
-
-  // 03 Đăng ký UC — chọn Workflow → US
-  await page.goto('/register.html'); await page.waitForLoadState('networkidle'); await page.waitForTimeout(1200); await shot(page, '03_register_workflow');
-
-  // 04 Cập nhật tuần
-  await page.goto('/weekly-update.html'); await page.waitForLoadState('networkidle'); await page.waitForTimeout(1000); await shot(page, '04_weekly_update');
-
-  // 05 Thư viện AI + tái dùng
-  await page.goto('/library.html'); await page.waitForLoadState('networkidle'); await page.waitForTimeout(1000); await shot(page, '05_library_reuse');
+  await setSession(page, MEMBER);
+  await goView(page, 'home');            await shot(page, '02_home');
+  await goView(page, 'register');        await page.waitForTimeout(400); await shot(page, '03_register');
+  await goView(page, 'weekly-update');   await page.waitForTimeout(400); await shot(page, '04_update_us');
 });
 
-test('capture — teamlead: chấm điểm cá nhân + hội đồng', async ({ page }) => {
+test('capture — nhân sự: US H1 → Bài tập AI → Tự chấm KPI → Thư viện', async ({ page }) => {
+  await mock(page);
+  await setSession(page, MEMBER);
+
+  await goView(page, 'us-h1');           await shot(page, '05_us_h1');
+  // 06 — modal chi tiết US H1
+  try {
+    await page.locator('#h1Content table tbody tr').first().click();
+    await expect(page.locator('#h1Modal')).toBeVisible({ timeout: 4000 });
+    await page.waitForTimeout(600);
+    await shot(page, '06_us_h1_detail');
+  } catch (e) { await shot(page, '06_us_h1_detail'); }
+
+  await goView(page, 'ai-exercise');     await shot(page, '07_ai_exercise');
+  await goView(page, 'my-score');        await page.waitForTimeout(400); await shot(page, '08_self_score');
+  await goView(page, 'library');         await shot(page, '09_library');
+});
+
+test('capture — teamlead: Duyệt chấm điểm → Hội đồng chấm US', async ({ page }) => {
   await mock(page);
   await setSession(page, LEAD);
 
-  // 06 Chấm điểm cá nhân — danh sách
-  await page.goto('/personal-score.html'); await page.waitForLoadState('networkidle'); await page.waitForTimeout(1000); await shot(page, '06_personal_list');
+  // 10 — Duyệt chấm điểm (tự chấm + lan tỏa chờ duyệt)
+  await goView(page, 'score-review');    await page.waitForTimeout(400); await shot(page, '10_review_scores');
 
-  // 07 Panel chấm điểm cá nhân theo tháng (US + M2 + KPI khác + EVD)
-  try {
-    await page.locator('#psTable button').first().click();
-    await expect(page.locator('#psPanel')).toBeVisible();
-    await page.waitForTimeout(900);
-    await shot(page, '07_personal_panel');
-  } catch (e) { await shot(page, '07_personal_panel'); }
-
-  // 08 Hàng đợi review
-  await page.goto('/review-queue.html'); await page.waitForLoadState('networkidle'); await page.waitForTimeout(1000); await shot(page, '08_review_list');
-
-  // 09 Panel chấm điểm US hội đồng
+  // 11 — Hàng đợi review hội đồng
+  await goView(page, 'review-queue');    await shot(page, '11_council_list');
+  // 12 — Panel chấm điểm US hội đồng
   try {
     await page.locator('#rqTablePending button, .rq-name-link').first().click();
-    await expect(page.locator('#reviewPanel')).toBeVisible();
-    await page.waitForTimeout(900);
-    await shot(page, '09_review_panel');
-  } catch (e) { await shot(page, '09_review_panel'); }
+    await expect(page.locator('#reviewPanel')).toBeVisible({ timeout: 4000 });
+    await page.waitForTimeout(800);
+    await shot(page, '12_council_panel');
+  } catch (e) { await shot(page, '12_council_panel'); }
 });
 
 test('capture — leaderboard KPI + heatmap + đổi mật khẩu', async ({ page }) => {
   await mock(page);
   await setSession(page, LEAD);
 
-  await page.goto('/leaderboard.html'); await page.waitForLoadState('networkidle'); await page.waitForTimeout(1200);
-  // 10 Tab KPI tổng hợp
+  await goView(page, 'leaderboard'); await page.waitForTimeout(600);
   try { await page.locator('.lb-tab[data-tab="kpiMember"]').click(); await page.waitForTimeout(800); } catch (e) {}
-  await shot(page, '10_leaderboard_kpi');
-  // 11 Tab Heatmap
+  await shot(page, '13_leaderboard_kpi');
   try { await page.locator('.lb-tab[data-tab="heatmap"]').click(); await page.waitForTimeout(800); } catch (e) {}
-  await shot(page, '11_leaderboard_heatmap');
+  await shot(page, '14_heatmap');
 
-  // 12 Đổi mật khẩu
-  await page.goto('/change-password.html'); await page.waitForLoadState('networkidle'); await page.waitForTimeout(700); await shot(page, '12_change_password');
+  await page.goto('/change-password.html'); await page.waitForLoadState('networkidle'); await page.waitForTimeout(700); await shot(page, '15_change_password');
 });
