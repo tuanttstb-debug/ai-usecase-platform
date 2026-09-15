@@ -1,5 +1,10 @@
 # PROJECT STATE
 
+**2026-09-15 — TEST LIVE toàn bộ tính năng mới (tuantt4/Admin) + VÁ BUG-2 (ExerciseService). ⚠️ 1 BLOCKER dữ liệu ([TT]).**
+Test live production (FE `?v=20260914`, GAS ĐÃ redeploy) 14 case. **PASS:** US H1 (297 US + lọc + modal), Bài tập AI (đăng bài + uiConfirm xóa), Tự chấm KPI (74/100 tự tính + Nộp token-auth), Duyệt chấm điểm (Approve end-to-end), UI/UX (FA + Component Contract); Đăng ký CR1 PASS UI/API. **BUG-1 (🔴 CHẶN, lỗi DỮ LIỆU/sheet — KHÔNG phải code):** `action=list` MASTER_DATA trả 19 record **rỗng toàn cột định danh** → picker "Cập nhật US" trống + Đăng ký/My Cases/Dashboard/Leaderboard hỏng. Đối chứng: cùng `readSheetAsObjects_`, sheet `Data H1`→297 record đủ ⇒ gốc ở **header sheet MASTER_DATA live không khớp `Config.gs` HEADERS** ([TT] sửa trên spreadsheet). **BUG-2 (🟠 CODE, đã vá):** xóa Bài tập AI không hiệu lực do Sheets ép chuỗi 'FALSE'→boolean; vá `ExerciseService.gs:57` (filter `.toUpperCase()`+boolean) — **cần [TT] redeploy GAS**. Test-case log: `docs/TEST_LIVE_20260915.md`. Blocker: BUG-1 (việc [TT]).
+
+---
+
 **2026-09-14 #2 — VIẾT LẠI HDSD theo luồng mới + hình minh họa cập nhật. Thuần tài liệu.**
 Viết lại `HDSD_H2_2026_Teamlead_NhanSu.docx` phản ánh luồng 2026-09: đăng ký US **tối giản 1 bước** (Workflow→US + Action Plan T9–T12) · **"Cập nhật US"** (thay "Cập nhật tuần") · **US H1** (tra cứu chỉ đọc + lọc + modal chi tiết) · **Bài tập AI** · **Tự chấm KPI** (member KPI2/KPI3 + khai lan tỏa KPI4) → **Teamlead Duyệt chấm điểm**; cập nhật bảng công thức KPI (KPI-2/3 member tự chấm→teamlead duyệt, KPI-4 khai/duyệt HOẶC auto reuse≥3) + FAQ. **Cập nhật bộ chụp ảnh** `tests/zz-capture-h2-guide.spec.js` (thêm mock action `h1-list`/`exercise-list`/`self-score-mine`/`self-score-pending`/`sharing-claim-list`; điều hướng SPA qua hash) → **15 ảnh mới** (`screenshots/h2/`, tên hư cấu, ảnh phản ánh UI mới: icon FA + search-box + badge token). Dựng qua `build_h2_guide.py` (giữ engine, đổi nội dung + tên ảnh). Verify: capture spec 4/4 PASS; docx re-parse 15 ảnh nhúng. File tracked: docx + build script + spec (ảnh png gitignore vì đã nhúng). Blocker: không.
 

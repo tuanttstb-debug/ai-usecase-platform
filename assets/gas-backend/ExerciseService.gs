@@ -54,7 +54,9 @@ function listExercises_() {
   var all;
   try { all = readSheetAsObjects_(SHEETS.AI_EXERCISE); } catch (e) { return []; }
   if (!all || !all.length) return [];
-  var out = all.filter(function (r) { return String(r.Active) !== 'FALSE'; });
+  // Sheets tự ép chuỗi 'TRUE'/'FALSE' thành boolean → đọc lại là false/true.
+  // So khớp bất biến hoa/thường + boolean (đồng nhất LookupService/AuthTokenService).
+  var out = all.filter(function (r) { return r.Active !== false && String(r.Active).toUpperCase() !== 'FALSE'; });
   out.sort(function (a, b) { return new Date(b.Created_At || 0) - new Date(a.Created_At || 0); });
   return out.map(function (r) {
     return {

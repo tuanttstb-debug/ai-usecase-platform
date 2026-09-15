@@ -4,6 +4,17 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 Test LIVE toàn bộ tính năng mới (2026-09-15) — 14 case, 2 bug (BUG-1 chặn, BUG-2 đã vá)
+- [x] Test live production (tuantt4/Admin) mọi tính năng luồng mới. PASS: US H1 · Bài tập AI (+uiConfirm) · Tự chấm KPI (74/100) · Duyệt chấm điểm (Approve end-to-end) · Đăng ký CR1 (UI/API) · UI/UX (FA + Component Contract).
+- [x] Truy vết + vá **BUG-2** (`ExerciseService.gs:57` — xóa Bài tập AI không hiệu lực do Sheets ép 'FALSE'→boolean; filter dùng `.toUpperCase()`+boolean). `node --check` PASS.
+- [x] Test-case log `docs/TEST_LIVE_20260915.md`.
+- [ ] **[TT] 🔴 BUG-1 (CHẶN):** Sửa **dòng header sheet `MASTER_DATA`** trên spreadsheet `1xLMQLTgj2sRf1l9C6s6AHCT5zWJLQOofL375t8Pv_NA` cho khớp `Config.gs` HEADERS (đối chiếu tab `Data H1` đang đúng). Đây là gốc picker "Cập nhật US" trống + Đăng ký/My Cases/Dashboard/Leaderboard rỗng. **Không phải bug code.**
+- [ ] **[TT] 🟠 REDEPLOY GAS** với `ExerciseService.gs` đã vá (BUG-2) → xóa Bài tập AI mới ẩn được.
+- [ ] **[TT]** Dọn 4 bản ghi test `[TEST]`: MASTER `AIUS-0001` · AI_EXERCISE `EX-0001` · PERSONAL_SELF `SS-0001` · PERSONAL_SCORE tuantt4 T09/2026.
+- [ ] **[CC]** Sau khi [TT] sửa MASTER_DATA → smoke lại Đăng ký + Cập nhật US (đọc-ghi khớp); (tùy chọn) đồng bộ latent `AdminService.gs:512` `stage_changed` (thiếu `|| === true`, milestone đang ngủ); kiểm minor my-score post-submit hiện "Chờ duyệt" thay vì rỗng.
+
+---
+
 ## 🆕 Rà soát UI/UX + đồng nhất các màn CR (2026-09-14) — Playwright 124/124
 - [x] 10 phát hiện đồng nhất đã sửa (class nút canon · `.search-box` · modal chuẩn · badge token · nút Duyệt/Từ chối class · `uiConfirm()` xóa · `.list-empty`/`.list-loading`/`.table-wrap` · `.data-table` US H1 · Font Awesome 6 · guard keydown). Báo cáo `docs/UIUX_AUDIT_20260914.md`. Rule hub `REF-UIUX-COMPONENT-CONTRACT.md`.
 - [ ] **[TT]** hard-refresh `?v=20260914` nghiệm thu (không cần redeploy GAS): icon FA hiện; xóa Bài tập AI hỏi xác nhận; badge trạng thái đúng ở dark mode.
