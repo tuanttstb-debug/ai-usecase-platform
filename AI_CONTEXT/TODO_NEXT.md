@@ -4,11 +4,26 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 Review WF/US Team Số (nhóm 4) + seed +4 US generic (2026-09-18)
+- [x] Pull LIVE catalog (`workflow-list`) → nhóm 4 = 7 WF / 21 US active (khớp seed).
+- [x] Chốt north-star (phỏng vấn 3 vòng): giữ WF role-specific · US generic không neo SP để team khác tái dùng + đóng Agent · không đụng common nhóm 1.
+- [x] Verdict **GIỮ cả 7 WF** (không cắt); 21 US hiện đã product-agnostic (không sửa).
+- [x] Dựng file seed **standalone** `assets/gas-backend/WorkflowSeedTeamSoAdd.gs` (+4 US: WF1 requirement→User Story · WF3 RTM · WF4 sổ rủi ro–issue · WF6 approval-readiness). Sửa từ bản phụ-thuộc-backend → standalone sau khi [TT] báo `ReferenceError: ensureWorkflowSheets_`. `node --check` PASS.
+- [ ] **[TT]** Chạy `dryRunSeedTeamSoAddUS()` trong GAS Editor (xác nhận "THÊM 4 / 0 cảnh báo WF lệch tên") → `seedTeamSoAddUS()` ghi thật → hard-refresh: droplist đăng ký US team Số thấy 4 US mới. **Không cần redeploy Web App.**
+- [ ] **[CC]** (tùy chọn) sau khi [TT] seed → verify `workflow-list` +4 US. Nếu Log báo WF lệch tên (dấu `–`/khoảng trắng) → chỉnh tên WF trong `TEAM_SO_ADD_ROWS` cho khớp live.
+
+---
+
+## ✅ BUG-1 đã đóng (2026-09-18)
+- [x] **[TT]** khôi phục header sheet `MASTER_DATA` (copy header cũ từ tab `Data H1`) → hết rỗng cột định danh. Tiện ích `FixMasterHeaders.gs` giữ lại làm công cụ bảo trì.
+
+---
+
 ## 🆕 Test LIVE toàn bộ tính năng mới (2026-09-15) — 14 case, 2 bug (BUG-1 chặn, BUG-2 đã vá)
 - [x] Test live production (tuantt4/Admin) mọi tính năng luồng mới. PASS: US H1 · Bài tập AI (+uiConfirm) · Tự chấm KPI (74/100) · Duyệt chấm điểm (Approve end-to-end) · Đăng ký CR1 (UI/API) · UI/UX (FA + Component Contract).
 - [x] Truy vết + vá **BUG-2** (`ExerciseService.gs:57` — xóa Bài tập AI không hiệu lực do Sheets ép 'FALSE'→boolean; filter dùng `.toUpperCase()`+boolean). `node --check` PASS.
 - [x] Test-case log `docs/TEST_LIVE_20260915.md`.
-- [ ] **[TT] 🔴 BUG-1 (CHẶN):** Sửa **dòng header sheet `MASTER_DATA`** trên spreadsheet `1xLMQLTgj2sRf1l9C6s6AHCT5zWJLQOofL375t8Pv_NA` cho khớp `Config.gs` HEADERS (đối chiếu tab `Data H1` đang đúng). Đây là gốc picker "Cập nhật US" trống + Đăng ký/My Cases/Dashboard/Leaderboard rỗng. **Không phải bug code.**
+- [x] **[TT] ✅ BUG-1 ĐÃ XỬ LÝ (2026-09-18):** [TT] khôi phục header sheet `MASTER_DATA` = copy hàng header cũ từ tab `Data H1` (đang đúng) → hết rỗng cột định danh. Mở khóa Đăng ký / Cập nhật US / My Cases / Dashboard / Leaderboard. *(Tiện ích dựng sẵn cho việc này: `assets/gas-backend/FixMasterHeaders.gs` — standalone dry-run→fix→restore, giữ lại phòng khi header lệch lại.)*
 - [ ] **[TT] 🟠 REDEPLOY GAS** với `ExerciseService.gs` đã vá (BUG-2) → xóa Bài tập AI mới ẩn được.
 - [ ] **[TT]** Dọn 4 bản ghi test `[TEST]`: MASTER `AIUS-0001` · AI_EXERCISE `EX-0001` · PERSONAL_SELF `SS-0001` · PERSONAL_SCORE tuantt4 T09/2026.
 - [ ] **[CC]** Sau khi [TT] sửa MASTER_DATA → smoke lại Đăng ký + Cập nhật US (đọc-ghi khớp); (tùy chọn) đồng bộ latent `AdminService.gs:512` `stage_changed` (thiếu `|| === true`, milestone đang ngủ); kiểm minor my-score post-submit hiện "Chờ duyệt" thay vì rỗng.

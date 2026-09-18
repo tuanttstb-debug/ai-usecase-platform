@@ -1,5 +1,12 @@
 # PROJECT STATE
 
+**2026-09-18 — ĐÓNG BUG-1 + REVIEW WF/US Team Số (nhóm 4) + seed +4 US generic. ⚠️ Còn treo: [TT] chạy seed + redeploy GAS.**
+[TT] khôi phục hàng header sheet `MASTER_DATA` live bằng cách copy header cũ từ tab `Data H1` (đang đúng) → hết rỗng cột định danh; Đăng ký / Cập nhật US / My Cases / Dashboard / Leaderboard hoạt động lại. Lỗi **dữ liệu/sheet**, không đụng code. Tiện ích dựng cho việc này `assets/gas-backend/FixMasterHeaders.gs` (standalone dry-run→fix→restore) **giữ lại** làm công cụ bảo trì.
+**Review WF/US Team Số:** pull LIVE catalog (route `workflow-list`, HTTP 200) → nhóm 4 = **7 WF / 21 US active** (khớp seed). Chốt hướng: **giữ 7 WF role-specific, US generic** (không neo SP) để team khác tái dùng + đóng Agent; **không đụng lớp common nhóm 1**. Verdict **GIỮ cả 7 WF**; bổ sung **4 US generic** (WF1 requirement→User Story · WF3 RTM · WF4 sổ rủi ro–issue · WF6 approval-readiness) qua file seed idempotent **standalone** MỚI `assets/gas-backend/WorkflowSeedTeamSoAdd.gs` ([TT] chạy `dryRunSeedTeamSoAddUS()`→`seedTeamSoAddUS()` trong Editor, không redeploy).
+**Còn treo (việc [TT]):** (a) chạy seed 4 US; (b) redeploy GAS dồn nhiều CR — `ExerciseService.gs` (BUG-2 + Bài tập AI), file MỚI `SelfScoreService.gs` (Tự chấm/Duyệt KPI), mapper H1, 3 CR đăng ký tối giản/Cập nhật US/US H1.
+
+---
+
 **2026-09-15 — TEST LIVE toàn bộ tính năng mới (tuantt4/Admin) + VÁ BUG-2 (ExerciseService). ⚠️ 1 BLOCKER dữ liệu ([TT]).**
 Test live production (FE `?v=20260914`, GAS ĐÃ redeploy) 14 case. **PASS:** US H1 (297 US + lọc + modal), Bài tập AI (đăng bài + uiConfirm xóa), Tự chấm KPI (74/100 tự tính + Nộp token-auth), Duyệt chấm điểm (Approve end-to-end), UI/UX (FA + Component Contract); Đăng ký CR1 PASS UI/API. **BUG-1 (🔴 CHẶN, lỗi DỮ LIỆU/sheet — KHÔNG phải code):** `action=list` MASTER_DATA trả 19 record **rỗng toàn cột định danh** → picker "Cập nhật US" trống + Đăng ký/My Cases/Dashboard/Leaderboard hỏng. Đối chứng: cùng `readSheetAsObjects_`, sheet `Data H1`→297 record đủ ⇒ gốc ở **header sheet MASTER_DATA live không khớp `Config.gs` HEADERS** ([TT] sửa trên spreadsheet). **BUG-2 (🟠 CODE, đã vá):** xóa Bài tập AI không hiệu lực do Sheets ép chuỗi 'FALSE'→boolean; vá `ExerciseService.gs:57` (filter `.toUpperCase()`+boolean) — **cần [TT] redeploy GAS**. Test-case log: `docs/TEST_LIVE_20260915.md`. Blocker: BUG-1 (việc [TT]).
 
