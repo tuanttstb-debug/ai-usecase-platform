@@ -224,6 +224,24 @@ test.describe('review-queue.html — Hội đồng chấm điểm US', () => {
     await expect(page.locator('#rpDetail')).toContainText('T12: lan tỏa toàn team');
   });
 
+  test('Panel LUÔN hiện mục Kế hoạch T9–T12 kể cả khi US chưa có kế hoạch (placeholder)', async ({ page }) => {
+    const MOCK_UC_NOPLAN = {
+      Record_ID: 'REC-001', UseCase_ID: 'AIUS-001', UseCase_Name: 'UC A',
+      Owner_Name: 'User A', Team: 'Team Số', Status: 'Approved',
+      Pain_Point: 'Xử lý thủ công tốn thời gian',
+      // Không có Action_Plan_M09..M12
+    };
+    await setSession(page, ADMIN_USER);
+    await mockGAS(page, Object.assign({}, BASE_MOCK, { usecase: MOCK_UC_NOPLAN }));
+    await page.goto('/review-queue.html');
+    await page.waitForLoadState('networkidle');
+
+    await page.locator('#rqTablePending button').first().click();
+    await expect(page.locator('#reviewPanel')).toBeVisible();
+    await expect(page.locator('#rpDetail')).toContainText('Kế hoạch hành động theo tháng (T9–T12)');
+    await expect(page.locator('#rpDetail')).toContainText('chưa có kế hoạch hành động theo tháng');
+  });
+
   test('Member score preview = 100 when all criteria = 10', async ({ page }) => {
     await setSession(page, ADMIN_USER);
     await mockGAS(page, BASE_MOCK);

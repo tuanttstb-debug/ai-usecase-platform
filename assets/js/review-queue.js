@@ -307,7 +307,8 @@
     if (host) host.innerHTML = '<p class="empty-state-text" style="padding:var(--space-6)">Đang tải chi tiết…</p>';
 
     // Render nhanh bằng dữ liệu list đã có, rồi làm giàu bằng full detail.
-    if (host && typeof UCDetailView !== 'undefined') host.innerHTML = UCDetailView.render(uc);
+    // planPlaceholder: luôn hiện mục "Kế hoạch hành động T9–T12" (căn cứ chấm điểm) kể cả khi trống.
+    if (host && typeof UCDetailView !== 'undefined') host.innerHTML = UCDetailView.render(uc, { planPlaceholder: true });
 
     var rid = _rid(uc);
     if (!rid || typeof Api.getUseCase !== 'function') return;
@@ -318,7 +319,7 @@
       // Giữ tên/owner từ list nếu full thiếu.
       full.name = full.name || _currentUc.name;
       full.owner_name = full.owner_name || _currentUc.owner_name || _currentUc.owner;
-      if (host) host.innerHTML = UCDetailView.render(full);
+      if (host) host.innerHTML = UCDetailView.render(full, { planPlaceholder: true });
       if (copyBtn && UCDetailView.hasPrompt(full)) {
         copyBtn.style.display = '';
         copyBtn.onclick = function () { UCDetailView.copyPrompt(full); };

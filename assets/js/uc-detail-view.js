@@ -237,7 +237,19 @@
              _dfield('Kế hoạch Tháng 10', uc.action_plan_m10, true) +
              _dfield('Kế hoạch Tháng 11', uc.action_plan_m11, true) +
              _dfield('Kế hoạch Tháng 12', uc.action_plan_m12, true);
-    if (s5.trim()) html += _dsection('5', 'Kế hoạch hành động theo tháng (T9–T12)', [s5]);
+    if (s5.trim()) {
+      html += _dsection('5', 'Kế hoạch hành động theo tháng (T9–T12)', [s5]);
+    } else if (opts.planPlaceholder) {
+      // Panel chấm điểm (review-queue): luôn hiện mục này để teamlead biết có căn cứ,
+      // kể cả khi US chưa có dữ liệu kế hoạch.
+      html += _dsection('5', 'Kế hoạch hành động theo tháng (T9–T12)', [
+        '<div class="detail-field detail-field--full">' +
+          '<div class="detail-value" style="color:var(--color-text-muted)">' +
+            'Use case này chưa có kế hoạch hành động theo tháng.' +
+          '</div>' +
+        '</div>'
+      ]);
+    }
 
     // opts.noEmptyFallback: caller (vd dashboard) tự nối thêm mục riêng (điểm US /
     // phê duyệt) nên không muốn trả chuỗi fallback rỗng ở đây — trả '' để nối tiếp.

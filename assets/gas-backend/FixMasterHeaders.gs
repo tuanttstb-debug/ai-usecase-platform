@@ -270,6 +270,68 @@ function restoreMasterHeaders(backupKey) {
   return { restored: true, backupKey: key, message: msg };
 }
 
+// ─────────────────────────────────────────────────────────────────
+// APPEND cột THIẾU vào cuối MASTER_DATA (self-heal khác kiểu fixMasterHeaders).
+//
+// BỐI CẢNH (2026-09-21): sau khi BUG-1 khôi phục header (copy từ tab "Data H1"),
+// 4 cột CR 2026-09-12 `Action_Plan_M09..M12` bị RỚT (Data H1 chưa có). create/update
+// KHÔNG tự gọi ensureSheetColumns_(MASTER) → cột không quay lại → Kế hoạch T9–T12
+// nhập vào bị ghi hụt (không có cột) = "DB không lưu". Panel chấm điểm do đó trống.
+//
+// Khác fixMasterHeaders (chỉ sửa LỆCH TÊN khi số cột KHỚP): hàm này chỉ APPEND cột
+// còn THIẾU ở CUỐI — an toàn tuyệt đối (thêm cột rỗng, KHÔNG đụng dữ liệu/cột cũ),
+// idempotent. Đây chính là điều ensureSheetColumns_(SHEETS.MASTER, HEADERS) làm.
+//
+// CÁCH DÙNG (chạy TAY trong Editor, KHÔNG cần redeploy Web App):
+//   1) `dryRunEnsureMasterActionPlanColumns()`  → xem cột nào sẽ thêm (không ghi).
+//   2) `ensureMasterActionPlanColumns()`        → append cột thiếu ở cuối.
+// Sau đó: đăng ký US mới / "Cập nhật US" sẽ lưu được Kế hoạch T9–T12. US CŨ (đăng ký
+// trước khi có cột) cần chủ US vào "Cập nhật US" nhập lại kế hoạch để có dữ liệu.
+// ─────────────────────────────────────────────────────────────────
+
+// 4 cột Action Plan theo tháng (khớp Config.gs HEADERS, phần đuôi).
+var _MHFIX_ACTION_PLAN_COLS = ['Action_Plan_M09', 'Action_Plan_M10', 'Action_Plan_M11', 'Action_Plan_M12'];
+
+/** Trả danh sách cột Action Plan còn THIẾU trong header sống của MASTER_DATA. */
+function _mhMissingActionPlan_() {
+  var sheet   = _mhSheet_();
+  var lastCol = sheet.getLastColumn();
+  var live    = lastCol > 0
+    ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function (x) { return String(x).trim(); })
+    : [];
+  var missing = _MHFIX_ACTION_PLAN_COLS.filter(function (h) { return live.indexOf(h) === -1; });
+  return { sheet: sheet, lastCol: lastCol, live: live, missing: missing };
+}
+
+/** DRY-RUN — chỉ đọc & in, KHÔNG ghi. */
+function dryRunEnsureMasterActionPlanColumns() {
+  var r = _mhMissingActionPlan_();
+  Logger.log('════ MASTER_DATA — kiểm cột Action Plan (T9–T12) ════');
+  Logger.log('Số cột sống hiện tại: ' + r.lastCol);
+  if (r.missing.length === 0) {
+    Logger.log('→ ĐỦ 4 cột Action_Plan_M09..M12. KHÔNG cần chạy ensureMasterActionPlanColumns().');
+  } else {
+    Logger.log('→ THIẾU ' + r.missing.length + ' cột: ' + r.missing.join(', '));
+    Logger.log('   Chạy `ensureMasterActionPlanColumns()` để append vào cuối (an toàn, không đụng dữ liệu).');
+  }
+  return { lastCol: r.lastCol, missing: r.missing };
+}
+
+/** APPEND các cột Action Plan còn thiếu vào CUỐI header MASTER_DATA (idempotent). */
+function ensureMasterActionPlanColumns() {
+  var r = _mhMissingActionPlan_();
+  if (r.missing.length === 0) {
+    Logger.log('✅ Header đã đủ 4 cột Action_Plan_M09..M12 — không ghi.');
+    return { added: [], message: 'Đã đủ cột — không thay đổi.' };
+  }
+  r.sheet.getRange(1, r.lastCol + 1, 1, r.missing.length).setValues([r.missing]);
+  _mhFormat_(r.sheet, r.lastCol + r.missing.length);
+  var msg = 'ĐÃ append ' + r.missing.length + ' cột vào cuối MASTER_DATA: ' + r.missing.join(', ') +
+            ' (cột ' + (r.lastCol + 1) + '..' + (r.lastCol + r.missing.length) + ').';
+  Logger.log('✅ ' + msg);
+  return { added: r.missing, message: msg };
+}
+
 /** Liệt kê backup header đang lưu. */
 function listMasterHeaderBackups() {
   var all  = PropertiesService.getScriptProperties().getProperties();
