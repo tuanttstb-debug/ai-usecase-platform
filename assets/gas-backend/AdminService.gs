@@ -157,6 +157,11 @@ function listUseCases_(filters) {
       stage:               uc.Current_Stage,
       demo_status:         uc.Demo_Status         || '',
       demo_link:           uc.Demo_Link           || '',
+      // Kế hoạch hành động theo tháng (T9–T12) — hiển thị ngay ở panel chấm điểm (căn cứ hội đồng).
+      action_plan_m09:     uc.Action_Plan_M09     || '',
+      action_plan_m10:     uc.Action_Plan_M10     || '',
+      action_plan_m11:     uc.Action_Plan_M11     || '',
+      action_plan_m12:     uc.Action_Plan_M12     || '',
       review_status:       uc.Review_Status       || '',
       submit_date:         uc.Submit_Date,
       created_at:          uc.Created_At,

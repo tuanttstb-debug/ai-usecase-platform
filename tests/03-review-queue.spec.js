@@ -199,6 +199,31 @@ test.describe('review-queue.html — Hội đồng chấm điểm US', () => {
     await expect(page.locator('#rpCopyPromptBtn')).toBeVisible();
   });
 
+  test('Panel chi tiết hiển thị Kế hoạch hành động theo tháng (T9–T12) — căn cứ chấm điểm', async ({ page }) => {
+    const MOCK_UC_PLAN = {
+      Record_ID: 'REC-001', UseCase_ID: 'AIUS-001', UseCase_Name: 'UC A',
+      Owner_Name: 'User A', Team: 'Team Số', Status: 'Approved',
+      Pain_Point: 'Xử lý thủ công tốn thời gian',
+      Action_Plan_M09: 'T9: khảo sát nhu cầu + dựng prompt mẫu',
+      Action_Plan_M10: 'T10: pilot với 3 người dùng',
+      Action_Plan_M11: 'T11: hoàn thiện + đo hiệu quả',
+      Action_Plan_M12: 'T12: lan tỏa toàn team',
+    };
+    await setSession(page, ADMIN_USER);
+    await mockGAS(page, Object.assign({}, BASE_MOCK, { usecase: MOCK_UC_PLAN }));
+    await page.goto('/review-queue.html');
+    await page.waitForLoadState('networkidle');
+
+    await page.locator('#rqTablePending button').first().click();
+    await expect(page.locator('#reviewPanel')).toBeVisible();
+    // Mục kế hoạch hành động theo tháng + nội dung 4 tháng hiển thị đầy đủ
+    await expect(page.locator('#rpDetail')).toContainText('Kế hoạch hành động theo tháng (T9–T12)');
+    await expect(page.locator('#rpDetail')).toContainText('T9: khảo sát nhu cầu');
+    await expect(page.locator('#rpDetail')).toContainText('T10: pilot với 3 người dùng');
+    await expect(page.locator('#rpDetail')).toContainText('T11: hoàn thiện');
+    await expect(page.locator('#rpDetail')).toContainText('T12: lan tỏa toàn team');
+  });
+
   test('Member score preview = 100 when all criteria = 10', async ({ page }) => {
     await setSession(page, ADMIN_USER);
     await mockGAS(page, BASE_MOCK);

@@ -70,6 +70,11 @@
       when_to_use:          d.When_To_Use            || '',
       usage_steps:          d.Usage_Steps            || '',
       usage_notes:          d.Usage_Notes            || '',
+      // Kế hoạch hành động theo tháng (T9–T12) — căn cứ cho hội đồng chấm điểm.
+      action_plan_m09:      d.Action_Plan_M09        || '',
+      action_plan_m10:      d.Action_Plan_M10        || '',
+      action_plan_m11:      d.Action_Plan_M11        || '',
+      action_plan_m12:      d.Action_Plan_M12        || '',
       review_comment:       d.Review_Comment         || '',
       reviewer_email:       d.Reviewer               || d.reviewer_email || '',
       total_score:          (parseFloat(d.Total_Score || d.total_score) || 0)
@@ -226,6 +231,13 @@
              _dfield('Hướng dẫn thực hiện từng bước',  uc.usage_steps, true) +
              _dfield('Lưu ý & hạn chế',                uc.usage_notes, true);
     if (s4.trim()) html += _dsection('4', 'Hướng dẫn sử dụng', [s4]);
+
+    // ── 5: Kế hoạch hành động theo tháng (T9–T12) — căn cứ cho hội đồng chấm điểm ──
+    var s5 = _dfield('Kế hoạch Tháng 9',  uc.action_plan_m09, true) +
+             _dfield('Kế hoạch Tháng 10', uc.action_plan_m10, true) +
+             _dfield('Kế hoạch Tháng 11', uc.action_plan_m11, true) +
+             _dfield('Kế hoạch Tháng 12', uc.action_plan_m12, true);
+    if (s5.trim()) html += _dsection('5', 'Kế hoạch hành động theo tháng (T9–T12)', [s5]);
 
     // opts.noEmptyFallback: caller (vd dashboard) tự nối thêm mục riêng (điểm US /
     // phê duyệt) nên không muốn trả chuỗi fallback rỗng ở đây — trả '' để nối tiếp.
