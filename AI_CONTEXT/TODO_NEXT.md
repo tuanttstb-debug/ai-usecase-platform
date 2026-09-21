@@ -4,6 +4,18 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 CR Kế hoạch T9–T12 ở "Hàng đợi Review" + fix "DB không lưu Action Plan" (2026-09-21) — Playwright 127/127
+- [x] Thêm mục "Kế hoạch hành động theo tháng (T9–T12)" vào `uc-detail-view.js` (dùng chung review-queue + dashboard) + `opts.planPlaceholder` cho panel chấm điểm.
+- [x] Truy gốc LIVE: `MASTER_DATA` thiếu 4 cột `Action_Plan_M09..M12` (do BUG-1 khôi phục header từ `Data H1`; create/update không self-heal MASTER) → Kế hoạch nhập bị rớt = "DB không lưu".
+- [x] Tiện ích `FixMasterHeaders.gs::ensureMasterActionPlanColumns()` (append cột thiếu, idempotent) → **[TT] đã chạy → verify live 101→105 cột**.
+- [x] Commit `1c97c62` + `b52bf22` ĐÃ PUSH origin/main. Cache-bust `?v=20260921b`.
+- [ ] **[TT]** Đăng ký / "Cập nhật US" 1 US test → xác nhận Kế hoạch T9–T12 **lưu vào DB** + panel "Hàng đợi Review" hiện đầy đủ.
+- [ ] **[TT]** Thông báo **chủ US nhập lại kế hoạch cho US CŨ** (dữ liệu đã rớt trước khi có cột) qua "Cập nhật US".
+- [ ] **[TT] 🟠** Redeploy GAS dồn CR → `AdminService.listUseCases_` +4 field action_plan (render lần đầu panel) + ExerciseService/SelfScoreService/mapper H1/3 CR từ các phiên trước.
+- [ ] **[CC]** Sau [TT] redeploy → verify route `list` trả `action_plan_*`; smoke vòng chấm điểm thật với US có kế hoạch.
+
+---
+
 ## 🆕 Review WF/US Team Số (nhóm 4) + seed +4 US generic (2026-09-18)
 - [x] Pull LIVE catalog (`workflow-list`) → nhóm 4 = 7 WF / 21 US active (khớp seed).
 - [x] Chốt north-star (phỏng vấn 3 vòng): giữ WF role-specific · US generic không neo SP để team khác tái dùng + đóng Agent · không đụng common nhóm 1.
