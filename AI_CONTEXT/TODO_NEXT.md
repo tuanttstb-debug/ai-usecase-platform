@@ -4,6 +4,14 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 Cơ cấu team mới — gộp CV1+CV2 = CV, bỏ QLDM (2026-09-29, chỉ đạo GĐTT · hub AIUS-001 D44)
+- Kiến trúc: user/role CHỈ ở SHTD `User_Master` (đã đổi 29/09 bằng script hub). Bảng tính AIUS chỉ giữ dữ liệu nghiệp vụ.
+- [ ] **[TT]** Dán `AIOS/08_Work/P-aius001-binh-dan-hoa-ai/scripts/gas/DoiTeam_AIUS_20260929.gs` vào project AIUS → `ad1_chayThu` (gửi [CC] phần TỔNG + SHEET THỪA) → `ad2_chayThat` (MASTER_DATA/PERSONAL_*/SHARING_CLAIM/AI_EXERCISE/LOOKUP/TEAM_GROUP_MAP; tự `_aiusBumpVer`) → `ad4_xoaSheetUserCu` (xóa sheet user/role cũ).
+- [ ] **[CC]** Sau khi chạy → đọc live `read_aius_usecases.js`: US không còn team CV1/CV2/QLDM; TuTV3 (CV) thấy US CV ở Hàng đợi Review.
+- [ ] **[TT]** Hội đồng chấm UC ghi cứng trong `AuthTokenService.gs` (TuanTT4, MaiTTT7, TuTV3, QuynhNNY) → cập nhật khi PTKD MN có teamlead chính thức.
+
+---
+
 ## 🆕 CR Kế hoạch T9–T12 ở "Hàng đợi Review" + fix "DB không lưu Action Plan" (2026-09-21) — Playwright 127/127
 - [x] Thêm mục "Kế hoạch hành động theo tháng (T9–T12)" vào `uc-detail-view.js` (dùng chung review-queue + dashboard) + `opts.planPlaceholder` cho panel chấm điểm.
 - [x] Truy gốc LIVE: `MASTER_DATA` thiếu 4 cột `Action_Plan_M09..M12` (do BUG-1 khôi phục header từ `Data H1`; create/update không self-heal MASTER) → Kế hoạch nhập bị rớt = "DB không lưu".
