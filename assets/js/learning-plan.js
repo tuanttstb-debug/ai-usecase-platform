@@ -143,7 +143,7 @@
     var hint = _el('lpMyStatus');
     if (hint) {
       hint.innerHTML = m && m.status === 'Đã đăng ký'
-        ? '<span class="badge badge-success">Đã đăng ký</span>' + (m.submitted_at ? ' <span style="color:var(--color-text-muted)">từ ' + esc(m.submitted_at) + '</span>' : '')
+        ? '<span class="badge badge-success">Đã đăng ký</span>' + (m.submitted_at ? ' <span style="color:var(--color-text-muted)">từ ' + esc(_fmtDate(String(m.submitted_at).slice(0, 10))) + '</span>' : '')
         : '<span class="badge badge-error">Chưa đăng ký</span>';
     }
     if (m) {

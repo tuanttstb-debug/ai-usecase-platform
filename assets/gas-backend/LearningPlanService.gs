@@ -22,10 +22,26 @@ var LEARN_STATUS = {
   DONE:         'Hoàn thành'
 };
 
-// Ngày dạng yyyy-MM-dd. Sheets có thể trả Date (nếu ai đó gõ tay vào ô không phải TEXT).
+// Ngày/giờ: GAS setValues/appendRow vẫn tự đổi chuỗi "2026-10-20" thành kiểu ngày dù cột định dạng TEXT
+// → ghi kèm dấu ' đầu chuỗi (_learnTxt_) để giữ text. Ô đã lỡ thành Date (gõ tay / ghi cũ) đọc lại theo
+// MÚI GIỜ CỦA BẢNG TÍNH (đang America/Los_Angeles) — format theo giờ VN sẽ lệch sang ngày hôm sau.
+var _learnTz_ = null;
+function _learnSheetTz_() {
+  if (!_learnTz_) {
+    try { _learnTz_ = getSpreadsheet_().getSpreadsheetTimeZone(); } catch (e) { _learnTz_ = 'Asia/Ho_Chi_Minh'; }
+  }
+  return _learnTz_;
+}
 function _learnYmd_(v) {
-  if (v instanceof Date && !isNaN(v)) return Utilities.formatDate(v, 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
+  if (v instanceof Date && !isNaN(v)) return Utilities.formatDate(v, _learnSheetTz_(), 'yyyy-MM-dd');
   return String(v == null ? '' : v).trim();
+}
+function _learnStamp_(v) {
+  if (v instanceof Date && !isNaN(v)) return Utilities.formatDate(v, _learnSheetTz_(), 'yyyy-MM-dd HH:mm');
+  return String(v == null ? '' : v).trim();
+}
+function _learnTxt_(s) {
+  return s ? "'" + s : '';
 }
 // Gộp object (không dùng Object.assign — giữ cú pháp ES5 như phần còn lại của backend).
 function _learnMerge_(a, b) {
@@ -35,7 +51,7 @@ function _learnMerge_(a, b) {
   return out;
 }
 function _learnNow_() {
-  return Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd HH:mm');
+  return _learnTxt_(Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd HH:mm'));
 }
 function _learnIsActive_(r) {
   return r.Active !== false && String(r.Active).toUpperCase() !== 'FALSE';
@@ -69,7 +85,7 @@ function listLearningPlan_() {
       usage_level:   String(r.Usage_Level || ''),
       support_need:  String(r.Support_Need || ''),
       source:        String(r.Source || ''),
-      submitted_at:  _learnYmd_(r.Submitted_At),
+      submitted_at:  _learnStamp_(r.Submitted_At),
       note:          String(r.Note || '')
     };
   }).filter(function (m) { return !!m.username; });
@@ -172,7 +188,7 @@ function _learnCourseFields_(data) {
     Course_Name: name,
     Provider:    sanitizeStr_(data.Provider || '', 200),
     Paid:        paid,
-    Target_Date: date
+    Target_Date: _learnTxt_(date)
   };
 }
 
