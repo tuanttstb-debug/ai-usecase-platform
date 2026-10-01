@@ -199,6 +199,9 @@ function route_(action, params, body) {
   if (action === 'learning-register') {
     return createResponse_(true, 'Đã lưu đăng ký', registerLearning_(body));
   }
+  if (action === 'learning-week-plan') {
+    return createResponse_(true, 'Đã lưu kế hoạch tuần', saveWeekPlan_(body));
+  }
   if (action === 'learning-course-add') {
     return createResponse_(true, 'Đã thêm khóa học', addLearningCourse_(body));
   }

@@ -26,7 +26,8 @@ var SHEETS = {
   SHARING_CLAIM: 'SHARING_CLAIM',// CR (2026-09-12 #3): member tự khai LAN TỎA AI (M4) + bằng chứng → teamlead duyệt
   LEARN_REG:   'HOC_TAP_DANG_KY', // CR (2026-10-01): đăng ký bài tập tuần + công cụ + mức dùng AI (1 row/member)
   LEARN_COURSE:'HOC_TAP_KHOA',    // CR (2026-10-01): khóa học tự học + hạn học xong (1 row/khóa)
-  BIG_TASK:    'VIEC_LON'         // CR (2026-10-01): việc lớn cấp Trung tâm (PM nhập ở sheet, app chỉ đọc)
+  BIG_TASK:    'VIEC_LON',        // CR (2026-10-01): việc lớn cấp Trung tâm (PM nhập ở sheet, app chỉ đọc)
+  EXERCISE_WEEK:'BAI_TAP_TUAN'    // CR (2026-10-01 #2): bài tập theo tuần — 1 row/member/tuần (kế hoạch → đã nộp)
 };
 
 // ── Kế hoạch học tập (CR 2026-10-01, LearningPlanService.gs) ───────
@@ -34,6 +35,11 @@ var SHEETS = {
 var LEARN_REG_HEADERS = [
   'Username', 'Display_Name', 'Team', 'Status', 'Exercise_Plan', 'AI_Tools', 'Usage_Level',
   'Support_Need', 'Source', 'Submitted_At', 'Updated_At', 'Note'
+];
+// Bài tập tuần: Status = "Kế hoạch" (đầu tuần ghi 1 dòng, không bắt buộc) | "Đã nộp" (đăng Bài tập AI trong tuần).
+var EXERCISE_WEEK_HEADERS = [
+  'Username', 'Display_Name', 'Team', 'Week', 'Plan', 'Status', 'Exercise_IDs',
+  'Plan_At', 'Submitted_At', 'Updated_At'
 ];
 var LEARN_COURSE_HEADERS = [
   'Course_ID', 'Username', 'Display_Name', 'Team', 'Course_Name', 'Provider', 'Paid', 'Target_Date',
@@ -67,7 +73,8 @@ var SHARING_CLAIM_HEADERS = [
 // Active=FALSE → xóa mềm (ẩn khỏi thư viện). KHÔNG liên quan điểm/KPI.
 var AI_EXERCISE_HEADERS = [
   'Exercise_ID', 'Title', 'Description', 'Prompt', 'Demo_Link',
-  'Owner_Name', 'Owner_Email', 'Team', 'Created_At', 'Updated_At', 'Active'
+  'Owner_Name', 'Owner_Email', 'Team', 'Created_At', 'Updated_At', 'Active',
+  'Week'                                   // CR (2026-10-01 #2): tuần ISO "2026-W40" — gắn bài vào vòng tuần
 ];
 
 // ── REQ_DEDUP Column Headers (Round 2 T2 — idempotency) ────────────

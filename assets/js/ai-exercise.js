@@ -4,6 +4,10 @@
 // Chia sẻ thao tác AI nhỏ (chưa đủ thành US): Tiêu đề + Mô tả + Prompt + Link demo
 // (ổ chung). 1 trang gộp: đăng bài + tra cứu (tìm kiếm) như thư viện. KHÔNG tính KPI.
 // Nhịp "1 bài/tuần" = khuyến khích (chỉ hiện "tuần này bạn đã đăng X bài", không chặn).
+//
+// CR (2026-10-01 #2): gộp vào màn "Bài tập & Học tập" (learning-plan.js). Form = "Nộp bài tuần này"
+// (tab Bài tập tuần), danh sách = tab "Thư viện bài tập". Bài nộp gửi kèm Week → backend đánh dấu
+// tuần "Đã nộp". Route #ai-exercise cũ chuyển về #learning-plan/library.
 // ─────────────────────────────────────────────────────────────────
 (function () {
   'use strict';
@@ -11,6 +15,7 @@
   var _all    = [];
   var _search = '';
   var _editId = null;   // đang sửa bài nào (null = đăng mới)
+  var _inited = false;
 
   function esc(s) {
     return String(s == null ? '' : s)
@@ -56,6 +61,7 @@
       if (loading) loading.style.display = 'none';
       _renderHint();
       _render();
+      if (window.LearningPlan && LearningPlan.refreshMine) LearningPlan.refreshMine();
     }).catch(function () {
       if (loading) { loading.textContent = 'Không tải được Bài tập AI. Kiểm tra kết nối GAS.'; loading.style.color = 'var(--color-error)'; }
     });
@@ -65,7 +71,7 @@
     var hint = document.getElementById('exWeekHint');
     if (!hint) return;
     var n = _weekCountMine();
-    hint.textContent = n > 0 ? ('Tuần này bạn đã đăng ' + n + ' bài.') : 'Tuần này bạn chưa đăng bài nào — chia sẻ 1 thao tác AI nhỏ nhé!';
+    hint.textContent = n > 0 ? ('Tuần này bạn đã nộp ' + n + ' bài.') : 'Tuần này bạn chưa nộp bài nào.';
   }
 
   function _render() {
@@ -102,7 +108,7 @@
           '<span class="id-badge" style="flex-shrink:0">' + esc(e.exercise_id || '') + '</span>' +
         '</div>' +
         (e.description ? '<div style="font-size:var(--text-sm);color:var(--color-text-secondary);white-space:pre-wrap">' + esc(e.description) + '</div>' : '') +
-        '<div style="font-size:12px;color:var(--color-text-muted)">' + esc(e.owner_name || e.owner_email || '—') + (e.team ? ' · ' + esc(e.team) : '') + '</div>' +
+        '<div style="font-size:12px;color:var(--color-text-muted)">' + esc(e.owner_name || e.owner_email || '—') + (e.team ? ' · ' + esc(e.team) : '') + (e.week ? ' · ' + esc(_weekShort(e.week)) : '') + '</div>' +
         '<details class="ex-prompt"><summary style="cursor:pointer;color:var(--color-primary);font-size:var(--text-sm);font-weight:600">Xem Prompt</summary>' +
           '<pre style="white-space:pre-wrap;background:var(--color-surface-alt,rgba(0,0,0,.03));padding:10px;border-radius:8px;margin-top:6px;font-family:var(--font-mono,monospace);font-size:12px">' + esc(e.prompt || '') + '</pre>' +
           '<button class="btn btn-ghost btn-sm" onclick="AiExercise.copy(\'' + esc(e.exercise_id) + '\')"><i class="fa-regular fa-copy"></i> Copy Prompt</button>' +
@@ -132,6 +138,7 @@
       Owner_Name:  u.displayName || u.email || '',
       Owner_Email: u.email || '',
       Team:        u.team || '',
+      Week:        (window.LearningPlan && LearningPlan.currentWeek) ? LearningPlan.currentWeek() : '',
       requester_email: u.email || '',
       is_admin:    _isAdmin() ? 'true' : 'false'
     };
@@ -144,13 +151,14 @@
       : Api.createExercise(payload);
 
     p.then(function () {
-      showToast(_editId ? 'Đã cập nhật bài tập!' : 'Đã đăng bài tập AI!', 'success');
+      showToast(_editId ? 'Đã cập nhật bài tập!' : 'Đã nộp bài tập tuần này!', 'success');
       _resetForm();
       _load();
+      if (window.LearningPlan) LearningPlan.reload();
     }).catch(function (err) {
       showToast('Lỗi: ' + ((err && err.message) || err), 'error');
     }).then(function () {
-      if (btn) { btn.disabled = false; btn.textContent = _editId ? 'Lưu thay đổi' : 'Đăng bài'; }
+      if (btn) { btn.disabled = false; btn.textContent = _editId ? 'Lưu thay đổi' : 'Nộp bài'; }
     });
   }
 
@@ -159,8 +167,8 @@
     ['exTitle', 'exDescription', 'exPrompt', 'exDemoLink'].forEach(function (id) {
       var el = document.getElementById(id); if (el) el.value = '';
     });
-    var btn = document.getElementById('exSubmitBtn'); if (btn) btn.textContent = 'Đăng bài';
-    var ttl = document.getElementById('exFormTitle'); if (ttl) ttl.textContent = 'Đăng bài tập AI';
+    var btn = document.getElementById('exSubmitBtn'); if (btn) btn.textContent = 'Nộp bài';
+    var ttl = document.getElementById('exFormTitle'); if (ttl) ttl.textContent = 'Nộp bài tuần này';
     var cancel = document.getElementById('exCancelBtn'); if (cancel) cancel.style.display = 'none';
     var msg = document.getElementById('exFormMsg'); if (msg) msg.textContent = '';
   }
@@ -169,6 +177,7 @@
     var e = _all.filter(function (x) { return x.exercise_id === id; })[0];
     if (!e) return;
     _editId = id;
+    if (window.LearningPlan && LearningPlan.showTab) LearningPlan.showTab('week');
     var set = function (fid, val) { var el = document.getElementById(fid); if (el) el.value = val || ''; };
     set('exTitle', e.title); set('exDescription', e.description); set('exPrompt', e.prompt); set('exDemoLink', e.demo_link);
     var btn = document.getElementById('exSubmitBtn'); if (btn) btn.textContent = 'Lưu thay đổi';
@@ -222,10 +231,22 @@
     }
   }
 
+  function _weekShort(w) { var m = /W(\d+)$/.exec(String(w || '')); return m ? 'Tuần ' + parseInt(m[1], 10) : ''; }
+
+  // Gọi từ learning-plan.js khi mở màn "Bài tập & Học tập" (1 lần).
+  function init() {
+    if (_inited) return;
+    _inited = true;
+    _resetForm(); _bind(); _load();
+  }
+
+  // Link cũ #ai-exercise → tab Thư viện của màn gộp
   if (window.Router) window.Router.register('ai-exercise', {
-    title: 'Bài tập AI',
-    init: function () { _resetForm(); _bind(); _load(); }
+    title: 'Bài tập & Học tập',
+    show: function () { location.replace('#learning-plan/library'); }
   });
 
-  window.AiExercise = { reload: _load, edit: edit, del: del, copy: copy };
+  window.AiExercise = { init: init, reload: _load, edit: edit, del: del, copy: copy, mine: function () {
+    var me = _me(); return _all.filter(function (e) { return _norm(e.owner_email) === me; });
+  } };
 })();

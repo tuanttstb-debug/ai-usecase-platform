@@ -32,6 +32,7 @@ function createExercise_(data) {
 
   ensureSheetColumns_(SHEETS.AI_EXERCISE, AI_EXERCISE_HEADERS);
   var now = new Date().toISOString();
+  var week = _validWeek_(data.Week) ? String(data.Week) : _isoWeek_();
   var id  = _nextExerciseId_();
   var row = {
     Exercise_ID: id,
@@ -44,10 +45,14 @@ function createExercise_(data) {
     Team:        sanitizeStr_(data.Team || '', 120),
     Created_At:  now,
     Updated_At:  now,
-    Active:      'TRUE'
+    Active:      'TRUE',
+    Week:        week
   };
   appendRowFromObject_(SHEETS.AI_EXERCISE, row);
-  return { exercise_id: id };
+  // CR (2026-10-01 #2): bài nộp = bài tập tuần → đánh dấu "Đã nộp" ở BAI_TAP_TUAN (không chặn nếu lỗi)
+  try { _learnMarkSubmitted_(row.Owner_Email, week, id, row.Owner_Name, row.Team); }
+  catch (e) { logError_('exercise-create markSubmitted', e, { id: id }); }
+  return { exercise_id: id, week: week };
 }
 
 function listExercises_() {
@@ -68,6 +73,7 @@ function listExercises_() {
       owner_name:  r.Owner_Name   || '',
       owner_email: r.Owner_Email  || '',
       team:        r.Team         || '',
+      week:        r.Week         || '',
       created_at:  r.Created_At   || ''
     };
   });

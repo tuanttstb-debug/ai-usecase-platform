@@ -85,7 +85,7 @@
 
     // RBAC nav (1 nguồn): ẩn item mà role hiện tại không có quyền
     var role = (AuthService.getUser() || {}).role || 'user';
-    var items = document.querySelectorAll('.sidebar-nav-item[data-roles]');
+    var items = document.querySelectorAll('.sidebar-nav [data-roles]'); // item + nhãn nhóm + divider
     for (var i = 0; i < items.length; i++) {
       var roles = (items[i].getAttribute('data-roles') || '').split(/\s+/).filter(Boolean);
       if (roles.length && roles.indexOf(role) === -1) items[i].style.display = 'none';

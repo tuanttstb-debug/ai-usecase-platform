@@ -309,6 +309,7 @@ var Api = {
   // CR (2026-10-01): Kế hoạch học tập
   listLearning()               { return Api._request(API.learningList()); },
   registerLearning(data)       { return Api._request(API.learningRegister(), data, 30000); },
+  saveWeekPlan(data)           { return Api._request(API.learningWeekPlan(), data, 30000); },
   addLearningCourse(data)      { return Api._request(API.learningCourseAdd(), data, 30000); },
   updateLearningCourse(data)   { return Api._request(API.learningCourseUpdate(), data, 30000); },
   deleteLearningCourse(data)   { return Api._request(API.learningCourseDelete(), data, 30000); },
