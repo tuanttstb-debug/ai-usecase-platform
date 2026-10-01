@@ -4,6 +4,13 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 Bài tập & Học tập (2026-10-01, hub AIUS-001 D53) — LIVE
+- [x] Màn gộp 5 tab + GAS `LearningPlanService.gs` + menu mới — `ebabd5c`, GAS redeploy, test live PASS.
+- [ ] **[CC]** Đợt 2 (trước 16/10, = CR-3 hub): nút "Hoàn thành" + `Cert_Link`/`Completed_Date` cho khóa (member) → Tự chấm KPI3 lấy số khóa hoàn thành/trả phí từ `HOC_TAP_KHOA` (chỉ đọc), teamlead duyệt như cũ.
+- [ ] **[CC]** (tùy) Bảng tính đổi múi giờ sang Asia/Ho_Chi_Minh — rà các sheet có ngày giờ (log, chấm điểm) trước khi đổi.
+
+---
+
 ## 🆕 Cơ cấu team mới — gộp CV1+CV2 = CV, bỏ QLDM (2026-09-29, chỉ đạo GĐTT · hub AIUS-001 D44)
 - Kiến trúc: user/role CHỈ ở SHTD `User_Master` (đã đổi 29/09 bằng script hub). Bảng tính AIUS chỉ giữ dữ liệu nghiệp vụ.
 - [ ] **[TT]** Dán `AIOS/08_Work/P-aius001-binh-dan-hoa-ai/scripts/gas/DoiTeam_AIUS_20260929.gs` vào project AIUS → `ad1_chayThu` (gửi [CC] phần TỔNG + SHEET THỪA) → `ad2_chayThat` (MASTER_DATA/PERSONAL_*/SHARING_CLAIM/AI_EXERCISE/LOOKUP/TEAM_GROUP_MAP; tự `_aiusBumpVer`) → `ad4_xoaSheetUserCu` (xóa sheet user/role cũ).
