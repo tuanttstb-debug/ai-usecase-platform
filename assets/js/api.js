@@ -305,6 +305,13 @@ var Api = {
   createExercise(data)  { return Api._request(API.exerciseCreate(), data, 30000); },
   updateExercise(data)  { return Api._request(API.exerciseUpdate(), data, 30000); },
   deleteExercise(data)  { return Api._request(API.exerciseDelete(), data, 30000); },
+
+  // CR (2026-10-01): Kế hoạch học tập
+  listLearning()               { return Api._request(API.learningList()); },
+  registerLearning(data)       { return Api._request(API.learningRegister(), data, 30000); },
+  addLearningCourse(data)      { return Api._request(API.learningCourseAdd(), data, 30000); },
+  updateLearningCourse(data)   { return Api._request(API.learningCourseUpdate(), data, 30000); },
+  deleteLearningCourse(data)   { return Api._request(API.learningCourseDelete(), data, 30000); },
   // CR (2026-09-12 #3): Chấm điểm cá nhân (member tự chấm) + Lan tỏa AI
   submitSelfScore(data)     { return Api._request(API.selfScoreSubmit(),  data, 30000); },
   getSelfScoreMine(data)    { return Api._request(API.selfScoreMine(),    data, 30000); },

@@ -192,6 +192,23 @@ function route_(action, params, body) {
     return createResponse_(true, 'Xóa bài tập AI thành công', deleteExercise_(body));
   }
 
+  // ── CR (2026-10-01): Kế hoạch học tập — bài tập tuần, khóa học + hạn, việc lớn ──
+  if (action === 'learning-list') {
+    return createResponse_(true, 'Learning plan', listLearningPlan_());
+  }
+  if (action === 'learning-register') {
+    return createResponse_(true, 'Đã lưu đăng ký', registerLearning_(body));
+  }
+  if (action === 'learning-course-add') {
+    return createResponse_(true, 'Đã thêm khóa học', addLearningCourse_(body));
+  }
+  if (action === 'learning-course-update') {
+    return createResponse_(true, 'Đã cập nhật khóa học', updateLearningCourse_(body));
+  }
+  if (action === 'learning-course-delete') {
+    return createResponse_(true, 'Đã xóa khóa học', deleteLearningCourse_(body));
+  }
+
   // ── CR (2026-09-12 #3): Chấm điểm cá nhân (member tự chấm) + Lan tỏa AI ──
   if (action === 'self-score-submit') {
     return createResponse_(true, 'Đã ghi tự chấm', submitSelfScore_(body));

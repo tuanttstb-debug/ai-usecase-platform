@@ -1,0 +1,234 @@
+// ─────────────────────────────────────────────────────────────────
+// LearningPlanService.gs — CR (2026-10-01): "Kế hoạch học tập" (AIUS-001 · 5 nhóm mục tiêu)
+//
+// Theo dõi (2) bài tập cá nhân đã đăng ký · (3) khóa học + hạn học xong · (1) việc lớn cấp TT.
+// Nguồn chuẩn = 3 tab trên bảng tính (PM/teamlead sửa tay được, cột định dạng TEXT):
+//   HOC_TAP_DANG_KY  1 row / member  (bài tập tuần, công cụ AI, mức dùng, nhu cầu hỗ trợ)
+//   HOC_TAP_KHOA     1 row / khóa    (tên khóa, nơi học, trả phí, hạn học xong, trạng thái)
+//   VIEC_LON         1 row / việc lớn (chỉ đọc trên app — PM nhập ở sheet)
+// Dữ liệu ban đầu nạp từ email [AI-5NHOM] 30/09–01/10 (PM ghi thẳng sheet, không nằm trong repo).
+//
+// Routes (Code.gs): learning-list · learning-register · learning-course-add ·
+//                   learning-course-update · learning-course-delete
+// Auth: mô hình nhẹ như Bài tập AI (client gửi requester_email + is_admin);
+//   member chỉ sửa dòng của mình, admin sửa mọi dòng. Xóa khóa = mềm (Active=FALSE).
+// Trạng thái "Hoàn thành" + link chứng chỉ: vòng 2 (chưa mở trên app).
+// ─────────────────────────────────────────────────────────────────
+
+var LEARN_STATUS = {
+  REGISTERED:   'Đã đăng ký',
+  NOT_YET:      'Chưa đăng ký',
+  UNCLEAR:      'Chưa rõ khóa',
+  DONE:         'Hoàn thành'
+};
+
+// Ngày dạng yyyy-MM-dd. Sheets có thể trả Date (nếu ai đó gõ tay vào ô không phải TEXT).
+function _learnYmd_(v) {
+  if (v instanceof Date && !isNaN(v)) return Utilities.formatDate(v, 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
+  return String(v == null ? '' : v).trim();
+}
+// Gộp object (không dùng Object.assign — giữ cú pháp ES5 như phần còn lại của backend).
+function _learnMerge_(a, b) {
+  var out = {}, k;
+  for (k in a) if (a.hasOwnProperty(k)) out[k] = a[k];
+  for (k in b) if (b.hasOwnProperty(k)) out[k] = b[k];
+  return out;
+}
+function _learnNow_() {
+  return Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd HH:mm');
+}
+function _learnIsActive_(r) {
+  return r.Active !== false && String(r.Active).toUpperCase() !== 'FALSE';
+}
+function _learnIsAdmin_(data) {
+  return String(data.is_admin) === 'true' || data.is_admin === true;
+}
+function _learnRequester_(data) {
+  var me = normalizeUser_(data.requester_email || '');
+  if (!me) throw new Error('Chưa đăng nhập');
+  return me;
+}
+function _learnValidDate_(s) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(new Date(s + 'T00:00:00'));
+}
+
+// Đọc 1 tab; tab chưa tạo → mảng rỗng (không đẻ sheet rác khi chỉ đọc).
+function _learnRead_(sheetName) {
+  try { return readSheetAsObjects_(sheetName) || []; } catch (e) { return []; }
+}
+
+function listLearningPlan_() {
+  var members = _learnRead_(SHEETS.LEARN_REG).map(function (r) {
+    return {
+      username:      normalizeUser_(r.Username),
+      display_name:  String(r.Display_Name || r.Username || ''),
+      team:          String(r.Team || ''),
+      status:        String(r.Status || LEARN_STATUS.NOT_YET),
+      exercise_plan: String(r.Exercise_Plan || ''),
+      ai_tools:      String(r.AI_Tools || ''),
+      usage_level:   String(r.Usage_Level || ''),
+      support_need:  String(r.Support_Need || ''),
+      source:        String(r.Source || ''),
+      submitted_at:  _learnYmd_(r.Submitted_At),
+      note:          String(r.Note || '')
+    };
+  }).filter(function (m) { return !!m.username; });
+
+  var courses = _learnRead_(SHEETS.LEARN_COURSE).filter(_learnIsActive_).map(function (r) {
+    return {
+      course_id:      String(r.Course_ID || ''),
+      username:       normalizeUser_(r.Username),
+      display_name:   String(r.Display_Name || r.Username || ''),
+      team:           String(r.Team || ''),
+      course_name:    String(r.Course_Name || ''),
+      provider:       String(r.Provider || ''),
+      paid:           String(r.Paid || ''),
+      target_date:    _learnYmd_(r.Target_Date),
+      status:         String(r.Status || LEARN_STATUS.REGISTERED),
+      cert_link:      String(r.Cert_Link || ''),
+      completed_date: _learnYmd_(r.Completed_Date),
+      note:           String(r.Note || '')
+    };
+  }).filter(function (c) { return !!c.course_id; });
+
+  var bigTasks = _learnRead_(SHEETS.BIG_TASK).map(function (r) {
+    return {
+      task_id:          String(r.Task_ID || ''),
+      task_name:        String(r.Task_Name || ''),
+      team:             String(r.Team || ''),
+      source_type:      String(r.Source_Type || ''),
+      lead:             normalizeUser_(r.Lead),
+      participants:     String(r.Participants || ''),
+      hours_before:     String(r.Hours_Before || ''),
+      target_reduction: String(r.Target_Reduction || ''),
+      pilot_deadline:   _learnYmd_(r.Pilot_Deadline),
+      status:           String(r.Status || ''),
+      note:             String(r.Note || '')
+    };
+  }).filter(function (t) { return !!t.task_id; });
+
+  return { members: members, courses: courses, big_tasks: bigTasks };
+}
+
+// Đăng ký / cập nhật phần cá nhân (upsert theo Username). Member chỉ ghi dòng của mình.
+function registerLearning_(data) {
+  data = data || {};
+  var me = _learnRequester_(data);
+  var target = normalizeUser_(data.Username || me);
+  if (target !== me && !_learnIsAdmin_(data)) throw new Error('Bạn chỉ cập nhật được đăng ký của mình');
+
+  var plan = sanitizeStr_(data.Exercise_Plan || '', 1000);
+  if (!plan) throw new Error('Thiếu bài tập tuần này');
+
+  ensureSheetColumns_(SHEETS.LEARN_REG, LEARN_REG_HEADERS);
+  var now = _learnNow_();
+  var fields = {
+    Exercise_Plan: plan,
+    AI_Tools:      sanitizeStr_(data.AI_Tools || '', 300),
+    Usage_Level:   sanitizeStr_(data.Usage_Level || '', 60),
+    Support_Need:  sanitizeStr_(data.Support_Need || '', 1000),
+    Status:        LEARN_STATUS.REGISTERED,
+    Updated_At:    now
+  };
+
+  var existing = _learnRead_(SHEETS.LEARN_REG).filter(function (r) { return normalizeUser_(r.Username) === target; })[0];
+  if (existing) {
+    if (!existing.Submitted_At) fields.Submitted_At = now;
+    if (!existing.Source) fields.Source = 'Tự đăng ký trên AIUS';
+    // Khóa theo giá trị đang lưu (có thể viết hoa) — updateRowByField_ so khớp chuỗi tuyệt đối.
+    updateRowByField_(SHEETS.LEARN_REG, 'Username', existing.Username, fields);
+    return { username: target, created: false };
+  }
+  appendRowFromObject_(SHEETS.LEARN_REG, _learnMerge_({
+    Username:     target,
+    Display_Name: sanitizeStr_(data.Display_Name || target, 200),
+    Team:         sanitizeStr_(data.Team || '', 120),
+    Source:       'Tự đăng ký trên AIUS',
+    Submitted_At: now,
+    Note:         ''
+  }, fields));
+  return { username: target, created: true };
+}
+
+function _nextCourseId_() {
+  var max = 0;
+  _learnRead_(SHEETS.LEARN_COURSE).forEach(function (r) {
+    var m = /^KH-(\d+)$/.exec(String(r.Course_ID || '').trim());
+    if (m) { var n = parseInt(m[1], 10); if (n > max) max = n; }
+  });
+  var next = max + 1;
+  return 'KH-' + (next < 1000 ? ('000' + next).slice(-4) : String(next));
+}
+
+function _learnCourseFields_(data) {
+  var name = sanitizeStr_(data.Course_Name || '', 300);
+  var date = sanitizeStr_(data.Target_Date || '', 10);
+  if (!name) throw new Error('Thiếu tên khóa học');
+  if (!date) throw new Error('Thiếu hạn học xong');
+  if (!_learnValidDate_(date)) throw new Error('Hạn học xong không hợp lệ (yyyy-mm-dd)');
+  var paid = sanitizeStr_(data.Paid || '', 20);
+  if (['Có', 'Không', 'Chưa rõ'].indexOf(paid) === -1) paid = 'Không';
+  return {
+    Course_Name: name,
+    Provider:    sanitizeStr_(data.Provider || '', 200),
+    Paid:        paid,
+    Target_Date: date
+  };
+}
+
+function addLearningCourse_(data) {
+  data = data || {};
+  var me = _learnRequester_(data);
+  var target = normalizeUser_(data.Username || me);
+  if (target !== me && !_learnIsAdmin_(data)) throw new Error('Bạn chỉ thêm được khóa học của mình');
+
+  var f = _learnCourseFields_(data);
+  ensureSheetColumns_(SHEETS.LEARN_COURSE, LEARN_COURSE_HEADERS);
+  var now = _learnNow_();
+  var id = _nextCourseId_();
+  appendRowFromObject_(SHEETS.LEARN_COURSE, _learnMerge_({
+    Course_ID:      id,
+    Username:       target,
+    Display_Name:   sanitizeStr_(data.Display_Name || target, 200),
+    Team:           sanitizeStr_(data.Team || '', 120),
+    Status:         LEARN_STATUS.REGISTERED,
+    Cert_Link:      '',
+    Completed_Date: '',
+    Source:         'Tự đăng ký trên AIUS',
+    Note:           '',
+    Created_At:     now,
+    Updated_At:     now,
+    Active:         'TRUE'
+  }, f));
+  return { course_id: id };
+}
+
+function _learnCourseForEdit_(data) {
+  var id = sanitizeStr_(data.Course_ID || '');
+  if (!id) throw new Error('Thiếu Course_ID');
+  var existing = findObjectByField_(SHEETS.LEARN_COURSE, 'Course_ID', id);
+  if (!existing || !_learnIsActive_(existing)) throw new Error('Không tìm thấy khóa học: ' + id);
+  var me = _learnRequester_(data);
+  if (normalizeUser_(existing.Username) !== me && !_learnIsAdmin_(data)) {
+    throw new Error('Bạn chỉ sửa được khóa học của mình');
+  }
+  return { id: id, row: existing };
+}
+
+function updateLearningCourse_(data) {
+  data = data || {};
+  var c = _learnCourseForEdit_(data);
+  var f = _learnCourseFields_(data);
+  f.Updated_At = _learnNow_();
+  // Khóa "Chưa rõ khóa" được điền tên + hạn → chuyển "Đã đăng ký". "Hoàn thành" giữ nguyên.
+  if (String(c.row.Status) !== LEARN_STATUS.DONE) f.Status = LEARN_STATUS.REGISTERED;
+  updateRowByField_(SHEETS.LEARN_COURSE, 'Course_ID', c.id, f);
+  return { course_id: c.id };
+}
+
+function deleteLearningCourse_(data) {
+  data = data || {};
+  var c = _learnCourseForEdit_(data);
+  updateRowByField_(SHEETS.LEARN_COURSE, 'Course_ID', c.id, { Active: 'FALSE', Updated_At: _learnNow_() });
+  return { course_id: c.id, deleted: true };
+}

@@ -23,8 +23,22 @@ var SHEETS = {
   BACKUP_TEAM: 'BackupTeam',     // Backup chéo team: 1 row = 1 cặp teamlead backup 2 chiều (A↔B)
   AI_EXERCISE: 'AI_EXERCISE',    // CR (2026-09-12): "Bài tập AI" — chia sẻ thao tác nhỏ (không thành US), KHÔNG tính KPI
   PERSONAL_SELF: 'PERSONAL_SELF',// CR (2026-09-12 #3): member TỰ CHẤM M2/M3 (staging) → teamlead duyệt → chốt sang PERSONAL_SCORE
-  SHARING_CLAIM: 'SHARING_CLAIM' // CR (2026-09-12 #3): member tự khai LAN TỎA AI (M4) + bằng chứng → teamlead duyệt
+  SHARING_CLAIM: 'SHARING_CLAIM',// CR (2026-09-12 #3): member tự khai LAN TỎA AI (M4) + bằng chứng → teamlead duyệt
+  LEARN_REG:   'HOC_TAP_DANG_KY', // CR (2026-10-01): đăng ký bài tập tuần + công cụ + mức dùng AI (1 row/member)
+  LEARN_COURSE:'HOC_TAP_KHOA',    // CR (2026-10-01): khóa học tự học + hạn học xong (1 row/khóa)
+  BIG_TASK:    'VIEC_LON'         // CR (2026-10-01): việc lớn cấp Trung tâm (PM nhập ở sheet, app chỉ đọc)
 };
+
+// ── Kế hoạch học tập (CR 2026-10-01, LearningPlanService.gs) ───────
+// Cột của 3 tab định dạng TEXT để ngày giữ dạng yyyy-MM-dd. PM/teamlead sửa tay được.
+var LEARN_REG_HEADERS = [
+  'Username', 'Display_Name', 'Team', 'Status', 'Exercise_Plan', 'AI_Tools', 'Usage_Level',
+  'Support_Need', 'Source', 'Submitted_At', 'Updated_At', 'Note'
+];
+var LEARN_COURSE_HEADERS = [
+  'Course_ID', 'Username', 'Display_Name', 'Team', 'Course_Name', 'Provider', 'Paid', 'Target_Date',
+  'Status', 'Cert_Link', 'Completed_Date', 'Source', 'Note', 'Created_At', 'Updated_At', 'Active'
+];
 
 // ── PERSONAL_SELF Column Headers (CR 2026-09-12 #3) ────────────────
 // Staging: 1 dòng / (member × Month). Member tự chấm 4 tiêu chí M2 (0–10) + số khóa (M3) +

@@ -37,6 +37,13 @@ var API = {
   exerciseUpdate: () => `${_gasBase}?action=exercise-update`,
   exerciseDelete: () => `${_gasBase}?action=exercise-delete`,
 
+  // CR (2026-10-01): Kế hoạch học tập — bài tập tuần, khóa học + hạn học xong, việc lớn
+  learningList:         () => `${_gasBase}?action=learning-list`,
+  learningRegister:     () => `${_gasBase}?action=learning-register`,
+  learningCourseAdd:    () => `${_gasBase}?action=learning-course-add`,
+  learningCourseUpdate: () => `${_gasBase}?action=learning-course-update`,
+  learningCourseDelete: () => `${_gasBase}?action=learning-course-delete`,
+
   // CR (2026-09-12 #3): Chấm điểm cá nhân (member tự chấm) + Lan tỏa AI
   selfScoreSubmit:    () => `${_gasBase}?action=self-score-submit`,
   selfScoreMine:      () => `${_gasBase}?action=self-score-mine`,
