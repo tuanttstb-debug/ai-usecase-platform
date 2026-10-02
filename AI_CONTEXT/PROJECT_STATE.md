@@ -1,5 +1,11 @@
 # PROJECT STATE
 
+**2026-10-02 — Khóa học: nút "Hoàn thành/Hoàn tác" + Link chứng chỉ (vá lỗi hoàn thành trước hạn không chuyển trạng thái) + 3 vá cùng kiểu. LIVE, GAS đã redeploy, test live 10/10.**
+`e5c9ea7` · route `learning-course-complete` · `updateLearningCourse_` không còn ép "Đã đăng ký" · Status trim/NFC · `stage_changed` boolean · Tự chấm tháng giờ VN. Playwright 140/140. Live: 31 khóa, 0 hoàn thành (chờ member bấm).
+**Còn treo:** CR-3 phần KPI3 chỉ đọc · khoảng trống tracking KPI theo hub `RA_SOAT_TRACKING_KPI_AIUS_20261002.md` (KPI2 tự đếm tuần, T-KPI-2 mẫu số, mọi role có KPI cá nhân, cột số VIEC_LON, 40/30/20/10 sau GĐ duyệt).
+
+---
+
 **2026-10-01 — Màn "Bài tập & Học tập" (gộp Bài tập AI + Kế hoạch học tập) + menu mới. LIVE, GAS đã redeploy, test live PASS.**
 Hub AIUS-001 D53 (5 nhóm mục tiêu của GĐTT): 1 màn `#learning-plan` 5 tab — **Bài tập tuần** (kế hoạch không bắt buộc → "Nộp bài" = Bài tập AI gắn `Week` ISO, tự đánh dấu tuần "Đã nộp") · **Khóa học** (tên, nơi học, trả phí, hạn học xong) · **Thư viện bài tập** (danh sách Bài tập AI cũ; `#ai-exercise` → `#learning-plan/library`) · **Theo dõi** (ô số + thành viên × tuần + khóa theo hạn, ai cũng xem) · **Việc lớn** (chỉ đọc). GAS mới `LearningPlanService.gs` (routes `learning-list/register/week-plan/course-add/update/delete`), `exercise-create` ghi `Week`. **Dữ liệu ở bảng tính** (KHÔNG trong repo — có User ID nhân sự): tab `HOC_TAP_DANG_KY` · `HOC_TAP_KHOA` · `BAI_TAP_TUAN` · `VIEC_LON` (cột TEXT, PM/teamlead sửa tay) + cột `AI_EXERCISE.Week`; nạp ban đầu từ email `[AI-5NHOM]` qua connector Google Sheets (hub). Menu: **Việc của tôi / Quản lý (ẩn với member) / Tra cứu** — `shell.js` ẩn mọi `[data-roles]` trong sidebar.
 ⚠ Bảng tính đặt múi giờ **America/Los_Angeles**: GAS ghi chuỗi ngày vẫn bị Sheets đổi thành Date → ghi kèm dấu `'`, ô Date đọc theo `getSpreadsheetTimeZone()` (`084956d`).

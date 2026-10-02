@@ -6,7 +6,10 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ## 🆕 Bài tập & Học tập (2026-10-01, hub AIUS-001 D53) — LIVE
 - [x] Màn gộp 5 tab + GAS `LearningPlanService.gs` + menu mới — `ebabd5c`, GAS redeploy, test live PASS.
-- [ ] **[CC]** Đợt 2 (trước 16/10, = CR-3 hub): nút "Hoàn thành" + `Cert_Link`/`Completed_Date` cho khóa (member) → Tự chấm KPI3 lấy số khóa hoàn thành/trả phí từ `HOC_TAP_KHOA` (chỉ đọc), teamlead duyệt như cũ.
+- [x] Nút "Hoàn thành/Hoàn tác" + `Cert_Link`/`Completed_Date` cho khóa — `e5c9ea7` (2026-10-02, vá lỗi "hoàn thành trước hạn không chuyển trạng thái"), GAS redeploy, test live 10/10.
+- [ ] **[CC]** CR-3 phần còn lại (trước 16/10): Tự chấm KPI3 lấy số khóa hoàn thành/trả phí từ `HOC_TAP_KHOA` (chỉ đọc), teamlead duyệt như cũ.
+- [ ] **[CC]** Khoảng trống tracking KPI (hub `reports/RA_SOAT_TRACKING_KPI_AIUS_20261002.md`), tuần 05–09/10: CR-2 tự đếm tuần "Đã nộp" → KPI2 · T-KPI-2 chia cho cả team (không chỉ người đã có điểm) · bảng KPI cá nhân nhận mọi role (admin/lãnh đạo D54) · `VIEC_LON` thêm cột số (giờ trước/sau, ngày làm thử, điểm). Sau GĐ duyệt (CR-6): công thức teamlead 40/30/20/10 (`Config.gs:431` đang 60/40) + T-KPI-3/T-KPI-4 R&D.
+- [ ] **[TT]** Hội đồng chấm `AuthTokenService.gs:244` còn QuynhNNY — anh cho tiếp tục tự theo dõi/chấm, giữ nguyên tới khi anh báo.
 - [ ] **[CC]** (tùy) Bảng tính đổi múi giờ sang Asia/Ho_Chi_Minh — rà các sheet có ngày giờ (log, chấm điểm) trước khi đổi.
 
 ---

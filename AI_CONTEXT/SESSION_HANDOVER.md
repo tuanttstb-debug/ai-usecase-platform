@@ -1,5 +1,13 @@
 # SESSION HANDOVER
 
+## Session: 2026-10-02 — Vá lỗi "hoàn thành khóa trước hạn không chuyển trạng thái" + quét lỗi cùng kiểu + test live
+- **Task completed:** Anh báo lỗi → gốc: không có đường nào để member đánh dấu "Hoàn thành" + `updateLearningCourse_` ép Status về "Đã đăng ký" mỗi lần sửa + tình trạng tính lại theo hạn. Thêm route `learning-course-complete` (Completed_Date giờ VN, Cert_Link tùy chọn, hoàn tác) + nút Hoàn thành/Hoàn tác + ô Link chứng chỉ + ô số "Khóa hoàn thành". Quét lỗi cùng kiểu: vá Status dư khoảng trắng, `AdminService` `stage_changed` nhận boolean TRUE, `SelfScoreService` tháng mặc định giờ VN. Hub song song rà tracking KPI (chỉ đọc).
+- **Files changed:** `e5c9ea7` — `assets/gas-backend/{LearningPlanService,Code,AdminService,SelfScoreService}.gs` · `assets/js/{learning-plan,api}.js` · `config/routes.js` · `index.html` (`?v=20261002a`) · MỚI `tests/17-course-complete.spec.js` · `docs/TEST_LIVE_20261002.md`.
+- **Decision made:** hoàn thành được bất kể hạn (trước/sau), khóa "Chưa rõ khóa" phải điền tên trước · KPI3 Tự chấm lấy số tự động để CR-3 phần sau.
+- **Blocker:** không.
+- **Next step:** [CC] CR-3 phần KPI3 chỉ đọc + khoảng trống tracking KPI (xem TODO) · [TT] giữ QuynhNNY ở Hội đồng chấm tới khi báo.
+- **Regression risk:** Thấp–TB — đổi GAS 4 file. Playwright **140/140**; [TT] redeploy GAS 02/10 → test live 10/10 trên khóa `[TEST]` KH-0033 (thêm → hoàn thành trước hạn + link → sửa giữ "Hoàn thành" → link sai bị chặn → khóa người khác bị chặn → hoàn tác → xóa mềm); FE live phục vụ `?v=20261002a`. `stage_changed`/tháng Tự chấm chưa test live (cần ghi dữ liệu thật).
+
 ## Session: 2026-10-01 — Màn "Bài tập & Học tập" (gộp Bài tập AI + Kế hoạch học tập theo vòng tuần) + menu mới
 - **Task completed:** CR hub AIUS-001 (5 nhóm mục tiêu): dựng "Kế hoạch học tập" (khóa + hạn, theo dõi, việc lớn) → anh duyệt phương án gộp với Bài tập AI → 1 màn 5 tab theo vòng tuần ISO + sắp lại menu. Test live (tuantt4) đọc/ghi PASS: kế hoạch, nộp bài tự đánh dấu "Đã nộp", hồ sơ AI, thêm/sửa/xóa khóa; dọn dòng `[TEST]` khỏi sheet.
 - **Files changed:** `3f2a3cd` (LearningPlanService.gs mới · Config/Code · learning-plan.js mới · api/routes · index · test 16) · `084956d` (fix ngày lệch múi giờ) · `1d932a1` (cache) · `ebabd5c` (gộp: ExerciseService +Week · learning-plan.js viết lại · ai-exercise.js thành tab · shell RBAC · menu · test 14/16 viết lại). Cache-bust `?v=20261001c`.
