@@ -208,6 +208,9 @@ function route_(action, params, body) {
   if (action === 'learning-course-update') {
     return createResponse_(true, 'Đã cập nhật khóa học', updateLearningCourse_(body));
   }
+  if (action === 'learning-course-complete') {
+    return createResponse_(true, 'Đã cập nhật trạng thái khóa học', completeLearningCourse_(body));
+  }
   if (action === 'learning-course-delete') {
     return createResponse_(true, 'Đã xóa khóa học', deleteLearningCourse_(body));
   }

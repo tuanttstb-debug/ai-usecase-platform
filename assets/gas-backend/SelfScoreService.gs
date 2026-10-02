@@ -27,8 +27,8 @@ function setupSelfScoreSheets() {
 
 // Nhãn tháng hiện tại 'Tháng MM/YYYY' (mặc định khi client không gửi).
 function _currentMonthLabel_() {
-  var d = new Date();
-  return 'Tháng ' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
+  // Theo giờ VN (múi giờ project/bảng tính có thể là America/Los_Angeles → ngày 1 đầu tháng lệch về tháng trước)
+  return 'Tháng ' + Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'MM/yyyy');
 }
 
 // Thông tin member (team/display) từ token/body → tra User_Master nếu thiếu.

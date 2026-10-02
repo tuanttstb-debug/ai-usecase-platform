@@ -313,6 +313,7 @@ var Api = {
   addLearningCourse(data)      { return Api._request(API.learningCourseAdd(), data, 30000); },
   updateLearningCourse(data)   { return Api._request(API.learningCourseUpdate(), data, 30000); },
   deleteLearningCourse(data)   { return Api._request(API.learningCourseDelete(), data, 30000); },
+  completeLearningCourse(data) { return Api._request(API.learningCourseComplete(), data, 30000); },
   // CR (2026-09-12 #3): Chấm điểm cá nhân (member tự chấm) + Lan tỏa AI
   submitSelfScore(data)     { return Api._request(API.selfScoreSubmit(),  data, 30000); },
   getSelfScoreMine(data)    { return Api._request(API.selfScoreMine(),    data, 30000); },

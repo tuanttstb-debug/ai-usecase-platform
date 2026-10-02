@@ -88,9 +88,12 @@
     var p = ymd.split('-');
     return p[2] + '/' + p[1] + '/' + p[0];
   }
+  // Trạng thái sheet có thể do PM gõ tay (dư khoảng trắng / khác hoa-thường / tổ hợp dấu) → chuẩn hóa trước khi so.
+  function _stt(s) { var v = String(s == null ? '' : s).trim(); return (v.normalize ? v.normalize('NFC') : v).toLowerCase(); }
+  function _isDone(c) { return _stt(c.status) === 'hoàn thành'; }
   function courseState(c) {
-    if (c.status === 'Hoàn thành') return 'done';
-    if (c.status === 'Chưa rõ khóa') return 'unclear';
+    if (_isDone(c)) return 'done';
+    if (_stt(c.status) === 'chưa rõ khóa') return 'unclear';
     var d = _daysLeft(c.target_date);
     if (d === null) return 'nodate';
     if (d < 0) return 'overdue';
@@ -99,7 +102,8 @@
   }
   function _leftText(c) {
     var st = courseState(c);
-    if (st === 'done' || st === 'unclear' || st === 'nodate') return '';
+    if (st === 'done') return c.completed_date ? 'xong ' + _fmtDate(c.completed_date) : '';
+    if (st === 'unclear' || st === 'nodate') return '';
     var d = _daysLeft(c.target_date);
     if (d < 0) return 'trễ ' + (-d) + ' ngày';
     if (d === 0) return 'hôm nay';
@@ -287,11 +291,18 @@
       '<th>Khóa học</th><th>Hạn học xong</th><th>Tình trạng</th><th></th></tr></thead><tbody>' +
       list.map(function (c) {
         var sub = [c.provider, c.paid === 'Có' ? 'trả phí' : ''].filter(Boolean).join(' · ');
+        var st = courseState(c);
+        var cert = /^https?:\/\//i.test(c.cert_link || '')
+          ? ' <a href="' + esc(c.cert_link) + '" target="_blank" rel="noopener" style="font-size:12px">chứng chỉ</a>' : '';
+        // Hoàn thành được bất kể hạn (trước hạn / đúng hạn / quá hạn); "Chưa rõ khóa" phải Sửa điền tên trước.
+        var doneBtn = st === 'done'
+          ? '<button class="btn btn-ghost btn-sm" title="Hoàn tác" aria-label="Hoàn tác hoàn thành" onclick="LearningPlan.completeCourse(\'' + esc(c.course_id) + '\', true)"><i class="fa-solid fa-rotate-left"></i> Hoàn tác</button>'
+          : (st === 'unclear' ? '' : '<button class="btn btn-ghost btn-sm" title="Đánh dấu đã học xong" aria-label="Hoàn thành khóa học" style="color:var(--color-success)" onclick="LearningPlan.completeCourse(\'' + esc(c.course_id) + '\')"><i class="fa-solid fa-circle-check"></i> Hoàn thành</button>');
         return '<tr data-course="' + esc(c.course_id) + '">' +
           '<td>' + esc(c.course_name) + (sub ? '<div style="font-size:12px;color:var(--color-text-muted)">' + esc(sub) + '</div>' : '') + '</td>' +
           '<td style="white-space:nowrap">' + _fmtDate(c.target_date) + '<div style="font-size:12px;color:var(--color-text-muted)">' + esc(_leftText(c)) + '</div></td>' +
-          '<td>' + _badge(STATE_META, courseState(c)) + '</td>' +
-          '<td style="white-space:nowrap">' +
+          '<td>' + _badge(STATE_META, st) + cert + '</td>' +
+          '<td style="white-space:nowrap">' + doneBtn +
             '<button class="btn btn-ghost btn-sm" title="Sửa" aria-label="Sửa khóa học" onclick="LearningPlan.editCourse(\'' + esc(c.course_id) + '\')"><i class="fa-solid fa-pen"></i> Sửa</button>' +
             '<button class="btn btn-ghost btn-sm" title="Xóa" aria-label="Xóa khóa học" style="color:var(--color-error)" onclick="LearningPlan.delCourse(\'' + esc(c.course_id) + '\')"><i class="fa-solid fa-trash"></i></button>' +
           '</td></tr>';
@@ -310,6 +321,9 @@
     payload.Provider    = _v('lpCourseProvider');
     payload.Paid        = _v('lpCoursePaid') || 'Không';
     payload.Target_Date = date;
+    var cert = _v('lpCourseCert');
+    if (cert && !/^https?:\/\//i.test(cert)) { if (msg) msg.textContent = 'Link chứng chỉ phải bắt đầu bằng http:// hoặc https://'; return; }
+    payload.Cert_Link = cert;
     var btn = _el('lpCourseBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'Đang lưu...'; }
     var editing = _editCourseId;
@@ -329,7 +343,7 @@
 
   function _resetCourseForm() {
     _editCourseId = null;
-    ['lpCourseName', 'lpCourseProvider', 'lpCourseDate'].forEach(function (id) { _set(id, ''); });
+    ['lpCourseName', 'lpCourseProvider', 'lpCourseDate', 'lpCourseCert'].forEach(function (id) { _set(id, ''); });
     _set('lpCoursePaid', 'Không');
     var btn = _el('lpCourseBtn'); if (btn) btn.textContent = 'Thêm khóa học';
     var cancel = _el('lpCourseCancel'); if (cancel) cancel.style.display = 'none';
@@ -346,9 +360,31 @@
     _set('lpCourseProvider', c.provider);
     _set('lpCoursePaid', ['Có', 'Không', 'Chưa rõ'].indexOf(c.paid) !== -1 ? c.paid : 'Không');
     _set('lpCourseDate', c.target_date);
+    _set('lpCourseCert', c.cert_link);
     var btn = _el('lpCourseBtn'); if (btn) btn.textContent = 'Lưu khóa học';
     var cancel = _el('lpCourseCancel'); if (cancel) cancel.style.display = '';
     var name = _el('lpCourseName'); if (name) name.focus();
+  }
+
+  // BUG 2026-10-02: trước đây không có cách nào đánh dấu "Hoàn thành" trên app → học xong trước hạn vẫn hiện
+  // "Đúng tiến độ/Sắp tới hạn" rồi thành "Quá hạn". undo=true → về "Đã đăng ký".
+  function completeCourse(id, undo) {
+    var c = _data.courses.filter(function (x) { return x.course_id === id; })[0];
+    var label = c ? '"' + c.course_name + '"' : id;
+    var ask = (typeof uiConfirm === 'function')
+      ? uiConfirm(undo
+          ? { title: 'Hoàn tác', body: 'Đưa ' + label + ' về trạng thái đang học?', okLabel: 'Hoàn tác' }
+          : { title: 'Hoàn thành khóa học', body: 'Đánh dấu đã học xong ' + label + ' hôm nay? Có thể dán link chứng chỉ bằng nút Sửa.', okLabel: 'Hoàn thành' })
+      : Promise.resolve(true);
+    ask.then(function (ok) {
+      if (!ok) return;
+      var payload = _payloadBase();
+      payload.Course_ID = id;
+      if (undo) payload.Undo = 'true';
+      Api.completeLearningCourse(payload)
+        .then(function () { showToast(undo ? 'Đã hoàn tác.' : 'Đã đánh dấu hoàn thành!', 'success'); _load(); })
+        .catch(function (err) { showToast('Lỗi: ' + ((err && err.message) || err), 'error'); });
+    });
   }
 
   function delCourse(id) {
@@ -398,7 +434,7 @@
     members.forEach(function (m) { cnt[weekState(m.username, w)]++; });
     var cs = function (st) { return courses.filter(function (c) { return courseState(c) === st; }).length; };
     return { total: members.length, submitted: cnt.submitted, plan: cnt.plan, none: cnt.none,
-             soon: cs('soon'), overdue: cs('overdue'), unclear: cs('unclear') };
+             soon: cs('soon'), overdue: cs('overdue'), unclear: cs('unclear'), done: cs('done') };
   }
   function _tile(id, value, label, cls) {
     return '<div class="kpi-card ' + (cls || '') + '" id="' + id + '" role="listitem">' +
@@ -417,7 +453,8 @@
         _tile('lpKpiNone',      s.none,    'Chưa có gì ' + wl, 'kpi-warning') +
         _tile('lpKpiSoon',      s.soon,    'Khóa sắp tới hạn (≤' + SOON_DAYS + ' ngày)', 'kpi-warning') +
         _tile('lpKpiOverdue',   s.overdue, 'Khóa quá hạn', 'kpi-warning') +
-        _tile('lpKpiUnclear',   s.unclear, 'Chưa rõ khóa', '');
+        _tile('lpKpiUnclear',   s.unclear, 'Chưa rõ khóa', '') +
+        _tile('lpKpiDone',      s.done,    'Khóa hoàn thành', 'kpi-success');
     }
     _renderWeekMatrix();
     _renderCourseTable();
@@ -566,7 +603,7 @@
   });
 
   window.LearningPlan = {
-    reload: _load, showTab: showTab, editCourse: editCourse, delCourse: delCourse,
+    reload: _load, showTab: showTab, editCourse: editCourse, delCourse: delCourse, completeCourse: completeCourse,
     courseState: courseState, weekState: weekState, currentWeek: currentWeek, isoWeek: isoWeek,
     refreshMine: _renderWeekTab
   };

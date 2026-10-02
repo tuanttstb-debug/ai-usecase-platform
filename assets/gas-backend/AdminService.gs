@@ -514,7 +514,7 @@ function getWeeklyLog_(recordId) {
       log_date:            String(row.Log_Date    || ''),
       previous_stage:      String(row.Previous_Stage || ''),
       new_stage:           String(row.New_Stage   || ''),
-      stage_changed:       row.Stage_Changed === 'TRUE',
+      stage_changed:       row.Stage_Changed === 'TRUE' || row.Stage_Changed === true,
       progress:            safeNum_(row.Progress),
       weekly_update:       String(row.Weekly_Update   || ''),
       next_milestone:      String(row.Next_Milestone  || ''),

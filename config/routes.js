@@ -44,6 +44,7 @@ var API = {
   learningCourseAdd:    () => `${_gasBase}?action=learning-course-add`,
   learningCourseUpdate: () => `${_gasBase}?action=learning-course-update`,
   learningCourseDelete: () => `${_gasBase}?action=learning-course-delete`,
+  learningCourseComplete: () => `${_gasBase}?action=learning-course-complete`,
 
   // CR (2026-09-12 #3): Chấm điểm cá nhân (member tự chấm) + Lan tỏa AI
   selfScoreSubmit:    () => `${_gasBase}?action=self-score-submit`,

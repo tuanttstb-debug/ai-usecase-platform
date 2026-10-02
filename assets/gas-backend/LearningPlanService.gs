@@ -15,7 +15,7 @@
 // Bài nộp đi qua exercise-create (ExerciseService) → tự đánh dấu "Đã nộp" cho tuần của bài.
 // Auth: mô hình nhẹ như Bài tập AI (client gửi requester_email + is_admin);
 //   member chỉ sửa dòng của mình, admin sửa mọi dòng. Xóa khóa = mềm (Active=FALSE).
-// Trạng thái "Hoàn thành" + link chứng chỉ: vòng 2 (chưa mở trên app).
+// Trạng thái "Hoàn thành" + link chứng chỉ: mở 2026-10-02 (learning-course-complete). KPI3 tự lấy: đợt 2.
 // ─────────────────────────────────────────────────────────────────
 
 var WEEK_STATUS = { PLAN: 'Kế hoạch', SUBMITTED: 'Đã nộp' };
@@ -117,7 +117,7 @@ function listLearningPlan_() {
       provider:       String(r.Provider || ''),
       paid:           String(r.Paid || ''),
       target_date:    _learnYmd_(r.Target_Date),
-      status:         String(r.Status || LEARN_STATUS.REGISTERED),
+      status:         _learnIsDone_(r.Status) ? LEARN_STATUS.DONE : String(r.Status || LEARN_STATUS.REGISTERED).trim(),
       cert_link:      String(r.Cert_Link || ''),
       completed_date: _learnYmd_(r.Completed_Date),
       note:           String(r.Note || '')
@@ -339,10 +339,45 @@ function updateLearningCourse_(data) {
   var c = _learnCourseForEdit_(data);
   var f = _learnCourseFields_(data);
   f.Updated_At = _learnNow_();
-  // Khóa "Chưa rõ khóa" được điền tên + hạn → chuyển "Đã đăng ký". "Hoàn thành" giữ nguyên.
-  if (String(c.row.Status) !== LEARN_STATUS.DONE) f.Status = LEARN_STATUS.REGISTERED;
+  if (data.Cert_Link !== undefined) f.Cert_Link = _learnCertLink_(data.Cert_Link);
+  // Khóa "Chưa rõ khóa" được điền tên + hạn → chuyển "Đã đăng ký". "Hoàn thành" giữ nguyên
+  // (so sánh sau trim/NFC — ô PM gõ tay có thể dư khoảng trắng → trước đây bị ghi đè về "Đã đăng ký").
+  if (!_learnIsDone_(c.row.Status)) f.Status = LEARN_STATUS.REGISTERED;
   updateRowByField_(SHEETS.LEARN_COURSE, 'Course_ID', c.id, f);
   return { course_id: c.id };
+}
+
+// 2026-10-02: lỗi "hoàn thành khóa trước hạn không chuyển trạng thái" — trước đây KHÔNG có đường nào để
+// member đánh dấu "Hoàn thành" (chỉ PM sửa tay sheet; sửa khóa còn ép Status về "Đã đăng ký").
+// Route learning-course-complete: đánh dấu xong bất kể hạn (trước/sau hạn đều được), Completed_Date = hôm nay
+// giờ VN, Cert_Link tùy chọn. Undo=true → về "Đã đăng ký", xóa Completed_Date.
+function _learnIsDone_(s) {
+  var v = String(s == null ? '' : s).trim();
+  if (v.normalize) v = v.normalize('NFC');
+  return v.toLowerCase() === LEARN_STATUS.DONE.toLowerCase();
+}
+function _learnCertLink_(s) {
+  var v = sanitizeStr_(s || '', 1000);
+  if (v && !/^https?:\/\//i.test(v)) throw new Error('Link chứng chỉ phải bắt đầu bằng http:// hoặc https://');
+  return v;
+}
+function completeLearningCourse_(data) {
+  data = data || {};
+  var c = _learnCourseForEdit_(data);
+  var undo = String(data.Undo) === 'true' || data.Undo === true;
+  var f = { Updated_At: _learnNow_() };
+  if (undo) {
+    f.Status = LEARN_STATUS.REGISTERED;
+    f.Completed_Date = '';
+  } else {
+    var name = String(c.row.Course_Name || '').trim();
+    if (!name || /^\(.*\)$/.test(name)) throw new Error('Khóa chưa có tên — bấm Sửa để điền tên khóa trước khi hoàn thành');
+    f.Status = LEARN_STATUS.DONE;
+    f.Completed_Date = _learnTxt_(Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd'));
+    if (data.Cert_Link !== undefined && String(data.Cert_Link).trim()) f.Cert_Link = _learnCertLink_(data.Cert_Link);
+  }
+  updateRowByField_(SHEETS.LEARN_COURSE, 'Course_ID', c.id, f);
+  return { course_id: c.id, status: f.Status };
 }
 
 function deleteLearningCourse_(data) {
