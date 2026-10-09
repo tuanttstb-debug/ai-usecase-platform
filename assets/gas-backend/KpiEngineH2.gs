@@ -29,6 +29,13 @@ function _kActive_(r) { return r.Active !== false && String(r.Active).toUpperCas
 function _kRound1_(n) { return Math.round(n * 10) / 10; }
 function _kClamp_(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
 function _kYmd_(v) { var s = String(v == null ? '' : v).trim(); return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : ''; }
+function _kDateKey_(v) {                     // 'yyyy-mm-dd' từ chuỗi hoặc Date (ô Sheets tự đổi kiểu); '' nếu trống/không đọc được
+  if (Object.prototype.toString.call(v) === '[object Date]' && !isNaN(v.getTime())) {
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return v.getFullYear() + '-' + p(v.getMonth() + 1) + '-' + p(v.getDate());
+  }
+  return _kYmd_(String(v == null ? '' : v).replace(/^'/, ''));
+}
 
 /** Thang OKR (D65): ratio = % đạt mục tiêu khát vọng (0..∞) → điểm 0..120. null/không số → 0. */
 function _kpiOkrScore_(ratio) {
@@ -178,11 +185,13 @@ function _kpiMemberFor_(user, idx, reuseByOwner) {
   var passWeeks = Object.keys(weeks).sort();
   var m2 = Math.min(H2_KPI_CAP, passWeeks.length * H2_M2_PCT_EACH);
 
-  // M3 — khóa "Hoàn thành" + có link chứng chỉ; trả phí ×2.
+  // M3 — khóa "Hoàn thành" + có link chứng chỉ + hoàn thành trong kỳ (≥ H2_M3_DONE_FROM); trả phí ×2.
   var courseDone = 0, coursePaid = 0;
   (idx.course[u] || []).forEach(function (c) {
     if (_kTxt_(c.Status) !== 'hoàn thành') return;
     if (!/^https?:\/\//i.test(String(c.Cert_Link || '').trim())) return;
+    var done = _kDateKey_(c.Completed_Date);
+    if (done && done < H2_M3_DONE_FROM) return; // hoàn thành trước kỳ → không tính (thiếu ngày: vẫn tính)
     courseDone++;
     if (_kTxt_(c.Paid) === 'có') coursePaid++;
   });

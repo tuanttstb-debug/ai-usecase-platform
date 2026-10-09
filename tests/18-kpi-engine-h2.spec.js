@@ -140,6 +140,17 @@ test.describe('CR-D · Engine KPI D70 — ví dụ tính bản trình 06/10', ()
     expect(tl.final).toBeCloseTo(expected, 0);
   });
 
+  test('M3 chỉ tính khóa hoàn thành từ 01/10/2026 (khóa xong trước kỳ ghi nhận nhưng không tính); thiếu ngày vẫn tính', () => {
+    const inp = exampleInput();
+    const base = E._kpiComputeAll_(inp).members.find((m) => m.username === 'tv.a').m3;     // 75 (3 khóa)
+    inp.courses.push(Object.assign(course('tv.a', true), { Completed_Date: '2026-06-11' })); // trước kỳ → bỏ
+    inp.courses.push(Object.assign(course('tv.a', true), { Completed_Date: "'2026-09-30" })); // trước kỳ (có dấu ') → bỏ
+    inp.courses.push(Object.assign(course('tv.a', true), { Completed_Date: new Date(2026, 5, 11) })); // Date trước kỳ → bỏ
+    expect(E._kpiComputeAll_(inp).members.find((m) => m.username === 'tv.a').m3).toBe(base);
+    inp.courses.push(Object.assign(course('tv.a', true), { Completed_Date: new Date(2026, 9, 5) })); // Date trong kỳ → tính
+    expect(E._kpiComputeAll_(inp).members.find((m) => m.username === 'tv.a').m3).toBe(base + 25);
+  });
+
   test('Trần 120: từng chỉ tiêu và tổng KPI không vượt 120; trừ chậm mốc tối đa −10', () => {
     const inp = exampleInput();
     inp.krs[0].Actual_Value = 40;                                         // vượt mục tiêu → 120

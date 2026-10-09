@@ -466,6 +466,7 @@ var H2_KPI_WEIGHTS = {
 };
 var H2_KPI_CAP          = 120;  // trần từng chỉ tiêu + trần tổng (D68)
 var H2_COURSE_TARGET   = 4;    // 4 khóa = 100%
+var H2_M3_DONE_FROM    = '2026-10-01'; // M-KPI-3: chỉ tính khóa hoàn thành từ ngày này (anh Tuân chốt 09/10 — khóa xong trước kỳ ghi nhận nhưng không tính)
 var H2_COURSE_PCT_EACH = 25;   // mỗi khóa 25% (khóa trả phí tính x2)
 var H2_M2_YEAR         = 2026; // M-KPI-2: kỳ đếm bài tập — tuần ISO 40 → 52 năm 2026
 var H2_M2_WEEK_FROM    = 40;  // anh Tuân chốt 09/10: tính từ tuần 40 (khớp chấm bù bài W40–41)
