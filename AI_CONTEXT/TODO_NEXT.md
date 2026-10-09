@@ -4,11 +4,22 @@ Thứ tự ưu tiên cho session tiếp theo.
 
 ---
 
+## 🆕 KPI tự tính khung D70 — 5 CR gom 1 đợt (2026-10-09, hub AIUS-001 D62–D70) — CHỜ [TT] REDEPLOY
+- [x] **[CC]** Engine `KpiEngineH2.gs` + CR-A/B/C/D/E (FE + GAS) + test (ví dụ email A 92% / B 40%). Playwright 156/156 (+zz 4). Chưa commit.
+- [ ] **[TT] 🟠 Duyệt diff → commit/push** (FE GitHub Pages có hiệu lực ngay khi push — nên push SAU khi redeploy GAS để FE mới không gọi route chưa có).
+- [ ] **[TT] 🟠 Dán 8 file GAS vào project AIUS → Deploy → Manage deployments → New version** (giữ URL): `Config.gs` · MỚI `KpiEngineH2.gs` · `ScoringServiceH2.gs` · `ExerciseService.gs` · `LearningPlanService.gs` · `Code.gs` · `CacheLayer.gs` · `SelfScoreService.gs` (chỉ comment).
+- [ ] **[TT]** Chạy 1 lần trong Editor: `setupKpiD70Sheets()` (tạo tab `VIEC_LON_SO`, `VIEC_LON_PHAN_CONG`, `RD_BAO_CAO` + 10 cột mới `AI_EXERCISE`; idempotent, chỉ THÊM — route ghi cũng tự tạo). Không cần hàm di trú dữ liệu.
+- [ ] **[TT]** Nhập tay tab `RD_BAO_CAO` mỗi kỳ (Period `T10/2026` · Username teamlead · Due_Date · Submitted_Date · Link) → T-KPI-4.
+- [ ] **[TT]** Báo teamlead: (1) tab Việc lớn → Chi tiết: nhập số trước/mục tiêu khát vọng (thực tế đo sau) + giao hạng mục cho MỌI thành viên; (2) màn "Chấm bài & lan tỏa": chấm bù bài tuần 40–41 sau khi thành viên "Bổ sung" 4 ô (trước 16/10). Ghi "tạm áp dụng tới khi anh Cường có chỉ đạo mới" (hub D70 — KPI cá nhân CHƯA được GĐ duyệt; chỉ KPI teamlead 40/30/20/10 là chỉ đạo anh Cường D62).
+- [ ] **[CC]** Sau redeploy: nghiệm thu live (đọc `kpi-leaderboard`, `learning-list` có `krs/assigns`; ghi thử trên dòng `[TEST]` rồi dọn) + đối chiếu số người/khóa.
+- [ ] **[TT] quyết** (giả định đang áp, đổi được ở `Config.gs`): ✅ kỳ M2 = tuần 40–52 (anh chốt 09/10) · còn: việc lớn chưa đo = 0% · hạng mục không ghi hạn coi như đúng hạn.
+
+---
+
 ## 🆕 Bài tập & Học tập (2026-10-01, hub AIUS-001 D53) — LIVE
 - [x] Màn gộp 5 tab + GAS `LearningPlanService.gs` + menu mới — `ebabd5c`, GAS redeploy, test live PASS.
 - [x] Nút "Hoàn thành/Hoàn tác" + `Cert_Link`/`Completed_Date` cho khóa — `e5c9ea7` (2026-10-02, vá lỗi "hoàn thành trước hạn không chuyển trạng thái"), GAS redeploy, test live 10/10.
-- [ ] **[CC]** CR-3 phần còn lại (trước 16/10): Tự chấm KPI3 lấy số khóa hoàn thành/trả phí từ `HOC_TAP_KHOA` (chỉ đọc), teamlead duyệt như cũ.
-- [ ] **[CC]** Khoảng trống tracking KPI (hub `reports/RA_SOAT_TRACKING_KPI_AIUS_20261002.md`), tuần 05–09/10: CR-2 tự đếm tuần "Đã nộp" → KPI2 · T-KPI-2 chia cho cả team (không chỉ người đã có điểm) · bảng KPI cá nhân nhận mọi role (admin/lãnh đạo D54) · `VIEC_LON` thêm cột số (giờ trước/sau, ngày làm thử, điểm). Sau GĐ duyệt (CR-6): công thức teamlead 40/30/20/10 (`Config.gs:431` đang 60/40) + T-KPI-3/T-KPI-4 R&D.
+- [x] **[CC]** CR-3 phần còn lại + khoảng trống tracking KPI → đã làm trong đợt khung D70 (2026-10-09, mục trên).
 - [ ] **[TT]** Hội đồng chấm `AuthTokenService.gs:244` còn QuynhNNY — anh cho tiếp tục tự theo dõi/chấm, giữ nguyên tới khi anh báo.
 - [ ] **[CC]** (tùy) Bảng tính đổi múi giờ sang Asia/Ho_Chi_Minh — rà các sheet có ngày giờ (log, chấm điểm) trước khi đổi.
 

@@ -191,6 +191,10 @@ function route_(action, params, body) {
   if (action === 'exercise-delete') {
     return createResponse_(true, 'Xóa bài tập AI thành công', deleteExercise_(body));
   }
+  // CR-A (2026-10-09): teamlead chấm Đạt/Chưa đạt từng bài → M-KPI-2 tự đếm
+  if (action === 'exercise-review') {
+    return createResponse_(true, 'Đã chấm bài tập', reviewExercise_(body));
+  }
 
   // ── CR (2026-10-01): Kế hoạch học tập — bài tập tuần, khóa học + hạn, việc lớn ──
   if (action === 'learning-list') {
@@ -213,6 +217,13 @@ function route_(action, params, body) {
   }
   if (action === 'learning-course-delete') {
     return createResponse_(true, 'Đã xóa khóa học', deleteLearningCourse_(body));
+  }
+  // CR-C (2026-10-09): việc lớn — số đo trước/mục tiêu/thực tế + phân công hạng mục (teamlead/admin)
+  if (action === 'big-task-kr-save') {
+    return createResponse_(true, 'Đã lưu chỉ số việc lớn', saveBigTaskKr_(body));
+  }
+  if (action === 'big-task-assign-save') {
+    return createResponse_(true, 'Đã lưu phân công', saveBigTaskAssign_(body));
   }
 
   // ── CR (2026-09-12 #3): Chấm điểm cá nhân (member tự chấm) + Lan tỏa AI ──
@@ -418,7 +429,7 @@ function route_(action, params, body) {
     return createResponse_(true, 'Leaderboard H2', getH2Leaderboard_(h2Team, h2Limit));
   }
 
-  // KPI tổng hợp (Đợt 2): member (M1..M4−trừ) + teamlead (60/40) + center_avg (cho PM). Public.
+  // KPI tổng hợp khung D70: member mọi role (M1..M4−trừ, trần 120) + teamlead 40/30/20/10 + center_avg. Public.
   if (action === 'kpi-leaderboard') {
     var klTeam = params.team || body.team || '';
     return createResponse_(true, 'KPI tổng hợp', getKpiLeaderboard_(klTeam));

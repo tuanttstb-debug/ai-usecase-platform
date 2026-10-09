@@ -67,9 +67,9 @@ test.describe('ScoringH2 — KPI tổng hợp', () => {
     await page.goto(FIXTURE);
     expect(await page.evaluate(() => ScoringH2.memberKpiFinal(100, 0, 0, 0, 0))).toBe(40);
   });
-  test('Teamlead KPI: T1=80 T2=50 → 68', async ({ page }) => {
+  test('Teamlead KPI D62: T1=80 T2=50 T3=100 T4=0 → 67', async ({ page }) => {
     await page.goto(FIXTURE);
-    expect(await page.evaluate(() => ScoringH2.teamleadKpiFinal(80, 50))).toBe(68);
+    expect(await page.evaluate(() => ScoringH2.teamleadKpiFinal(80, 50, 100, 0))).toBe(67);
   });
   test('PM KPI bản A: cả 4=100 → 100', async ({ page }) => {
     await page.goto(FIXTURE);

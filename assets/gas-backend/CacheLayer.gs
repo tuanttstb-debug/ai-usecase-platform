@@ -19,7 +19,8 @@ var _AIUS_WRITE_ACTIONS = {
   'approve': 1, 'reject': 1, 'weekly-update': 1,
   'milestone-approve': 1, 'milestone-reject': 1, 'self-assessment': 1,
   'council-score-submit': 1, 'personal-score-submit': 1, 'reuse-confirm': 1,
-  'workflow-upsert': 1, 'workflow-delete': 1, 'workflow-rename': 1
+  'workflow-upsert': 1, 'workflow-delete': 1, 'workflow-rename': 1,
+  'exercise-review': 1, 'big-task-kr-save': 1, 'big-task-assign-save': 1   // CR D70 (2026-10-09)
 };
 
 function _aiusVer() {

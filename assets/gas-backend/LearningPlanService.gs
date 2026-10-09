@@ -15,7 +15,10 @@
 // Bài nộp đi qua exercise-create (ExerciseService) → tự đánh dấu "Đã nộp" cho tuần của bài.
 // Auth: mô hình nhẹ như Bài tập AI (client gửi requester_email + is_admin);
 //   member chỉ sửa dòng của mình, admin sửa mọi dòng. Xóa khóa = mềm (Active=FALSE).
-// Trạng thái "Hoàn thành" + link chứng chỉ: mở 2026-10-02 (learning-course-complete). KPI3 tự lấy: đợt 2.
+// Trạng thái "Hoàn thành" + link chứng chỉ: mở 2026-10-02 (learning-course-complete).
+// CR-B (2026-10-09): M-KPI-3 đếm thẳng từ HOC_TAP_KHOA (KpiEngineH2) — bỏ ô tự khai số khóa.
+// CR-C (2026-10-09): việc lớn có SỐ ĐO (VIEC_LON_SO) + PHÂN CÔNG hạng mục (VIEC_LON_PHAN_CONG) →
+//   routes big-task-kr-save · big-task-assign-save (teamlead của team việc lớn / admin). VIEC_LON vẫn PM nhập.
 // ─────────────────────────────────────────────────────────────────
 
 var WEEK_STATUS = { PLAN: 'Kế hoạch', SUBMITTED: 'Đã nộp' };
@@ -153,7 +156,39 @@ function listLearningPlan_() {
     };
   }).filter(function (w) { return !!w.username && _validWeek_(w.week); });
 
-  return { members: members, courses: courses, big_tasks: bigTasks, weeks: weeks, current_week: _isoWeek_() };
+  // CR-C: số đo + phân công việc lớn, kèm % đạt / điểm OKR tính sẵn (engine KpiEngineH2).
+  var krRows = _learnRead_(SHEETS.BIG_TASK_KR).filter(_learnIsActive_);
+  var asRows = _learnRead_(SHEETS.BIG_TASK_ASSIGN).filter(_learnIsActive_).map(function (r) {
+    return _learnMerge_(r, { Due_Date: _learnYmd_(r.Due_Date), Accepted_Date: _learnYmd_(r.Accepted_Date) });
+  });
+  var summary = _kpiBigTaskSummary_(_learnRead_(SHEETS.BIG_TASK), krRows, asRows);
+  bigTasks.forEach(function (t) {
+    var s = summary[t.task_id] || {};
+    t.ratio = (s.ratio === undefined) ? null : s.ratio;
+    t.okr_score = s.okr_score || 0;
+    t.kr_count = s.kr_count || 0; t.measured_count = s.measured_count || 0;
+    t.assign_count = s.assign_count || 0; t.pass_count = s.pass_count || 0;
+  });
+  var krs = krRows.map(function (k) {
+    return {
+      kr_id: String(k.KR_ID || ''), task_id: String(k.Task_ID || ''), kr_name: String(k.KR_Name || ''),
+      unit: String(k.Unit || ''), before_value: _kNum_(k.Before_Value), target_value: _kNum_(k.Target_Value),
+      actual_value: _kNum_(k.Actual_Value), ratio: _kpiKrRatio_(k) === null ? null : Math.round(_kpiKrRatio_(k) * 10) / 10,
+      measured_at: _learnYmd_(k.Measured_At), note: String(k.Note || '')
+    };
+  }).filter(function (k) { return !!k.kr_id; });
+  var assigns = asRows.map(function (a) {
+    return {
+      assign_id: String(a.Assign_ID || ''), task_id: String(a.Task_ID || ''), username: normalizeUser_(a.Username),
+      display_name: String(a.Display_Name || a.Username || ''), team: String(a.Team || ''), role: String(a.Role || ''),
+      item: String(a.Item || ''), due_date: a.Due_Date, acceptance_criteria: String(a.Acceptance_Criteria || ''),
+      status: String(a.Status || ASSIGN_STATUS.DOING).trim(), accepted_date: a.Accepted_Date,
+      accepted_by: normalizeUser_(a.Accepted_By), on_time_pass: _kpiAssignPassedOnTime_(a), note: String(a.Note || '')
+    };
+  }).filter(function (a) { return !!a.assign_id; });
+
+  return { members: members, courses: courses, big_tasks: bigTasks, weeks: weeks, current_week: _isoWeek_(),
+           krs: krs, assigns: assigns };
 }
 
 // Upsert 1 dòng BAI_TAP_TUAN theo (Username, Week). fields: object theo header. Ghi nguyên dòng.
@@ -202,6 +237,24 @@ function saveWeekPlan_(data) {
     Team:         sanitizeStr_(data.Team || '', 120)
   });
   return { username: target, week: week };
+}
+
+// Gọi từ ExerciseService.updateExercise_ khi bài chuyển sang tuần khác: gỡ Exercise_ID khỏi tuần cũ;
+// tuần cũ không còn bài nào → về "Kế hoạch" (giữ dòng kế hoạch nếu có).
+function _learnUnmarkSubmitted_(username, week, exerciseId) {
+  username = normalizeUser_(username);
+  if (!username || !_validWeek_(week)) return;
+  var existing = _learnRead_(SHEETS.EXERCISE_WEEK).filter(function (r) {
+    return normalizeUser_(r.Username) === username && String(r.Week) === week;
+  })[0];
+  if (!existing) return;
+  var ids = String(existing.Exercise_IDs || '').split(',').map(function (s) { return s.trim(); })
+    .filter(function (s) { return s && s !== exerciseId; });
+  _learnUpsertWeek_(username, week, {
+    Exercise_IDs: ids.join(', '),
+    Status:       ids.length ? WEEK_STATUS.SUBMITTED : WEEK_STATUS.PLAN,
+    Updated_At:   _learnNow_()
+  });
 }
 
 // Gọi từ ExerciseService.createExercise_: đánh dấu tuần của bài là "Đã nộp" + nối Exercise_ID.
@@ -385,4 +438,159 @@ function deleteLearningCourse_(data) {
   var c = _learnCourseForEdit_(data);
   updateRowByField_(SHEETS.LEARN_COURSE, 'Course_ID', c.id, { Active: 'FALSE', Updated_At: _learnNow_() });
   return { course_id: c.id, deleted: true };
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CR-C (2026-10-09): VIỆC LỚN — số đo (KR) + phân công hạng mục + nghiệm thu
+// Auth: token (validateToken_) → fallback reviewer_email/requester_email; admin hoặc teamlead của team việc lớn
+//   (isChampionForTeam_, có tính team backup). Thành viên KHÔNG tự nghiệm thu hạng mục của mình.
+// ══════════════════════════════════════════════════════════════════
+
+function _btTaskForEdit_(body) {
+  var taskId = sanitizeStr_(body.Task_ID || '', 40);
+  if (!taskId) throw new Error('Thiếu Task_ID (mã việc lớn)');
+  var task = _learnRead_(SHEETS.BIG_TASK).filter(function (t) { return String(t.Task_ID || '').trim() === taskId; })[0];
+  if (!task) throw new Error('Không tìm thấy việc lớn: ' + taskId);
+  var rv = _resolveReviewer_({ token: body.token, reviewer_email: body.reviewer_email || body.requester_email });
+  if (!rv.username) throw new Error('Chưa đăng nhập');
+  var team = String(task.Team || '').trim();
+  if (!isAdminEmail_(rv.username) && !isChampionForTeam_(rv.username, team)) {
+    throw new Error('Chỉ teamlead team "' + team + '" (hoặc PM/admin) mới cập nhật được việc lớn ' + taskId);
+  }
+  return { taskId: taskId, task: task, team: team, rv: rv };
+}
+
+function _btNextId_(rows, field, prefix) {
+  var max = 0, re = new RegExp('^' + prefix + '-(\\d+)$');
+  (rows || []).forEach(function (r) { var m = re.exec(String(r[field] || '').trim()); if (m) max = Math.max(max, parseInt(m[1], 10)); });
+  var n = max + 1;
+  return prefix + '-' + (n < 1000 ? ('000' + n).slice(-4) : String(n));
+}
+
+function _btNum_(v, label, required) {
+  var s = String(v == null ? '' : v).trim().replace(',', '.');
+  if (!s) { if (required) throw new Error('Thiếu ' + label); return ''; }
+  var n = parseFloat(s);
+  if (isNaN(n)) throw new Error(label + ' phải là số');
+  return n;
+}
+
+function _btToday_() { return Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd'); }
+
+/**
+ * Thêm/sửa/xóa 1 chỉ số đo của việc lớn. body: { Task_ID, KR_ID?, KR_Name, Unit?, Before_Value, Target_Value,
+ *   Actual_Value?, Note?, Delete?, token?/reviewer_email? }
+ */
+function saveBigTaskKr_(body) {
+  body = body || {};
+  var ctx = _btTaskForEdit_(body);
+  ensureSheetColumns_(SHEETS.BIG_TASK_KR, BIG_TASK_KR_HEADERS);
+  var all = _learnRead_(SHEETS.BIG_TASK_KR);
+  var krId = sanitizeStr_(body.KR_ID || '', 20);
+  var existing = krId ? all.filter(function (k) { return String(k.KR_ID).trim() === krId; })[0] : null;
+  if (krId && !existing) throw new Error('Không tìm thấy chỉ số: ' + krId);
+  if (existing && String(existing.Task_ID).trim() !== ctx.taskId) throw new Error('Chỉ số ' + krId + ' không thuộc ' + ctx.taskId);
+  var now = _learnNow_();
+
+  if (String(body.Delete) === 'true' || body.Delete === true) {
+    if (!existing) throw new Error('Thiếu KR_ID để xóa');
+    updateRowByField_(SHEETS.BIG_TASK_KR, 'KR_ID', krId, { Active: 'FALSE', Updated_By: ctx.rv.username, Updated_At: now });
+    return { kr_id: krId, deleted: true };
+  }
+
+  var name = sanitizeStr_(body.KR_Name || '', 300);
+  if (!name) throw new Error('Thiếu tên chỉ số (VD: Thời gian 1 vòng quy trình)');
+  var before = _btNum_(body.Before_Value, 'Số trước', true);
+  var target = _btNum_(body.Target_Value, 'Mục tiêu khát vọng', true);
+  if (before === target) throw new Error('Mục tiêu khát vọng phải khác số trước');
+  var actual = _btNum_(body.Actual_Value, 'Số thực tế', false);
+  var fields = {
+    Task_ID: ctx.taskId, KR_Name: name, Unit: sanitizeStr_(body.Unit || '', 40),
+    Before_Value: before, Target_Value: target, Actual_Value: actual,
+    Note: sanitizeStr_(body.Note || '', 500), Updated_By: ctx.rv.username, Updated_At: now
+  };
+  var actualChanged = !existing || String(existing.Actual_Value) !== String(actual);
+  if (actual !== '' && actualChanged) fields.Measured_At = _learnTxt_(_btToday_());
+  if (actual === '') fields.Measured_At = '';
+
+  if (existing) {
+    updateRowByField_(SHEETS.BIG_TASK_KR, 'KR_ID', krId, fields);
+  } else {
+    krId = _btNextId_(all, 'KR_ID', 'KR');
+    appendRowFromObject_(SHEETS.BIG_TASK_KR, _learnMerge_(fields, { KR_ID: krId, Active: 'TRUE' }));
+  }
+  return { kr_id: krId, task_id: ctx.taskId, ratio: _kpiKrRatio_(fields) };
+}
+
+/**
+ * Thêm/sửa/xóa/nghiệm thu 1 hạng mục giao cho thành viên. body: { Task_ID, Assign_ID?, Username, Role?, Item,
+ *   Due_Date?, Acceptance_Criteria?, Status? ('Đang làm'|'Đạt'|'Chưa đạt'), Accepted_Date?, Note?, Delete?, token? }
+ * Status 'Đạt' → Accepted_Date = ngày gửi (mặc định hôm nay giờ VN; cho phép ghi ngày nghiệm thu thật khi chấm bù).
+ */
+function saveBigTaskAssign_(body) {
+  body = body || {};
+  var ctx = _btTaskForEdit_(body);
+  ensureSheetColumns_(SHEETS.BIG_TASK_ASSIGN, BIG_TASK_ASSIGN_HEADERS);
+  var all = _learnRead_(SHEETS.BIG_TASK_ASSIGN);
+  var aid = sanitizeStr_(body.Assign_ID || '', 20);
+  var existing = aid ? all.filter(function (a) { return String(a.Assign_ID).trim() === aid; })[0] : null;
+  if (aid && !existing) throw new Error('Không tìm thấy hạng mục: ' + aid);
+  if (existing && String(existing.Task_ID).trim() !== ctx.taskId) throw new Error('Hạng mục ' + aid + ' không thuộc ' + ctx.taskId);
+  var now = _learnNow_();
+
+  if (String(body.Delete) === 'true' || body.Delete === true) {
+    if (!existing) throw new Error('Thiếu Assign_ID để xóa');
+    updateRowByField_(SHEETS.BIG_TASK_ASSIGN, 'Assign_ID', aid, { Active: 'FALSE', Updated_At: now });
+    return { assign_id: aid, deleted: true };
+  }
+
+  var uname = normalizeUser_(body.Username || (existing && existing.Username) || '');
+  if (!uname) throw new Error('Thiếu thành viên được giao');
+  var item = sanitizeStr_(body.Item !== undefined ? body.Item : (existing && existing.Item) || '', 500);
+  if (!item) throw new Error('Thiếu hạng mục được giao');
+  var due = sanitizeStr_(body.Due_Date !== undefined ? body.Due_Date : _learnYmd_(existing && existing.Due_Date), 10);
+  if (due && !_learnValidDate_(due)) throw new Error('Hạn không hợp lệ (yyyy-mm-dd)');
+
+  var status = String(body.Status || (existing && existing.Status) || ASSIGN_STATUS.DOING).trim();
+  if ([ASSIGN_STATUS.DOING, ASSIGN_STATUS.PASS, ASSIGN_STATUS.FAIL].indexOf(status) === -1) status = ASSIGN_STATUS.DOING;
+  var statusChanged = !existing || String(existing.Status || '').trim() !== status;
+  if (status !== ASSIGN_STATUS.DOING && uname === ctx.rv.username && !isAdminEmail_(ctx.rv.username)) {
+    throw new Error('Không tự nghiệm thu hạng mục của chính mình');
+  }
+
+  var disp = '', team = '';
+  try {
+    getAllUsersFromMaster_().forEach(function (u) { if (normalizeUser_(u.username) === uname) { disp = u.display_name; team = u.team; } });
+  } catch (e) { /* best-effort */ }
+
+  var fields = {
+    Task_ID: ctx.taskId, Username: uname, Display_Name: sanitizeStr_(disp || body.Display_Name || uname, 200),
+    Team: sanitizeStr_(team || body.Team || '', 120),
+    Role: sanitizeStr_(body.Role !== undefined ? body.Role : (existing && existing.Role) || '', 120),
+    Item: item, Due_Date: _learnTxt_(due),
+    Acceptance_Criteria: sanitizeStr_(body.Acceptance_Criteria !== undefined ? body.Acceptance_Criteria : (existing && existing.Acceptance_Criteria) || '', 1000),
+    Status: status,
+    Note: sanitizeStr_(body.Note !== undefined ? body.Note : (existing && existing.Note) || '', 500),
+    Updated_At: now
+  };
+  if (statusChanged || body.Accepted_Date !== undefined) {
+    if (status === ASSIGN_STATUS.DOING) {
+      fields.Accepted_Date = ''; fields.Accepted_By = '';
+    } else {
+      var acc = sanitizeStr_(body.Accepted_Date || '', 10) || _btToday_();
+      if (!_learnValidDate_(acc)) throw new Error('Ngày nghiệm thu không hợp lệ (yyyy-mm-dd)');
+      if (acc > _btToday_()) throw new Error('Ngày nghiệm thu không được sau hôm nay');
+      fields.Accepted_Date = _learnTxt_(acc); fields.Accepted_By = ctx.rv.username;
+    }
+  }
+
+  if (existing) {
+    updateRowByField_(SHEETS.BIG_TASK_ASSIGN, 'Assign_ID', aid, fields);
+  } else {
+    aid = _btNextId_(all, 'Assign_ID', 'PC');
+    appendRowFromObject_(SHEETS.BIG_TASK_ASSIGN, _learnMerge_(fields, { Assign_ID: aid, Created_At: now, Active: 'TRUE' }));
+  }
+  logActivity_('', '', 'BIG_TASK_ASSIGN', ctx.rv.username + ' ' + (existing ? 'cập nhật' : 'giao') + ' ' + aid + ' (' + ctx.taskId + ') → ' +
+    uname + ': ' + item.substring(0, 60) + ' · ' + status, ctx.rv.username, null, null);
+  return { assign_id: aid, task_id: ctx.taskId, status: status };
 }

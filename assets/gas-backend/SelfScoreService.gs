@@ -14,6 +14,10 @@
 // member khai số khóa thường + trả phí; 1 lần/tháng dương lịch, sửa trước duyệt, khóa
 // sau Approved; lan tỏa BỔ SUNG song song (đạt nếu Sharing_Achieved HOẶC reuse≥3);
 // bằng chứng tách 3 ô KPI2/KPI3 (self-score) + KPI4 (sharing claim).
+//
+// ⚠ Khung D70 (2026-10-09): engine KPI (KpiEngineH2.gs) KHÔNG còn đọc điểm tự chấm KPI2/KPI3 (PERSONAL_SELF →
+//   PERSONAL_SCORE). M2 đếm bài Đạt (AI_EXERCISE.Review_Status), M3 đếm HOC_TAP_KHOA. Phần A giữ route để đọc dữ
+//   liệu cũ (UI đã gỡ). Phần B (SHARING_CLAIM) VẪN dùng: M4 = số claim Approved (0/100/120) + tái dùng ≥3.
 // ─────────────────────────────────────────────────────────────────
 
 function ensureSelfScoreSheets_() {

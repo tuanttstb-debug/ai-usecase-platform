@@ -2,7 +2,9 @@
 // ai-exercise.js — CR (2026-09-12): "Bài tập AI"
 //
 // Chia sẻ thao tác AI nhỏ (chưa đủ thành US): Tiêu đề + Mô tả + Prompt + Link demo
-// (ổ chung). 1 trang gộp: đăng bài + tra cứu (tìm kiếm) như thư viện. KHÔNG tính KPI.
+// (ổ chung). 1 trang gộp: đăng bài + tra cứu (tìm kiếm) như thư viện.
+// CR-A (2026-10-09, D69/D70): bài TÍNH M-KPI-2 — form thêm chọn tuần (nộp bù) + giờ trước/sau + kiểm chứng AI
+// + mẫu dùng lại + gắn hạng mục việc lớn; thẻ bài hiện trạng thái chấm (Chờ chấm/Đạt/Chưa đạt).
 // Nhịp "1 bài/tuần" = khuyến khích (chỉ hiện "tuần này bạn đã đăng X bài", không chặn).
 //
 // CR (2026-10-01 #2): gộp vào màn "Bài tập & Học tập" (learning-plan.js). Form = "Nộp bài tuần này"
@@ -108,7 +110,8 @@
           '<span class="id-badge" style="flex-shrink:0">' + esc(e.exercise_id || '') + '</span>' +
         '</div>' +
         (e.description ? '<div style="font-size:var(--text-sm);color:var(--color-text-secondary);white-space:pre-wrap">' + esc(e.description) + '</div>' : '') +
-        '<div style="font-size:12px;color:var(--color-text-muted)">' + esc(e.owner_name || e.owner_email || '—') + (e.team ? ' · ' + esc(e.team) : '') + (e.week ? ' · ' + esc(_weekShort(e.week)) : '') + '</div>' +
+        '<div style="font-size:12px;color:var(--color-text-muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap">' + esc(e.owner_name || e.owner_email || '—') + (e.team ? ' · ' + esc(e.team) : '') + (e.week ? ' · ' + esc(_weekShort(e.week)) : '') + ' ' + reviewBadge(e) + '</div>' +
+        _extraHtml(e) +
         '<details class="ex-prompt"><summary style="cursor:pointer;color:var(--color-primary);font-size:var(--text-sm);font-weight:600">Xem Prompt</summary>' +
           '<pre style="white-space:pre-wrap;background:var(--color-surface-alt,rgba(0,0,0,.03));padding:10px;border-radius:8px;margin-top:6px;font-family:var(--font-mono,monospace);font-size:12px">' + esc(e.prompt || '') + '</pre>' +
           '<button class="btn btn-ghost btn-sm" onclick="AiExercise.copy(\'' + esc(e.exercise_id) + '\')"><i class="fa-regular fa-copy"></i> Copy Prompt</button>' +
@@ -116,6 +119,86 @@
         '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:2px">' + demoHtml + manageHtml + '</div>' +
       '</div>';
     }).join('');
+  }
+
+  // ── CR-A (2026-10-09): trạng thái chấm + 4 ô mới ───────────────
+  function reviewBadge(e) {
+    var s = String(e.review_status || '').trim();
+    if (s === 'Đạt') return '<span class="badge badge-success" data-review="pass">Đạt</span>';
+    if (s === 'Chưa đạt') return '<span class="badge badge-error" data-review="fail">Chưa đạt</span>';
+    return '<span class="badge badge-muted" data-review="pending">Chờ chấm</span>';
+  }
+  // Bài còn thiếu ô mới (bài cũ tuần 40–41) → nhắc chủ bài bổ sung.
+  function missingFields(e) {
+    var miss = [];
+    var has = function (v) { return String(v == null ? '' : v).trim() !== ''; };
+    if (!has(e.hours_before) || !has(e.hours_after)) miss.push('giờ trước/sau');
+    if (!has(e.ai_check)) miss.push('kiểm chứng AI');
+    if (!has(e.reuse_template)) miss.push('mẫu dùng lại');
+    return miss;
+  }
+  function _extraHtml(e) {
+    var parts = [];
+    var has = function (v) { return String(v == null ? '' : v).trim() !== ''; };
+    if (has(e.hours_before) || has(e.hours_after)) parts.push('<b>Giờ:</b> ' + esc(has(e.hours_before) ? e.hours_before : '?') + ' → ' + esc(has(e.hours_after) ? e.hours_after : '?'));
+    if (has(e.ai_check)) parts.push('<b>Kiểm chứng:</b> ' + esc(e.ai_check));
+    if (has(e.reuse_template)) parts.push('<b>Mẫu dùng lại:</b> ' + esc(e.reuse_template));
+    if (has(e.big_task_ref)) parts.push('<b>Việc lớn:</b> ' + esc(e.big_task_ref));
+    if (has(e.review_comment) && has(e.review_status)) parts.push('<b>Nhận xét:</b> ' + esc(e.review_comment));
+    return parts.length ? '<div style="font-size:12px;color:var(--color-text-secondary);display:flex;flex-direction:column;gap:2px">' + parts.map(function (p) { return '<span>' + p + '</span>'; }).join('') + '</div>' : '';
+  }
+
+  // Tuần được chọn khi nộp: tuần hiện tại lùi về tối đa 8 tuần, không trước tuần 40/2026 (KPI áp dụng từ 01/10).
+  var WEEK_FLOOR = '2026-W40';
+  function _weekOptions() {
+    var LP = window.LearningPlan;
+    var cur = (LP && LP.currentWeek) ? LP.currentWeek() : '';
+    var iso = (LP && LP.isoWeek) ? LP.isoWeek : null;
+    var out = cur ? [cur] : [];
+    if (iso && cur) {
+      var d = new Date();
+      for (var i = 1; i <= 12 && out.length < 9; i++) {
+        var back = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7 * i);
+        var w = iso(back);
+        if (w < WEEK_FLOOR) break;
+        if (w < cur && out.indexOf(w) === -1) out.push(w);
+      }
+    }
+    return out;
+  }
+  function fillWeekOptions(selected) {
+    var sel = document.getElementById('exWeek');
+    if (!sel) return;
+    var opts = _weekOptions();
+    if (selected && opts.indexOf(selected) === -1) opts.push(selected);   // bài cũ đang sửa — giữ tuần gốc
+    var cur = opts[0];
+    sel.innerHTML = opts.map(function (w) {
+      return '<option value="' + esc(w) + '">' + esc(_weekShort(w)) + (w === cur ? ' (tuần này)' : ' (nộp bù)') + '</option>';
+    }).join('');
+    sel.value = selected || cur || '';
+  }
+  // Gắn hạng mục việc lớn: hạng mục được giao cho tôi + việc lớn của team tôi (nguồn: learning-list).
+  function fillBigTaskOptions(selected) {
+    var sel = document.getElementById('exBigTask');
+    if (!sel) return;
+    var d = (window.LearningPlan && LearningPlan.data) ? LearningPlan.data() : null;
+    var me = _me(), u = _user() || {};
+    var myTeam = _norm(u.team);
+    var opts = ['<option value="">— Không gắn —</option>'];
+    var seen = {};
+    if (d) {
+      (d.assigns || []).filter(function (a) { return a.username === me; }).forEach(function (a) {
+        seen[a.assign_id] = 1;
+        opts.push('<option value="' + esc(a.assign_id) + '">' + esc(a.task_id + ' · ' + a.item) + '</option>');
+      });
+      (d.big_tasks || []).filter(function (t) { return _norm(t.team) === myTeam; }).forEach(function (t) {
+        seen[t.task_id] = 1;
+        opts.push('<option value="' + esc(t.task_id) + '">' + esc(t.task_id + ' · ' + t.task_name + ' (cả việc)') + '</option>');
+      });
+    }
+    if (selected && !seen[selected]) opts.push('<option value="' + esc(selected) + '">' + esc(selected) + '</option>');
+    sel.innerHTML = opts.join('');
+    sel.value = selected || '';
   }
 
   // ── Submit (đăng mới / cập nhật) ───────────────────────────────
@@ -138,7 +221,12 @@
       Owner_Name:  u.displayName || u.email || '',
       Owner_Email: u.email || '',
       Team:        u.team || '',
-      Week:        (window.LearningPlan && LearningPlan.currentWeek) ? LearningPlan.currentWeek() : '',
+      Week:        _v('exWeek') || ((window.LearningPlan && LearningPlan.currentWeek) ? LearningPlan.currentWeek() : ''),
+      Hours_Before:   _v('exHoursBefore'),
+      Hours_After:    _v('exHoursAfter'),
+      AI_Check:       _v('exAiCheck'),
+      Reuse_Template: _v('exReuse'),
+      Big_Task_Ref:   _v('exBigTask'),
       requester_email: u.email || '',
       is_admin:    _isAdmin() ? 'true' : 'false'
     };
@@ -164,9 +252,11 @@
 
   function _resetForm() {
     _editId = null;
-    ['exTitle', 'exDescription', 'exPrompt', 'exDemoLink'].forEach(function (id) {
+    ['exTitle', 'exDescription', 'exPrompt', 'exDemoLink', 'exHoursBefore', 'exHoursAfter', 'exAiCheck', 'exReuse'].forEach(function (id) {
       var el = document.getElementById(id); if (el) el.value = '';
     });
+    fillWeekOptions('');
+    fillBigTaskOptions('');
     var btn = document.getElementById('exSubmitBtn'); if (btn) btn.textContent = 'Nộp bài';
     var ttl = document.getElementById('exFormTitle'); if (ttl) ttl.textContent = 'Nộp bài tuần này';
     var cancel = document.getElementById('exCancelBtn'); if (cancel) cancel.style.display = 'none';
@@ -180,6 +270,14 @@
     if (window.LearningPlan && LearningPlan.showTab) LearningPlan.showTab('week');
     var set = function (fid, val) { var el = document.getElementById(fid); if (el) el.value = val || ''; };
     set('exTitle', e.title); set('exDescription', e.description); set('exPrompt', e.prompt); set('exDemoLink', e.demo_link);
+    set('exHoursBefore', e.hours_before); set('exHoursAfter', e.hours_after);
+    set('exAiCheck', e.ai_check); set('exReuse', e.reuse_template);
+    fillWeekOptions(e.week || '');
+    fillBigTaskOptions(e.big_task_ref || '');
+    var miss = missingFields(e);
+    var msg = document.getElementById('exFormMsg');
+    if (msg) msg.textContent = miss.length ? 'Bổ sung: ' + miss.join(', ') + ' để teamlead chấm bài.' : '';
+    if (msg && !miss.length && e.review_status) msg.textContent = 'Lưu ý: sửa bài đã chấm → bài về "Chờ chấm" để teamlead chấm lại.';
     var btn = document.getElementById('exSubmitBtn'); if (btn) btn.textContent = 'Lưu thay đổi';
     var ttl = document.getElementById('exFormTitle'); if (ttl) ttl.textContent = 'Sửa bài tập ' + id;
     var cancel = document.getElementById('exCancelBtn'); if (cancel) cancel.style.display = '';
@@ -248,5 +346,10 @@
 
   window.AiExercise = { init: init, reload: _load, edit: edit, del: del, copy: copy, mine: function () {
     var me = _me(); return _all.filter(function (e) { return _norm(e.owner_email) === me; });
-  } };
+  }, reviewBadge: reviewBadge, missingFields: missingFields,
+     // learning-plan.js gọi sau khi nạp xong learning-list (tuần hiện tại + việc lớn/phân công)
+     refreshOptions: function () {
+       if (_editId) return;
+       fillWeekOptions(''); fillBigTaskOptions('');
+     } };
 })();

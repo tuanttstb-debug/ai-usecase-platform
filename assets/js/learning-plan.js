@@ -8,8 +8,9 @@
 //   Tab Khóa học     : thêm/sửa/xóa khóa + hạn học xong
 //   Tab Thư viện     : danh sách Bài tập AI (ai-exercise.js)
 //   Tab Theo dõi     : thành viên × tuần (đã nộp / kế hoạch / chưa có) + khóa học theo hạn
-//   Tab Việc lớn     : chỉ đọc (PM nhập ở sheet VIEC_LON)
-// Hash: #learning-plan/<tab>. Trạng thái "Hoàn thành" + link chứng chỉ → KPI3: đợt 2.
+//   Tab Việc lớn     : danh sách việc lớn (PM nhập ở sheet VIEC_LON) + CR-C (2026-10-09): Chi tiết = số đo
+//                      trước/mục tiêu khát vọng/thực tế + phân công hạng mục + nghiệm thu (teamlead team đó/admin sửa)
+// Hash: #learning-plan/<tab>. Khóa "Hoàn thành" + link chứng chỉ → M-KPI-3 tự đếm (CR-B, KpiEngineH2).
 // ─────────────────────────────────────────────────────────────────
 (function () {
   'use strict';
@@ -17,8 +18,10 @@
   var SOON_DAYS = 7;
   var MAX_WEEKS = 6;
   var TABS = ['week', 'courses', 'library', 'tracking', 'bigtasks'];
-  var _data = { members: [], courses: [], big_tasks: [], weeks: [], current_week: '' };
+  var _data = { members: [], courses: [], big_tasks: [], weeks: [], current_week: '', krs: [], assigns: [] };
   var _editCourseId = null;
+  var _btOpen = null;      // CR-C: việc lớn đang mở chi tiết
+  var _editKrId = null, _editAsId = null;
   var _tab = 'week';
   var _filter = { team: '', state: '', week: '', q: '' };
 
@@ -151,7 +154,9 @@
         courses:      Array.isArray(res.courses) ? res.courses : [],
         big_tasks:    Array.isArray(res.big_tasks) ? res.big_tasks : [],
         weeks:        Array.isArray(res.weeks) ? res.weeks : [],
-        current_week: res.current_week || isoWeek()
+        current_week: res.current_week || isoWeek(),
+        krs:          Array.isArray(res.krs) ? res.krs : [],
+        assigns:      Array.isArray(res.assigns) ? res.assigns : []
       };
       window._learningPlan = _data; // expose cho test
       if (loading) loading.style.display = 'none';
@@ -160,6 +165,8 @@
       _renderMine();
       _renderTracking();
       _renderBigTasks();
+      if (_btOpen) _renderBtDetail();
+      if (window.AiExercise && AiExercise.refreshOptions) AiExercise.refreshOptions();
     }).catch(function () {
       if (loading) { loading.textContent = 'Không tải được dữ liệu. Kiểm tra kết nối GAS.'; loading.style.color = 'var(--color-error)'; }
     });
@@ -207,12 +214,21 @@
     mine.forEach(function (r) { byWeek[r.week] = { row: r, ex: [] }; });
     ex.forEach(function (e) { var k = e.week || ''; if (!k) return; (byWeek[k] = byWeek[k] || { row: null, ex: [] }).ex.push(e); });
     var keys = Object.keys(byWeek).sort().reverse();
-    wrap.innerHTML = '<table class="dash-table" aria-label="Bài tập của tôi theo tuần"><thead><tr><th>Tuần</th><th>Kế hoạch</th><th>Bài đã nộp</th><th>Tình trạng</th></tr></thead><tbody>' +
+    wrap.innerHTML = '<table class="dash-table" aria-label="Bài tập của tôi theo tuần"><thead><tr><th>Tuần</th><th>Kế hoạch</th><th>Bài đã nộp · chấm</th><th>Tình trạng</th></tr></thead><tbody>' +
       keys.map(function (k) {
         var it = byWeek[k];
         var stt = (it.ex.length || (it.row && it.row.status === 'Đã nộp')) ? 'submitted' : (it.row && it.row.plan ? 'plan' : 'none');
+        // CR-A: mỗi bài kèm trạng thái chấm; bài thiếu ô mới → nút "Bổ sung" (mở form sửa)
         var titles = it.ex.length
-          ? it.ex.map(function (e) { return '<span class="id-badge">' + esc(e.exercise_id) + '</span> ' + esc(e.title); }).join('<br>')
+          ? it.ex.map(function (e) {
+              var AX = window.AiExercise || {};
+              var miss = (AX.missingFields ? AX.missingFields(e) : []);
+              return '<span class="id-badge">' + esc(e.exercise_id) + '</span> ' + esc(e.title) + ' ' +
+                (AX.reviewBadge ? AX.reviewBadge(e) : '') +
+                (miss.length && !e.review_status
+                  ? ' <button class="btn btn-ghost btn-sm" data-supplement="' + esc(e.exercise_id) + '" title="Thiếu: ' + esc(miss.join(', ')) + '" onclick="AiExercise.edit(\'' + esc(e.exercise_id) + '\')"><i class="fa-solid fa-pen"></i> Bổ sung</button>'
+                  : '');
+            }).join('<br>')
           : (it.row && it.row.exercise_ids ? esc(it.row.exercise_ids) : '—');
         return '<tr data-week="' + esc(k) + '"><td style="white-space:nowrap">' + esc(weekLabel(k, true)) + '</td>' +
           '<td>' + esc(it.row && it.row.plan ? it.row.plan : '—') + '</td><td>' + titles + '</td><td>' + _badge(WEEK_META, stt) + '</td></tr>';
@@ -301,7 +317,9 @@
         return '<tr data-course="' + esc(c.course_id) + '">' +
           '<td>' + esc(c.course_name) + (sub ? '<div style="font-size:12px;color:var(--color-text-muted)">' + esc(sub) + '</div>' : '') + '</td>' +
           '<td style="white-space:nowrap">' + _fmtDate(c.target_date) + '<div style="font-size:12px;color:var(--color-text-muted)">' + esc(_leftText(c)) + '</div></td>' +
-          '<td>' + _badge(STATE_META, st) + cert + '</td>' +
+          '<td>' + _badge(STATE_META, st) + cert +
+            // CR-B: M-KPI-3 chỉ đếm khóa Hoàn thành CÓ link chứng chỉ → nhắc dán link
+            (st === 'done' && !cert ? ' <span class="badge badge-warning" data-nocert="1" title="Bấm Sửa để dán link chứng chỉ">Thiếu chứng chỉ — chưa tính KPI</span>' : '') + '</td>' +
           '<td style="white-space:nowrap">' + doneBtn +
             '<button class="btn btn-ghost btn-sm" title="Sửa" aria-label="Sửa khóa học" onclick="LearningPlan.editCourse(\'' + esc(c.course_id) + '\')"><i class="fa-solid fa-pen"></i> Sửa</button>' +
             '<button class="btn btn-ghost btn-sm" title="Xóa" aria-label="Xóa khóa học" style="color:var(--color-error)" onclick="LearningPlan.delCourse(\'' + esc(c.course_id) + '\')"><i class="fa-solid fa-trash"></i></button>' +
@@ -540,14 +558,31 @@
       }).join('') + '</tbody></table></div>';
   }
 
-  // ── Tab Việc lớn ────────────────────────────────────────────────
+  // ── Tab Việc lớn (CR-C 2026-10-09: số đo + phân công → M1/T3 tự tính) ──────────
+  function _fmtN(v) { return (v === null || v === undefined || v === '') ? '—' : String(Math.round(parseFloat(v) * 100) / 100); }
+  function _ratioBadge(t) {
+    if (t.ratio === null || t.ratio === undefined) return '<span class="badge badge-muted">Chưa đo</span>';
+    var cls = t.ratio >= 70 ? 'badge-success' : (t.ratio >= 30 ? 'badge-warning' : 'badge-error');
+    return '<span class="badge ' + cls + '">' + esc(_fmtN(t.ratio)) + '% mục tiêu → ' + esc(_fmtN(t.okr_score)) + '%</span>';
+  }
+  // Teamlead của team việc lớn (hoặc team backup) / admin được sửa số đo + phân công.
+  function _canManageBt(t) {
+    var u = _user();
+    if (!u || !t) return false;
+    if (u.role === 'admin') return true;
+    if (u.role !== 'teamlead' && u.role !== 'champion') return false;
+    var teams = [_norm(u.team)].concat((u.backup_teams || []).map(_norm));
+    return teams.indexOf(_norm(t.team)) !== -1;
+  }
+  function _btTask(id) { return _data.big_tasks.filter(function (t) { return t.task_id === id; })[0] || null; }
+
   function _renderBigTasks() {
     var wrap = _el('lpBigTasks');
     if (!wrap) return;
     var list = _data.big_tasks;
     if (!list.length) { wrap.innerHTML = '<p class="list-empty">Chưa có việc lớn nào.</p>'; return; }
     wrap.innerHTML = '<div class="rq-table-wrap"><table class="dash-table" aria-label="Việc lớn cấp Trung tâm"><thead><tr>' +
-      '<th>Mã</th><th>Việc lớn</th><th>Team</th><th>Nguồn</th><th>Làm chính</th><th>Hiện tại → mục tiêu</th><th>Hạn làm thử</th><th>Trạng thái</th>' +
+      '<th>Mã</th><th>Việc lớn</th><th>Team</th><th>Nguồn</th><th>Làm chính</th><th>Hiện tại → mục tiêu</th><th>Hạn</th><th>Kết quả (OKR)</th><th>Phân công</th><th></th>' +
       '</tr></thead><tbody>' +
       list.map(function (t) {
         var srcCls = /tự chọn/i.test(t.source_type) ? 'badge-success' : 'badge-primary';
@@ -556,7 +591,7 @@
         var effort = (t.hours_before || t.target_reduction)
           ? esc(t.hours_before || '?') + ' → ' + esc(t.target_reduction || '?')
           : '<span style="color:var(--color-text-muted)">Teamlead điền</span>';
-        return '<tr>' +
+        return '<tr data-task="' + esc(t.task_id) + '">' +
           '<td><span class="id-badge">' + esc(t.task_id) + '</span></td>' +
           '<td style="max-width:320px">' + esc(t.task_name) + (t.note ? '<div style="font-size:12px;color:var(--color-text-muted)">' + esc(t.note) + '</div>' : '') + '</td>' +
           '<td>' + esc(t.team) + '</td>' +
@@ -564,14 +599,190 @@
           '<td>' + esc(t.lead || '—') + (t.participants ? '<div style="font-size:12px;color:var(--color-text-muted)">' + esc(t.participants) + '</div>' : '') + '</td>' +
           '<td>' + effort + '</td>' +
           '<td style="white-space:nowrap">' + _fmtDate(t.pilot_deadline) + (left ? '<div style="font-size:12px;color:var(--color-text-muted)">' + esc(left) + '</div>' : '') + '</td>' +
-          '<td>' + esc(t.status || '—') + '</td>' +
+          '<td>' + _ratioBadge(t) + '</td>' +
+          '<td style="white-space:nowrap">' + (t.pass_count || 0) + '/' + (t.assign_count || 0) + ' đạt</td>' +
+          '<td><button class="btn btn-ghost btn-sm" onclick="LearningPlan.openBigTask(\'' + esc(t.task_id) + '\')"><i class="fa-solid fa-list-check"></i> Chi tiết</button></td>' +
           '</tr>';
       }).join('') + '</tbody></table></div>';
   }
 
+  function openBigTask(id) {
+    _btOpen = id; _editKrId = null; _editAsId = null;
+    showTab('bigtasks');
+    _resetKrForm(); _resetAsForm();
+    _renderBtDetail();
+    var box = _el('lpBtDetail'); if (box && box.scrollIntoView) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function _renderBtDetail() {
+    var box = _el('lpBtDetail');
+    var t = _btTask(_btOpen);
+    if (!box) return;
+    if (!t) { box.hidden = true; return; }
+    box.hidden = false;
+    var manage = _canManageBt(t);
+    var title = _el('lpBtTitle'); if (title) title.textContent = t.task_id + ' · ' + t.task_name + ' (' + t.team + ')';
+    var sc = _el('lpBtScore'); if (sc) sc.innerHTML = _ratioBadge(t);
+    var forms = document.querySelectorAll('#lpBtDetail [data-bt-manage]');
+    for (var i = 0; i < forms.length; i++) forms[i].style.display = manage ? 'grid' : 'none';
+
+    var krs = _data.krs.filter(function (k) { return k.task_id === t.task_id; });
+    var kw = _el('lpBtKrs');
+    if (kw) kw.innerHTML = !krs.length
+      ? '<p class="list-empty" style="margin:0">Chưa có số đo. ' + (manage ? 'Thêm ít nhất 1 chỉ số (giờ/vòng quy trình) bên dưới.' : 'Teamlead sẽ cập nhật.') + '</p>'
+      : '<div class="table-wrap"><table class="data-table" aria-label="Số đo việc lớn"><thead><tr><th>Chỉ số</th><th>Đơn vị</th><th style="text-align:right">Trước</th><th style="text-align:right">Mục tiêu khát vọng</th><th style="text-align:right">Thực tế</th><th>Đạt</th><th></th></tr></thead><tbody>' +
+        krs.map(function (k) {
+          var r = (k.ratio === null || k.ratio === undefined) ? '<span class="badge badge-muted">Chưa đo</span>' : '<span class="badge ' + (k.ratio >= 70 ? 'badge-success' : 'badge-warning') + '">' + esc(_fmtN(k.ratio)) + '%</span>';
+          return '<tr data-kr="' + esc(k.kr_id) + '"><td>' + esc(k.kr_name) + '</td><td>' + esc(k.unit || '') + '</td>' +
+            '<td style="text-align:right">' + esc(_fmtN(k.before_value)) + '</td><td style="text-align:right">' + esc(_fmtN(k.target_value)) + '</td>' +
+            '<td style="text-align:right">' + esc(_fmtN(k.actual_value)) + (k.measured_at ? '<div style="font-size:11px;color:var(--color-text-muted)">' + esc(_fmtDate(k.measured_at)) + '</div>' : '') + '</td><td>' + r + '</td>' +
+            '<td style="white-space:nowrap">' + (manage
+              ? '<button class="btn btn-ghost btn-sm" onclick="LearningPlan.editKr(\'' + esc(k.kr_id) + '\')"><i class="fa-solid fa-pen"></i> Sửa</button>' +
+                '<button class="btn btn-ghost btn-sm" style="color:var(--color-error)" aria-label="Xóa chỉ số" onclick="LearningPlan.delKr(\'' + esc(k.kr_id) + '\')"><i class="fa-solid fa-trash"></i></button>'
+              : '') + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+
+    var as = _data.assigns.filter(function (a) { return a.task_id === t.task_id; });
+    var aw = _el('lpBtAssigns');
+    var stBadge = function (a) {
+      if (a.status === 'Đạt') return '<span class="badge ' + (a.on_time_pass ? 'badge-success' : 'badge-warning') + '">Đạt' + (a.on_time_pass ? '' : ' (trễ hạn)') + '</span>' + (a.accepted_date ? '<div style="font-size:11px;color:var(--color-text-muted)">' + esc(_fmtDate(a.accepted_date)) + '</div>' : '');
+      if (a.status === 'Chưa đạt') return '<span class="badge badge-error">Chưa đạt</span>';
+      return '<span class="badge badge-primary">Đang làm</span>';
+    };
+    if (aw) aw.innerHTML = !as.length
+      ? '<p class="list-empty" style="margin:0">Chưa phân công. ' + (manage ? 'Giao hạng mục cho từng thành viên bên dưới (chỉ đạo của anh Cường: mọi thành viên đều có vai).' : '') + '</p>'
+      : '<div class="table-wrap"><table class="data-table" aria-label="Phân công hạng mục"><thead><tr><th>Thành viên</th><th>Vai</th><th>Hạng mục</th><th>Hạn</th><th>Tiêu chí nghiệm thu</th><th>Trạng thái</th><th></th></tr></thead><tbody>' +
+        as.map(function (a) {
+          var id = esc(a.assign_id);
+          return '<tr data-assign="' + id + '"><td><div style="font-weight:600">' + esc(a.display_name || a.username) + '</div><div style="font-size:11px;color:var(--color-text-muted)">' + esc(a.username) + '</div></td>' +
+            '<td>' + esc(a.role || '—') + '</td><td>' + esc(a.item) + '</td><td style="white-space:nowrap">' + _fmtDate(a.due_date) + '</td>' +
+            '<td style="font-size:12px">' + esc(a.acceptance_criteria || '—') + '</td><td>' + stBadge(a) + '</td>' +
+            '<td style="white-space:nowrap">' + (manage
+              ? '<button class="btn btn-success btn-sm" onclick="LearningPlan.acceptAssign(\'' + id + '\',\'Đạt\')"><i class="fa-solid fa-check"></i> Đạt</button>' +
+                '<button class="btn btn-ghost btn-sm" style="color:var(--color-error)" onclick="LearningPlan.acceptAssign(\'' + id + '\',\'Chưa đạt\')"><i class="fa-solid fa-xmark"></i> Chưa đạt</button>' +
+                '<button class="btn btn-ghost btn-sm" onclick="LearningPlan.editAssign(\'' + id + '\')"><i class="fa-solid fa-pen"></i> Sửa</button>' +
+                '<button class="btn btn-ghost btn-sm" style="color:var(--color-error)" aria-label="Xóa hạng mục" onclick="LearningPlan.delAssign(\'' + id + '\')"><i class="fa-solid fa-trash"></i></button>'
+              : '') + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+
+    // Danh sách thành viên để giao: người cùng team việc lớn trước (nguồn: HOC_TAP_DANG_KY), rồi các team khác.
+    var sel = _el('lpAsUser');
+    if (sel && manage) {
+      var cur = sel.value;
+      var mem = _data.members.slice().sort(function (a, b) {
+        var ta = _norm(a.team) === _norm(t.team) ? 0 : 1, tb = _norm(b.team) === _norm(t.team) ? 0 : 1;
+        return (ta - tb) || String(a.display_name).localeCompare(String(b.display_name));
+      });
+      sel.innerHTML = '<option value="">— Chọn thành viên —</option>' + mem.map(function (m) {
+        return '<option value="' + esc(m.username) + '">' + esc((m.display_name || m.username) + ' · ' + (m.team || '')) + '</option>';
+      }).join('');
+      sel.value = cur;
+    }
+  }
+
+  function _btPayload(extra) {
+    var u = _user() || {};
+    var p = { Task_ID: _btOpen, token: (typeof AuthService !== 'undefined' && AuthService.getToken) ? AuthService.getToken() : '',
+              reviewer_email: u.email || '', requester_email: u.email || '' };
+    for (var k in extra) if (extra.hasOwnProperty(k)) p[k] = extra[k];
+    return p;
+  }
+  function _btMsg(m) { var el = _el('lpBtMsg'); if (el) el.textContent = m || ''; }
+  function _btSave(apiFn, payload, okMsg, btn, label) {
+    if (btn) { btn.disabled = true; btn.textContent = 'Đang lưu...'; }
+    return apiFn(payload).then(function () {
+      showToast(okMsg, 'success'); _btMsg(''); _load(); return true;
+    }).catch(function (err) {
+      var m = (err && err.message) || String(err); _btMsg(m); showToast('Lỗi: ' + m, 'error'); return false;
+    }).then(function (ok) { if (btn) { btn.disabled = false; btn.textContent = label; } return ok; });
+  }
+
+  // Số đo
+  function _resetKrForm() {
+    _editKrId = null;
+    ['lpKrName', 'lpKrUnit', 'lpKrBefore', 'lpKrTarget', 'lpKrActual'].forEach(function (id) { _set(id, ''); });
+    var b = _el('lpKrBtn'); if (b) b.textContent = 'Thêm chỉ số';
+    var c = _el('lpKrCancel'); if (c) c.style.display = 'none';
+  }
+  function editKr(id) {
+    var k = _data.krs.filter(function (x) { return x.kr_id === id; })[0];
+    if (!k) return;
+    _editKrId = id;
+    _set('lpKrName', k.kr_name); _set('lpKrUnit', k.unit);
+    _set('lpKrBefore', k.before_value === null ? '' : k.before_value);
+    _set('lpKrTarget', k.target_value === null ? '' : k.target_value);
+    _set('lpKrActual', k.actual_value === null ? '' : k.actual_value);
+    var b = _el('lpKrBtn'); if (b) b.textContent = 'Lưu chỉ số';
+    var c = _el('lpKrCancel'); if (c) c.style.display = '';
+  }
+  function _submitKr() {
+    var name = _v('lpKrName'), before = _v('lpKrBefore'), target = _v('lpKrTarget');
+    if (!name) { _btMsg('Nhập tên chỉ số (VD: Thời gian 1 vòng quy trình).'); return; }
+    if (before === '' || target === '') { _btMsg('Nhập số trước và mục tiêu khát vọng.'); return; }
+    if (parseFloat(before) === parseFloat(target)) { _btMsg('Mục tiêu khát vọng phải khác số trước.'); return; }
+    var editing = _editKrId;
+    _btSave(Api.saveBigTaskKr, _btPayload({ KR_ID: editing || '', KR_Name: name, Unit: _v('lpKrUnit'),
+      Before_Value: before, Target_Value: target, Actual_Value: _v('lpKrActual') }),
+      editing ? 'Đã cập nhật chỉ số.' : 'Đã thêm chỉ số.', _el('lpKrBtn'), editing ? 'Lưu chỉ số' : 'Thêm chỉ số')
+      .then(function (ok) { if (ok) _resetKrForm(); });
+  }
+  function delKr(id) {
+    var ask = (typeof uiConfirm === 'function')
+      ? uiConfirm({ title: 'Xóa chỉ số', body: 'Xóa chỉ số ' + id + ' khỏi việc lớn? Kết quả OKR sẽ tính lại.', okLabel: 'Xóa', danger: true })
+      : Promise.resolve(true);
+    ask.then(function (ok) {
+      if (!ok) return;
+      _btSave(Api.saveBigTaskKr, _btPayload({ KR_ID: id, Delete: 'true' }), 'Đã xóa chỉ số.');
+    });
+  }
+
+  // Phân công
+  function _resetAsForm() {
+    _editAsId = null;
+    ['lpAsUser', 'lpAsRole', 'lpAsItem', 'lpAsDue', 'lpAsCriteria'].forEach(function (id) { _set(id, ''); });
+    var b = _el('lpAsBtn'); if (b) b.textContent = 'Giao hạng mục';
+    var c = _el('lpAsCancel'); if (c) c.style.display = 'none';
+    var s = _el('lpAsUser'); if (s) s.disabled = false;
+  }
+  function editAssign(id) {
+    var a = _data.assigns.filter(function (x) { return x.assign_id === id; })[0];
+    if (!a) return;
+    _editAsId = id;
+    _set('lpAsUser', a.username); _set('lpAsRole', a.role); _set('lpAsItem', a.item);
+    _set('lpAsDue', a.due_date); _set('lpAsCriteria', a.acceptance_criteria);
+    var b = _el('lpAsBtn'); if (b) b.textContent = 'Lưu hạng mục';
+    var c = _el('lpAsCancel'); if (c) c.style.display = '';
+  }
+  function _submitAssign() {
+    var user = _v('lpAsUser'), item = _v('lpAsItem');
+    if (!user) { _btMsg('Chọn thành viên được giao.'); return; }
+    if (!item) { _btMsg('Nhập hạng mục được giao.'); return; }
+    var editing = _editAsId;
+    _btSave(Api.saveBigTaskAssign, _btPayload({ Assign_ID: editing || '', Username: user, Role: _v('lpAsRole'), Item: item,
+      Due_Date: _v('lpAsDue'), Acceptance_Criteria: _v('lpAsCriteria') }),
+      editing ? 'Đã cập nhật hạng mục.' : 'Đã giao hạng mục.', _el('lpAsBtn'), editing ? 'Lưu hạng mục' : 'Giao hạng mục')
+      .then(function (ok) { if (ok) _resetAsForm(); });
+  }
+  function acceptAssign(id, status) {
+    var a = _data.assigns.filter(function (x) { return x.assign_id === id; })[0];
+    if (!a) return;
+    _btSave(Api.saveBigTaskAssign, _btPayload({ Assign_ID: id, Username: a.username, Status: status }),
+      status === 'Đạt' ? 'Đã nghiệm thu Đạt (tính vào M1).' : 'Đã ghi Chưa đạt.');
+  }
+  function delAssign(id) {
+    var ask = (typeof uiConfirm === 'function')
+      ? uiConfirm({ title: 'Xóa hạng mục', body: 'Xóa hạng mục ' + id + ' khỏi phân công?', okLabel: 'Xóa', danger: true })
+      : Promise.resolve(true);
+    ask.then(function (ok) {
+      if (!ok) return;
+      _btSave(Api.saveBigTaskAssign, _btPayload({ Assign_ID: id, Delete: 'true' }), 'Đã xóa hạng mục.');
+    });
+  }
+
   function _bind() {
     [['lpPlanBtn', _submitPlan], ['lpUsePlan', _usePlan], ['lpRegBtn', _submitProfile],
-     ['lpCourseBtn', _submitCourse], ['lpCourseCancel', _resetCourseForm]].forEach(function (b) {
+     ['lpCourseBtn', _submitCourse], ['lpCourseCancel', _resetCourseForm],
+     ['lpKrBtn', _submitKr], ['lpKrCancel', _resetKrForm], ['lpAsBtn', _submitAssign], ['lpAsCancel', _resetAsForm]].forEach(function (b) {
       var el = _el(b[0]);
       if (el && !el._bound) { el.addEventListener('click', b[1]); el._bound = true; }
     });
@@ -605,6 +816,10 @@
   window.LearningPlan = {
     reload: _load, showTab: showTab, editCourse: editCourse, delCourse: delCourse, completeCourse: completeCourse,
     courseState: courseState, weekState: weekState, currentWeek: currentWeek, isoWeek: isoWeek,
-    refreshMine: _renderWeekTab
+    refreshMine: _renderWeekTab,
+    data: function () { return _data; },
+    // CR-C (2026-10-09): việc lớn — số đo + phân công
+    openBigTask: openBigTask, editKr: editKr, delKr: delKr,
+    editAssign: editAssign, acceptAssign: acceptAssign, delAssign: delAssign
   };
 })();

@@ -84,7 +84,9 @@ test.describe('Hoàn thành khóa học trước hạn (BUG 2026-10-02)', () => 
     const body = captured.find(c => c.action === 'learning-course-complete').body;
     expect(body.Course_ID).toBe('KH-0001');
     expect(body.Undo).toBeUndefined();
-    await expect(row.locator('.badge')).toHaveText('Hoàn thành');
+    await expect(row.locator('.badge').first()).toHaveText('Hoàn thành');
+    // CR-B (2026-10-09): khóa Hoàn thành chưa có link chứng chỉ → nhắc "chưa tính KPI" (M3 chỉ đếm khóa có chứng chỉ)
+    await expect(row.locator('.badge[data-nocert]')).toContainText('Thiếu chứng chỉ');
     await expect(row).toContainText('xong 02/10/2026');
     await expect(row.locator('button', { hasText: 'Hoàn tác' })).toBeVisible();
   });
@@ -97,7 +99,8 @@ test.describe('Hoàn thành khóa học trước hạn (BUG 2026-10-02)', () => 
     await page.locator('#uiConfirmModal [data-uic="ok"]').click();
     await expect.poll(() => captured.filter(c => c.action === 'learning-course-complete').length).toBe(1);
     expect(captured.find(c => c.action === 'learning-course-complete').body.Undo).toBe('true');
-    await expect(row.locator('.badge')).toHaveText('Đúng tiến độ');
+    await expect(row.locator('.badge').first()).toHaveText('Đúng tiến độ');
+    await expect(row.locator('.badge[data-nocert]')).toHaveCount(0);
   });
 
   test('C03 — Khóa "Chưa rõ khóa" không có nút Hoàn thành (phải điền tên trước)', async ({ page }) => {

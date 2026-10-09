@@ -1,5 +1,17 @@
 # PROJECT STATE
 
+**2026-10-09 — KPI cá nhân + teamlead TỰ TÍNH theo khung D70 (hub AIUS-001: tạm áp dụng bản trình 06/10 — D62/D65/D67/D68/D69). 5 CR gom 1 đợt. CHƯA COMMIT · CHƯA REDEPLOY GAS (chờ [TT]).**
+Engine thuần mới `KpiEngineH2.gs` (1 nguồn, test Node được) · member 40/30/15/15, từng chỉ tiêu + tổng trần 120, đạt ≥70 · **mọi role active** có KPI cá nhân · teamlead **40/30/20/10** (T2 mẫu số = toàn bộ member active của team · T3 OKR việc lớn · T4 R&D từ tab `RD_BAO_CAO`).
+- **CR-A** bài nộp +4 ô (giờ trước/sau · kiểm chứng AI · mẫu dùng lại · gắn hạng mục việc lớn) + **chọn tuần** (nộp bù, chặn tuần tương lai) · route `exercise-review` teamlead chấm Đạt/Chưa đạt từng bài (≥3/4 tiêu chí, không tự chấm) · M2 = số tuần **40–52** có bài Đạt × 10% (anh chốt 09/10). Bài cũ thiếu ô → nút "Bổ sung"; chủ bài sửa bài đã chấm → về Chờ chấm.
+- **CR-B** M3 đếm thẳng `HOC_TAP_KHOA` (Hoàn thành + link chứng chỉ, trả phí ×2) — bỏ ô tự khai; khóa xong thiếu link hiện nhắc "chưa tính KPI".
+- **CR-C** 2 tab mới `VIEC_LON_SO` (trước → mục tiêu khát vọng → thực tế) + `VIEC_LON_PHAN_CONG` (hạng mục, hạn, tiêu chí, nghiệm thu) · routes `big-task-kr-save` / `big-task-assign-save` · tab Việc lớn có "Chi tiết" (teamlead team đó/admin sửa) · M1 = 50% OKR team + 50% hạng mục đạt đúng hạn.
+- **CR-D** `getKpiLeaderboard_`/`getMemberKpiPreview_` viết lại; màn "KPI của tôi" (thay Tự chấm), "KPI từng người" (chỉ còn nhập mốc chậm), "Chấm bài & lan tỏa", Leaderboard T1–T4 /120.
+- **CR-E** M4: khai lan tỏa chọn loại (Clinic · bản tin · ≥3 người dùng lại) → 0/100/120.
+Test ví dụ email: A = 92% đạt · B = 40% không đạt (`tests/18`). Playwright 156/156 (+zz-capture 4 = 160). Cache-bust `?v=20261009a`.
+**Còn treo:** [TT] dán 8 file GAS + redeploy + `setupKpiD70Sheets()` · nhập `RD_BAO_CAO` · teamlead nhập số đo/phân công · nghiệm thu live.
+
+---
+
 **2026-10-02 — Khóa học: nút "Hoàn thành/Hoàn tác" + Link chứng chỉ (vá lỗi hoàn thành trước hạn không chuyển trạng thái) + 3 vá cùng kiểu. LIVE, GAS đã redeploy, test live 10/10.**
 `e5c9ea7` · route `learning-course-complete` · `updateLearningCourse_` không còn ép "Đã đăng ký" · Status trim/NFC · `stage_changed` boolean · Tự chấm tháng giờ VN. Playwright 140/140. Live: 31 khóa, 0 hoàn thành (chờ member bấm).
 **Còn treo:** CR-3 phần KPI3 chỉ đọc · khoảng trống tracking KPI theo hub `RA_SOAT_TRACKING_KPI_AIUS_20261002.md` (KPI2 tự đếm tuần, T-KPI-2 mẫu số, mọi role có KPI cá nhân, cột số VIEC_LON, 40/30/20/10 sau GĐ duyệt).

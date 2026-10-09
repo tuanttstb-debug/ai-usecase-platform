@@ -102,11 +102,12 @@ function renderHeatmap(data) {
   el.innerHTML = html;
 }
 
-// KPI tổng hợp Member — breakdown M1..M4 − trừ
+// KPI cá nhân — khung D70 (2026-10-09): M1 Việc lớn · M2 Bài tập · M3 Tự học · M4 Lan tỏa − trừ; tối đa 120, đạt ≥70.
+// Danh sách gồm MỌI role active (thành viên, teamlead, lãnh đạo/admin — D54).
 function renderKpiMember(containerId, items) {
   var el = document.getElementById(containerId);
   if (!items || items.length === 0) {
-    el.innerHTML = '<div style="padding:var(--space-8);text-align:center;color:var(--color-text-muted)">Chưa có dữ liệu KPI (cần điểm US hội đồng hoặc điểm cá nhân)</div>';
+    el.innerHTML = '<div class="list-empty">Chưa có dữ liệu KPI</div>';
     return;
   }
   var rows = items.map(function(m, i) {
@@ -115,35 +116,37 @@ function renderKpiMember(containerId, items) {
     var rc = m.rank_category || '';
     var pill = RANK_LABELS[rc] ? ('background:' + RANK_LABELS[rc].bg + ';color:' + RANK_LABELS[rc].color) : '';
     var pen = m.penalty ? ('−' + m.penalty) : '0';
-    return '<tr>' +
+    var role = String(m.role || 'user').toLowerCase();
+    var passB = (parseFloat(m.final) || 0) >= 70 ? '<span class="badge badge-success">Đạt</span>' : '<span class="badge badge-warning">Chưa đạt</span>';
+    return '<tr data-user="' + esc(m.username) + '">' +
       '<td><div class="rank-num ' + cls + '">' + rank + '</div></td>' +
-      '<td><div class="owner-cell"><span class="owner-name">' + esc(m.display_name || m.username) + '</span><span class="owner-team">' + esc(m.username) + '</span></div></td>' +
+      '<td><div class="owner-cell"><span class="owner-name">' + esc(m.display_name || m.username) + (role !== 'user' ? ' <span class="badge badge-muted">' + esc(role) + '</span>' : '') + '</span><span class="owner-team">' + esc(m.username) + '</span></div></td>' +
       '<td>' + esc(m.team || '—') + '</td>' +
       '<td class="lb-score-num" style="text-align:center">' + (m.m1 || 0) + '</td>' +
       '<td class="lb-score-num" style="text-align:center">' + (m.m2 || 0) + '</td>' +
       '<td class="lb-score-num" style="text-align:center">' + (m.m3 || 0) + '</td>' +
       '<td class="lb-score-num" style="text-align:center">' + (m.m4 || 0) + '</td>' +
-      '<td class="lb-score-num" style="text-align:center;color:var(--color-error,#c62828)">' + pen + '</td>' +
-      '<td><span class="rank-pill" style="' + pill + '">' + (RANK_LABELS[rc] ? RANK_LABELS[rc].label : (rc || '—')) + '</span></td>' +
+      '<td class="lb-score-num" style="text-align:center;color:var(--color-error)">' + pen + '</td>' +
+      '<td>' + passB + '</td>' +
       '<td class="lb-score-num lb-score-total">' + (m.final || 0) + '</td>' +
       '</tr>';
   }).join('');
   el.innerHTML = '<table class="rank-table"><thead><tr>' +
-    '<th style="width:48px">#</th><th>Thành viên</th><th>Team</th>' +
-    '<th class="lb-score-head">M1<br><small style="font-weight:400;opacity:.7">US·40</small></th>' +
-    '<th class="lb-score-head">M2<br><small style="font-weight:400;opacity:.7">NL·30</small></th>' +
-    '<th class="lb-score-head">M3<br><small style="font-weight:400;opacity:.7">Khóa·15</small></th>' +
-    '<th class="lb-score-head">M4<br><small style="font-weight:400;opacity:.7">Lan·15</small></th>' +
-    '<th class="lb-score-head">Trừ</th><th>Hạng</th>' +
-    '<th class="lb-score-head">KPI<br><small style="font-weight:400;opacity:.7">/100</small></th>' +
+    '<th style="width:48px">#</th><th>Người</th><th>Team</th>' +
+    '<th class="lb-score-head">M1<br><small style="font-weight:400;opacity:.7">Việc lớn·40</small></th>' +
+    '<th class="lb-score-head">M2<br><small style="font-weight:400;opacity:.7">Bài tập·30</small></th>' +
+    '<th class="lb-score-head">M3<br><small style="font-weight:400;opacity:.7">Tự học·15</small></th>' +
+    '<th class="lb-score-head">M4<br><small style="font-weight:400;opacity:.7">Lan tỏa·15</small></th>' +
+    '<th class="lb-score-head">Trừ</th><th>≥70%</th>' +
+    '<th class="lb-score-head">KPI<br><small style="font-weight:400;opacity:.7">/120</small></th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
-// KPI Teamlead — T1 (60%) + T2 (% team ≥70%, 40%)
+// KPI Teamlead — D62: T1 cá nhân 40 + T2 % thành viên đạt (mẫu số toàn team) 30 + T3 việc lớn 20 + T4 R&D 10
 function renderKpiTeamlead(containerId, items) {
   var el = document.getElementById(containerId);
   if (!items || items.length === 0) {
-    el.innerHTML = '<div style="padding:var(--space-8);text-align:center;color:var(--color-text-muted)">Chưa có dữ liệu KPI Teamlead</div>';
+    el.innerHTML = '<div class="list-empty">Chưa có dữ liệu KPI Teamlead</div>';
     return;
   }
   var rows = items.map(function(t, i) {
@@ -157,16 +160,20 @@ function renderKpiTeamlead(containerId, items) {
       '<td>' + esc(t.team || '—') + '</td>' +
       '<td class="lb-score-num" style="text-align:center">' + (t.t1 || 0) + '</td>' +
       '<td class="lb-score-num" style="text-align:center">' + (t.t2 || 0) + '%<br><small style="color:var(--color-text-muted)">' + (t.pass_count || 0) + '/' + (t.team_size || 0) + '</small></td>' +
+      '<td class="lb-score-num" style="text-align:center">' + (t.t3 || 0) + '</td>' +
+      '<td class="lb-score-num" style="text-align:center">' + (t.t4 || 0) + '</td>' +
       '<td><span class="rank-pill" style="' + pill + '">' + (RANK_LABELS[rc] ? RANK_LABELS[rc].label : (rc || '—')) + '</span></td>' +
       '<td class="lb-score-num lb-score-total">' + (t.final || 0) + '</td>' +
       '</tr>';
   }).join('');
   el.innerHTML = '<table class="rank-table"><thead><tr>' +
     '<th style="width:48px">#</th><th>Teamlead</th><th>Team</th>' +
-    '<th class="lb-score-head">T1<br><small style="font-weight:400;opacity:.7">KPI·60</small></th>' +
-    '<th class="lb-score-head">T2<br><small style="font-weight:400;opacity:.7">team≥70·40</small></th>' +
+    '<th class="lb-score-head">T1<br><small style="font-weight:400;opacity:.7">Cá nhân·40</small></th>' +
+    '<th class="lb-score-head">T2<br><small style="font-weight:400;opacity:.7">TV đạt·30</small></th>' +
+    '<th class="lb-score-head">T3<br><small style="font-weight:400;opacity:.7">Việc lớn·20</small></th>' +
+    '<th class="lb-score-head">T4<br><small style="font-weight:400;opacity:.7">R&amp;D·10</small></th>' +
     '<th>Hạng</th>' +
-    '<th class="lb-score-head">KPI<br><small style="font-weight:400;opacity:.7">/100</small></th>' +
+    '<th class="lb-score-head">KPI<br><small style="font-weight:400;opacity:.7">/120</small></th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table>';
 }
 

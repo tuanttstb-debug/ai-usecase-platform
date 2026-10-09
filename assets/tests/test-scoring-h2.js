@@ -108,7 +108,8 @@ test('2 khóa thường → 50', function () { eq(ScoringH2.courseScore(2, 0), 5
 test('2 khóa đều trả phí → 100 (x2)', function () { eq(ScoringH2.courseScore(2, 2), 100); });
 test('1 khóa trả phí → 50', function () { eq(ScoringH2.courseScore(1, 1), 50); });
 test('3 khóa thường → 75', function () { eq(ScoringH2.courseScore(3, 0), 75); });
-test('5 khóa → cap 100', function () { eq(ScoringH2.courseScore(5, 0), 100); });
+test('5 khóa → 120 (trần 120 — D70)', function () { eq(ScoringH2.courseScore(5, 0), 120); });
+test('6 khóa → cap 120', function () { eq(ScoringH2.courseScore(6, 0), 120); });
 test('paid > completed → clamp về completed', function () { eq(ScoringH2.courseScore(2, 3), 100); });
 
 console.log('\n── ScoringH2: M-KPI-4 lan tỏa (đạt→100) ──');
@@ -139,11 +140,25 @@ test('Tổng 4 trọng số = 100', function () {
 });
 test('Trừ không cho âm (clamp 0)', function () { eq(ScoringH2.memberKpiFinal(0,0,0,0,10), 0); });
 
-console.log('\n── ScoringH2: Teamlead KPI (T1·.6 + T2·.4) ──');
-test('T1=100 T2=100 → 100', function () { eq(ScoringH2.teamleadKpiFinal(100,100), 100); });
-test('Chỉ T1=100 → 60', function () { eq(ScoringH2.teamleadKpiFinal(100,0), 60); });
-test('Chỉ T2=100 → 40', function () { eq(ScoringH2.teamleadKpiFinal(0,100), 40); });
-test('T1=80 T2=50 → 68', function () { eq(ScoringH2.teamleadKpiFinal(80,50), 68); });
+console.log('\n── ScoringH2: Teamlead KPI D62 (T1·.4 + T2·.3 + T3·.2 + T4·.1) ──');
+test('Cả 4 = 100 → 100', function () { eq(ScoringH2.teamleadKpiFinal(100,100,100,100), 100); });
+test('Chỉ T1=100 → 40', function () { eq(ScoringH2.teamleadKpiFinal(100,0,0,0), 40); });
+test('Chỉ T2=100 → 30', function () { eq(ScoringH2.teamleadKpiFinal(0,100,0,0), 30); });
+test('Chỉ T3=100 → 20', function () { eq(ScoringH2.teamleadKpiFinal(0,0,100,0), 20); });
+test('Chỉ T4=100 → 10', function () { eq(ScoringH2.teamleadKpiFinal(0,0,0,100), 10); });
+test('Trần 120', function () { eq(ScoringH2.teamleadKpiFinal(120,120,120,120), 120); });
+
+console.log('\n── ScoringH2: Thang OKR + M1/M2/M4 khung D70 ──');
+test('OKR 80% → 106.7', function () { eq(Math.round(ScoringH2.okrScore(80) * 10) / 10, 106.7); });
+test('OKR 25% → 0', function () { eq(ScoringH2.okrScore(25), 0); });
+test('M1 ví dụ A (team 80%, 4/4) → 103.3', function () { eq(ScoringH2.bigTaskScore(80, 4, 4), 103.3); });
+test('M1 ví dụ B (team 50%, 2/4) → 60.7', function () { eq(ScoringH2.bigTaskScore(50, 2, 4), 60.7); });
+test('M2 8 tuần Đạt → 80', function () { eq(ScoringH2.exerciseScore(8), 80); });
+test('M2 13 tuần → cap 120', function () { eq(ScoringH2.exerciseScore(13), 120); });
+test('M4 2 hoạt động → 120', function () { eq(ScoringH2.sharingScore(2), 120); });
+test('KPI ví dụ A → 91.6 (≈92%)', function () { eq(ScoringH2.memberKpiFinal(ScoringH2.bigTaskScore(80, 4, 4), 80, 75, 100, 0), 91.6); });
+test('KPI ví dụ B → 40 (≈40%)', function () { eq(ScoringH2.memberKpiFinal(ScoringH2.bigTaskScore(50, 2, 4), 40, 25, 0, 0), 40); });
+test('Member trần 120', function () { eq(ScoringH2.memberKpiFinal(120, 120, 120, 120, 0), 120); });
 
 console.log('\n── ScoringH2: PM KPI bản A (A1·.3 A2·.2 A3·.3 A4·.2) ──');
 test('Cả 4 = 100 → 100', function () { eq(ScoringH2.pmKpiFinal(100,100,100,100), 100); });

@@ -36,6 +36,9 @@ var API = {
   exerciseCreate: () => `${_gasBase}?action=exercise-create`,
   exerciseUpdate: () => `${_gasBase}?action=exercise-update`,
   exerciseDelete: () => `${_gasBase}?action=exercise-delete`,
+  exerciseReview: () => `${_gasBase}?action=exercise-review`,   // CR-A (2026-10-09): teamlead chấm Đạt/Chưa đạt
+  bigTaskKrSave:     () => `${_gasBase}?action=big-task-kr-save`,     // CR-C: số đo việc lớn
+  bigTaskAssignSave: () => `${_gasBase}?action=big-task-assign-save`, // CR-C: phân công + nghiệm thu
 
   // CR (2026-10-01): Kế hoạch học tập — bài tập tuần, khóa học + hạn học xong, việc lớn
   learningList:         () => `${_gasBase}?action=learning-list`,

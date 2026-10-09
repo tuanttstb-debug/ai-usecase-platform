@@ -18,12 +18,16 @@
     DIVERSITY: 0.30, AI_PROFICIENCY: 0.20, PRODUCT_QUALITY: 0.30, QUANTITY_MET: 0.20
   };
 
-  // KPI tổng hợp (Đợt 2)
+  // KPI tổng hợp — khung D70 (2026-10-09). Nguồn chuẩn: GAS KpiEngineH2.gs + Config.gs (bản này chỉ để
+  // xem trước trên UI). Member 40/30/15/15, từng chỉ tiêu + tổng trần 120; teamlead 40/30/20/10.
   var KPI_WEIGHTS = { UC: 0.40, CAPABILITY: 0.30, COURSES: 0.15, SHARING: 0.15 };
+  var KPI_CAP = 120;
   var COURSE_PCT_EACH = 25;             // mỗi khóa 25% (trả phí x2)
+  var M2_PCT_EACH = 10;                 // mỗi tuần có bài Đạt = 10% (10 bài = 100%)
   var MILESTONE_PENALTY_EACH = 2;       // −2%/mốc
   var MILESTONE_PENALTY_MAX  = 10;      // tối đa −10%
-  var TEAMLEAD_WEIGHTS = { SELF: 0.60, TEAM: 0.40 };
+  var TEAMLEAD_WEIGHTS = { SELF: 0.40, TEAM: 0.30, BIG_TASK: 0.20, RD: 0.10 };
+  var OKR = { FLOOR: 30, FULL: 70, MAX_RATIO: 100, FULL_SCORE: 100, MAX_SCORE: 120 };
   var KPI_PASS = 70;
   var PM_WEIGHTS = { A1: 0.30, A2: 0.20, A3: 0.30, A4: 0.20 };
 
@@ -101,15 +105,38 @@
 
   // ── KPI tổng hợp (Đợt 2) ────────────────────────────────────────
 
-  // M-KPI-3: khóa học (mỗi khóa 25%, trả phí x2, tối đa 100%).
+  // Thang OKR (D65): ratio = % đạt mục tiêu khát vọng → <30: 0 · 30–70: r/70 · 70–100: 100→120 · ≥100: 120.
+  function okrScore(ratio) {
+    if (ratio === null || ratio === undefined || ratio === '') return 0;
+    var r = parseFloat(ratio);
+    if (isNaN(r) || r < OKR.FLOOR) return 0;
+    if (r < OKR.FULL) return r / OKR.FULL * OKR.FULL_SCORE;
+    if (r < OKR.MAX_RATIO) return OKR.FULL_SCORE + (r - OKR.FULL) / (OKR.MAX_RATIO - OKR.FULL) * (OKR.MAX_SCORE - OKR.FULL_SCORE);
+    return OKR.MAX_SCORE;
+  }
+  // % đạt 1 chỉ số việc lớn = (trước − thực tế) / (trước − mục tiêu), chặn 0..100; thiếu số → null.
+  function krRatio(before, target, actual) {
+    var b = parseFloat(before), t = parseFloat(target), a = parseFloat(actual);
+    if (isNaN(b) || isNaN(t) || isNaN(a) || b === t) return null;
+    return Math.max(0, Math.min(100, (b - a) / (b - t) * 100));
+  }
+  // M-KPI-1: 50% kết quả việc lớn team (thang OKR) + 50% hạng mục cá nhân đạt / được giao.
+  function bigTaskScore(teamRatio, itemsPassed, itemsAssigned) {
+    var personal = safeNum(itemsAssigned) ? safeNum(itemsPassed) / safeNum(itemsAssigned) * 100 : 0;
+    return round1(Math.min(KPI_CAP, 0.5 * okrScore(teamRatio) + 0.5 * personal));
+  }
+  // M-KPI-2: số tuần (40→52) có bài Đạt × 10%, trần 120.
+  function exerciseScore(passWeeks) { return Math.min(KPI_CAP, Math.max(0, Math.round(safeNum(passWeeks))) * M2_PCT_EACH); }
+  // M-KPI-3: khóa hoàn thành + chứng chỉ (mỗi khóa 25%, trả phí x2), trần 120.
   function courseScore(completed, paid) {
     var c = Math.max(0, Math.round(safeNum(completed)));
     var p = Math.max(0, Math.round(safeNum(paid)));
     if (p > c) p = c;
-    return Math.min(100, (c + p) * COURSE_PCT_EACH); // trả phí x2 = (c-p) + p*2 = c+p
+    return Math.min(KPI_CAP, (c + p) * COURSE_PCT_EACH); // trả phí x2 = (c-p) + p*2 = c+p
   }
-  // M-KPI-4: lan tỏa đạt → 100, không → 0.
+  // M-KPI-4: lan tỏa — số hoạt động đã duyệt: 0 → 0 · 1 → 100 · ≥2 → 120. (true/false cũ: đạt → 100.)
   function sharingScore(achieved) {
+    if (typeof achieved === 'number') return achieved <= 0 ? 0 : (achieved === 1 ? 100 : KPI_CAP);
     if (achieved === true) return 100;
     var s = String(achieved).trim().toLowerCase();
     return (s === 'true' || s === '1' || s === 'yes' || s === 'x' || s === 'có') ? 100 : 0;
@@ -119,19 +146,21 @@
     var n = Math.max(0, Math.round(safeNum(late)));
     return Math.min(MILESTONE_PENALTY_MAX, n * MILESTONE_PENALTY_EACH);
   }
-  // Member final = M1·0.40 + M2·0.30 + M3·0.15 + M4·0.15 − trừ (clamp 0..100).
+  // Member final = M1·0.40 + M2·0.30 + M3·0.15 + M4·0.15 − trừ (clamp 0..120 — D68).
   function memberKpiFinal(m1, m2, m3, m4, penalty) {
-    var raw = safeNum(m1) * KPI_WEIGHTS.UC
-            + safeNum(m2) * KPI_WEIGHTS.CAPABILITY
-            + safeNum(m3) * KPI_WEIGHTS.COURSES
-            + safeNum(m4) * KPI_WEIGHTS.SHARING
+    var cap = function (v) { return Math.min(KPI_CAP, safeNum(v)); };
+    var raw = cap(m1) * KPI_WEIGHTS.UC
+            + cap(m2) * KPI_WEIGHTS.CAPABILITY
+            + cap(m3) * KPI_WEIGHTS.COURSES
+            + cap(m4) * KPI_WEIGHTS.SHARING
             - safeNum(penalty);
-    return round1(Math.max(0, Math.min(100, raw)));
+    return round1(Math.max(0, Math.min(KPI_CAP, raw)));
   }
-  // Teamlead final = T1·0.60 + T2·0.40 (clamp 0..100).
-  function teamleadKpiFinal(t1, t2) {
-    var raw = safeNum(t1) * TEAMLEAD_WEIGHTS.SELF + safeNum(t2) * TEAMLEAD_WEIGHTS.TEAM;
-    return round1(Math.max(0, Math.min(100, raw)));
+  // Teamlead final = T1·0.40 + T2·0.30 + T3·0.20 + T4·0.10 (clamp 0..120) — D62.
+  function teamleadKpiFinal(t1, t2, t3, t4) {
+    var raw = safeNum(t1) * TEAMLEAD_WEIGHTS.SELF + safeNum(t2) * TEAMLEAD_WEIGHTS.TEAM
+            + safeNum(t3) * TEAMLEAD_WEIGHTS.BIG_TASK + safeNum(t4) * TEAMLEAD_WEIGHTS.RD;
+    return round1(Math.max(0, Math.min(KPI_CAP, raw)));
   }
   // PM final (bản A) = A1·0.30 + A2·0.20 + A3·0.30 + A4·0.20 (clamp 0..100).
   function pmKpiFinal(a1, a2, a3, a4) {
@@ -148,6 +177,11 @@
     TEAMLEAD_WEIGHTS:   TEAMLEAD_WEIGHTS,
     PM_WEIGHTS:         PM_WEIGHTS,
     KPI_PASS:           KPI_PASS,
+    KPI_CAP:            KPI_CAP,
+    okrScore:           okrScore,
+    krRatio:            krRatio,
+    bigTaskScore:       bigTaskScore,
+    exerciseScore:      exerciseScore,
     councilMemberScore: councilMemberScore,
     personalFinalScore: personalFinalScore,
     councilAverage:     councilAverage,

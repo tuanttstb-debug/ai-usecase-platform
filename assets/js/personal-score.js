@@ -1,31 +1,36 @@
 // ─────────────────────────────────────────────────────────────────
-// personal-score.js — H2 Giai đoạn 3: Teamlead chấm điểm cá nhân
+// personal-score.js — Teamlead/admin xem KPI cá nhân từng người + nhập điểm trừ chậm mốc
 //
-// CR 2026-08-26:
-//   • Điểm NĂNG LỰC (M-KPI-2) chấm theo THÁNG (droplist kỳ); cuối kỳ = TB các tháng đã chấm.
-//   • Panel hiển thị RÕ từng nhóm điểm: M-KPI-1 (US, hội đồng — chỉ đọc) · M-KPI-2 (teamlead chấm)
-//     · KPI khác (khóa/lan tỏa/trừ) · KPI tổng hợp dự kiến.
-//   • Slider mặc định 0 khi tháng CHƯA chấm; giữ điểm đã lưu khi SỬA tháng đã chấm.
-//   • Dòng EVD (link bằng chứng ổ share) — chỉ hiển thị, không nhập.
-// Teamlead chấm cho thành viên team mình (role=user). Admin chấm mọi team.
+// Khung D70 (2026-10-09 — tạm áp dụng bản trình 06/10): M1–M4 TỰ TÍNH ở server (KpiEngineH2.gs):
+//   M1 việc lớn (OKR team + hạng mục được giao) · M2 bài tập Đạt theo tuần · M3 khóa hoàn thành + chứng chỉ
+//   · M4 lan tỏa đã duyệt. Bỏ chấm 4 tiêu chí 0–10 theo tháng (D69). Teamlead chỉ nhập số mốc chậm + nhận xét
+//   (ghi PERSONAL_SCORE theo tháng — engine đọc tháng mới nhất).
+// Danh sách: teamlead → thành viên team mình (+ team backup); admin → MỌI người active (gồm teamlead, lãnh đạo — D54).
 // ─────────────────────────────────────────────────────────────────
 (function () {
   'use strict';
 
-  var _members  = [];    // [{username, display_name, team}]
-  var _scoreMap = {};     // username → aggregate row (final_score=TB, months:[...], latest fields)
-  var _current  = null;   // member being scored
-  var _month    = '';     // kỳ tháng đang chấm (nhãn 'Tháng MM/YYYY')
+  var _members  = [];    // [{username, display_name, team, role}]
+  var _scoreMap = {};    // username → dòng PERSONAL_SCORE gộp (months[], milestones_late…)
+  var _kpiMap   = {};    // username → KPI tự tính (kpi-leaderboard)
+  var _current  = null;
+  var _month    = '';
+  var _kpi      = null;  // KPI xem trước của người đang mở
   var _filter   = { search: '', team: '' };
 
   function esc(s) {
-    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
   function showToast(msg, type) {
     if (typeof Toast !== 'undefined') Toast.show(msg, type || 'info'); else alert(msg);
   }
   function _norm(s) { return String(s || '').trim().toLowerCase(); }
   function setTxt(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+  function _fmt(n) { var v = parseFloat(n); return isNaN(v) ? '0' : String(Math.round(v * 10) / 10); }
+  function _passBadge(final) {
+    var ok = (parseFloat(final) || 0) >= ((typeof ScoringH2 !== 'undefined' && ScoringH2.KPI_PASS) || 70);
+    return '<span class="badge ' + (ok ? 'badge-success' : 'badge-warning') + '">' + (ok ? 'Đạt' : 'Chưa đạt') + '</span>';
+  }
 
   function _excluded() {
     return ((typeof APP_CONFIG !== 'undefined' && APP_CONFIG.KPI_EXCLUDED_USERS) || [])
@@ -38,30 +43,37 @@
     document.getElementById('psContent').style.display = 'none';
     var bar = document.getElementById('psFilterBar'); if (bar) bar.style.display = 'none';
     try {
-      var res = await Promise.all([ Api.getUsers(), Api.listPersonalScores('') ]);
+      var res = await Promise.all([
+        Api.getUsers(),
+        Api.listPersonalScores(''),
+        Api.getKpiLeaderboard({}).catch(function () { return null; })
+      ]);
       var users = res[0] || [];
       var scores = (res[1] && res[1].scores) || [];
+      var kpi = (res[2] && res[2].member_ranking) || [];
 
       var me = AuthService.getUser();
       var isAdmin = AuthService.isAdmin();
       var myTeam = me ? _norm(me.team) : '';
-      var myBackup = ((me && me.backup_teams) || []).map(_norm); // team backup chéo (Tutv3 backup CV1…)
+      var myBackup = ((me && me.backup_teams) || []).map(_norm);
       var excl = _excluded();
 
       _members = users.filter(function (u) {
-        if (String(u.role).toLowerCase() !== 'user') return false;   // chỉ thành viên
         if (u.active === false) return false;
         if (excl.indexOf(_norm(u.username)) !== -1) return false;
-        // teamlead: team mình HOẶC team backup; admin: mọi team
-        if (!isAdmin && _norm(u.team) !== myTeam && myBackup.indexOf(_norm(u.team)) === -1) return false;
-        return true;
+        if (isAdmin) return true;                                     // admin: mọi role (D54)
+        if (String(u.role).toLowerCase() !== 'user') return false;    // teamlead: thành viên team mình
+        return _norm(u.team) === myTeam || myBackup.indexOf(_norm(u.team)) !== -1;
       }).map(function (u) {
         return { username: _norm(u.username), display_name: u.display_name || u.username, team: u.team || '',
-                 backup: !isAdmin && _norm(u.team) !== myTeam }; // đánh dấu đang chấm hộ team khác
+                 role: String(u.role || 'user').toLowerCase(),
+                 backup: !isAdmin && _norm(u.team) !== myTeam };
       });
 
       _scoreMap = {};
       scores.forEach(function (s) { _scoreMap[_norm(s.username)] = s; });
+      _kpiMap = {};
+      kpi.forEach(function (k) { _kpiMap[_norm(k.username)] = k; });
 
       _populateTeamFilter(isAdmin);
       _render();
@@ -97,58 +109,46 @@
       wrap.innerHTML = '<p class="empty-state">Không có thành viên nào.</p>';
     } else {
       var rows = list.map(function (m) {
-        var s = _scoreMap[m.username];
-        var scoreCell, statusCell;
-        if (s && s.months_scored) {
-          var rank = (typeof ScoringH2 !== 'undefined') ? ScoringH2.rankInfo(s.final_score) : null;
-          scoreCell  = '<span class="score-chip" style="' + (rank ? 'background:' + rank.color : '') + '">' + s.final_score + '</span>';
-          statusCell = '<span style="color:var(--color-success,#2e7d32)">✓ ' + s.months_scored + ' tháng · ' + esc(s.scored_by || '') + '</span>';
-        } else {
-          scoreCell  = '<span style="color:var(--color-text-muted)">—</span>';
-          statusCell = '<span style="color:var(--color-text-muted)">Chưa chấm</span>';
-        }
-        return '<tr>' +
-          '<td style="font-family:monospace;font-weight:600">' + esc(m.username) + '</td>' +
-          '<td>' + esc(m.display_name) + '</td>' +
-          '<td>' + esc(m.team || '—') + (m.backup ? ' <span class="badge badge-warning" style="font-size:10px">backup</span>' : '') + '</td>' +
-          '<td style="text-align:center">' + scoreCell + '</td>' +
-          '<td>' + statusCell + '</td>' +
-          '<td><button class="btn btn--ghost btn--sm" onclick="PersonalScore._open(\'' + esc(m.username) + '\');return false">' +
-            ((s && s.months_scored) ? 'Chấm/Sửa' : 'Chấm') + '</button></td>' +
+        var k = _kpiMap[m.username];
+        var cell = function (v) { return '<td style="text-align:center">' + (k ? _fmt(v) : '—') + '</td>'; };
+        return '<tr data-user="' + esc(m.username) + '">' +
+          '<td style="font-family:var(--font-mono,monospace);font-weight:600">' + esc(m.username) + '</td>' +
+          '<td>' + esc(m.display_name) + (m.role !== 'user' ? ' <span class="badge badge-muted">' + esc(m.role) + '</span>' : '') + '</td>' +
+          '<td>' + esc(m.team || '—') + (m.backup ? ' <span class="badge badge-warning">backup</span>' : '') + '</td>' +
+          cell(k && k.m1) + cell(k && k.m2) + cell(k && k.m3) + cell(k && k.m4) +
+          '<td style="text-align:center;font-weight:700">' + (k ? _fmt(k.final) : '—') + '</td>' +
+          '<td>' + (k ? _passBadge(k.final) : '<span class="badge badge-muted">Chưa tải</span>') + '</td>' +
+          '<td><button class="btn btn-ghost btn-sm" onclick="PersonalScore._open(\'' + esc(m.username) + '\');return false"><i class="fa-solid fa-magnifying-glass-chart"></i> Xem</button></td>' +
           '</tr>';
       }).join('');
       wrap.innerHTML =
         '<table class="rq-table data-table">' +
         '<thead><tr><th>Username</th><th>Họ tên</th><th>Team</th>' +
-        '<th style="text-align:center">Điểm CN (TB tháng)</th><th>Trạng thái</th><th></th></tr></thead>' +
+        '<th style="text-align:center">M1·40</th><th style="text-align:center">M2·30</th><th style="text-align:center">M3·15</th><th style="text-align:center">M4·15</th>' +
+        '<th style="text-align:center">KPI</th><th>Tình trạng</th><th></th></tr></thead>' +
         '<tbody>' + rows + '</tbody></table>';
     }
 
     var countEl = document.getElementById('psResultCount');
-    if (countEl) countEl.textContent = list.length + ' thành viên';
+    if (countEl) countEl.textContent = list.length + ' người';
 
     document.getElementById('psLoading').style.display = 'none';
     document.getElementById('psContent').style.display = '';
     var bar = document.getElementById('psFilterBar'); if (bar) bar.style.display = '';
   }
 
-  /* ── Kỳ tháng ── */
+  /* ── Kỳ tháng (điểm trừ ghi theo tháng; engine đọc tháng mới nhất) ── */
   function _populateMonths() {
     var sel = document.getElementById('psMonth');
     if (!sel || typeof ScoringH2 === 'undefined') return;
-    var months = ScoringH2.h2Months();
-    sel.innerHTML = months.map(function (m) {
+    sel.innerHTML = ScoringH2.h2Months().map(function (m) {
       return '<option value="' + esc(m) + '">' + esc(m) + '</option>';
     }).join('');
   }
-
-  // Chi tiết tháng đã chấm của member hiện tại (nếu có).
   function _monthDetail(username, month) {
     var s = _scoreMap[username];
     if (!s || !s.months) return null;
-    for (var i = 0; i < s.months.length; i++) {
-      if (String(s.months[i].month) === String(month)) return s.months[i];
-    }
+    for (var i = 0; i < s.months.length; i++) if (String(s.months[i].month) === String(month)) return s.months[i];
     return null;
   }
 
@@ -157,30 +157,21 @@
     var m = _members.filter(function (x) { return x.username === username; })[0];
     if (!m) return;
     _current = m;
-
     setTxt('psMemberUser', m.username);
     setTxt('psMemberName', m.display_name);
-    setTxt('psMemberMeta', 'Team: ' + (m.team || '—') + (m.backup ? ' · (đang chấm hộ — backup)' : ''));
+    setTxt('psMemberMeta', 'Team: ' + (m.team || '—') + (m.backup ? ' · (team backup)' : ''));
 
-    var s = _scoreMap[m.username];
-
-    // Kỳ mặc định = tháng hiện tại trong kỳ H2.
     _month = (typeof ScoringH2 !== 'undefined') ? ScoringH2.currentH2Month() : '';
     var monthSel = document.getElementById('psMonth');
     if (monthSel && _month) monthSel.value = _month;
+    var s = _scoreMap[m.username];
+    var late = document.getElementById('psLate');
+    if (late) late.value = s ? (s.milestones_late || 0) : 0;
+    _fillMonth();
 
-    // KPI khác (nhập 1 lần — lấy giá trị mới nhất của member).
-    setNum('psCourses',     s ? s.courses_completed : 0);
-    setNum('psCoursesPaid', s ? s.courses_paid : 0);
-    var sh = document.getElementById('psSharing'); if (sh) sh.checked = !!(s && s.sharing_achieved);
-    setNum('psLate',        s ? s.milestones_late : 0);
-
-    // EVD (đọc-only).
-    _renderEvd(s ? s.evidence_link : '');
-
-    _fillMonthSliders();     // prefill 4 tiêu chí theo tháng (0 nếu chưa chấm)
-    _updateKpiOther();
-    _loadUsPreview(m.username);   // M-KPI-1 (US) + tổng hợp KPI dự kiến
+    _kpi = null;
+    ['psUsScore', 'psM2', 'psFinalKpi'].forEach(function (id) { setTxt(id, '…'); });
+    _loadPreview(m.username);
 
     var panel = document.getElementById('psPanel');
     var overlay = document.getElementById('psPanelOverlay');
@@ -188,134 +179,56 @@
     panel.classList.add('is-open');
   }
 
-  // Prefill 4 slider theo tháng đang chọn: đã chấm → điểm đã lưu; chưa chấm → 0.
-  function _fillMonthSliders() {
+  function _fillMonth() {
     if (!_current) return;
     var det = _monthDetail(_current.username, _month);
-    var vals = det
-      ? [det.diversity, det.ai_proficiency, det.product_quality, det.quantity_met]
-      : [0, 0, 0, 0];
-    setSlider('psSliderDiv', vals[0]); setSlider('psSliderAi', vals[1]);
-    setSlider('psSliderPq', vals[2]);  setSlider('psSliderQt', vals[3]);
     var cm = document.getElementById('psComment');
     if (cm) cm.value = det ? (det.comment || '') : '';
-
-    // Hint tháng + TB hiện tại.
-    var s = _scoreMap[_current.username];
-    var hint = document.getElementById('psMonthHint');
-    if (hint) hint.textContent = det
-      ? ('Tháng này ĐÃ chấm: ' + det.final_score + '/100 — sửa để ghi đè.')
-      : 'Tháng này CHƯA chấm (mặc định 0).';
-    var avgInfo = document.getElementById('psAvgInfo');
-    if (avgInfo) avgInfo.textContent = (s && s.months_scored)
-      ? (s.final_score + '/100 (TB ' + s.months_scored + ' tháng đã chấm)')
-      : 'chưa có tháng nào';
-
-    _updateProjected();
+    _updatePenalty();
   }
 
-  function setSlider(id, val) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    el.value = (val === undefined || val === null || val === '') ? 0 : val;
-    if (typeof ScoreSlider !== 'undefined') ScoreSlider.refresh(el);
-  }
-  function setNum(id, val) {
-    var el = document.getElementById(id);
-    if (el) el.value = (val === undefined || val === null || val === '') ? 0 : val;
-  }
-  function numVal(id) { var el = document.getElementById(id); return el ? Math.max(0, parseInt(el.value, 10) || 0) : 0; }
-
-  function _renderEvd(link) {
-    var el = document.getElementById('psEvdValue');
-    if (!el) return;
-    var url = String(link || '').trim();
-    if (url && /^https?:\/\//i.test(url)) {
-      el.innerHTML = '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(url) + '</a>';
-    } else if (url) {
-      el.textContent = url;
-    } else {
-      el.textContent = 'Chưa có link bằng chứng (sẽ cập nhật ở ổ share).';
-    }
-  }
-
-  // Preview M-KPI-3 (khóa học) · M-KPI-4 (lan tỏa) · điểm trừ milestone.
-  function _updateKpiOther() {
-    var courses = numVal('psCourses');
-    var paid    = numVal('psCoursesPaid');
-    var sharing = document.getElementById('psSharing');
-    var late    = numVal('psLate');
-    var m3 = (typeof ScoringH2 !== 'undefined') ? ScoringH2.courseScore(courses, paid) : 0;
-    var m4 = (typeof ScoringH2 !== 'undefined') ? ScoringH2.sharingScore(sharing && sharing.checked) : 0;
-    var pen = (typeof ScoringH2 !== 'undefined') ? ScoringH2.milestonePenalty(late) : 0;
-    setTxt('psM3', m3); setTxt('psM4', m4); setTxt('psPenalty', pen);
-    _updateFinalKpi();
-  }
-
-  // M-KPI-1 (US) + tổng hợp KPI dự kiến — fetch từ backend (đọc-only).
-  var _usM1 = 0;
-  async function _loadUsPreview(username) {
-    _usM1 = 0;
-    setTxt('psUsScore', '…');
+  async function _loadPreview(username) {
     try {
       var r = await Api.getMemberKpiPreview(username);
-      _usM1 = (r && typeof r.m1 === 'number') ? r.m1 : 0;
-      setTxt('psUsScore', _usM1 + '/100');
-      var note = document.getElementById('psUsNote');
-      if (note) note.textContent = (r && r.uc_count)
-        ? ('Bình quân điểm hội đồng ' + r.uc_count + ' UC do thành viên sở hữu. Teamlead không chấm mục này.')
-        : 'Chưa có UC nào được hội đồng chấm. Teamlead không chấm mục này.';
-    } catch (e) {
-      setTxt('psUsScore', '0/100');
+      if (!_current || _current.username !== username) return;
+      _kpi = r || null;
+    } catch (e) { _kpi = null; }
+    _renderPreview();
+  }
+
+  function _renderPreview() {
+    var k = _kpi, d = (k && k.detail) || {};
+    if (!k) {
+      setTxt('psUsScore', '—'); setTxt('psM2', '—'); setTxt('psM3', '0'); setTxt('psM4', '0');
+      setTxt('psFinalKpi', '—');
+      var bd0 = document.getElementById('psFinalBreakdown'); if (bd0) bd0.textContent = 'Không tải được KPI tự tính.';
+      return;
     }
-    _updateFinalKpi();
+    setTxt('psUsScore', _fmt(k.m1) + '%');
+    setTxt('psUsNote', 'Việc lớn team: ' + (d.m1_team_ratio === null || d.m1_team_ratio === undefined ? 'chưa đo' : _fmt(d.m1_team_ratio) + '% mục tiêu → ' + _fmt(d.m1_team_score) + '%') +
+      ' · Hạng mục được giao: ' + (d.m1_items_passed || 0) + '/' + (d.m1_items_assigned || 0) + ' đạt đúng hạn' +
+      (d.m1_items_assigned ? '' : ' (chưa được giao — teamlead giao ở tab Việc lớn)'));
+    setTxt('psM2', _fmt(k.m2) + '%');
+    setTxt('psM2Note', (d.m2_pass_weeks || []).length + ' tuần có bài Đạt (tuần 40–52) · 10 bài Đạt = 100%.');
+    setTxt('psM3', _fmt(k.m3));
+    setTxt('psM3Note', '(' + (d.m3_courses_done || 0) + ' khóa' + (d.m3_courses_paid ? ', ' + d.m3_courses_paid + ' trả phí' : '') + ')');
+    setTxt('psM4', _fmt(k.m4));
+    setTxt('psM4Note', '(' + (d.m4_activities || 0) + ' hoạt động)');
+    _updatePenalty();
   }
 
-  function _vals() {
-    function v(id) { var el = document.getElementById(id); return el ? parseInt(el.value, 10) : 0; }
-    return { div: v('psSliderDiv'), ai: v('psSliderAi'), pq: v('psSliderPq'), qt: v('psSliderQt') };
-  }
-
-  // M-KPI-2 (điểm năng lực THÁNG đang chấm).
-  function _updateProjected() {
-    var v = _vals();
-    var final = (typeof ScoringH2 !== 'undefined')
-      ? ScoringH2.personalFinalScore(v.div, v.ai, v.pq, v.qt) : 0;
-    setTxt('psProjected', final);
-    var chip = document.getElementById('psRankChip');
-    if (chip && typeof ScoringH2 !== 'undefined') {
-      var r = ScoringH2.rankInfo(final);
-      chip.textContent = r.label; chip.style.background = r.color; chip.style.display = '';
-    }
-    _updateFinalKpi();
-  }
-
-  // KPI tổng hợp dự kiến = M1·0.40 + M2·0.30 + M3·0.15 + M4·0.15 − trừ.
-  // M2 dùng ở đây = TB các tháng đã chấm CÓ tính tháng đang chấm (thay điểm tháng này bằng giá trị slider).
-  function _updateFinalKpi() {
-    if (typeof ScoringH2 === 'undefined' || !_current) return;
-    var v = _vals();
-    var m2Month = ScoringH2.personalFinalScore(v.div, v.ai, v.pq, v.qt);
-
-    // Gộp tháng đã chấm + ghi đè/thêm tháng hiện tại → TB.
-    var s = _scoreMap[_current.username];
-    var byMonth = {};
-    if (s && s.months) s.months.forEach(function (mo) { byMonth[mo.month] = mo.final_score; });
-    byMonth[_month] = m2Month;   // tháng đang chấm dùng giá trị slider
-    var finals = Object.keys(byMonth).map(function (k) { return byMonth[k]; });
-    var m2Avg = ScoringH2.personalPeriodAvg(finals);
-
-    var m3 = ScoringH2.courseScore(numVal('psCourses'), numVal('psCoursesPaid'));
-    var sh = document.getElementById('psSharing');
-    var m4 = ScoringH2.sharingScore(sh && sh.checked);
-    var pen = ScoringH2.milestonePenalty(numVal('psLate'));
-
-    var finalKpi = ScoringH2.memberKpiFinal(_usM1, m2Avg, m3, m4, pen);
-    setTxt('psFinalKpi', finalKpi + '/100');
-    var chip = document.getElementById('psFinalRank');
-    if (chip) { var r = ScoringH2.rankInfo(finalKpi); chip.textContent = r.label; chip.style.background = r.color; chip.style.display = ''; }
+  function _updatePenalty() {
+    var el = document.getElementById('psLate');
+    var late = el ? Math.max(0, parseInt(el.value, 10) || 0) : 0;
+    var pen = (typeof ScoringH2 !== 'undefined') ? ScoringH2.milestonePenalty(late) : 0;
+    setTxt('psPenalty', pen);
+    if (!_kpi || typeof ScoringH2 === 'undefined') return;
+    var final = ScoringH2.memberKpiFinal(_kpi.m1, _kpi.m2, _kpi.m3, _kpi.m4, pen);
+    setTxt('psFinalKpi', final + '%');
+    var rk = document.getElementById('psFinalRank'); if (rk) rk.innerHTML = _passBadge(final);
     var bd = document.getElementById('psFinalBreakdown');
-    if (bd) bd.innerHTML = 'M1(US) ' + _usM1 + '·40% + M2 ' + m2Avg + '·30% + M3 ' + m3 + '·15% + M4 ' + m4 + '·15% − trừ ' + pen + '%';
+    if (bd) bd.textContent = 'M1 ' + _fmt(_kpi.m1) + '×40% + M2 ' + _fmt(_kpi.m2) + '×30% + M3 ' + _fmt(_kpi.m3) +
+      '×15% + M4 ' + _fmt(_kpi.m4) + '×15% − trừ ' + pen + '% (tối đa 120%, đạt ≥70%).';
   }
 
   function _close() {
@@ -330,83 +243,65 @@
     if (!_current) return;
     var user = AuthService.getUser();
     if (!user) return;
-    var v = _vals();
     var commentEl = document.getElementById('psComment');
+    var lateEl = document.getElementById('psLate');
     var btn = document.getElementById('psSubmitBtn');
-
-    var sharing = document.getElementById('psSharing');
+    // Chỉ còn điểm trừ + nhận xét. Các cột 0–10/khóa/lan tỏa cũ không còn tính KPI (khung D70).
     var payload = {
       Username:        _current.username,
       Display_Name:    _current.display_name,
       Team:            _current.team,
       Month:           _month,
-      Diversity:       v.div,
-      AI_Proficiency:  v.ai,
-      Product_Quality: v.pq,
-      Quantity_Met:    v.qt,
-      Courses_Completed: numVal('psCourses'),
-      Courses_Paid:      numVal('psCoursesPaid'),
-      Sharing_Achieved:  !!(sharing && sharing.checked),
-      Milestones_Late:   numVal('psLate'),
+      Milestones_Late: lateEl ? Math.max(0, parseInt(lateEl.value, 10) || 0) : 0,
       Comment:         commentEl ? commentEl.value.trim() : '',
-      token:          AuthService.getToken(),
-      reviewer_email: user.email
+      token:           AuthService.getToken(),
+      reviewer_email:  user.email
     };
-
     btn.disabled = true; btn.textContent = 'Đang lưu…';
     try {
       await Api.submitPersonalScore(payload);
-      showToast('Đã lưu điểm ' + (_month || 'kỳ') + '!', 'success');
+      showToast('Đã lưu điểm trừ + nhận xét ' + (_month || '') + '!', 'success');
       _close();
       await _load();
     } catch (e) {
-      showToast('Lỗi lưu điểm: ' + (e.message || e), 'error');
+      showToast('Lỗi lưu: ' + (e.message || e), 'error');
     } finally {
-      btn.disabled = false; btn.textContent = 'Lưu điểm tháng này';
+      btn.disabled = false; btn.textContent = 'Lưu điểm trừ + nhận xét';
     }
   }
 
   /* ── Bind ── */
   function _bind() {
     _populateMonths();
-    if (typeof ScoreSlider !== 'undefined') ScoreSlider.enhanceAll(document.getElementById('psPanel'));
-
     var closeBtn = document.getElementById('psPanelClose');
-    if (closeBtn) closeBtn.addEventListener('click', _close);
+    if (closeBtn && !closeBtn._bound) { closeBtn.addEventListener('click', _close); closeBtn._bound = true; }
     var overlay = document.getElementById('psPanelOverlay');
-    if (overlay) overlay.addEventListener('click', _close);
-
-    ['psSliderDiv', 'psSliderAi', 'psSliderPq', 'psSliderQt'].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.addEventListener('input', _updateProjected);
-    });
+    if (overlay && !overlay._bound) { overlay.addEventListener('click', _close); overlay._bound = true; }
     var monthSel = document.getElementById('psMonth');
-    if (monthSel) monthSel.addEventListener('change', function () {
-      _month = monthSel.value; _fillMonthSliders();
-    });
-    ['psCourses', 'psCoursesPaid', 'psSharing', 'psLate'].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.addEventListener('input', _updateKpiOther);
-      if (el && el.type === 'checkbox') el.addEventListener('change', _updateKpiOther);
-    });
+    if (monthSel && !monthSel._bound) {
+      monthSel.addEventListener('change', function () { _month = monthSel.value; _fillMonth(); });
+      monthSel._bound = true;
+    }
+    var late = document.getElementById('psLate');
+    if (late && !late._bound) { late.addEventListener('input', _updatePenalty); late._bound = true; }
     var btn = document.getElementById('psSubmitBtn');
-    if (btn) btn.addEventListener('click', _submit);
+    if (btn && !btn._bound) { btn.addEventListener('click', _submit); btn._bound = true; }
 
     var searchEl = document.getElementById('psSearch');
-    if (searchEl) {
+    if (searchEl && !searchEl._bound) {
       var deb;
       searchEl.addEventListener('input', function () {
         clearTimeout(deb);
         deb = setTimeout(function () { _filter.search = searchEl.value; _render(); }, 250);
       });
+      searchEl._bound = true;
     }
     var teamSel = document.getElementById('psTeamFilter');
-    if (teamSel) teamSel.addEventListener('change', function () { _filter.team = teamSel.value; _render(); });
+    if (teamSel && !teamSel._bound) { teamSel.addEventListener('change', function () { _filter.team = teamSel.value; _render(); }); teamSel._bound = true; }
   }
 
-  // SPA: lazy-init khi router mở #personal-score (teamlead/admin)
   if (window.Router) window.Router.register('personal-score', {
-    title: 'Chấm điểm cá nhân',
+    title: 'KPI cá nhân từng người',
     roles: ['admin', 'champion', 'teamlead'],
     init: function () { _bind(); _load(); }
   });

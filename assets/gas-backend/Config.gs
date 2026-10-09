@@ -27,8 +27,35 @@ var SHEETS = {
   LEARN_REG:   'HOC_TAP_DANG_KY', // CR (2026-10-01): đăng ký bài tập tuần + công cụ + mức dùng AI (1 row/member)
   LEARN_COURSE:'HOC_TAP_KHOA',    // CR (2026-10-01): khóa học tự học + hạn học xong (1 row/khóa)
   BIG_TASK:    'VIEC_LON',        // CR (2026-10-01): việc lớn cấp Trung tâm (PM nhập ở sheet, app chỉ đọc)
-  EXERCISE_WEEK:'BAI_TAP_TUAN'    // CR (2026-10-01 #2): bài tập theo tuần — 1 row/member/tuần (kế hoạch → đã nộp)
+  EXERCISE_WEEK:'BAI_TAP_TUAN',   // CR (2026-10-01 #2): bài tập theo tuần — 1 row/member/tuần (kế hoạch → đã nộp)
+  BIG_TASK_KR: 'VIEC_LON_SO',     // CR-C (2026-10-09, D70): số đo việc lớn — 1 row/chỉ số (trước · mục tiêu khát vọng · thực tế)
+  BIG_TASK_ASSIGN:'VIEC_LON_PHAN_CONG', // CR-C (2026-10-09): phân công hạng mục việc lớn cho từng thành viên + nghiệm thu
+  RD_REPORT:   'RD_BAO_CAO'       // CR-D (2026-10-09): T-KPI-4 R&D — 1 row/teamlead/kỳ (PM nhập tay ở sheet, app chỉ đọc)
 };
+
+// ── Việc lớn: số đo + phân công (CR-C 2026-10-09, D62/D64/D65/D67) ──
+// VIEC_LON giữ nguyên (1 row/việc lớn, PM nhập). Hai tab mới nối theo Task_ID:
+//   VIEC_LON_SO          1 row / chỉ số (KR): Before → Target (mục tiêu khát vọng) → Actual (thực tế).
+//                        Tỷ lệ đạt KR = (Before − Actual) / (Before − Target) — đúng cho cả chỉ số giảm (giờ)
+//                        lẫn tăng (phủ); việc lớn = TB các KR đã có số thực tế (mỗi KR chặn 0..100%).
+//   VIEC_LON_PHAN_CONG   1 row / hạng mục giao cho 1 thành viên: hạn + tiêu chí nghiệm thu + Status
+//                        ('Đang làm' | 'Đạt' | 'Chưa đạt'). Đạt đúng hạn = Status 'Đạt' và Accepted_Date ≤ Due_Date.
+var BIG_TASK_KR_HEADERS = [
+  'KR_ID', 'Task_ID', 'KR_Name', 'Unit', 'Before_Value', 'Target_Value', 'Actual_Value',
+  'Measured_At', 'Note', 'Updated_By', 'Updated_At', 'Active'
+];
+var BIG_TASK_ASSIGN_HEADERS = [
+  'Assign_ID', 'Task_ID', 'Username', 'Display_Name', 'Team', 'Role', 'Item', 'Due_Date',
+  'Acceptance_Criteria', 'Status', 'Accepted_Date', 'Accepted_By', 'Note',
+  'Created_At', 'Updated_At', 'Active'
+];
+var ASSIGN_STATUS = { DOING: 'Đang làm', PASS: 'Đạt', FAIL: 'Chưa đạt' };
+
+// ── R&D teamlead (T-KPI-4) — PM nhập tay ở sheet (kỳ T10/T11/T12), app chỉ đọc ──
+// Đúng hạn = Submitted_Date ≤ Due_Date (cả 2 dạng yyyy-MM-dd). Mỗi kỳ đúng hạn = 1/3.
+var RD_REPORT_HEADERS = [
+  'RD_ID', 'Period', 'Username', 'Team', 'Due_Date', 'Submitted_Date', 'Link', 'Note'
+];
 
 // ── Kế hoạch học tập (CR 2026-10-01, LearningPlanService.gs) ───────
 // Cột của 3 tab định dạng TEXT để ngày giữ dạng yyyy-MM-dd. PM/teamlead sửa tay được.
@@ -74,8 +101,18 @@ var SHARING_CLAIM_HEADERS = [
 var AI_EXERCISE_HEADERS = [
   'Exercise_ID', 'Title', 'Description', 'Prompt', 'Demo_Link',
   'Owner_Name', 'Owner_Email', 'Team', 'Created_At', 'Updated_At', 'Active',
-  'Week'                                   // CR (2026-10-01 #2): tuần ISO "2026-W40" — gắn bài vào vòng tuần
+  'Week',                                  // CR (2026-10-01 #2): tuần ISO "2026-W40" — gắn bài vào vòng tuần
+  // ── CR-A (2026-10-09, D69): 4 ô mới + teamlead chấm Đạt/Chưa đạt từng bài → M-KPI-2 tự đếm ──
+  'Hours_Before', 'Hours_After',           // (2) giờ làm trước / sau khi có AI (giờ/lần)
+  'AI_Check',                              // (3) AI sai ở đâu, đã kiểm chứng và sửa gì
+  'Reuse_Template',                        // (4) câu lệnh/mẫu người khác dùng lại được (link hoặc mô tả)
+  'Big_Task_Ref',                          // gắn hạng mục việc lớn (Assign_ID) hoặc việc lớn (Task_ID)
+  'Review_Status',                         // '' = chờ chấm · 'Đạt' · 'Chưa đạt'
+  'Review_Criteria',                       // tiêu chí đạt, dạng "1,2,4" (bài đạt = ≥3/4)
+  'Reviewed_By', 'Reviewed_At', 'Review_Comment'
 ];
+var EXERCISE_REVIEW = { PASS: 'Đạt', FAIL: 'Chưa đạt' };
+var EXERCISE_PASS_MIN_CRITERIA = 3;        // bài đạt = ≥3/4 tiêu chí (D69)
 
 // ── REQ_DEDUP Column Headers (Round 2 T2 — idempotency) ────────────
 // Mỗi row = 1 request write đã xử lý xong (theo reqId client gửi). Dùng để:
@@ -414,21 +451,36 @@ var UC_REUSE_HEADERS = [
 ];
 var H2_REUSE_THRESHOLD = 3;  // ≥3 người tái dùng (khác chủ) → đạt điều kiện lan tỏa (ii)
 
-// ── KPI tổng hợp Member (Đợt 2) — M1..M4 + điểm trừ milestone ──────
-// Member final = M1·0.40 + M2·0.30 + M3·0.15 + M4·0.15 − điểm trừ (clamp 0..100).
+// ── KPI tổng hợp Member — khung D70 (2026-10-09: tạm áp dụng bản trình 06/10 — D65/D67/D68/D69) ──
+// Member final = M1·0.40 + M2·0.30 + M3·0.15 + M4·0.15 − điểm trừ; từng chỉ tiêu trần 120, tổng trần 120 (D68).
+//   M1 Việc lớn  = 50% kết quả việc lớn của team (thang OKR) + 50% hạng mục cá nhân đạt nghiệm thu đúng hạn (D67).
+//   M2 Bài tập   = số TUẦN (40→52) có ≥1 bài teamlead chấm "Đạt" × 10% (mỗi tuần tối đa 1 bài; 10 bài = 100) (D69).
+//   M3 Tự học    = khóa "Hoàn thành" + có link chứng chỉ × 25% (trả phí ×2) — đếm thẳng HOC_TAP_KHOA (D69).
+//   M4 Lan tỏa   = hoạt động đã duyệt: 0 → 0 · 1 → 100 · ≥2 → 120 (D69).
+// Thang OKR (D65): tỷ lệ đạt mục tiêu khát vọng r: <30% → 0 · 30–70% → r/70 · 70–100% → 100→120 tuyến tính · ≥100% → 120.
 var H2_KPI_WEIGHTS = {
-  UC:         0.40,  // M-KPI-1: điểm US cá nhân (bình quân UC hội đồng chấm)
-  CAPABILITY: 0.30,  // M-KPI-2: năng lực ứng dụng (PERSONAL_SCORE.Final_Score)
-  COURSES:    0.15,  // M-KPI-3: khóa học
+  UC:         0.40,  // M-KPI-1: việc lớn (tên khóa giữ 'UC' để tương thích code cũ)
+  CAPABILITY: 0.30,  // M-KPI-2: bài tập AI tuần (tự đếm bài Đạt)
+  COURSES:    0.15,  // M-KPI-3: tự học (đếm khóa hoàn thành + chứng chỉ)
   SHARING:    0.15   // M-KPI-4: lan tỏa
 };
+var H2_KPI_CAP          = 120;  // trần từng chỉ tiêu + trần tổng (D68)
 var H2_COURSE_TARGET   = 4;    // 4 khóa = 100%
 var H2_COURSE_PCT_EACH = 25;   // mỗi khóa 25% (khóa trả phí tính x2)
+var H2_M2_YEAR         = 2026; // M-KPI-2: kỳ đếm bài tập — tuần ISO 40 → 52 năm 2026
+var H2_M2_WEEK_FROM    = 40;  // anh Tuân chốt 09/10: tính từ tuần 40 (khớp chấm bù bài W40–41)
+var H2_M2_WEEK_TO      = 52;
+var H2_M2_PCT_EACH     = 10;   // mỗi tuần có bài Đạt = 10% (10 bài = 100%, 12 bài = 120%)
+var H2_M1_TEAM_SHARE   = 0.5;  // M1 = 50% kết quả việc lớn team + 50% hạng mục cá nhân
+var H2_OKR = { FLOOR: 30, FULL: 70, MAX_RATIO: 100, FULL_SCORE: 100, MAX_SCORE: 120 };
 var H2_MILESTONE_PENALTY_EACH = 2;   // −2% / milestone chậm
 var H2_MILESTONE_PENALTY_MAX  = 10;  // tổng trừ tối đa −10%
 
-// ── KPI Teamlead (Đợt 2) — 60/40 ──────────────────────────────────
-var H2_TEAMLEAD_WEIGHTS = { SELF: 0.60, TEAM: 0.40 };
+// ── KPI Teamlead — 40/30/20/10 (GĐ duyệt 06/10, D62; bản 60/40 cũ: xem git) ──
+//   T1 KPI cá nhân teamlead (tính như member) · T2 % thành viên team đạt ≥70% (mẫu số = TOÀN BỘ member active
+//   của team) · T3 việc lớn của team (thang OKR) · T4 R&D (mỗi kỳ T10/T11/T12 nộp đúng hạn = 1/3).
+var H2_TEAMLEAD_WEIGHTS = { SELF: 0.40, TEAM: 0.30, BIG_TASK: 0.20, RD: 0.10 };
+var H2_RD_PERIODS = ['T10/2026', 'T11/2026', 'T12/2026'];
 var H2_KPI_PASS = 70;  // ngưỡng "đạt KPI cá nhân" cho T-KPI-2 (% thành viên ≥70%)
 
 // ── KPI PM (Đợt 2) — bản A đã chốt (D10 hub) 30/20/30/20 ──────────

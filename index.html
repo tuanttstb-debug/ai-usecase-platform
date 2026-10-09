@@ -68,7 +68,7 @@
         </a>
         <a href="#my-score" class="sidebar-nav-item" data-view="my-score" role="menuitem">
           <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg></i>
-          <span class="sidebar-nav-label">Tự chấm KPI</span>
+          <span class="sidebar-nav-label">KPI của tôi</span>
         </a>
 
         <div class="sidebar-divider" aria-hidden="true" data-roles="admin champion teamlead"></div>
@@ -84,11 +84,11 @@
         </a>
         <a href="#personal-score" class="sidebar-nav-item" data-view="personal-score" data-roles="admin champion teamlead" role="menuitem">
           <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg></i>
-          <span class="sidebar-nav-label">Chấm điểm cá nhân</span>
+          <span class="sidebar-nav-label">KPI từng người</span>
         </a>
         <a href="#score-review" class="sidebar-nav-item" data-view="score-review" data-roles="admin champion teamlead" role="menuitem">
           <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></i>
-          <span class="sidebar-nav-label">Duyệt chấm điểm</span>
+          <span class="sidebar-nav-label">Chấm bài &amp; lan tỏa</span>
         </a>
         <a href="#workflow-catalog" class="sidebar-nav-item" data-view="workflow-catalog" data-roles="admin" role="menuitem">
           <i class="sidebar-nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg></i>
@@ -300,9 +300,9 @@
         <!-- ═══ VIEW: personal-score (Chấm điểm cá nhân, teamlead/admin) ═══ -->
         <section data-view="personal-score" hidden>
           <p style="color:var(--color-text-secondary);margin-bottom:var(--space-4)">
-            Teamlead chấm <strong>điểm năng lực (M-KPI-2)</strong> cho thành viên team mình theo <strong>từng tháng</strong> — 4 tiêu chí (thang 0–10):
-            <strong>Đa dạng 30% · Thành thạo AI 20% · Chất lượng SP 30% · Số lượng đủ 20%</strong>.
-            Điểm năng lực cuối kỳ = <strong>trung bình các tháng đã chấm</strong>. Chấm lại 1 tháng sẽ ghi đè tháng đó.
+            Từ 01/10/2026 KPI cá nhân <strong>tự tính</strong> (theo chỉ đạo của anh Cường): <strong>M1 Việc lớn 40% · M2 Bài tập 30% · M3 Tự học 15% · M4 Lan tỏa 15%</strong>, tối đa 120%, đạt ≥70%.
+            Teamlead tác động bằng cách <strong>giao + nghiệm thu hạng mục việc lớn</strong> (tab Việc lớn), <strong>chấm Đạt/Chưa đạt từng bài</strong> và <strong>duyệt lan tỏa</strong> (màn "Chấm bài &amp; lan tỏa").
+            Màn này để xem KPI từng người và nhập <strong>số mốc chậm</strong> (điểm trừ).
           </p>
           <div id="psLoading" class="empty-state">Đang tải danh sách thành viên…</div>
           <div class="rq-filter-bar" id="psFilterBar" style="display:none">
@@ -325,79 +325,62 @@
               </button>
             </div>
             <div class="review-panel-body">
+              <!-- Khung D70 (2026-10-09): M1–M4 TỰ TÍNH từ dữ liệu (việc lớn · bài Đạt · khóa hoàn thành · lan tỏa).
+                   Teamlead chỉ nhập số mốc chậm (điểm trừ) + nhận xét. Chấm 4 tiêu chí 0–10 theo tháng đã bỏ (D69). -->
               <div class="ps-group ps-group--us">
                 <div class="ps-group-head">
                   <span class="ps-group-tag ps-tag-us">M-KPI-1</span>
-                  <span class="ps-group-title">Điểm US (hội đồng chấm · 40%)</span>
+                  <span class="ps-group-title">Việc lớn (40%)</span>
                   <span class="ps-group-score" id="psUsScore">—</span>
                 </div>
-                <div class="ps-group-note" id="psUsNote">Bình quân điểm hội đồng các UC do thành viên sở hữu. Teamlead không chấm mục này.</div>
+                <div class="ps-group-note" id="psUsNote">50% kết quả việc lớn của team (thang OKR) + 50% hạng mục được giao đạt nghiệm thu đúng hạn.</div>
               </div>
               <div class="ps-group ps-group--m2">
                 <div class="ps-group-head">
                   <span class="ps-group-tag ps-tag-m2">M-KPI-2</span>
-                  <span class="ps-group-title">Điểm năng lực (teamlead chấm · 30%)</span>
-                  <span class="ps-group-score" id="psProjected">—</span>
-                  <span class="rank-chip" id="psRankChip"></span>
+                  <span class="ps-group-title">Bài tập AI tuần (30%)</span>
+                  <span class="ps-group-score" id="psM2">—</span>
                 </div>
-                <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between;margin-bottom:var(--space-3)">
-                  <label class="rp-score-label" style="flex:1;margin:0"><strong>Kỳ chấm (tháng)</strong></label>
-                  <select id="psMonth" class="form-control" style="width:170px"></select>
-                </div>
-                <div class="ps-month-hint" id="psMonthHint"></div>
-                <div class="rp-score-section" style="margin-top:var(--space-2)">
-                  <div class="rp-score-row"><label class="rp-score-label">Mức độ đa dạng (30%)</label><input type="range" id="psSliderDiv" class="score-slider" min="0" max="10" step="1" value="0"></div>
-                  <div class="rp-score-row"><label class="rp-score-label">Thành thạo ứng dụng AI (20%)</label><input type="range" id="psSliderAi" class="score-slider" min="0" max="10" step="1" value="0"></div>
-                  <div class="rp-score-row"><label class="rp-score-label">Chất lượng sản phẩm (30%)</label><input type="range" id="psSliderPq" class="score-slider" min="0" max="10" step="1" value="0"></div>
-                  <div class="rp-score-row"><label class="rp-score-label">Số lượng đủ theo yêu cầu (20%)</label><input type="range" id="psSliderQt" class="score-slider" min="0" max="10" step="1" value="0"></div>
-                </div>
-                <div class="ps-group-note">Điểm năng lực cuối kỳ (M-KPI-2) = <strong>trung bình các tháng đã chấm</strong>. Hiện: <strong id="psAvgInfo">chưa có tháng nào</strong>.</div>
+                <div class="ps-group-note" id="psM2Note">Mỗi tuần 40–52 có bài được chấm Đạt = 10%. Chấm bài ở màn "Chấm bài &amp; lan tỏa".</div>
               </div>
               <div class="ps-group ps-group--other">
                 <div class="ps-group-head">
                   <span class="ps-group-tag ps-tag-other">M-KPI-3/4</span>
-                  <span class="ps-group-title">KPI khác + điểm trừ (nhập 1 lần)</span>
-                </div>
-                <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between">
-                  <label class="rp-score-label" style="flex:1">Số khóa học AI đã hoàn thành</label>
-                  <input type="number" id="psCourses" class="form-control" min="0" max="50" step="1" value="0" style="width:80px">
-                </div>
-                <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between">
-                  <label class="rp-score-label" style="flex:1">Trong đó khóa <strong>trả phí</strong> (hệ số x2)</label>
-                  <input type="number" id="psCoursesPaid" class="form-control" min="0" max="50" step="1" value="0" style="width:80px">
-                </div>
-                <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3)">
-                  <input type="checkbox" id="psSharing" style="width:18px;height:18px">
-                  <label class="rp-score-label" for="psSharing" style="flex:1;margin:0">Lan tỏa AI đạt (≥1 buổi chia sẻ HOẶC UC được team khác tái dùng — xác nhận ≥3 người)</label>
-                </div>
-                <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between">
-                  <label class="rp-score-label" style="flex:1">Số milestone chậm (do cá nhân phụ trách)</label>
-                  <input type="number" id="psLate" class="form-control" min="0" max="20" step="1" value="0" style="width:80px">
+                  <span class="ps-group-title">Tự học (15%) · Lan tỏa (15%)</span>
                 </div>
                 <div class="ps-kpi-preview">
-                  <div>M-KPI-3 (khóa học, 15%): <strong id="psM3">0</strong>/100</div>
-                  <div>M-KPI-4 (lan tỏa, 15%): <strong id="psM4">0</strong>/100</div>
-                  <div>Điểm trừ milestone: <strong id="psPenalty" style="color:var(--color-error,#c62828)">0</strong>%</div>
+                  <div>M-KPI-3 (khóa hoàn thành + chứng chỉ): <strong id="psM3">0</strong>% <span id="psM3Note" style="color:var(--color-text-muted)"></span></div>
+                  <div>M-KPI-4 (hoạt động lan tỏa đã duyệt): <strong id="psM4">0</strong>% <span id="psM4Note" style="color:var(--color-text-muted)"></span></div>
                 </div>
               </div>
-              <div class="ps-evd-row" id="psEvdRow">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
-                <span class="ps-evd-label">Bằng chứng (EVD):</span>
-                <span class="ps-evd-value" id="psEvdValue">—</span>
+              <div class="ps-group ps-group--other">
+                <div class="ps-group-head">
+                  <span class="ps-group-title">Điểm trừ chậm mốc (teamlead nhập)</span>
+                </div>
+                <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between;margin-bottom:var(--space-2)">
+                  <label class="rp-score-label" style="flex:1;margin:0" for="psMonth"><strong>Kỳ ghi nhận (tháng)</strong></label>
+                  <select id="psMonth" class="form-control" style="width:170px"></select>
+                </div>
+                <div class="rp-score-row" style="display:flex;align-items:center;gap:var(--space-3);justify-content:space-between">
+                  <label class="rp-score-label" style="flex:1" for="psLate">Số mốc chậm do cá nhân phụ trách (−2%/mốc, tối đa −10%)</label>
+                  <input type="number" id="psLate" class="form-control" min="0" max="20" step="1" value="0" style="width:80px">
+                </div>
+                <div class="ps-kpi-preview"><div>Điểm trừ: <strong id="psPenalty">0</strong>%</div></div>
               </div>
               <div class="ps-group ps-group--final">
                 <div class="ps-group-head">
-                  <span class="ps-group-title">KPI tổng hợp (dự kiến)</span>
+                  <span class="ps-group-title">KPI cá nhân (tự tính)</span>
                   <span class="ps-group-score ps-final-score" id="psFinalKpi">—</span>
-                  <span class="rank-chip" id="psFinalRank"></span>
+                  <span id="psFinalRank"></span>
                 </div>
                 <div class="ps-group-note" id="psFinalBreakdown"></div>
               </div>
               <div class="rp-score-section">
-                <div class="rp-section-label">Nhận xét (tháng này)</div>
+
+                <div class="rp-section-label">Nhận xét (kỳ này)</div>
                 <textarea id="psComment" class="form-control" rows="3" placeholder="Nhận xét cho thành viên này…" style="resize:vertical"></textarea>
               </div>
-              <button class="btn btn-primary" id="psSubmitBtn" style="width:100%;margin-top:var(--space-4)">Lưu điểm tháng này</button>
+              <button class="btn btn-primary" id="psSubmitBtn" style="width:100%;margin-top:var(--space-4)">Lưu điểm trừ + nhận xét</button>
             </div>
           </aside>
         </section>
@@ -446,8 +429,8 @@
             </div>
             <div id="tabTop"><div class="section-panel"><div class="section-panel-header"><span class="section-panel-title">🏆 Điểm US — bình quân hội đồng (30/40/30)</span><span id="topCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span></div><div class="section-panel-body" id="topTable"><div class="lb-loading"><div class="spinner"></div> Đang tải...</div></div></div></div>
             <div id="tabPersonal" style="display:none"><div class="section-panel"><div class="section-panel-header"><span class="section-panel-title">👤 Điểm cá nhân — teamlead chấm (30/20/30/20)</span><span id="personalCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span></div><div class="section-panel-body" id="personalTable"><div class="lb-loading"><div class="spinner"></div> Đang tải...</div></div></div></div>
-            <div id="tabKpiMember" style="display:none"><div class="section-panel"><div class="section-panel-header"><span class="section-panel-title">📊 KPI tổng hợp Member — M1·40 + M2·30 + M3·15 + M4·15 − trừ</span><span id="kpiMemberCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span></div><div class="section-panel-body" id="kpiMemberTable"><div class="lb-loading"><div class="spinner"></div> Đang tải...</div></div></div></div>
-            <div id="tabKpiTeamlead" style="display:none"><div class="section-panel"><div class="section-panel-header"><span class="section-panel-title">🧭 KPI Teamlead — T1 (KPI cá nhân) 60% + T2 (% team ≥70%) 40%</span><span id="kpiTeamleadCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span></div><div class="section-panel-body" id="kpiTeamleadTable"><div class="lb-loading"><div class="spinner"></div> Đang tải...</div></div></div></div>
+            <div id="tabKpiMember" style="display:none"><div class="section-panel"><div class="section-panel-header"><span class="section-panel-title">📊 KPI cá nhân (mọi người) — M1 Việc lớn·40 + M2 Bài tập·30 + M3 Tự học·15 + M4 Lan tỏa·15 − trừ · tối đa 120 · đạt ≥70</span><span id="kpiMemberCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span></div><div class="section-panel-body" id="kpiMemberTable"><div class="lb-loading"><div class="spinner"></div> Đang tải...</div></div></div></div>
+            <div id="tabKpiTeamlead" style="display:none"><div class="section-panel"><div class="section-panel-header"><span class="section-panel-title">🧭 KPI Teamlead — T1 cá nhân·40 + T2 % thành viên đạt·30 + T3 việc lớn·20 + T4 R&amp;D·10</span><span id="kpiTeamleadCount" style="font-size:var(--text-xs); color:var(--color-text-secondary)"></span></div><div class="section-panel-body" id="kpiTeamleadTable"><div class="lb-loading"><div class="spinner"></div> Đang tải...</div></div></div></div>
             <div id="tabHeatmap" style="display:none"><div class="section-panel"><div class="section-panel-header"><span class="section-panel-title">🔥 Heatmap KPI — team & cá nhân (xanh–vàng–đỏ)</span><span id="heatmapLegend" style="font-size:var(--text-xs);color:var(--color-text-secondary)"></span></div><div class="section-panel-body" id="heatmapBody"><div class="lb-loading"><div class="spinner"></div> Đang tải...</div></div></div></div>
           </div>
 
@@ -748,6 +731,16 @@
                   <div class="form-group"><label class="form-label" for="exDescription">Mô tả ngắn gọn</label><textarea id="exDescription" class="form-input" rows="2" placeholder="Thao tác này giải quyết việc gì, dùng khi nào..."></textarea></div>
                   <div class="form-group"><label class="form-label" for="exPrompt">Prompt <span class="form-required">*</span></label><textarea id="exPrompt" class="form-input" rows="4" placeholder="Dán prompt để đồng nghiệp dùng lại..."></textarea></div>
                   <div class="form-group"><label class="form-label" for="exDemoLink">Link demo (ổ chung)</label><input type="text" id="exDemoLink" class="form-input" placeholder="https://drive.google.com/... hoặc \\ho-file01\... (tùy chọn)"></div>
+                  <!-- CR-A (2026-10-09, D69): 4 ô để teamlead chấm Đạt/Chưa đạt — bài Đạt cần ≥3/4 tiêu chí -->
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:var(--space-3)">
+                    <div class="form-group"><label class="form-label" for="exWeek">Bài của tuần</label><select id="exWeek" class="form-input" aria-label="Chọn tuần của bài"></select></div>
+                    <div class="form-group"><label class="form-label" for="exHoursBefore">Giờ làm trước AI</label><input type="number" id="exHoursBefore" class="form-input" min="0" step="0.25" placeholder="VD: 3"></div>
+                    <div class="form-group"><label class="form-label" for="exHoursAfter">Giờ làm sau AI</label><input type="number" id="exHoursAfter" class="form-input" min="0" step="0.25" placeholder="VD: 1"></div>
+                  </div>
+                  <div class="form-group"><label class="form-label" for="exAiCheck">AI sai ở đâu, bạn kiểm chứng và sửa gì</label><textarea id="exAiCheck" class="form-input" rows="2" maxlength="2000" placeholder="VD: AI tính sai tỷ lệ nợ/vốn — đối chiếu BCTC gốc và sửa lại"></textarea></div>
+                  <div class="form-group"><label class="form-label" for="exReuse">Mẫu/câu lệnh người khác dùng lại được</label><input type="text" id="exReuse" class="form-input" maxlength="1000" placeholder="Link mẫu ở ổ chung, hoặc ghi: dùng lại prompt trên cho loại hồ sơ nào"></div>
+                  <div class="form-group"><label class="form-label" for="exBigTask">Gắn hạng mục việc lớn</label><select id="exBigTask" class="form-input" aria-label="Gắn hạng mục việc lớn"><option value="">— Không gắn —</option></select></div>
+                  <p id="exCriteriaHint" style="margin:0 0 var(--space-2);font-size:var(--text-xs);color:var(--color-text-muted)">Teamlead chấm <b>Đạt</b> khi bài có ≥3/4: (1) việc thật, có đầu vào/đầu ra · (2) giờ trước/sau · (3) AI sai ở đâu, đã kiểm chứng · (4) mẫu dùng lại. Mỗi tuần tính tối đa 1 bài; 10 bài Đạt (tuần 40–52) = 100% KPI bài tập.</p>
                   <div id="exFormMsg" style="color:var(--color-error);font-size:var(--text-sm);min-height:18px"></div>
                   <div style="display:flex;gap:8px;justify-content:flex-end">
                     <button type="button" id="exCancelBtn" class="btn btn-outline" style="display:none">Hủy sửa</button>
@@ -854,77 +847,97 @@
 
             <!-- ── Tab: Việc lớn ── -->
             <div class="lp-panel" data-lppanel="bigtasks" role="tabpanel" hidden>
-              <p style="margin:0 0 var(--space-3);color:var(--color-text-secondary);font-size:var(--text-sm)">5–6 việc lớn cấp Trung tâm do teamlead phụ trách. Nguồn: <span class="badge badge-success">Team tự chọn</span> hoặc <span class="badge badge-primary">PM đề xuất</span>.</p>
+              <p style="margin:0 0 var(--space-3);color:var(--color-text-secondary);font-size:var(--text-sm)">Việc lớn cấp Trung tâm do teamlead phụ trách. Nguồn: <span class="badge badge-success">Team tự chọn</span> hoặc <span class="badge badge-primary">PM đề xuất</span>. Kết quả chấm theo thang OKR: đạt ≥70% mục tiêu khát vọng = 100% · đạt đủ = 120% · dưới 30% = 0. Bấm <b>Chi tiết</b> để xem số đo và phân công.</p>
               <div id="lpBigTasks"></div>
+              <!-- CR-C (2026-10-09): số đo trước/mục tiêu khát vọng/thực tế + phân công hạng mục (teamlead sửa, mọi người xem) -->
+              <div id="lpBtDetail" class="dash-card" style="padding:var(--space-5);margin-top:var(--space-4)" hidden>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:var(--space-3)">
+                  <h3 id="lpBtTitle" style="margin:0;font-size:var(--text-lg);font-weight:var(--font-weight-semibold)">Chi tiết việc lớn</h3>
+                  <span id="lpBtScore"></span>
+                </div>
+                <h4 style="margin:0 0 var(--space-2);font-size:var(--text-base)">Số đo (trước → mục tiêu khát vọng → thực tế)</h4>
+                <div id="lpBtKrs" style="margin-bottom:var(--space-3)"></div>
+                <div id="lpBtKrForm" data-bt-manage style="display:none;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:var(--space-2);align-items:end;margin-bottom:var(--space-5)">
+                  <div class="form-group" style="grid-column:span 2"><label class="form-label" for="lpKrName">Chỉ số</label><input type="text" id="lpKrName" class="form-input" maxlength="300" placeholder="VD: Thời gian 1 vòng quy trình"></div>
+                  <div class="form-group"><label class="form-label" for="lpKrUnit">Đơn vị</label><input type="text" id="lpKrUnit" class="form-input" maxlength="40" placeholder="giờ/vòng"></div>
+                  <div class="form-group"><label class="form-label" for="lpKrBefore">Trước</label><input type="number" id="lpKrBefore" class="form-input" step="any"></div>
+                  <div class="form-group"><label class="form-label" for="lpKrTarget">Mục tiêu khát vọng</label><input type="number" id="lpKrTarget" class="form-input" step="any"></div>
+                  <div class="form-group"><label class="form-label" for="lpKrActual">Thực tế</label><input type="number" id="lpKrActual" class="form-input" step="any" placeholder="đo sau"></div>
+                  <div class="form-group" style="display:flex;gap:6px"><button type="button" id="lpKrCancel" class="btn btn-outline btn-sm" style="display:none">Hủy</button><button type="button" id="lpKrBtn" class="btn btn-primary btn-sm">Thêm chỉ số</button></div>
+                </div>
+                <h4 style="margin:0 0 var(--space-2);font-size:var(--text-base)">Phân công hạng mục (mọi thành viên đều có vai)</h4>
+                <div id="lpBtAssigns" style="margin-bottom:var(--space-3)"></div>
+                <div id="lpBtAsForm" data-bt-manage style="display:none;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-2);align-items:end">
+                  <div class="form-group"><label class="form-label" for="lpAsUser">Thành viên</label><select id="lpAsUser" class="form-input" aria-label="Thành viên được giao"></select></div>
+                  <div class="form-group"><label class="form-label" for="lpAsRole">Vai</label><input type="text" id="lpAsRole" class="form-input" maxlength="120" placeholder="làm chính · xây · thử · đo…"></div>
+                  <div class="form-group" style="grid-column:span 2"><label class="form-label" for="lpAsItem">Hạng mục được giao</label><input type="text" id="lpAsItem" class="form-input" maxlength="500"></div>
+                  <div class="form-group"><label class="form-label" for="lpAsDue">Hạn</label><input type="date" id="lpAsDue" class="form-input"></div>
+                  <div class="form-group" style="grid-column:span 2"><label class="form-label" for="lpAsCriteria">Tiêu chí nghiệm thu</label><input type="text" id="lpAsCriteria" class="form-input" maxlength="1000"></div>
+                  <div class="form-group" style="display:flex;gap:6px"><button type="button" id="lpAsCancel" class="btn btn-outline btn-sm" style="display:none">Hủy</button><button type="button" id="lpAsBtn" class="btn btn-primary btn-sm">Giao hạng mục</button></div>
+                </div>
+                <div id="lpBtMsg" style="color:var(--color-error);font-size:var(--text-sm);min-height:18px"></div>
+              </div>
             </div>
           </div>
         </section>
 
-        <!-- ═══ VIEW: my-score (Member tự chấm KPI + khai Lan tỏa AI) ═══ -->
+        <!-- ═══ VIEW: my-score — KPI của tôi (khung D70, 2026-10-09: TỰ TÍNH, không tự khai) + khai Lan tỏa AI ═══ -->
         <section data-view="my-score" hidden>
-          <div class="app-container" style="max-width:840px;margin:0 auto;padding:var(--space-6) var(--space-4)">
+          <div class="app-container" style="max-width:900px;margin:0 auto;padding:var(--space-6) var(--space-4)">
             <div style="margin-bottom:var(--space-4)">
-              <h1 style="margin:0;font-size:var(--text-2xl);font-weight:var(--font-weight-bold)">Tự chấm KPI của tôi</h1>
-              <p style="margin:4px 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)">Tự chấm KPI2 (năng lực AI) + KPI3 (khóa học) và khai Lan tỏa AI (KPI4) — nộp teamlead duyệt. Kỳ: <b id="myScoreMonth"></b>. Điểm chỉ tính vào KPI sau khi được duyệt.</p>
+              <h1 style="margin:0;font-size:var(--text-2xl);font-weight:var(--font-weight-bold)">KPI của tôi</h1>
+              <p style="margin:4px 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)">Trang tự tính KPI cá nhân theo phương pháp đo áp dụng từ 01/10/2026 (theo chỉ đạo của anh Cường): <b>M1 Việc lớn 40%</b> · <b>M2 Bài tập AI tuần 30%</b> · <b>M3 Tự học 15%</b> · <b>M4 Lan tỏa 15%</b>. Mỗi chỉ tiêu tối đa 120%, tổng tối đa 120%; <b>đạt KPI ≥70%</b>. Bạn không cần tự khai số — chỉ cần nộp bài, cập nhật khóa học và khai hoạt động lan tỏa.</p>
             </div>
 
-            <div class="dash-card" style="padding:var(--space-5);margin-bottom:var(--space-6)">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:var(--space-3)">
-                <h3 style="margin:0;font-size:var(--text-lg)">KPI2 · Năng lực ứng dụng AI (tự chấm 0–10)</h3>
-                <span id="ssStatus"></span>
+            <div class="dash-card" id="myKpiCard" style="padding:var(--space-5);margin-bottom:var(--space-6)">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:var(--space-3)">
+                <h3 style="margin:0;font-size:var(--text-lg)">KPI cá nhân hiện tại</h3>
+                <span id="myKpiFinal"><span class="list-loading">Đang tính…</span></span>
               </div>
-              <div id="ssReviewMsg" style="color:var(--color-error);font-size:var(--text-sm);margin-bottom:6px"></div>
-              <div id="ssLockMsg" style="display:none;font-size:var(--text-sm);color:var(--color-success,#2e7d32);margin-bottom:6px">✓ Đã được duyệt — kỳ này đã khóa. Cần teamlead mở lại (từ chối) để sửa.</div>
-              <div class="form-row-2">
-                <div class="form-group"><label class="form-label">Đa dạng ứng dụng (0–10)</label><input type="number" id="ssDiv" class="form-input" min="0" max="10" step="0.5" placeholder="0"></div>
-                <div class="form-group"><label class="form-label">Thành thạo AI (0–10)</label><input type="number" id="ssAi" class="form-input" min="0" max="10" step="0.5" placeholder="0"></div>
-              </div>
-              <div class="form-row-2">
-                <div class="form-group"><label class="form-label">Chất lượng kết quả (0–10)</label><input type="number" id="ssPq" class="form-input" min="0" max="10" step="0.5" placeholder="0"></div>
-                <div class="form-group"><label class="form-label">Số lượng/tần suất (0–10)</label><input type="number" id="ssQm" class="form-input" min="0" max="10" step="0.5" placeholder="0"></div>
-              </div>
-              <div class="form-group"><label class="form-label">Link bằng chứng KPI2 (năng lực AI)</label><input type="text" id="ssEvM2" class="form-input" placeholder="https://... (ổ chung)"></div>
-              <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">Điểm KPI2 tự chấm dự kiến: <b id="ssPrevM2">0/100</b></div>
-
-              <h3 style="margin:var(--space-5) 0 var(--space-2);font-size:var(--text-lg)">KPI3 · Khóa học AI (≥4 khóa = 100%, khóa trả phí ×2)</h3>
-              <div class="form-row-2">
-                <div class="form-group"><label class="form-label">Số khóa đã hoàn thành</label><input type="number" id="ssCourses" class="form-input" min="0" step="1" placeholder="0"></div>
-                <div class="form-group"><label class="form-label">Trong đó số khóa trả phí</label><input type="number" id="ssCoursesPaid" class="form-input" min="0" step="1" placeholder="0"></div>
-              </div>
-              <div class="form-group"><label class="form-label">Link bằng chứng KPI3 (chứng chỉ khóa học)</label><input type="text" id="ssEvM3" class="form-input" placeholder="https://... (ổ chung)"></div>
-              <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">Điểm KPI3 dự kiến: <b id="ssPrevM3">0/100</b></div>
-
-              <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:var(--space-4)">
-                <button type="button" id="ssSaveDraftBtn" class="btn btn-outline">Lưu nháp</button>
-                <button type="button" id="ssSubmitBtn" class="btn btn-primary">Nộp cho teamlead</button>
-              </div>
+              <div id="myKpiTable"></div>
+              <p style="margin:var(--space-3) 0 0;font-size:var(--text-xs);color:var(--color-text-muted)">M1 = 50% kết quả việc lớn của team (đạt ≥70% mục tiêu khát vọng = 100%) + 50% hạng mục teamlead giao đã nghiệm thu đúng hạn · M2 = mỗi tuần (40–52) có bài teamlead chấm Đạt = 10% · M3 = mỗi khóa Hoàn thành có link chứng chỉ = 25% (trả phí ×2) · M4 = 1 hoạt động được duyệt = 100%, từ 2 hoạt động = 120%.</p>
             </div>
 
             <div class="dash-card" style="padding:var(--space-5)">
-              <h3 style="margin:0 0 var(--space-3);font-size:var(--text-lg)">KPI4 · Lan tỏa AI — khai + bằng chứng</h3>
-              <p style="margin:0 0 var(--space-3);font-size:var(--text-xs);color:var(--color-text-muted)">Khai buổi chia sẻ/đào tạo/UC được người khác tái dùng. Teamlead duyệt → tính đạt KPI4. (Vẫn tự động đạt nếu UC của bạn được ≥3 người xác nhận tái dùng.)</p>
+              <h3 style="margin:0 0 var(--space-3);font-size:var(--text-lg)">M4 · Lan tỏa AI — khai hoạt động + bằng chứng</h3>
+              <p style="margin:0 0 var(--space-3);font-size:var(--text-xs);color:var(--color-text-muted)">Kỳ khai: <b id="myScoreMonth"></b>. Teamlead/PM xác nhận → tính vào M4. (Bài tập/use case của bạn được ≥3 người khác xác nhận tái dùng cũng tự tính 1 hoạt động.)</p>
               <div class="form-row-2">
-                <div class="form-group"><label class="form-label">Loại hoạt động</label><input type="text" id="scType" class="form-input" placeholder="Đào tạo / Chia sẻ / UC tái dùng"></div>
-                <div class="form-group"><label class="form-label">Link bằng chứng KPI4 <span class="form-required">*</span></label><input type="text" id="scEvidence" class="form-input" placeholder="https://... (biên bản/ảnh/DS người áp dụng)"></div>
+                <div class="form-group"><label class="form-label" for="scType">Loại hoạt động <span class="form-required">*</span></label>
+                  <select id="scType" class="form-input">
+                    <option value="">— Chọn —</option>
+                    <option value="AI Clinic / buổi chia sẻ">Trình bày AI Clinic / buổi chia sẻ</option>
+                    <option value="Bài đăng bản tin AI tuần">Bài được đăng bản tin AI tuần</option>
+                    <option value="Bài tập/công cụ được ≥3 người dùng lại">Bài tập/công cụ được ≥3 người khác dùng lại</option>
+                  </select>
+                </div>
+                <div class="form-group"><label class="form-label" for="scEvidence">Link bằng chứng <span class="form-required">*</span></label><input type="text" id="scEvidence" class="form-input" placeholder="https://... (biên bản/ảnh/DS người áp dụng)"></div>
               </div>
-              <div class="form-group"><label class="form-label">Mô tả <span class="form-required">*</span></label><textarea id="scDesc" class="form-input" rows="2" placeholder="Bạn đã lan tỏa AI như thế nào?"></textarea></div>
+              <div class="form-group"><label class="form-label" for="scDesc">Mô tả <span class="form-required">*</span></label><textarea id="scDesc" class="form-input" rows="2" placeholder="Bạn đã lan tỏa AI như thế nào?"></textarea></div>
               <div style="display:flex;justify-content:flex-end;margin-bottom:var(--space-4)"><button type="button" id="scSubmitBtn" class="btn btn-primary">Nộp khai lan tỏa</button></div>
               <div id="scList" style="display:flex;flex-direction:column;gap:var(--space-2)"></div>
             </div>
           </div>
         </section>
 
-        <!-- ═══ VIEW: score-review (Teamlead duyệt tự chấm + lan tỏa) ═══ -->
+        <!-- ═══ VIEW: score-review — teamlead chấm bài tập (Đạt/Chưa đạt từng bài) + duyệt lan tỏa ═══ -->
         <section data-view="score-review" hidden>
           <div class="app-container" style="max-width:960px;margin:0 auto;padding:var(--space-6) var(--space-4)">
             <div style="margin-bottom:var(--space-4)">
-              <h1 style="margin:0;font-size:var(--text-2xl);font-weight:var(--font-weight-bold)">Duyệt chấm điểm</h1>
-              <p style="margin:4px 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)">Duyệt/từ chối bản tự chấm KPI và khai lan tỏa của thành viên team bạn. Duyệt → tính vào KPI. Từ chối bắt buộc nêu lý do.</p>
+              <h1 style="margin:0;font-size:var(--text-2xl);font-weight:var(--font-weight-bold)">Chấm bài &amp; duyệt lan tỏa</h1>
+              <p style="margin:4px 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)">Chấm <b>Đạt/Chưa đạt từng bài tập</b> của thành viên team bạn (bài Đạt cần ≥3/4 tiêu chí) và duyệt khai lan tỏa. Kết quả tự vào KPI cá nhân (M2, M4). Bài của teamlead do PM chấm. Từ chối lan tỏa bắt buộc nêu lý do.</p>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-2)">
-              <h3 style="margin:0;font-size:var(--text-lg)">Tự chấm KPI chờ duyệt</h3><span id="srSelfCount" style="font-size:var(--text-sm);color:var(--color-text-muted)"></span>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:var(--space-2)">
+              <h3 style="margin:0;font-size:var(--text-lg)">Bài tập AI cần chấm</h3>
+              <div style="display:flex;gap:8px;align-items:center">
+                <select id="srExFilter" class="form-input" style="width:auto" aria-label="Lọc bài tập theo trạng thái chấm">
+                  <option value="pending">Chờ chấm</option>
+                  <option value="reviewed">Đã chấm</option>
+                  <option value="all">Tất cả</option>
+                </select>
+                <span id="srExCount" style="font-size:var(--text-sm);color:var(--color-text-muted)"></span>
+              </div>
             </div>
-            <div id="srSelfList" style="display:flex;flex-direction:column;gap:var(--space-3);margin-bottom:var(--space-6)"></div>
+            <div id="srExList" style="display:flex;flex-direction:column;gap:var(--space-3);margin-bottom:var(--space-6)"></div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-2)">
               <h3 style="margin:0;font-size:var(--text-lg)">Lan tỏa AI chờ duyệt</h3><span id="srClaimCount" style="font-size:var(--text-sm);color:var(--color-text-muted)"></span>
             </div>
@@ -1211,18 +1224,18 @@
   <!-- ── JS: env → auth → shared libs → router → view modules → shell ── -->
   <script src="config/env.js?v=20261002a"></script>
   <script src="assets/js/auth.js?v=20261002a"></script>
-  <script src="config/routes.js?v=20261002a"></script>
+  <script src="config/routes.js?v=20261009a"></script>
   <script src="assets/js/constants.js?v=20261002a"></script>
   <script src="assets/js/helpers.js?v=20261002a"></script>
   <script src="assets/js/storage.js?v=20261002a"></script>
   <script src="assets/js/toast.js?v=20261002a"></script>
   <script src="assets/js/ui-confirm.js?v=20261002a"></script>
-  <script src="assets/js/api.js?v=20261002a"></script>
+  <script src="assets/js/api.js?v=20261009a"></script>
   <script src="assets/js/validation.js?v=20261002a"></script>
   <script src="assets/js/duplicate-check.js?v=20261002a"></script>
   <script src="assets/js/form-mapper.js?v=20261002a"></script>
   <script src="assets/js/wizard.js?v=20261002a"></script>
-  <script src="assets/js/scoring-h2.js?v=20261002a"></script>
+  <script src="assets/js/scoring-h2.js?v=20261009a"></script>
   <script src="assets/js/score-slider.js?v=20261002a"></script>
   <script src="assets/js/uc-detail-view.js?v=20261002a"></script>
   <script src="assets/js/router.js?v=20261002a"></script>
@@ -1230,13 +1243,13 @@
   <script src="assets/js/library.js?v=20261002a"></script>
   <script src="assets/js/workflow-coverage.js?v=20261002a"></script>
   <script src="assets/js/workflow-catalog.js?v=20261002a"></script>
-  <script src="assets/js/personal-score.js?v=20261002a"></script>
-  <script src="assets/js/leaderboard.js?v=20261002a"></script>
+  <script src="assets/js/personal-score.js?v=20261009a"></script>
+  <script src="assets/js/leaderboard.js?v=20261009a"></script>
   <script src="assets/js/weekly-update.js?v=20261002a"></script>
   <script src="assets/js/us-h1.js?v=20261002a"></script>
-  <script src="assets/js/ai-exercise.js?v=20261002a"></script>
-  <script src="assets/js/learning-plan.js?v=20261002a"></script>
-  <script src="assets/js/self-score.js?v=20261002a"></script>
+  <script src="assets/js/ai-exercise.js?v=20261009a"></script>
+  <script src="assets/js/learning-plan.js?v=20261009a"></script>
+  <script src="assets/js/self-score.js?v=20261009a"></script>
   <script src="assets/js/review-queue.js?v=20261002a"></script>
   <script src="assets/js/app.js?v=20261002a"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>

@@ -305,6 +305,10 @@ var Api = {
   createExercise(data)  { return Api._request(API.exerciseCreate(), data, 30000); },
   updateExercise(data)  { return Api._request(API.exerciseUpdate(), data, 30000); },
   deleteExercise(data)  { return Api._request(API.exerciseDelete(), data, 30000); },
+  reviewExercise(data)  { return Api._request(API.exerciseReview(), data, 30000); },
+  // CR-C (2026-10-09): việc lớn — số đo + phân công hạng mục
+  saveBigTaskKr(data)     { return Api._request(API.bigTaskKrSave(), data, 30000); },
+  saveBigTaskAssign(data) { return Api._request(API.bigTaskAssignSave(), data, 30000); },
 
   // CR (2026-10-01): Kế hoạch học tập
   listLearning()               { return Api._request(API.learningList()); },
