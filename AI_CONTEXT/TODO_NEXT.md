@@ -13,7 +13,8 @@ Thứ tự ưu tiên cho session tiếp theo.
 - [ ] **[TT]** Báo teamlead: (1) tab Việc lớn → Chi tiết: nhập số trước/mục tiêu khát vọng (thực tế đo sau) + giao hạng mục cho MỌI thành viên; (2) màn "Chấm bài & lan tỏa": chấm bù bài tuần 40–41 sau khi thành viên "Bổ sung" 4 ô (trước 16/10). Ghi "tạm áp dụng tới khi anh Cường có chỉ đạo mới" (hub D70 — KPI cá nhân CHƯA được GĐ duyệt; chỉ KPI teamlead 40/30/20/10 là chỉ đạo anh Cường D62).
 - [ ] **[CC]** Sau redeploy: nghiệm thu live (đọc `kpi-leaderboard`, `learning-list` có `krs/assigns`; ghi thử trên dòng `[TEST]` rồi dọn) + đối chiếu số người/khóa.
 - [x] `773c603` (2026-10-09): M3 chỉ tính khóa hoàn thành từ 01/10/2026 (`H2_M3_DONE_FROM`, hub D72) — đổi `Config.gs` + `KpiEngineH2.gs` (nằm trong 8 file redeploy).
-- [ ] **[CC]** Sau redeploy: chuyển 4 ô của EX-0024/EX-0025 (tuantt4, đang ghi tạm ở Description) sang cột mới.
+- [x] 2026-10-09 [TT] redeploy GAS + `setupKpiD70Sheets()` (3 tab + 10 cột mới) → [CC] push FE `561df21` · chuyển 4 ô EX-0024/0025 vào cột · **nghiệm thu live 14/14 PASS** (`tests/_live_accept_20261009.mjs`: tạo bài 4 ô · chặn tuần tương lai · chặn tự chấm · chặn member chấm · số đo VL-05 tỷ lệ 60 · chặn member sửa · giao + nghiệm thu hạng mục · leaderboard · dọn [TEST] EX-0026/KR-0001/AS xóa mềm, M1 dunglq1 về 0).
+- [ ] **[TT]** Redeploy GAS **1 file `ExerciseService.gs`** (vá: xóa bài → gỡ mã khỏi dòng tuần BAI_TAP_TUAN; lỗi phát hiện khi nghiệm thu, dữ liệu W41 tuantt4 đã sửa tay về EX-0025).
 - [ ] **[TT] quyết (giả định đang áp, đổi được ở `Config.gs`): ✅ kỳ M2 = tuần 40–52 (anh chốt 09/10) · còn: việc lớn chưa đo = 0% · hạng mục không ghi hạn coi như đúng hạn.
 
 ---

@@ -193,6 +193,8 @@ function deleteExercise_(data) {
   if (!existing) throw new Error('Không tìm thấy bài tập: ' + id);
   if (!_canManageExercise_(existing, data)) throw new Error('Bạn không có quyền xóa bài này');
   updateRowByField_(SHEETS.AI_EXERCISE, 'Exercise_ID', id, { Active: 'FALSE', Updated_At: new Date().toISOString() });
+  // Gỡ mã bài khỏi dòng tuần (hết bài → tuần về "Kế hoạch") — lỗi phát hiện khi nghiệm thu live 09/10.
+  try { _learnUnmarkSubmitted_(existing.Owner_Email, String(existing.Week || ''), id); } catch (e) { /* không chặn xóa */ }
   return { exercise_id: id, deleted: true };
 }
 

@@ -154,6 +154,22 @@ test.describe('CR-A — server: nộp bài chọn tuần + 4 ô + teamlead chấ
     expect(weeks.find((w) => w.Week === '2026-W41').Status).toBe('Đã nộp');
     expect(weeks.find((w) => w.Week === '2026-W40').Status).toBe('Kế hoạch');
   });
+
+  test('exercise-delete: gỡ mã bài khỏi dòng tuần; còn bài khác thì vẫn "Đã nộp", hết bài về "Kế hoạch" (lỗi live 09/10)', () => {
+    const { ctx, book } = loadGas(seedBase());
+    ctx._learnMarkSubmitted_('tv.a', '2026-W40', 'EX-0001', 'Thành viên A', 'CV');
+    const r = ctx.createExercise_({ Title: 'Bài 2', Prompt: 'p', Owner_Email: 'tv.a', Owner_Name: 'Thành viên A', Team: 'CV', requester_email: 'tv.a', Week: '2026-W40' });
+    let wk = objs(book, 'BAI_TAP_TUAN').find((w) => w.Username === 'tv.a' && w.Week === '2026-W40');
+    expect(wk.Exercise_IDs).toBe('EX-0001, ' + r.exercise_id);
+    ctx.deleteExercise_({ Exercise_ID: r.exercise_id, requester_email: 'tv.a' });
+    wk = objs(book, 'BAI_TAP_TUAN').find((w) => w.Username === 'tv.a' && w.Week === '2026-W40');
+    expect(wk.Exercise_IDs).toBe('EX-0001');
+    expect(wk.Status).toBe('Đã nộp');
+    ctx.deleteExercise_({ Exercise_ID: 'EX-0001', requester_email: 'tv.a' });
+    wk = objs(book, 'BAI_TAP_TUAN').find((w) => w.Username === 'tv.a' && w.Week === '2026-W40');
+    expect(wk.Exercise_IDs).toBe('');
+    expect(wk.Status).toBe('Kế hoạch');
+  });
 });
 
 test.describe('CR-C — server: số đo + phân công việc lớn', () => {
