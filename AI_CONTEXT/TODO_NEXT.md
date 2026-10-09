@@ -12,7 +12,9 @@ Thứ tự ưu tiên cho session tiếp theo.
 - [ ] **[TT]** Nhập tay tab `RD_BAO_CAO` mỗi kỳ (Period `T10/2026` · Username teamlead · Due_Date · Submitted_Date · Link) → T-KPI-4.
 - [ ] **[TT]** Báo teamlead: (1) tab Việc lớn → Chi tiết: nhập số trước/mục tiêu khát vọng (thực tế đo sau) + giao hạng mục cho MỌI thành viên; (2) màn "Chấm bài & lan tỏa": chấm bù bài tuần 40–41 sau khi thành viên "Bổ sung" 4 ô (trước 16/10). Ghi "tạm áp dụng tới khi anh Cường có chỉ đạo mới" (hub D70 — KPI cá nhân CHƯA được GĐ duyệt; chỉ KPI teamlead 40/30/20/10 là chỉ đạo anh Cường D62).
 - [ ] **[CC]** Sau redeploy: nghiệm thu live (đọc `kpi-leaderboard`, `learning-list` có `krs/assigns`; ghi thử trên dòng `[TEST]` rồi dọn) + đối chiếu số người/khóa.
-- [ ] **[TT] quyết** (giả định đang áp, đổi được ở `Config.gs`): ✅ kỳ M2 = tuần 40–52 (anh chốt 09/10) · còn: việc lớn chưa đo = 0% · hạng mục không ghi hạn coi như đúng hạn.
+- [x] `773c603` (2026-10-09): M3 chỉ tính khóa hoàn thành từ 01/10/2026 (`H2_M3_DONE_FROM`, hub D72) — đổi `Config.gs` + `KpiEngineH2.gs` (nằm trong 8 file redeploy).
+- [ ] **[CC]** Sau redeploy: chuyển 4 ô của EX-0024/EX-0025 (tuantt4, đang ghi tạm ở Description) sang cột mới.
+- [ ] **[TT] quyết (giả định đang áp, đổi được ở `Config.gs`): ✅ kỳ M2 = tuần 40–52 (anh chốt 09/10) · còn: việc lớn chưa đo = 0% · hạng mục không ghi hạn coi như đúng hạn.
 
 ---
 
