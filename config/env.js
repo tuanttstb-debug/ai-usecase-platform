@@ -10,6 +10,9 @@ var APP_CONFIG = {
   // List này chỉ là dự phòng offline phía GAS (Config.gs ADMIN_EMAILS, priority cuối); FE không resolve role từ đây.
   ADMIN_EMAILS: ['cuongvm1', 'tuantt4', 'dunglq1'],
 
+  // PM được tự chấm bài tập của mình (PM kiêm teamlead team Số). Khớp Config.gs EXERCISE_SELF_REVIEW_USERS.
+  EXERCISE_SELF_REVIEW_USERS: ['tuantt4'],
+
   // Hội đồng chấm điểm US (H2) — 4 teamlead. Điểm US = bình quân điểm hội đồng.
   // GAS đối chiếu song song qua Script Property COUNCIL_USERS.
   COUNCIL_USERS: ['tuantt4', 'maittt7', 'tutv3', 'quynhnny'],

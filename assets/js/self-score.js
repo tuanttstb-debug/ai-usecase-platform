@@ -133,9 +133,12 @@
   }
 
   // Bài thuộc phạm vi chấm: admin → mọi bài (trừ bài của mình); teamlead → bài team mình/team backup (trừ bài của mình).
+  // Ngoại lệ: PM trong APP_CONFIG.EXERCISE_SELF_REVIEW_USERS được tự chấm bài của mình.
   function _inScope(e) {
     var me = _me();
-    if (String(e.owner_email || '').trim().toLowerCase() === me) return false;
+    if (String(e.owner_email || '').trim().toLowerCase() === me) {
+      return ((typeof APP_CONFIG !== 'undefined' && APP_CONFIG.EXERCISE_SELF_REVIEW_USERS) || []).indexOf(me) !== -1;
+    }
     if (_isAdmin()) return true;
     var u = _user() || {};
     var teams = [String(u.team || '')].concat(u.backup_teams || []).map(function (t) { return String(t).trim().toLowerCase(); });

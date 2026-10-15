@@ -113,6 +113,9 @@ var AI_EXERCISE_HEADERS = [
 ];
 var EXERCISE_REVIEW = { PASS: 'Đạt', FAIL: 'Chưa đạt' };
 var EXERCISE_PASS_MIN_CRITERIA = 3;        // bài đạt = ≥3/4 tiêu chí (D69)
+// PM AIUS-001 vừa là teamlead team Số → không ai khác chấm được bài của PM. Ngoại lệ: PM tự chấm,
+// nhật ký ghi rõ "tự chấm" (anh Tuân chốt 15/10/2026). Khớp APP_CONFIG.EXERCISE_SELF_REVIEW_USERS (FE).
+var EXERCISE_SELF_REVIEW_USERS = ['tuantt4'];
 
 // ── REQ_DEDUP Column Headers (Round 2 T2 — idempotency) ────────────
 // Mỗi row = 1 request write đã xử lý xong (theo reqId client gửi). Dùng để:

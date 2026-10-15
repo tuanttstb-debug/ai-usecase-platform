@@ -224,7 +224,10 @@ function reviewExercise_(body) {
   var ex = findObjectByField_(SHEETS.AI_EXERCISE, 'Exercise_ID', id);
   if (!ex || ex.Active === false || String(ex.Active).toUpperCase() === 'FALSE') throw new Error('Không tìm thấy bài tập: ' + id);
   var owner = normalizeUser_(ex.Owner_Email);
-  if (owner && owner === rv.username) throw new Error('Không tự chấm bài của chính mình — bài của teamlead do PM chấm.');
+  var selfReview = !!owner && owner === rv.username;
+  if (selfReview && (EXERCISE_SELF_REVIEW_USERS || []).indexOf(rv.username) === -1) {
+    throw new Error('Không tự chấm bài của chính mình — bài của teamlead do PM chấm.');
+  }
 
   var team = String(ex.Team || '').trim();
   if (!team) {
@@ -253,7 +256,7 @@ function reviewExercise_(body) {
     Review_Comment:  comment
   });
   logActivity_('', '', 'EXERCISE_REVIEW',
-    rv.username + ' chấm ' + id + ' (' + owner + ', ' + (ex.Week || '') + '): ' + (status || 'mở lại') +
+    rv.username + (selfReview ? ' tự chấm ' : ' chấm ') + id + ' (' + owner + ', ' + (ex.Week || '') + '): ' + (status || 'mở lại') +
     (crit.length ? ' · tiêu chí ' + crit.join(',') : '') + (comment ? ' — ' + comment : ''),
     rv.username, null, null);
   return { exercise_id: id, review_status: status, criteria: crit, week: String(ex.Week || '') };

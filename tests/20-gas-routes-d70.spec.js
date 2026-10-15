@@ -139,6 +139,17 @@ test.describe('CR-A — server: nộp bài chọn tuần + 4 ô + teamlead chấ
     expect(f.review_status).toBe('Chưa đạt');
   });
 
+  test('exercise-review: PM trong EXERCISE_SELF_REVIEW_USERS được tự chấm bài của mình (15/10)', () => {
+    const { ctx, book } = loadGas(seedBase());
+    ctx.EXERCISE_SELF_REVIEW_USERS = ['pm.z'];
+    const c = ctx.createExercise_({ Title: 'Bài PM', Prompt: 'p', Owner_Email: 'pm.z', Owner_Name: 'PM Z', Team: 'Số', Week: '2026-W41' });
+    const r = ctx.reviewExercise_({ Exercise_ID: c.exercise_id, action: 'pass', Criteria: '1,2,3,4', reviewer_email: 'pm.z' });
+    expect(r.review_status).toBe('Đạt');
+    expect(objs(book, 'AI_EXERCISE').find((x) => x.Exercise_ID === c.exercise_id).Reviewed_By).toBe('pm.z');
+    // người ngoài danh sách vẫn bị chặn tự chấm
+    expect(() => ctx.reviewExercise_({ Exercise_ID: 'EX-0001', action: 'pass', Criteria: '1,2,3', reviewer_email: 'tv.a' })).toThrow(/chính mình/);
+  });
+
   test('exercise-update: chủ bài sửa bài đã chấm → về Chờ chấm; đổi tuần chuyển dấu Đã nộp sang tuần mới', () => {
     const { ctx, book } = loadGas(seedBase());
     ctx._learnMarkSubmitted_('tv.a', '2026-W40', 'EX-0001', 'Thành viên A', 'CV');

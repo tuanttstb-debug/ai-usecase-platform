@@ -24,7 +24,7 @@ const EXERCISES = [
   // Chỉ có mô tả → gợi ý 1/4 → nút Đạt bị khóa
   { exercise_id: 'EX-0102', title: 'Soạn email', description: 'Email trả lời ĐVKD', prompt: 'p',
     owner_name: 'Thành viên Ba', owner_email: 'user03', team: 'Team Số', week: '2026-W40', review_status: '' },
-  // Bài của chính admin → không hiện (không tự chấm)
+  // Bài của chính admin tuantt4 = PM → hiện để tự chấm (EXERCISE_SELF_REVIEW_USERS, 15/10)
   { exercise_id: 'EX-0103', title: 'Bài của tôi', description: 'x', prompt: 'p', owner_email: 'tuantt4', team: 'Team Số', week: '2026-W41', review_status: '' },
   // Đã chấm → chỉ hiện ở bộ lọc "Đã chấm"
   { exercise_id: 'EX-0104', title: 'Bài đã chấm', description: 'x', prompt: 'p', owner_name: 'Thành viên Hai', owner_email: 'user02',
@@ -96,12 +96,12 @@ test.describe('Chấm bài Đạt/Chưa đạt từng bài + duyệt lan tỏa �
   test.setTimeout(30000);
   test.beforeEach(async ({ page }) => { await setSession(page, ADMIN_USER); });
 
-  test('T03 — danh sách chờ chấm: bỏ bài của chính mình + bài đã chấm; tick gợi ý theo 4 ô', async ({ page }) => {
+  test('T03 — danh sách chờ chấm: bỏ bài đã chấm; PM (tuantt4) thấy cả bài của mình để tự chấm; tick gợi ý theo 4 ô', async ({ page }) => {
     await mockScore(page);
     await page.goto('/index.html#score-review');
-    await expect(page.locator('#srExList .dash-card[data-ex]')).toHaveCount(2, { timeout: 10000 });
-    await expect(page.locator('#srExList')).not.toContainText('Bài của tôi');
-    await expect(page.locator('#srExCount')).toHaveText('2 chờ chấm');
+    await expect(page.locator('#srExList .dash-card[data-ex]')).toHaveCount(3, { timeout: 10000 });
+    await expect(page.locator('#srExList')).toContainText('Bài của tôi');          // PM tự chấm (15/10)
+    await expect(page.locator('#srExCount')).toHaveText('3 chờ chấm');
     const full = page.locator('#srExList .dash-card[data-ex="EX-0101"]');
     await expect(full.locator('.srCritCount')).toHaveText('4/4 tiêu chí');
     await expect(full.locator('.srPass')).toBeEnabled();
