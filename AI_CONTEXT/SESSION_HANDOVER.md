@@ -1,5 +1,13 @@
 # SESSION HANDOVER
 
+## Session: 2026-10-15 — PM tự chấm bài tập của mình (EXERCISE_SELF_REVIEW_USERS) + chấm live team Số
+- **Task completed:** Hub AIUS-001 D80 (PM kiêm teamlead team Số, không ai khác chấm được bài của PM) → ngoại lệ tự chấm cho `tuantt4`: GAS `reviewExercise_` (nhật ký ghi "tự chấm") + FE `self-score.js` `_inScope` hiện bài của PM. Live: nộp EX-0053 (W42 tuantt4) · chấm Chưa đạt EX-0046/0011/0015 · sau redeploy chấm Đạt 4/4 EX-0024/0025/0053 → tuantt4 M2 = 30.
+- **Files changed:** `40f5524` main (đã push): `assets/gas-backend/{Config.gs,ExerciseService.gs}` · `config/env.js` · `assets/js/self-score.js` · `index.html` (`?v=20261015a` env + self-score) · `tests/{15-self-score,20-gas-routes-d70}.spec.js`. GAS redeploy ([TT], 2026-10-15).
+- **Decision made:** danh sách tự chấm ở 2 nơi phải khớp: `Config.gs EXERCISE_SELF_REVIEW_USERS` ↔ `env.js APP_CONFIG.EXERCISE_SELF_REVIEW_USERS`. Người ngoài danh sách vẫn bị chặn.
+- **Blocker:** không.
+- **Next step:** [CC] chấm lại khi Quang/Dũng sửa bài (hạn 17h 2026-10-16) · ⚠ EX-0015 app gắn W41 (hub D75 tính W40) — Dũng nộp bài W41 mới phải chọn tuần 2026-W41.
+- **Regression risk:** Thấp — chỉ nới 1 điều kiện cho 1 user; Playwright 15+20 = 12/12 (ca mới PM tự chấm + người khác vẫn bị chặn); live đọc lại 6 bài team Số đúng trạng thái.
+
 ## Session: 2026-10-09 — KPI tự tính khung D70: 5 CR gom 1 đợt (CR-A bài tập · CR-B tự học · CR-C việc lớn · CR-D công thức · CR-E lan tỏa)
 - **Task completed:** Hub AIUS-001 D70 (PM chốt tạm áp dụng bản trình KPI cá nhân 06/10) → app tự ra điểm KPI. Engine thuần MỚI `KpiEngineH2.gs` (OKR 30/70/100 → 0/100/120; M1 50% team + 50% hạng mục đúng hạn; M2 tuần 40–52 có bài Đạt ×10; M3 khóa Hoàn thành + chứng chỉ ×25, trả phí ×2; M4 0/100/120; trần 120; teamlead 40/30/20/10, T2 mẫu số toàn team, T3 OKR, T4 R&D). Routes mới `exercise-review` · `big-task-kr-save` · `big-task-assign-save`; `learning-list` trả `krs/assigns` + % đạt/OKR; bài nộp +4 ô + chọn tuần. FE: form nộp bài, tab Việc lớn "Chi tiết", "KPI của tôi", "KPI từng người", "Chấm bài & lan tỏa", Leaderboard.
 - **Files changed:** *(CHƯA COMMIT)* GAS: `Config.gs` · MỚI `KpiEngineH2.gs` · `ScoringServiceH2.gs` (khối KPI viết lại + `setupKpiD70Sheets()`) · `ExerciseService.gs` · `LearningPlanService.gs` · `Code.gs` · `CacheLayer.gs` · `SelfScoreService.gs` (comment). FE: `index.html` (`?v=20261009a`) · `assets/js/{scoring-h2,ai-exercise,learning-plan,self-score,personal-score,leaderboard,api}.js` · `config/routes.js`. Test: MỚI `tests/18-kpi-engine-h2` (engine + ví dụ email) · `19-kpi-d70-ui` · `20-gas-routes-d70` (GAS chạy trong Node vm + bảng tính giả) · viết lại `09`, `15` · sửa `04`, `17`, `assets/tests/test-scoring-h2.js`.
