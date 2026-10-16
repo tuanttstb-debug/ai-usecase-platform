@@ -126,10 +126,124 @@
 
   // ══════════════ VIEW: score-review (teamlead) ══════════════
   var _exAll = [];
+  var _claimsAll = [];
+  // CR 2026-10-16: căn cứ chấm lấy thêm từ learning-list (họ tên · việc lớn/hạng mục · kế hoạch tuần) — lỗi thì vẫn chấm được.
+  var _ctx = { names: {}, tasks: {}, assigns: {}, plans: {} };
+  function _norm(s) { return String(s == null ? '' : s).trim().toLowerCase(); }
+
   function _revInit() {
-    var f = document.getElementById('srExFilter');
-    if (f && !f._b) { f.addEventListener('change', _renderExReview); f._b = true; }
+    ['srExFilter', 'srTeamFilter', 'srUserFilter'].forEach(function (fid) {
+      var f = document.getElementById(fid);
+      if (f && !f._b) {
+        f.addEventListener('change', function () {
+          if (fid === 'srTeamFilter') _fillUserFilter();
+          _renderExReview(); _renderClaims();
+        });
+        f._b = true;
+      }
+    });
     _loadExercises(); _loadPendingClaims();
+  }
+
+  // Nhãn nhân sự "Username-Họ tên" (vd "Tuantt4-Trần Thế Tuân").
+  function _userLabel(username, name) {
+    var u = String(username || '').trim();
+    var n = String(name || _ctx.names[_norm(u)] || '').trim();
+    var uc = u ? u.charAt(0).toUpperCase() + u.slice(1) : '';
+    if (!uc) return n || '—';
+    return (n && _norm(n) !== _norm(u)) ? uc + '-' + n : uc;
+  }
+
+  // Danh sách người/team trong phạm vi = bài tập + lan tỏa đang hiển thị được.
+  function _people() {
+    var map = {};
+    _exAll.forEach(function (e) { var k = _norm(e.owner_email); if (k) map[k] = { u: e.owner_email, n: e.owner_name, t: e.team }; });
+    _claimsAll.forEach(function (c) { var k = _norm(c.username); if (k && !map[k]) map[k] = { u: c.username, n: c.display_name, t: c.team }; });
+    return Object.keys(map).map(function (k) { return map[k]; });
+  }
+
+  function _fillSelect(id, opts, allLabel) {
+    var sel = document.getElementById(id); if (!sel) return;
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">' + esc(allLabel) + '</option>' + opts.map(function (o) {
+      return '<option value="' + esc(o.v) + '">' + esc(o.t) + '</option>';
+    }).join('');
+    sel.value = opts.some(function (o) { return o.v === cur; }) ? cur : '';
+  }
+  function _fillTeamFilter() {
+    var seen = {}, opts = [];
+    _people().forEach(function (p) { var t = String(p.t || '').trim(); if (t && !seen[_norm(t)]) { seen[_norm(t)] = 1; opts.push({ v: _norm(t), t: t }); } });
+    opts.sort(function (a, b) { return a.t.localeCompare(b.t, 'vi'); });
+    _fillSelect('srTeamFilter', opts, 'Tất cả team');
+  }
+  function _fillUserFilter() {
+    var team = _val('srTeamFilter');
+    var opts = _people().filter(function (p) { return !team || _norm(p.t) === team; })
+      .map(function (p) { return { v: _norm(p.u), t: _userLabel(p.u, p.n) }; });
+    opts.sort(function (a, b) { return a.t.localeCompare(b.t, 'vi'); });
+    _fillSelect('srUserFilter', opts, 'Tất cả nhân sự');
+  }
+  function _refreshFilters() { _fillTeamFilter(); _fillUserFilter(); }
+  function _passFilter(team, username) {
+    var t = _val('srTeamFilter'), u = _val('srUserFilter');
+    return (!t || _norm(team) === t) && (!u || _norm(username) === u);
+  }
+
+  function _loadContext() {
+    if (!Api.listLearning) return Promise.resolve();
+    return Api.listLearning().then(function (res) {
+      var d = res || {};
+      var c = { names: {}, tasks: {}, assigns: {}, plans: {} };
+      (d.members || []).forEach(function (m) { if (m.username && m.display_name) c.names[_norm(m.username)] = m.display_name; });
+      (d.big_tasks || []).forEach(function (t) { c.tasks[t.task_id] = t; });
+      (d.assigns || []).forEach(function (a) { c.assigns[a.assign_id] = a; });
+      (d.weeks || []).forEach(function (w) { if (w.plan) c.plans[_norm(w.username) + '|' + w.week] = w.plan; });
+      _ctx = c;
+    }).catch(function () {});
+  }
+
+  function _fmtStamp(v) {
+    if (!v) return '';
+    var d = new Date(v);
+    if (isNaN(d.getTime())) return String(v);
+    // Giờ VN (UTC+7) — dạng "14/10/2026 10:00".
+    var v7 = new Date(d.getTime() + 7 * 3600 * 1000), p = function (n) { return ('0' + n).slice(-2); };
+    return p(v7.getUTCDate()) + '/' + p(v7.getUTCMonth() + 1) + '/' + v7.getUTCFullYear() + ' ' + p(v7.getUTCHours()) + ':' + p(v7.getUTCMinutes());
+  }
+  function _isUrl(s) { return /^https?:\/\//i.test(String(s || '').trim()); }
+  function _linkOrText(s) {
+    var v = String(s || '').trim();
+    return _isUrl(v) ? '<a href="' + esc(v) + '" target="_blank" rel="noopener">' + esc(v) + ' ↗</a>' : esc(v);
+  }
+  // Việc lớn gắn với bài: Assign_ID → hạng mục (người · hạn · tiêu chí nghiệm thu) + tên việc lớn; Task_ID → tên việc lớn.
+  function _bigTaskHtml(ref) {
+    var r = String(ref || '').trim();
+    if (!r) return '—';
+    var a = _ctx.assigns[r], t = _ctx.tasks[a ? a.task_id : r];
+    if (!a && !t) return esc(r);
+    var out = '<span class="id-badge">' + esc(r) + '</span> ';
+    if (t) out += esc(t.task_name);
+    if (a) {
+      out += '<div style="font-size:12px;color:var(--color-text-secondary)">Hạng mục: ' + esc(a.item) +
+        (a.due_date ? ' · hạn ' + esc(a.due_date) : '') + (a.status ? ' · ' + esc(a.status) : '') +
+        (a.acceptance_criteria ? '<br>Tiêu chí nghiệm thu: ' + esc(a.acceptance_criteria) : '') + '</div>';
+    }
+    return out;
+  }
+  // Giờ trước → sau + % tiết kiệm.
+  function _hoursHtml(e) {
+    var hasB = e.hours_before !== '' && e.hours_before != null, hasA = e.hours_after !== '' && e.hours_after != null;
+    if (!hasB && !hasA) return '<i>chưa ghi</i>';
+    var s = esc(hasB ? e.hours_before : '?') + ' giờ → ' + esc(hasA ? e.hours_after : '?') + ' giờ';
+    var b = parseFloat(e.hours_before), a = parseFloat(e.hours_after);
+    if (hasB && hasA && b > 0 && !isNaN(a)) s += ' <span style="color:var(--color-text-muted)">(giảm ' + _fmt((b - a) / b * 100) + '%)</span>';
+    return s;
+  }
+  // Tuần này người đó đã có bài Đạt khác chưa (mỗi tuần tính tối đa 1 bài).
+  function _otherPassSameWeek(e) {
+    return _exAll.some(function (x) {
+      return x.exercise_id !== e.exercise_id && _norm(x.owner_email) === _norm(e.owner_email) && x.week === e.week && x.review_status === 'Đạt';
+    });
   }
 
   // Bài thuộc phạm vi chấm: admin → mọi bài (trừ bài của mình); teamlead → bài team mình/team backup (trừ bài của mình).
@@ -147,11 +261,18 @@
 
   function _loadExercises() {
     var wrap = document.getElementById('srExList'); if (wrap) wrap.innerHTML = '<p class="list-loading">Đang tải…</p>';
-    Api.listExercises().then(function (res) {
+    Promise.all([Api.listExercises(), _loadContext()]).then(function (r) {
+      var res = r[0];
       _exAll = (Array.isArray(res) ? res : (res && (res.items || res.data)) || []).filter(_inScope);
       window._srExercises = _exAll; // expose cho test
+      _refreshFilters();
       _renderExReview();
     }).catch(function (e) { if (wrap) wrap.innerHTML = '<p class="list-empty">Lỗi tải bài tập: ' + esc((e && e.message) || e) + '</p>'; });
+  }
+
+  var MISSING = '<i style="color:var(--color-text-muted)">chưa ghi</i>';
+  function _row(label, html) {
+    return '<div style="display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:start"><b>' + esc(label) + '</b><div style="white-space:pre-wrap;word-break:break-word">' + html + '</div></div>';
   }
 
   function _renderExReview() {
@@ -159,7 +280,7 @@
     var mode = _val('srExFilter') || 'pending';
     var list = _exAll.filter(function (e) {
       var rv = String(e.review_status || '').trim();
-      return mode === 'all' || (mode === 'pending' ? !rv : !!rv);
+      return (mode === 'all' || (mode === 'pending' ? !rv : !!rv)) && _passFilter(e.team, e.owner_email);
     }).sort(function (a, b) { return String(a.week).localeCompare(String(b.week)) || String(a.owner_name).localeCompare(String(b.owner_name)); });
     var cnt = document.getElementById('srExCount');
     if (cnt) cnt.textContent = list.length + (mode === 'pending' ? ' chờ chấm' : ' bài');
@@ -168,20 +289,27 @@
       var picked = e.review_status ? String(e.review_criteria || '').split(',').map(Number) : _suggest(e);
       var st = e.review_status === 'Đạt' ? '<span class="badge badge-success">Đạt</span>'
         : (e.review_status === 'Chưa đạt' ? '<span class="badge badge-error">Chưa đạt</span>' : '<span class="badge badge-warning">Chờ chấm</span>');
-      var hours = (e.hours_before !== '' && e.hours_before != null) || (e.hours_after !== '' && e.hours_after != null)
-        ? esc(e.hours_before === '' ? '?' : e.hours_before) + ' giờ → ' + esc(e.hours_after === '' ? '?' : e.hours_after) + ' giờ' : '<i>chưa ghi</i>';
       var id = esc(e.exercise_id);
-      return '<div class="dash-card" style="padding:var(--space-4);display:flex;flex-direction:column;gap:6px" data-ex="' + id + '">' +
+      var plan = _ctx.plans[_norm(e.owner_email) + '|' + e.week];
+      var reviewed = e.review_status
+        ? '<div style="font-size:12px;color:var(--color-text-muted)">Đã chấm bởi ' + esc(_userLabel(e.reviewed_by)) + (e.reviewed_at ? ' lúc ' + esc(_fmtStamp(e.reviewed_at)) : '') +
+          (e.review_comment ? ' · Nhận xét: ' + esc(e.review_comment) : '') + '</div>' : '';
+      var dup = _otherPassSameWeek(e)
+        ? '<div style="font-size:12px;color:var(--color-warning,#b45309)"><i class="fa-solid fa-circle-info"></i> Người này đã có bài Đạt khác trong ' + esc(_weekShort(e.week)) + ' — mỗi tuần chỉ tính 1 bài vào M2.</div>' : '';
+      return '<div class="dash-card" style="padding:var(--space-4);display:flex;flex-direction:column;gap:8px" data-ex="' + id + '">' +
         '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span style="font-weight:600">' + esc(e.title) + ' <span class="id-badge">' + id + '</span></span>' +
-          '<span style="font-size:12px;color:var(--color-text-muted)">' + esc(e.owner_name || e.owner_email) + ' · ' + esc(e.team) + ' · ' + esc(_weekShort(e.week)) + '</span></div>' +
-        (e.description ? '<div style="font-size:var(--text-sm);white-space:pre-wrap">' + esc(e.description) + '</div>' : '') +
-        '<div style="font-size:var(--text-sm);display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px 12px">' +
-          '<div><b>Giờ trước → sau:</b> ' + hours + '</div>' +
-          '<div><b>Kiểm chứng AI:</b> ' + (e.ai_check ? esc(e.ai_check) : '<i>chưa ghi</i>') + '</div>' +
-          '<div><b>Mẫu dùng lại:</b> ' + (e.reuse_template ? esc(e.reuse_template) : '<i>chưa ghi</i>') + '</div>' +
-          '<div><b>Việc lớn:</b> ' + (e.big_task_ref ? esc(e.big_task_ref) : '—') + '</div>' +
-        '</div>' +
-        (e.demo_link ? '<a href="' + esc(e.demo_link) + '" target="_blank" rel="noopener" style="font-size:12px">Demo ↗</a>' : '') +
+          '<span class="srOwner" style="font-size:12px;color:var(--color-text-muted)">' + esc(_userLabel(e.owner_email, e.owner_name)) + ' · ' + esc(e.team) + ' · ' + esc(_weekShort(e.week)) +
+          (e.created_at ? ' · nộp ' + esc(_fmtStamp(e.created_at)) : '') + '</span></div>' +
+        '<div class="srDetail" style="font-size:var(--text-sm);display:flex;flex-direction:column;gap:6px">' +
+          (plan ? _row('Kế hoạch tuần', esc(plan)) : '') +
+          _row('(1) Mô tả việc', e.description ? esc(e.description) : MISSING) +
+          _row('Prompt', e.prompt ? '<div style="background:var(--color-bg-subtle,rgba(0,0,0,.04));border-radius:6px;padding:6px 8px;max-height:220px;overflow:auto;font-family:var(--font-mono,monospace);font-size:12px">' + esc(e.prompt) + '</div>' : MISSING) +
+          _row('(2) Giờ trước → sau', _hoursHtml(e)) +
+          _row('(3) Kiểm chứng AI', e.ai_check ? esc(e.ai_check) : MISSING) +
+          _row('(4) Mẫu dùng lại', e.reuse_template ? _linkOrText(e.reuse_template) : MISSING) +
+          _row('Link demo', e.demo_link ? _linkOrText(e.demo_link) : MISSING) +
+          _row('Việc lớn', _bigTaskHtml(e.big_task_ref)) +
+        '</div>' + dup + reviewed +
         '<div class="sr-crit" style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:var(--text-sm)">' +
           CRITERIA.map(function (c) {
             return '<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="srCrit" value="' + c.n + '"' +
@@ -223,7 +351,10 @@
       .then(function () {
         showToast(action === 'pass' ? 'Đã chấm Đạt (tính vào M2).' : 'Đã chấm Chưa đạt.', 'success');
         _exAll.forEach(function (e) {
-          if (e.exercise_id === id) { e.review_status = action === 'pass' ? 'Đạt' : 'Chưa đạt'; e.review_criteria = crit.join(','); e.review_comment = cm ? cm.value.trim() : ''; }
+          if (e.exercise_id === id) {
+            e.review_status = action === 'pass' ? 'Đạt' : 'Chưa đạt'; e.review_criteria = crit.join(','); e.review_comment = cm ? cm.value.trim() : '';
+            e.reviewed_by = _me(); e.reviewed_at = new Date().toISOString();
+          }
         });
         _renderExReview();
       })
@@ -233,13 +364,20 @@
   function _loadPendingClaims() {
     var wrap = document.getElementById('srClaimList'); if (wrap) wrap.innerHTML = '<p class="list-loading">Đang tải…</p>';
     Api.listSharingClaims({ token: _tok(), scope: 'review', status: 'Submitted' }).then(function (res) {
-      var rows = Array.isArray(res) ? res : (res && (res.data || res.items)) || [];
-      if (!wrap) return;
-      var cnt = document.getElementById('srClaimCount'); if (cnt) cnt.textContent = rows.length + ' chờ duyệt';
-      if (!rows.length) { wrap.innerHTML = '<p class="list-empty">Không có khai lan tỏa nào chờ duyệt.</p>'; return; }
-      wrap.innerHTML = rows.map(function (c) {
-        return '<div class="dash-card" style="padding:var(--space-4);display:flex;flex-direction:column;gap:6px">' +
-          '<div style="display:flex;justify-content:space-between;gap:8px"><span style="font-weight:600">' + esc(c.display_name || c.username) + ' · ' + esc(c.team) + '</span><span style="font-size:12px;color:var(--color-text-muted)">' + esc(c.month) + (c.claim_type ? (' · ' + esc(c.claim_type)) : '') + '</span></div>' +
+      _claimsAll = Array.isArray(res) ? res : (res && (res.data || res.items)) || [];
+      _refreshFilters();
+      _renderClaims();
+    }).catch(function (e) { if (wrap) wrap.innerHTML = '<p class="list-empty">Lỗi tải: ' + esc((e && e.message) || e) + '</p>'; });
+  }
+
+  function _renderClaims() {
+    var wrap = document.getElementById('srClaimList'); if (!wrap) return;
+    var rows = _claimsAll.filter(function (c) { return _passFilter(c.team, c.username); });
+    var cnt = document.getElementById('srClaimCount'); if (cnt) cnt.textContent = rows.length + ' chờ duyệt';
+    if (!rows.length) { wrap.innerHTML = '<p class="list-empty">Không có khai lan tỏa nào chờ duyệt.</p>'; return; }
+    wrap.innerHTML = rows.map(function (c) {
+        return '<div class="dash-card" style="padding:var(--space-4);display:flex;flex-direction:column;gap:6px" data-claim="' + esc(c.claim_id) + '">' +
+          '<div style="display:flex;justify-content:space-between;gap:8px"><span style="font-weight:600">' + esc(_userLabel(c.username, c.display_name)) + ' · ' + esc(c.team) + '</span><span style="font-size:12px;color:var(--color-text-muted)">' + esc(c.month) + (c.claim_type ? (' · ' + esc(c.claim_type)) : '') + '</span></div>' +
           '<div style="font-size:var(--text-sm)">' + esc(c.description) + '</div>' +
           (c.evidence_link ? '<a href="' + esc(c.evidence_link) + '" target="_blank" rel="noopener" style="font-size:12px">Bằng chứng ↗</a>' : '<span style="font-size:12px;color:var(--color-text-muted)">(không có link)</span>') +
           '<div style="display:flex;gap:6px;align-items:center;margin-top:2px">' +
@@ -248,7 +386,6 @@
             '<button class="btn btn-ghost btn-sm" style="color:var(--color-error)" onclick="ScoreReview.rejectClaim(\'' + esc(c.claim_id) + '\',this)"><i class="fa-solid fa-xmark"></i> Từ chối</button>' +
           '</div></div>';
       }).join('');
-    }).catch(function (e) { if (wrap) wrap.innerHTML = '<p class="list-empty">Lỗi tải: ' + esc((e && e.message) || e) + '</p>'; });
   }
 
   function _commentOf(btn) { var card = btn.closest('.dash-card'); var i = card ? card.querySelector('.srComment') : null; return i ? i.value.trim() : ''; }

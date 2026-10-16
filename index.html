@@ -928,7 +928,10 @@
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:var(--space-2)">
               <h3 style="margin:0;font-size:var(--text-lg)">Bài tập AI cần chấm</h3>
-              <div style="display:flex;gap:8px;align-items:center">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <!-- CR 2026-10-16: lọc theo team + nhân sự (nhãn "Username-Họ tên"), áp cho cả bài tập và lan tỏa -->
+                <select id="srTeamFilter" class="form-input" style="width:auto" aria-label="Lọc theo team"><option value="">Tất cả team</option></select>
+                <select id="srUserFilter" class="form-input" style="width:auto;max-width:260px" aria-label="Lọc theo nhân sự"><option value="">Tất cả nhân sự</option></select>
                 <select id="srExFilter" class="form-input" style="width:auto" aria-label="Lọc bài tập theo trạng thái chấm">
                   <option value="pending">Chờ chấm</option>
                   <option value="reviewed">Đã chấm</option>
@@ -1249,7 +1252,7 @@
   <script src="assets/js/us-h1.js?v=20261002a"></script>
   <script src="assets/js/ai-exercise.js?v=20261009a"></script>
   <script src="assets/js/learning-plan.js?v=20261009a"></script>
-  <script src="assets/js/self-score.js?v=20261015a"></script>
+  <script src="assets/js/self-score.js?v=20261016a"></script>
   <script src="assets/js/review-queue.js?v=20261002a"></script>
   <script src="assets/js/app.js?v=20261002a"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>

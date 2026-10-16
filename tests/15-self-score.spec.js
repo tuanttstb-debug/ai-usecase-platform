@@ -20,16 +20,26 @@ const EXERCISES = [
   // Đủ 4 ô → gợi ý tick 4/4
   { exercise_id: 'EX-0101', title: 'Tóm tắt hồ sơ vay', description: 'Đầu vào: hồ sơ; đầu ra: bản tóm tắt', prompt: 'p',
     owner_name: 'Thành viên Hai', owner_email: 'user02', team: 'Team Số', week: '2026-W41',
-    hours_before: 3, hours_after: 1, ai_check: 'AI tính sai tỷ lệ — đã đối chiếu', reuse_template: 'https://drive/mau', review_status: '' },
+    hours_before: 3, hours_after: 1, ai_check: 'AI tính sai tỷ lệ — đã đối chiếu', reuse_template: 'https://drive/mau', review_status: '',
+    big_task_ref: 'AS-0001', demo_link: 'https://drive/demo', created_at: '2026-10-14T03:00:00.000Z' },
   // Chỉ có mô tả → gợi ý 1/4 → nút Đạt bị khóa
   { exercise_id: 'EX-0102', title: 'Soạn email', description: 'Email trả lời ĐVKD', prompt: 'p',
-    owner_name: 'Thành viên Ba', owner_email: 'user03', team: 'Team Số', week: '2026-W40', review_status: '' },
+    owner_name: 'Thành viên Ba', owner_email: 'user03', team: 'Team BL', week: '2026-W40', review_status: '' },
   // Bài của chính admin tuantt4 = PM → hiện để tự chấm (EXERCISE_SELF_REVIEW_USERS, 15/10)
   { exercise_id: 'EX-0103', title: 'Bài của tôi', description: 'x', prompt: 'p', owner_email: 'tuantt4', team: 'Team Số', week: '2026-W41', review_status: '' },
   // Đã chấm → chỉ hiện ở bộ lọc "Đã chấm"
   { exercise_id: 'EX-0104', title: 'Bài đã chấm', description: 'x', prompt: 'p', owner_name: 'Thành viên Hai', owner_email: 'user02',
     team: 'Team Số', week: '2026-W40', review_status: 'Đạt', review_criteria: '1,2,3' },
 ];
+
+// CR 2026-10-16: căn cứ chấm lấy từ learning-list (họ tên, việc lớn/hạng mục, kế hoạch tuần).
+const LEARNING = {
+  members: [{ username: 'tuantt4', display_name: 'PM Test' }, { username: 'user02', display_name: 'Thành viên Hai' }],
+  big_tasks: [{ task_id: 'VL-02', task_name: 'Việc lớn mẫu', team: 'Team Số' }],
+  assigns: [{ assign_id: 'AS-0001', task_id: 'VL-02', username: 'user02', item: 'Đọc bảng công nợ', due_date: '2026-10-20',
+              acceptance_criteria: 'Khớp 95% ô', status: 'Đang làm' }],
+  weeks: [{ username: 'user02', week: '2026-W41', plan: 'Thử AI tóm tắt hồ sơ' }],
+};
 
 function decode(url) {
   const p = url.searchParams.get('payload');
@@ -51,6 +61,7 @@ async function mockScore(page) {
     else if (action === 'sharing-claim-review') data = { claim_id: 'SC-1', status: 'Approved' };
     else if (action === 'exercise-list')        data = EXERCISES;
     else if (action === 'exercise-review')      data = { exercise_id: 'EX-0101', review_status: 'Đạt' };
+    else if (action === 'learning-list')        data = LEARNING;
     await route.fulfill({ status: 200, contentType: 'application/javascript; charset=utf-8',
       body: `${cb}(${JSON.stringify({ success: true, data, message: 'ok' })})` });
   });
@@ -146,5 +157,44 @@ test.describe('Chấm bài Đạt/Chưa đạt từng bài + duyệt lan tỏa �
     await expect.poll(() => cap.filter((c) => c.action === 'sharing-claim-review').length, { timeout: 1500 }).toBe(0);
     await page.locator('#srClaimList .dash-card button', { hasText: 'Duyệt' }).first().click();
     await expect.poll(() => cap.some((c) => c.action === 'sharing-claim-review'), { timeout: 8000 }).toBe(true);
+  });
+
+  test('T06 — đủ căn cứ chấm: prompt · % giảm giờ · việc lớn/hạng mục · kế hoạch tuần · ngày nộp · nhãn Username-Họ tên', async ({ page }) => {
+    await mockScore(page);
+    await page.goto('/index.html#score-review');
+    const card = page.locator('#srExList .dash-card[data-ex="EX-0101"]');
+    await expect(card).toBeVisible({ timeout: 10000 });
+    await expect(card.locator('.srOwner')).toContainText('User02-Thành viên Hai');
+    await expect(card.locator('.srOwner')).toContainText('nộp 14/10/2026 10:00');
+    const d = card.locator('.srDetail');
+    await expect(d).toContainText('Prompt');
+    await expect(d).toContainText('giảm 66.7%');
+    await expect(d).toContainText('Việc lớn mẫu');
+    await expect(d).toContainText('Đọc bảng công nợ');
+    await expect(d).toContainText('Khớp 95% ô');
+    await expect(d).toContainText('Thử AI tóm tắt hồ sơ');
+    await expect(d.locator('a[href="https://drive/demo"]')).toHaveCount(1);
+    // bài thiếu ô hiện "chưa ghi" thay vì ẩn
+    await expect(page.locator('#srExList .dash-card[data-ex="EX-0102"] .srDetail')).toContainText('chưa ghi');
+    // PM không có owner_name → lấy họ tên từ members
+    await expect(page.locator('#srExList .dash-card[data-ex="EX-0103"] .srOwner')).toContainText('Tuantt4-PM Test');
+  });
+
+  test('T07 — lọc theo team + nhân sự (nhãn Username-Họ tên), áp cả bài tập và lan tỏa', async ({ page }) => {
+    await mockScore(page);
+    await page.goto('/index.html#score-review');
+    await expect(page.locator('#srExList .dash-card[data-ex]')).toHaveCount(3, { timeout: 10000 });
+    await expect(page.locator('#srTeamFilter option')).toHaveText(['Tất cả team', 'Team BL', 'Team Số']);
+    await expect(page.locator('#srUserFilter option')).toHaveText(['Tất cả nhân sự', 'Tuantt4-PM Test', 'User02-Thành viên Hai', 'User03-Thành viên Ba']);
+    await page.selectOption('#srTeamFilter', 'team bl');
+    await expect(page.locator('#srExList .dash-card[data-ex]')).toHaveCount(1);
+    await expect(page.locator('#srUserFilter option')).toHaveText(['Tất cả nhân sự', 'User03-Thành viên Ba']);
+    await expect(page.locator('#srClaimList .dash-card[data-claim]')).toHaveCount(0);   // lan tỏa của Team Số bị lọc
+    await page.selectOption('#srTeamFilter', '');
+    await page.selectOption('#srUserFilter', 'user02');
+    await expect(page.locator('#srExList .dash-card[data-ex]')).toHaveCount(1);
+    await expect(page.locator('#srExList')).toContainText('Tóm tắt hồ sơ vay');
+    await expect(page.locator('#srClaimList .dash-card[data-claim]')).toHaveCount(1);
+    await expect(page.locator('#srExCount')).toHaveText('1 chờ chấm');
   });
 });
