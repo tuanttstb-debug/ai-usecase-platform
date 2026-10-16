@@ -740,7 +740,8 @@
                   <div class="form-group"><label class="form-label" for="exAiCheck">AI sai ở đâu, bạn kiểm chứng và sửa gì</label><textarea id="exAiCheck" class="form-input" rows="2" maxlength="2000" placeholder="VD: AI tính sai tỷ lệ nợ/vốn — đối chiếu BCTC gốc và sửa lại"></textarea></div>
                   <div class="form-group"><label class="form-label" for="exReuse">Mẫu/câu lệnh người khác dùng lại được</label><input type="text" id="exReuse" class="form-input" maxlength="1000" placeholder="Link mẫu ở ổ chung, hoặc ghi: dùng lại prompt trên cho loại hồ sơ nào"></div>
                   <div class="form-group"><label class="form-label" for="exBigTask">Gắn hạng mục việc lớn</label><select id="exBigTask" class="form-input" aria-label="Gắn hạng mục việc lớn"><option value="">— Không gắn —</option></select></div>
-                  <p id="exCriteriaHint" style="margin:0 0 var(--space-2);font-size:var(--text-xs);color:var(--color-text-muted)">Teamlead chấm <b>Đạt</b> khi bài có ≥3/4: (1) việc thật, có đầu vào/đầu ra · (2) giờ trước/sau · (3) AI sai ở đâu, đã kiểm chứng · (4) mẫu dùng lại. Mỗi tuần tính tối đa 1 bài; 10 bài Đạt (tuần 40–52) = 100% KPI bài tập.</p>
+                  <p id="exCriteriaHint" style="margin:0 0 var(--space-2);font-size:var(--text-xs);color:var(--color-text-muted)">Teamlead chấm <b>Đạt</b> khi bài có ≥3/4: (1) việc thật, có đầu vào/đầu ra · (2) giờ trước/sau · (3) AI sai ở đâu, đã kiểm chứng · (4) mẫu dùng lại. Mỗi tuần tính tối đa 1 bài; 10 bài Đạt (tuần 40–52) = 100% KPI bài tập. <b>Bài chưa đủ 3/4 sẽ không nộp/lưu được.</b></p>
+                  <div id="exCriteriaStatus" aria-live="polite" style="margin:0 0 var(--space-2);font-size:var(--text-sm)"></div>
                   <div id="exFormMsg" style="color:var(--color-error);font-size:var(--text-sm);min-height:18px"></div>
                   <div style="display:flex;gap:8px;justify-content:flex-end">
                     <button type="button" id="exCancelBtn" class="btn btn-outline" style="display:none">Hủy sửa</button>
@@ -1250,7 +1251,7 @@
   <script src="assets/js/leaderboard.js?v=20261009a"></script>
   <script src="assets/js/weekly-update.js?v=20261002a"></script>
   <script src="assets/js/us-h1.js?v=20261002a"></script>
-  <script src="assets/js/ai-exercise.js?v=20261009a"></script>
+  <script src="assets/js/ai-exercise.js?v=20261016a"></script>
   <script src="assets/js/learning-plan.js?v=20261009a"></script>
   <script src="assets/js/self-score.js?v=20261016a"></script>
   <script src="assets/js/review-queue.js?v=20261002a"></script>

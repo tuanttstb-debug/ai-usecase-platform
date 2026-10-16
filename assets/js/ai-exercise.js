@@ -137,6 +137,27 @@
     if (!has(e.reuse_template)) miss.push('mẫu dùng lại');
     return miss;
   }
+  // CR 2026-10-16: chặn nộp/sửa bài chưa đủ ≥3/4 tiêu chí chấm (D69) — khớp gợi ý tick ở màn Chấm bài
+  // và chặn server ExerciseService._exCriteriaCheck_. (1) mô tả · (2) đủ 2 ô giờ · (3) kiểm chứng AI · (4) mẫu dùng lại.
+  var CRIT_MIN = 3;
+  var CRIT_LABELS = ['(1) mô tả việc thật', '(2) giờ trước và sau', '(3) AI sai ở đâu, đã kiểm chứng', '(4) mẫu dùng lại'];
+  function criteriaMet(d) {
+    var has = function (v) { return String(v == null ? '' : v).trim() !== ''; };
+    return [has(d.Description), has(d.Hours_Before) && has(d.Hours_After), has(d.AI_Check), has(d.Reuse_Template)];
+  }
+  function _formData() {
+    return { Description: _v('exDescription'), Hours_Before: _v('exHoursBefore'), Hours_After: _v('exHoursAfter'),
+             AI_Check: _v('exAiCheck'), Reuse_Template: _v('exReuse') };
+  }
+  // Đếm trực tiếp khi gõ: "Đủ x/4 tiêu chí".
+  function _syncCriteria() {
+    var el = document.getElementById('exCriteriaStatus'); if (!el) return;
+    var met = criteriaMet(_formData()), n = met.filter(Boolean).length;
+    var miss = CRIT_LABELS.filter(function (l, i) { return !met[i]; });
+    el.innerHTML = '<b>Đủ ' + n + '/4 tiêu chí</b>' + (n >= CRIT_MIN ? ' — đủ điều kiện nộp' : ' — cần tối thiểu ' + CRIT_MIN + '/4 mới nộp được') +
+      (miss.length ? '. Còn thiếu: ' + esc(miss.join(' · ')) : '');
+    el.style.color = n >= CRIT_MIN ? 'var(--color-success)' : 'var(--color-error)';
+  }
   function _extraHtml(e) {
     var parts = [];
     var has = function (v) { return String(v == null ? '' : v).trim() !== ''; };
@@ -210,6 +231,17 @@
     var msg = document.getElementById('exFormMsg');
     if (!title)  { if (msg) msg.textContent = 'Vui lòng nhập Tiêu đề.'; showToast('Thiếu Tiêu đề', 'error'); return; }
     if (!prompt) { if (msg) msg.textContent = 'Vui lòng nhập Prompt.'; showToast('Thiếu Prompt', 'error'); return; }
+    var hb = _v('exHoursBefore'), ha = _v('exHoursAfter');
+    if ((hb && !(parseFloat(hb) >= 0)) || (ha && !(parseFloat(ha) >= 0))) {
+      if (msg) msg.textContent = 'Giờ trước/sau phải là số ≥ 0.'; showToast('Giờ trước/sau không hợp lệ', 'error'); return;
+    }
+    var met = criteriaMet(_formData());
+    if (met.filter(Boolean).length < CRIT_MIN) {
+      var miss = CRIT_LABELS.filter(function (l, i) { return !met[i]; });
+      if (msg) msg.textContent = 'Bài mới đủ ' + met.filter(Boolean).length + '/4 tiêu chí — cần tối thiểu ' + CRIT_MIN + '/4. Bổ sung: ' + miss.join(' · ') + '.';
+      showToast('Chưa đủ ' + CRIT_MIN + '/4 tiêu chí chấm — chưa nộp được', 'error');
+      return;
+    }
     if (msg) msg.textContent = '';
 
     var u = _user() || {};
@@ -261,6 +293,7 @@
     var ttl = document.getElementById('exFormTitle'); if (ttl) ttl.textContent = 'Nộp bài tuần này';
     var cancel = document.getElementById('exCancelBtn'); if (cancel) cancel.style.display = 'none';
     var msg = document.getElementById('exFormMsg'); if (msg) msg.textContent = '';
+    _syncCriteria();
   }
 
   function edit(id) {
@@ -274,6 +307,7 @@
     set('exAiCheck', e.ai_check); set('exReuse', e.reuse_template);
     fillWeekOptions(e.week || '');
     fillBigTaskOptions(e.big_task_ref || '');
+    _syncCriteria();
     var miss = missingFields(e);
     var msg = document.getElementById('exFormMsg');
     if (msg) msg.textContent = miss.length ? 'Bổ sung: ' + miss.join(', ') + ' để teamlead chấm bài.' : '';
@@ -321,6 +355,11 @@
     if (btn && !btn._bound) { btn.addEventListener('click', _submit); btn._bound = true; }
     var cancel = document.getElementById('exCancelBtn');
     if (cancel && !cancel._bound) { cancel.addEventListener('click', _resetForm); cancel._bound = true; }
+    ['exDescription', 'exHoursBefore', 'exHoursAfter', 'exAiCheck', 'exReuse'].forEach(function (fid) {
+      var el = document.getElementById(fid);
+      if (el && !el._critBound) { el.addEventListener('input', _syncCriteria); el._critBound = true; }
+    });
+    _syncCriteria();
     var s = document.getElementById('exSearch');
     if (s && !s._bound) {
       var d;

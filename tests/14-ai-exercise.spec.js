@@ -80,11 +80,37 @@ test.describe('Bài tập AI trong màn "Bài tập & Học tập"', () => {
     await page.waitForFunction(() => window._learningPlan && window._exercises !== undefined, { timeout: 10000 });
     await page.locator('#exTitle').fill('Dùng AI viết mô tả sản phẩm');
     await page.locator('#exPrompt').fill('Bạn là copywriter. Viết mô tả 3 câu cho sản phẩm...');
+    await page.locator('#exDescription').fill('Viết mô tả sản phẩm cho tờ rơi');
+    await page.locator('#exHoursBefore').fill('2');
+    await page.locator('#exHoursAfter').fill('0.5');
+    await page.locator('#exAiCheck').fill('AI bịa lãi suất — đã sửa theo biểu phí');
     await page.locator('#exSubmitBtn').click();
     await expect.poll(() => captured.filter((c) => c.action === 'exercise-create').length, { timeout: 8000 }).toBe(1);
     const body = captured.find((c) => c.action === 'exercise-create').body;
     expect(body.Week).toBe('2026-W40');
     expect(body.Title).toBe('Dùng AI viết mô tả sản phẩm');
+  });
+
+  test('T05 — CR 16/10: chưa đủ ≥3/4 tiêu chí → chặn nộp, báo ô thiếu; bộ đếm cập nhật khi gõ', async ({ page }) => {
+    const captured = await mockEx(page);
+    await page.goto('/index.html#learning-plan/week');
+    await page.waitForFunction(() => window._learningPlan && window._exercises !== undefined, { timeout: 10000 });
+    await expect(page.locator('#exCriteriaStatus')).toContainText('Đủ 0/4 tiêu chí');
+    await page.locator('#exTitle').fill('Bài thiếu');
+    await page.locator('#exPrompt').fill('prompt');
+    await page.locator('#exDescription').fill('Việc thật');
+    await page.locator('#exHoursBefore').fill('2');            // thiếu giờ sau → (2) chưa tính
+    await page.locator('#exAiCheck').fill('Đã kiểm');
+    await expect(page.locator('#exCriteriaStatus')).toContainText('Đủ 2/4 tiêu chí');
+    await page.locator('#exSubmitBtn').click();
+    await expect(page.locator('#exFormMsg')).toContainText('cần tối thiểu 3/4');
+    await expect(page.locator('#exFormMsg')).toContainText('(2) giờ trước và sau');
+    await page.waitForTimeout(500);
+    expect(captured.find((c) => c.action === 'exercise-create')).toBeFalsy();
+    await page.locator('#exHoursAfter').fill('1');
+    await expect(page.locator('#exCriteriaStatus')).toContainText('Đủ 3/4 tiêu chí — đủ điều kiện nộp');
+    await page.locator('#exSubmitBtn').click();
+    await expect.poll(() => captured.filter((c) => c.action === 'exercise-create').length, { timeout: 8000 }).toBe(1);
   });
 
   test('T04 — Tìm kiếm lọc đúng bài', async ({ page }) => {

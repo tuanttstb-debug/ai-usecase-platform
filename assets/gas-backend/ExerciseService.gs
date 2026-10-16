@@ -61,6 +61,18 @@ function _exExtraFields_(data) {
   };
 }
 
+// CR 2026-10-16: chặn nộp/sửa bài chưa đủ ≥3/4 tiêu chí chấm (D69) — khớp FE ai-exercise.js criteriaMet.
+// (1) mô tả · (2) đủ giờ trước + sau · (3) kiểm chứng AI · (4) mẫu dùng lại.
+function _exCriteriaCheck_(row) {
+  var has = function (v) { return String(v == null ? '' : v).trim() !== ''; };
+  var met = [has(row.Description), has(row.Hours_Before) && has(row.Hours_After), has(row.AI_Check), has(row.Reuse_Template)];
+  var n = met.filter(Boolean).length;
+  if (n >= EXERCISE_PASS_MIN_CRITERIA) return;
+  var labels = ['(1) mô tả việc thật', '(2) giờ trước và sau', '(3) AI sai ở đâu, đã kiểm chứng', '(4) mẫu dùng lại'];
+  var miss = labels.filter(function (l, i) { return !met[i]; });
+  throw new Error('Bài mới đủ ' + n + '/4 tiêu chí — cần tối thiểu ' + EXERCISE_PASS_MIN_CRITERIA + '/4. Bổ sung: ' + miss.join(' · ') + '.');
+}
+
 function createExercise_(data) {
   data = data || {};
   var title  = sanitizeStr_(data.Title  || '', 200);
@@ -87,6 +99,7 @@ function createExercise_(data) {
     Week:        week,
     Review_Status: ''
   }, _exExtraFields_(data));
+  _exCriteriaCheck_(row);
   appendRowFromObject_(SHEETS.AI_EXERCISE, row);
   // CR (2026-10-01 #2): bài nộp = bài tập tuần → đánh dấu "Đã nộp" ở BAI_TAP_TUAN (không chặn nếu lỗi)
   try { _learnMarkSubmitted_(row.Owner_Email, week, id, row.Owner_Name, row.Team); }
@@ -159,6 +172,7 @@ function updateExercise_(data) {
     Demo_Link:   sanitizeStr_(data.Demo_Link || '', 1000),
     Updated_At:  new Date().toISOString()
   }, _exExtraFields_(data));
+  _exCriteriaCheck_(updates);
 
   // Đổi tuần (nộp bù / gắn nhầm tuần) — chỉ khi client gửi tuần hợp lệ khác tuần cũ.
   var oldWeek = String(existing.Week || '').trim();

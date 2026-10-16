@@ -142,7 +142,7 @@ test.describe('CR-A — server: nộp bài chọn tuần + 4 ô + teamlead chấ
   test('exercise-review: PM trong EXERCISE_SELF_REVIEW_USERS được tự chấm bài của mình (15/10)', () => {
     const { ctx, book } = loadGas(seedBase());
     ctx.EXERCISE_SELF_REVIEW_USERS = ['pm.z'];
-    const c = ctx.createExercise_({ Title: 'Bài PM', Prompt: 'p', Owner_Email: 'pm.z', Owner_Name: 'PM Z', Team: 'Số', Week: '2026-W41' });
+    const c = ctx.createExercise_({ Title: 'Bài PM', Prompt: 'p', Owner_Email: 'pm.z', Owner_Name: 'PM Z', Team: 'Số', Week: '2026-W41', Description: 'việc thật', Hours_Before: '2', Hours_After: '1', AI_Check: 'đã kiểm' });
     const r = ctx.reviewExercise_({ Exercise_ID: c.exercise_id, action: 'pass', Criteria: '1,2,3,4', reviewer_email: 'pm.z' });
     expect(r.review_status).toBe('Đạt');
     expect(objs(book, 'AI_EXERCISE').find((x) => x.Exercise_ID === c.exercise_id).Reviewed_By).toBe('pm.z');
@@ -166,10 +166,27 @@ test.describe('CR-A — server: nộp bài chọn tuần + 4 ô + teamlead chấ
     expect(weeks.find((w) => w.Week === '2026-W40').Status).toBe('Kế hoạch');
   });
 
+  test('CR 16/10 — chặn nộp/sửa bài chưa đủ ≥3/4 tiêu chí (create + update), báo rõ ô thiếu', () => {
+    const { ctx, book } = loadGas(seedBase());
+    const before = objs(book, 'AI_EXERCISE').length;
+    // 2/4: chỉ mô tả + kiểm chứng (giờ thiếu "sau" không tính)
+    expect(() => ctx.createExercise_({ Title: 'x', Prompt: 'p', Owner_Email: 'tv.a', Week: '2026-W41',
+      Description: 'việc thật', Hours_Before: '2', AI_Check: 'đã kiểm' })).toThrow(/2\/4.*\(2\) giờ trước và sau.*\(4\) mẫu dùng lại/);
+    expect(objs(book, 'AI_EXERCISE').length).toBe(before);             // không ghi dòng nào
+    // 3/4 → nộp được
+    const ok = ctx.createExercise_({ Title: 'x', Prompt: 'p', Owner_Email: 'tv.a', Week: '2026-W41',
+      Description: 'việc thật', Hours_Before: '2', Hours_After: '0', AI_Check: 'đã kiểm' });
+    expect(ok.exercise_id).toMatch(/^EX-/);
+    // sửa xuống còn 1/4 → chặn, dữ liệu giữ nguyên
+    expect(() => ctx.updateExercise_({ Exercise_ID: ok.exercise_id, Title: 'x', Prompt: 'p', requester_email: 'tv.a',
+      Description: 'việc thật' })).toThrow(/1\/4/);
+    expect(objs(book, 'AI_EXERCISE').find((x) => x.Exercise_ID === ok.exercise_id).AI_Check).toBe('đã kiểm');
+  });
+
   test('exercise-delete: gỡ mã bài khỏi dòng tuần; còn bài khác thì vẫn "Đã nộp", hết bài về "Kế hoạch" (lỗi live 09/10)', () => {
     const { ctx, book } = loadGas(seedBase());
     ctx._learnMarkSubmitted_('tv.a', '2026-W40', 'EX-0001', 'Thành viên A', 'CV');
-    const r = ctx.createExercise_({ Title: 'Bài 2', Prompt: 'p', Owner_Email: 'tv.a', Owner_Name: 'Thành viên A', Team: 'CV', requester_email: 'tv.a', Week: '2026-W40' });
+    const r = ctx.createExercise_({ Title: 'Bài 2', Prompt: 'p', Owner_Email: 'tv.a', Owner_Name: 'Thành viên A', Team: 'CV', requester_email: 'tv.a', Week: '2026-W40', Description: 'việc thật', Hours_Before: '2', Hours_After: '1', AI_Check: 'đã kiểm' });
     let wk = objs(book, 'BAI_TAP_TUAN').find((w) => w.Username === 'tv.a' && w.Week === '2026-W40');
     expect(wk.Exercise_IDs).toBe('EX-0001, ' + r.exercise_id);
     ctx.deleteExercise_({ Exercise_ID: r.exercise_id, requester_email: 'tv.a' });
