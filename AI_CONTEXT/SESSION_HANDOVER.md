@@ -1,14 +1,14 @@
 # SESSION HANDOVER
 
-## Session: 2026-10-16 #2 — Chặn nộp/sửa bài tập chưa đủ ≥3/4 tiêu chí chấm (FE + GAS)
+## Session: 2026-10-16 #2 — Chặn nộp/sửa bài tập chưa đủ ≥3/4 tiêu chí chấm (FE + GAS) — hub AIUS-001 D82
 - **Task completed:** Form nộp bài có bộ đếm "Đủ x/4 tiêu chí" (cập nhật khi gõ, nêu ô thiếu); chưa đủ 3/4 → chặn Nộp/Lưu; giờ phải là số ≥ 0. GAS `_exCriteriaCheck_` chặn y hệt ở `createExercise_`/`updateExercise_` (không ghi dòng). 4 tiêu chí khớp gợi ý tick màn Chấm bài: mô tả · đủ giờ trước + sau · kiểm chứng AI · mẫu dùng lại.
 - **Files changed:** `6ff4063` main (đã push): `assets/js/ai-exercise.js` · `index.html` (`#exCriteriaStatus`, `?v=20261016a`) · `assets/gas-backend/ExerciseService.gs` · `tests/14-ai-exercise.spec.js` (+T05) · `tests/20-gas-routes-d70.spec.js` (+ca chặn create/update, dữ liệu test cũ đủ 3/4).
 - **Decision made:** bài cũ < 3/4 vẫn nằm trong danh sách chấm; chỉ khi chủ bài SỬA (kể cả đổi tuần) mới phải bổ sung đủ.
 - **Blocker:** không.
-- **Next step:** [TT] dán `ExerciseService.gs` → New version (giữ URL) để có lớp chặn server; FE đã chặn từ lúc push.
+- **Next step:** ✅ [TT] GAS redeploy 16/10 → [CC] nghiệm thu server LIVE PASS (gọi thẳng exercise-create 2/4 bị chặn, 0 bài [TEST]).
 - **Regression risk:** Thấp–TB — người dùng nộp bài thiếu ô sẽ bị chặn (đúng ý). Playwright 167/167. Nghiệm thu LIVE 16/10 (FE): 0/4 → 2/4 chặn + báo ô thiếu · 3/4 đủ điều kiện · giờ âm chặn · mở sửa EX-0053 = 4/4 · 0 lệnh ghi gửi đi, 0 bài [TEST] tồn tại.
 
-## Session: 2026-10-16 — Màn "Chấm bài & duyệt lan tỏa": đủ căn cứ chấm + lọc team/nhân sự
+## Session: 2026-10-16 — Màn "Chấm bài & duyệt lan tỏa": đủ căn cứ chấm + lọc team/nhân sự — hub AIUS-001 D81
 - **Task completed:** Thẻ bài hiện đủ căn cứ theo 4 tiêu chí: kế hoạch tuần · mô tả · **Prompt** · giờ trước→sau + **% giảm** · kiểm chứng AI · mẫu dùng lại (link bấm được) · link demo · **việc lớn = tên + hạng mục (hạn, trạng thái, tiêu chí nghiệm thu)** · ngày nộp · người/lúc chấm + nhận xét · ô trống hiện "chưa ghi" · cảnh báo đã có bài Đạt khác cùng tuần. Lọc **Team + Nhân sự** (nhãn `Username-Họ tên`, vd `Tuantt4-Trần Thế Tuân`) áp cả bài tập và lan tỏa.
 - **Files changed:** `eda944b` main (đã push): `assets/js/self-score.js` · `index.html` (2 select + `?v=20261016a`) · `tests/15-self-score.spec.js` (+T06 +T07). FE only — KHÔNG đổi GAS.
 - **Decision made:** ngữ cảnh (họ tên, việc lớn/hạng mục, kế hoạch tuần) lấy từ `learning-list` gọi song song; lỗi thì vẫn chấm được. Chưa hiện "ngày sửa gần nhất" (cần thêm `Updated_At` vào `_exerciseOut_` + redeploy).
