@@ -1,5 +1,13 @@
 # SESSION HANDOVER
 
+## Session: 2026-10-16 — Màn "Chấm bài & duyệt lan tỏa": đủ căn cứ chấm + lọc team/nhân sự
+- **Task completed:** Thẻ bài hiện đủ căn cứ theo 4 tiêu chí: kế hoạch tuần · mô tả · **Prompt** · giờ trước→sau + **% giảm** · kiểm chứng AI · mẫu dùng lại (link bấm được) · link demo · **việc lớn = tên + hạng mục (hạn, trạng thái, tiêu chí nghiệm thu)** · ngày nộp · người/lúc chấm + nhận xét · ô trống hiện "chưa ghi" · cảnh báo đã có bài Đạt khác cùng tuần. Lọc **Team + Nhân sự** (nhãn `Username-Họ tên`, vd `Tuantt4-Trần Thế Tuân`) áp cả bài tập và lan tỏa.
+- **Files changed:** `eda944b` main (đã push): `assets/js/self-score.js` · `index.html` (2 select + `?v=20261016a`) · `tests/15-self-score.spec.js` (+T06 +T07). FE only — KHÔNG đổi GAS.
+- **Decision made:** ngữ cảnh (họ tên, việc lớn/hạng mục, kế hoạch tuần) lấy từ `learning-list` gọi song song; lỗi thì vẫn chấm được. Chưa hiện "ngày sửa gần nhất" (cần thêm `Updated_At` vào `_exerciseOut_` + redeploy).
+- **Blocker:** không.
+- **Next step:** [CC] chấm lại bài Quang/Dũng khi sửa (live 16/10 sáng: EX-0011/0046 vẫn Chưa đạt, chưa sửa).
+- **Regression risk:** Thấp — Playwright 165/165; nghiệm thu LIVE 16/10 (tuantt4, chỉ đọc + lọc, không chấm): bản `?v=20261016a`, 52 chờ chấm/58 bài trong phạm vi, 5 team + 28 nhân sự đúng nhãn, 13 bài có việc lớn đều ra tên, console 0 lỗi.
+
 ## Session: 2026-10-15 — PM tự chấm bài tập của mình (EXERCISE_SELF_REVIEW_USERS) + chấm live team Số
 - **Task completed:** Hub AIUS-001 D80 (PM kiêm teamlead team Số, không ai khác chấm được bài của PM) → ngoại lệ tự chấm cho `tuantt4`: GAS `reviewExercise_` (nhật ký ghi "tự chấm") + FE `self-score.js` `_inScope` hiện bài của PM. Live: nộp EX-0053 (W42 tuantt4) · chấm Chưa đạt EX-0046/0011/0015 · sau redeploy chấm Đạt 4/4 EX-0024/0025/0053 → tuantt4 M2 = 30.
 - **Files changed:** `40f5524` main (đã push): `assets/gas-backend/{Config.gs,ExerciseService.gs}` · `config/env.js` · `assets/js/self-score.js` · `index.html` (`?v=20261015a` env + self-score) · `tests/{15-self-score,20-gas-routes-d70}.spec.js`. GAS redeploy ([TT], 2026-10-15).
