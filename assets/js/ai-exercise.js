@@ -48,9 +48,22 @@
   }
 
   function _matches(e) {
+    if (_pf && !_pf.match(e.team, e.owner_email)) return false;
     if (!_search) return true;
-    var hay = [e.exercise_id, e.title, e.description, e.owner_name, e.team].map(_norm).join(' ');
+    var hay = [e.exercise_id, e.title, e.description, e.owner_name, e.owner_email, e.team].map(_norm).join(' ');
     return hay.indexOf(_search) !== -1;
+  }
+
+  // Bộ lọc chuẩn Team + Nhân sự ở Thư viện (people-filter.js) — họ tên thiếu thì tra danh bạ learning-list.
+  var _pf = null;
+  function _memberName(u) {
+    var d = (window.LearningPlan && LearningPlan.data) ? LearningPlan.data() : null;
+    var m = d && (d.members || []).filter(function (x) { return _norm(x.username) === _norm(u); })[0];
+    return m ? m.display_name : '';
+  }
+  function _refreshPeople() {
+    if (!_pf) return;
+    _pf.setPeople(_all.map(function (e) { return { username: e.owner_email, name: e.owner_name || _memberName(e.owner_email), team: e.team }; }));
   }
 
   // ── Load + render ──────────────────────────────────────────────
@@ -61,6 +74,7 @@
       _all = Array.isArray(res) ? res : (res && (res.items || res.data)) || [];
       window._exercises = _all; // expose cho test
       if (loading) loading.style.display = 'none';
+      _refreshPeople();
       _renderHint();
       _render();
       if (window.LearningPlan && LearningPlan.refreshMine) LearningPlan.refreshMine();
@@ -360,6 +374,7 @@
       if (el && !el._critBound) { el.addEventListener('input', _syncCriteria); el._critBound = true; }
     });
     _syncCriteria();
+    if (!_pf && window.PeopleFilter) _pf = PeopleFilter.bind({ team: 'exTeamFilter', user: 'exUserFilter', onChange: _render });
     var s = document.getElementById('exSearch');
     if (s && !s._bound) {
       var d;
@@ -388,6 +403,7 @@
   }, reviewBadge: reviewBadge, missingFields: missingFields,
      // learning-plan.js gọi sau khi nạp xong learning-list (tuần hiện tại + việc lớn/phân công)
      refreshOptions: function () {
+       _refreshPeople();   // có danh bạ → bổ sung họ tên cho nhãn "Username-Họ tên"
        if (_editId) return;
        fillWeekOptions(''); fillBigTaskOptions('');
      } };

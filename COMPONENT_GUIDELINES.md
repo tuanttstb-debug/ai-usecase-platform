@@ -185,3 +185,33 @@ The `<details>` + `<summary>` pattern is used for expandable form sections:
 ```
 
 The CSS auto-rotates the chevron when `[open]` is present.
+
+---
+
+## Bộ lọc chuẩn Team + Nhân sự (People Filter) — CHUẨN BẮT BUỘC từ 2026-10-16
+
+> Anh Tuân chốt 16/10/2026: **mọi màn có danh sách nhiều người** (bài tập, chấm bài, theo dõi, việc lớn, khóa học… và mọi tính năng lọc làm sau này) dùng bộ lọc chuẩn này. Không tự chế ô lọc team/người riêng.
+
+**Quy tắc**
+1. Hai ô chọn đặt cạnh nhau, cùng hàng ô tìm kiếm/bộ lọc khác: **"Tất cả team"** rồi **"Tất cả nhân sự"**.
+2. Nhãn nhân sự = **`Username-Họ tên`**, chữ đầu username viết hoa — vd `Tuantt4-Trần Thế Tuân`. Không có họ tên → chỉ `Username`. Họ tên thiếu ở dòng dữ liệu thì tra danh bạ (`learning-list.members`).
+3. Danh sách team / nhân sự lấy từ **chính dữ liệu của màn đó** (không liệt kê người không có dòng nào), sắp theo tiếng Việt.
+4. Chọn team → ô nhân sự chỉ còn người của team đó; người đang chọn không thuộc team mới → tự về "Tất cả nhân sự".
+5. So khớp đã chuẩn hóa (trim + chữ thường). Bộ lọc áp cho **mọi danh sách trên màn** (AND với bộ lọc trạng thái/tìm kiếm). Dòng có nhiều người (vd việc lớn: làm chính + người được giao) khớp khi **một** người khớp.
+6. Màn chỉ chứa dữ liệu của chính người dùng (Bài tập tuần, Khóa học của tôi) **không** gắn bộ lọc.
+
+**Markup** (class `.pf-select` trong `components.css`):
+```html
+<select id="xxTeamFilter" class="pf-select pf-select--team" aria-label="Lọc theo team"><option value="">Tất cả team</option></select>
+<select id="xxUserFilter" class="pf-select" aria-label="Lọc theo nhân sự"><option value="">Tất cả nhân sự</option></select>
+```
+
+**JS** (`assets/js/people-filter.js` — nạp trước các module màn):
+```javascript
+var pf = PeopleFilter.bind({ team: 'xxTeamFilter', user: 'xxUserFilter', onChange: render });
+pf.setPeople(rows.map(function (r) { return { username: r.username, name: r.display_name, team: r.team }; })); // mỗi lần tải dữ liệu
+rows.filter(function (r) { return pf.match(r.team, r.username); });   // username có thể là mảng
+PeopleFilter.label('tuantt4', 'Trần Thế Tuân');                         // → "Tuantt4-Trần Thế Tuân" (dùng cho mọi chỗ hiển thị tên)
+```
+
+**Đang áp dụng:** Chấm bài & lan tỏa (`sr*`) · Bài tập & Học tập → Thư viện (`ex*`), Theo dõi (`lp*`), Việc lớn (`bt*`). Test: `tests/21-people-filter.spec.js`, `tests/15-self-score.spec.js` T07.

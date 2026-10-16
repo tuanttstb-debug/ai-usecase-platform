@@ -131,63 +131,29 @@
   var _ctx = { names: {}, tasks: {}, assigns: {}, plans: {} };
   function _norm(s) { return String(s == null ? '' : s).trim().toLowerCase(); }
 
+  // Bộ lọc chuẩn Team + Nhân sự (people-filter.js) — áp cả bài tập và lan tỏa.
+  var _pf = null;
   function _revInit() {
-    ['srExFilter', 'srTeamFilter', 'srUserFilter'].forEach(function (fid) {
-      var f = document.getElementById(fid);
-      if (f && !f._b) {
-        f.addEventListener('change', function () {
-          if (fid === 'srTeamFilter') _fillUserFilter();
-          _renderExReview(); _renderClaims();
-        });
-        f._b = true;
-      }
-    });
+    var f = document.getElementById('srExFilter');
+    if (f && !f._b) { f.addEventListener('change', _renderExReview); f._b = true; }
+    if (!_pf) _pf = PeopleFilter.bind({ team: 'srTeamFilter', user: 'srUserFilter', onChange: function () { _renderExReview(); _renderClaims(); } });
     _loadExercises(); _loadPendingClaims();
   }
 
-  // Nhãn nhân sự "Username-Họ tên" (vd "Tuantt4-Trần Thế Tuân").
+  // Nhãn nhân sự chuẩn "Username-Họ tên" — họ tên lấy từ dòng dữ liệu, thiếu thì tra danh bạ learning-list.
   function _userLabel(username, name) {
-    var u = String(username || '').trim();
-    var n = String(name || _ctx.names[_norm(u)] || '').trim();
-    var uc = u ? u.charAt(0).toUpperCase() + u.slice(1) : '';
-    if (!uc) return n || '—';
-    return (n && _norm(n) !== _norm(u)) ? uc + '-' + n : uc;
+    return PeopleFilter.label(username, name || _ctx.names[_norm(username)] || '');
   }
 
   // Danh sách người/team trong phạm vi = bài tập + lan tỏa đang hiển thị được.
-  function _people() {
-    var map = {};
-    _exAll.forEach(function (e) { var k = _norm(e.owner_email); if (k) map[k] = { u: e.owner_email, n: e.owner_name, t: e.team }; });
-    _claimsAll.forEach(function (c) { var k = _norm(c.username); if (k && !map[k]) map[k] = { u: c.username, n: c.display_name, t: c.team }; });
-    return Object.keys(map).map(function (k) { return map[k]; });
+  function _refreshFilters() {
+    if (!_pf) return;
+    var list = [];
+    _exAll.forEach(function (e) { list.push({ username: e.owner_email, name: e.owner_name || _ctx.names[_norm(e.owner_email)], team: e.team }); });
+    _claimsAll.forEach(function (c) { list.push({ username: c.username, name: c.display_name, team: c.team }); });
+    _pf.setPeople(list);
   }
-
-  function _fillSelect(id, opts, allLabel) {
-    var sel = document.getElementById(id); if (!sel) return;
-    var cur = sel.value;
-    sel.innerHTML = '<option value="">' + esc(allLabel) + '</option>' + opts.map(function (o) {
-      return '<option value="' + esc(o.v) + '">' + esc(o.t) + '</option>';
-    }).join('');
-    sel.value = opts.some(function (o) { return o.v === cur; }) ? cur : '';
-  }
-  function _fillTeamFilter() {
-    var seen = {}, opts = [];
-    _people().forEach(function (p) { var t = String(p.t || '').trim(); if (t && !seen[_norm(t)]) { seen[_norm(t)] = 1; opts.push({ v: _norm(t), t: t }); } });
-    opts.sort(function (a, b) { return a.t.localeCompare(b.t, 'vi'); });
-    _fillSelect('srTeamFilter', opts, 'Tất cả team');
-  }
-  function _fillUserFilter() {
-    var team = _val('srTeamFilter');
-    var opts = _people().filter(function (p) { return !team || _norm(p.t) === team; })
-      .map(function (p) { return { v: _norm(p.u), t: _userLabel(p.u, p.n) }; });
-    opts.sort(function (a, b) { return a.t.localeCompare(b.t, 'vi'); });
-    _fillSelect('srUserFilter', opts, 'Tất cả nhân sự');
-  }
-  function _refreshFilters() { _fillTeamFilter(); _fillUserFilter(); }
-  function _passFilter(team, username) {
-    var t = _val('srTeamFilter'), u = _val('srUserFilter');
-    return (!t || _norm(team) === t) && (!u || _norm(username) === u);
-  }
+  function _passFilter(team, username) { return !_pf || _pf.match(team, username); }
 
   function _loadContext() {
     if (!Api.listLearning) return Promise.resolve();

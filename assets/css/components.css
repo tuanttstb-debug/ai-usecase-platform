@@ -694,3 +694,18 @@
 [data-theme="dark"] .alert-warning { color: #FFD54F; border-color: rgba(246,177,0,0.40); }
 [data-theme="dark"] .alert-error   { color: #EF9A9A; border-color: rgba(244,67,54,0.40); }
 [data-theme="dark"] .alert-info    { color: #B39DDB; }
+
+/* ── Bộ lọc chuẩn Team + Nhân sự (people-filter.js, CR 2026-10-16) ──
+   Hai ô chọn đặt cạnh nhau, cùng hàng với ô tìm kiếm / bộ lọc khác của màn. */
+.pf-select {
+  height: 38px;
+  padding: 0 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--text-sm);
+  max-width: 260px;
+}
+.pf-select--team { max-width: 180px; }

@@ -23,7 +23,7 @@
   var _btOpen = null;      // CR-C: việc lớn đang mở chi tiết
   var _editKrId = null, _editAsId = null;
   var _tab = 'week';
-  var _filter = { team: '', state: '', week: '', q: '' };
+  var _filter = { state: '', week: '', q: '' };   // team/nhân sự: bộ lọc chuẩn _pfTrack
 
   var STATE_META = {
     overdue: { label: 'Quá hạn',          cls: 'badge-error'   },
@@ -160,7 +160,7 @@
       };
       window._learningPlan = _data; // expose cho test
       if (loading) loading.style.display = 'none';
-      _fillTeamFilter();
+      _fillPeopleFilters();
       _renderWeekTab();
       _renderMine();
       _renderTracking();
@@ -225,14 +225,34 @@
               var miss = (AX.missingFields ? AX.missingFields(e) : []);
               return '<span class="id-badge">' + esc(e.exercise_id) + '</span> ' + esc(e.title) + ' ' +
                 (AX.reviewBadge ? AX.reviewBadge(e) : '') +
-                (miss.length && !e.review_status
-                  ? ' <button class="btn btn-ghost btn-sm" data-supplement="' + esc(e.exercise_id) + '" title="Thiếu: ' + esc(miss.join(', ')) + '" onclick="AiExercise.edit(\'' + esc(e.exercise_id) + '\')"><i class="fa-solid fa-pen"></i> Bổ sung</button>'
-                  : '');
+                _editBtn(e, miss);
             }).join('<br>')
           : (it.row && it.row.exercise_ids ? esc(it.row.exercise_ids) : '—');
         return '<tr data-week="' + esc(k) + '"><td style="white-space:nowrap">' + esc(weekLabel(k, true)) + '</td>' +
           '<td>' + esc(it.row && it.row.plan ? it.row.plan : '—') + '</td><td>' + titles + '</td><td>' + _badge(WEEK_META, stt) + '</td></tr>';
       }).join('') + '</tbody></table>';
+  }
+
+  // Nút sửa ở bảng tuần (CR 2026-10-16): chưa chấm + thiếu ô → "Bổ sung" · Chưa đạt → "Sửa để chấm lại"
+  // · Đạt → "Sửa" kèm xác nhận (sửa xong về Chờ chấm, tạm mất điểm tuần đó) · chưa chấm đủ ô → "Sửa".
+  function _editBtn(e, miss) {
+    var id = esc(e.exercise_id), st = String(e.review_status || '').trim();
+    var kind = st === 'Đạt' ? 'pass' : (st === 'Chưa đạt' ? 'fail' : (miss.length ? 'supplement' : 'edit'));
+    var text = { pass: 'Sửa', fail: 'Sửa để chấm lại', supplement: 'Bổ sung', edit: 'Sửa' }[kind];
+    var title = kind === 'supplement' ? 'Thiếu: ' + miss.join(', ') : (kind === 'fail' ? 'Bổ sung theo nhận xét rồi lưu — bài về Chờ chấm' : '');
+    return ' <button class="btn btn-ghost btn-sm" data-edit-ex="' + id + '" data-edit-kind="' + kind + '"' +
+      (kind === 'supplement' ? ' data-supplement="' + id + '"' : '') +
+      (title ? ' title="' + esc(title) + '"' : '') +
+      ' onclick="LearningPlan.editExercise(\'' + id + '\')"><i class="fa-solid fa-pen"></i> ' + text + '</button>';
+  }
+  function editExercise(id) {
+    var e = ((window.AiExercise && AiExercise.mine) ? AiExercise.mine() : []).filter(function (x) { return x.exercise_id === id; })[0];
+    if (!e || !window.AiExercise) return;
+    if (String(e.review_status || '').trim() !== 'Đạt') { AiExercise.edit(id); return; }
+    var ask = (typeof uiConfirm === 'function')
+      ? uiConfirm({ title: 'Sửa bài đã Đạt', body: 'Bài ' + id + ' đã được chấm Đạt. Sửa và lưu thì bài sẽ về "Chờ chấm" và tạm mất điểm tuần này cho tới khi teamlead chấm lại. Vẫn sửa?', okLabel: 'Vẫn sửa' })
+      : Promise.resolve(window.confirm('Bài đã Đạt — sửa xong sẽ về Chờ chấm và tạm mất điểm tuần này. Vẫn sửa?'));
+    ask.then(function (ok) { if (ok) AiExercise.edit(id); });
   }
 
   function _submitPlan() {
@@ -422,17 +442,31 @@
   }
 
   // ── Tab Theo dõi ────────────────────────────────────────────────
-  function _fillTeamFilter() {
-    var sel = _el('lpTeamFilter');
-    if (!sel) return;
-    var teams = {};
-    _data.members.forEach(function (m) { if (m.team) teams[m.team] = 1; });
-    var cur = sel.value;
-    sel.innerHTML = '<option value="">Tất cả team</option>' +
-      Object.keys(teams).sort().map(function (t) { return '<option value="' + esc(t) + '">' + esc(t) + '</option>'; }).join('');
-    sel.value = cur;
+  // Bộ lọc chuẩn Team + Nhân sự (people-filter.js, CR 2026-10-16): tab Theo dõi (_pfTrack) · tab Việc lớn (_pfBt).
+  var _pfTrack = null, _pfBt = null;
+  function _bindPeopleFilters() {
+    if (!window.PeopleFilter) return;
+    if (!_pfTrack) _pfTrack = PeopleFilter.bind({ team: 'lpTeamFilter', user: 'lpUserFilter', onChange: _renderTracking });
+    if (!_pfBt) _pfBt = PeopleFilter.bind({ team: 'btTeamFilter', user: 'btUserFilter', onChange: _renderBigTasks });
   }
-  function _inTeam(team) { return !_filter.team || team === _filter.team; }
+  function _nameOf(u) {
+    var m = _data.members.filter(function (x) { return x.username === _norm(u); })[0];
+    return m ? m.display_name : '';
+  }
+  function _fillPeopleFilters() {
+    _bindPeopleFilters();
+    if (_pfTrack) {
+      _pfTrack.setPeople(_data.members.map(function (m) { return { username: m.username, name: m.display_name, team: m.team }; })
+        .concat(_data.courses.map(function (c) { return { username: c.username, name: c.display_name, team: c.team }; })));
+    }
+    if (_pfBt) {
+      var list = [];
+      _data.big_tasks.forEach(function (t) { if (t.lead) list.push({ username: t.lead, name: _nameOf(t.lead), team: t.team }); });
+      _data.assigns.forEach(function (a) { list.push({ username: a.username, name: a.display_name || _nameOf(a.username), team: a.team || (_btTask(a.task_id) || {}).team }); });
+      _pfBt.setPeople(list);
+    }
+  }
+  function _inTeam(team, username) { return !_pfTrack || _pfTrack.match(team, username); }
   function _matchQ(parts) {
     var q = _norm(_filter.q);
     return !q || parts.map(_norm).join(' ').indexOf(q) !== -1;
@@ -446,8 +480,8 @@
 
   function _summary() {
     var w = currentWeek();
-    var members = _data.members.filter(function (m) { return _inTeam(m.team); });
-    var courses = _data.courses.filter(function (c) { return _inTeam(c.team); });
+    var members = _data.members.filter(function (m) { return _inTeam(m.team, m.username); });
+    var courses = _data.courses.filter(function (c) { return _inTeam(c.team, c.username); });
     var cnt = { submitted: 0, plan: 0, none: 0 };
     members.forEach(function (m) { cnt[weekState(m.username, w)]++; });
     var cs = function (st) { return courses.filter(function (c) { return courseState(c) === st; }).length; };
@@ -485,7 +519,7 @@
     var cur = currentWeek();
     var order = { none: 0, plan: 1, submitted: 2 };
     var rows = _data.members.filter(function (m) {
-      if (!_inTeam(m.team)) return false;
+      if (!_inTeam(m.team, m.username)) return false;
       if (_filter.week && weekState(m.username, cur) !== _filter.week) return false;
       return _matchQ([m.username, m.display_name, m.team]);
     }).sort(function (a, b) {
@@ -533,7 +567,7 @@
 
   function _renderCourseTable() {
     var rows = _courseRows().filter(function (r) {
-      if (!_inTeam(r.m.team)) return false;
+      if (!_inTeam(r.m.team, r.m.username)) return false;
       if (_filter.state && r.state !== _filter.state) return false;
       return _matchQ([r.m.username, r.m.display_name, r.m.team, r.c && r.c.course_name, r.c && r.c.provider]);
     });
@@ -579,8 +613,15 @@
   function _renderBigTasks() {
     var wrap = _el('lpBigTasks');
     if (!wrap) return;
-    var list = _data.big_tasks;
-    if (!list.length) { wrap.innerHTML = '<p class="list-empty">Chưa có việc lớn nào.</p>'; return; }
+    var all = _data.big_tasks;
+    if (!all.length) { wrap.innerHTML = '<p class="list-empty">Chưa có việc lớn nào.</p>'; return; }
+    var list = all.filter(function (t) {
+      if (!_pfBt) return true;
+      var users = [t.lead].concat(_data.assigns.filter(function (a) { return a.task_id === t.task_id; }).map(function (a) { return a.username; }));
+      return _pfBt.match(t.team, users);
+    });
+    var bc = _el('btCount'); if (bc) bc.textContent = list.length + '/' + all.length + ' việc lớn';
+    if (!list.length) { wrap.innerHTML = '<p class="list-empty">Không có việc lớn nào khớp bộ lọc.</p>'; return; }
     wrap.innerHTML = '<div class="rq-table-wrap"><table class="dash-table" aria-label="Việc lớn cấp Trung tâm"><thead><tr>' +
       '<th>Mã</th><th>Việc lớn</th><th>Team</th><th>Nguồn</th><th>Làm chính</th><th>Hiện tại → mục tiêu</th><th>Hạn</th><th>Kết quả (OKR)</th><th>Phân công</th><th></th>' +
       '</tr></thead><tbody>' +
@@ -792,10 +833,11 @@
       tabs[i].addEventListener('click', function () { showTab(this.getAttribute('data-lptab')); });
       tabs[i]._bound = true;
     }
-    [['lpTeamFilter', 'team'], ['lpStateFilter', 'state'], ['lpWeekFilter', 'week']].forEach(function (f) {
+    [['lpStateFilter', 'state'], ['lpWeekFilter', 'week']].forEach(function (f) {
       var el = _el(f[0]);
       if (el && !el._bound) { el.addEventListener('change', function () { _filter[f[1]] = el.value; _renderTracking(); }); el._bound = true; }
     });
+    _bindPeopleFilters();
     var s = _el('lpSearch');
     if (s && !s._bound) {
       var d;
@@ -816,7 +858,7 @@
   window.LearningPlan = {
     reload: _load, showTab: showTab, editCourse: editCourse, delCourse: delCourse, completeCourse: completeCourse,
     courseState: courseState, weekState: weekState, currentWeek: currentWeek, isoWeek: isoWeek,
-    refreshMine: _renderWeekTab,
+    refreshMine: _renderWeekTab, editExercise: editExercise,
     data: function () { return _data; },
     // CR-C (2026-10-09): việc lớn — số đo + phân công
     openBigTask: openBigTask, editKr: editKr, delKr: delKr,

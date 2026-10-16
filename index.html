@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="assets/css/base.css?v=20261002a">
   <link rel="stylesheet" href="assets/css/typography.css?v=20261002a">
   <link rel="stylesheet" href="assets/css/layout.css?v=20261002a">
-  <link rel="stylesheet" href="assets/css/components.css?v=20261002a">
+  <link rel="stylesheet" href="assets/css/components.css?v=20261016a">
   <link rel="stylesheet" href="assets/css/forms.css?v=20261002a">
   <link rel="stylesheet" href="assets/css/wizard.css?v=20261002a">
   <link rel="stylesheet" href="assets/css/states.css?v=20261002a">
@@ -803,6 +803,7 @@
             <div class="lp-panel" data-lppanel="library" role="tabpanel" hidden>
               <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-3)">
                 <div class="search-box" style="max-width:420px;flex:1 1 220px"><i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i><input type="search" id="exSearch" class="search-input" placeholder="Tìm theo tiêu đề, mô tả, người đăng, team..." autocomplete="off" style="width:100%;padding-left:36px" aria-label="Tìm kiếm bài tập AI"></div>
+                <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center"><select id="exTeamFilter" class="pf-select pf-select--team" aria-label="Lọc theo team"><option value="">Tất cả team</option></select><select id="exUserFilter" class="pf-select" aria-label="Lọc theo nhân sự"><option value="">Tất cả nhân sự</option></select></div>
                 <span id="exCount" style="font-size:var(--text-sm);color:var(--color-text-muted)"></span>
               </div>
               <div id="exLoading" style="padding:var(--space-8);text-align:center;color:var(--color-text-muted)">Đang tải thư viện bài tập…</div>
@@ -814,7 +815,8 @@
               <div id="lpSummary" class="kpi-row" role="list" aria-label="Tổng quan bài tập và học tập" style="display:none;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))"></div>
               <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center;margin-bottom:var(--space-3)">
                 <div class="search-box" style="flex:1 1 220px;max-width:360px"><i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i><input type="search" id="lpSearch" class="search-input" placeholder="Tìm theo tên, User ID, khóa học…" autocomplete="off" style="width:100%;padding-left:36px" aria-label="Tìm trong theo dõi"></div>
-                <select id="lpTeamFilter" style="max-width:180px;height:38px;padding:0 12px;border:1.5px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-surface);color:var(--color-text);font-family:var(--font-family);font-size:var(--text-sm)" aria-label="Lọc theo team"><option value="">Tất cả team</option></select>
+                <select id="lpTeamFilter" class="pf-select pf-select--team" aria-label="Lọc theo team"><option value="">Tất cả team</option></select>
+                <select id="lpUserFilter" class="pf-select" aria-label="Lọc theo nhân sự"><option value="">Tất cả nhân sự</option></select>
               </div>
 
               <h3 style="margin:var(--space-2) 0 var(--space-3);font-size:var(--text-lg);font-weight:var(--font-weight-semibold)">Bài tập theo tuần</h3>
@@ -849,6 +851,7 @@
             <!-- ── Tab: Việc lớn ── -->
             <div class="lp-panel" data-lppanel="bigtasks" role="tabpanel" hidden>
               <p style="margin:0 0 var(--space-3);color:var(--color-text-secondary);font-size:var(--text-sm)">Việc lớn cấp Trung tâm do teamlead phụ trách. Nguồn: <span class="badge badge-success">Team tự chọn</span> hoặc <span class="badge badge-primary">PM đề xuất</span>. Kết quả chấm theo thang OKR: đạt ≥70% mục tiêu khát vọng = 100% · đạt đủ = 120% · dưới 30% = 0. Bấm <b>Chi tiết</b> để xem số đo và phân công.</p>
+              <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center;margin-bottom:var(--space-3)"><select id="btTeamFilter" class="pf-select pf-select--team" aria-label="Lọc theo team"><option value="">Tất cả team</option></select><select id="btUserFilter" class="pf-select" aria-label="Lọc theo nhân sự"><option value="">Tất cả nhân sự</option></select><span id="btCount" style="font-size:var(--text-sm);color:var(--color-text-muted)"></span></div>
               <div id="lpBigTasks"></div>
               <!-- CR-C (2026-10-09): số đo trước/mục tiêu khát vọng/thực tế + phân công hạng mục (teamlead sửa, mọi người xem) -->
               <div id="lpBtDetail" class="dash-card" style="padding:var(--space-5);margin-top:var(--space-4)" hidden>
@@ -931,8 +934,8 @@
               <h3 style="margin:0;font-size:var(--text-lg)">Bài tập AI cần chấm</h3>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                 <!-- CR 2026-10-16: lọc theo team + nhân sự (nhãn "Username-Họ tên"), áp cho cả bài tập và lan tỏa -->
-                <select id="srTeamFilter" class="form-input" style="width:auto" aria-label="Lọc theo team"><option value="">Tất cả team</option></select>
-                <select id="srUserFilter" class="form-input" style="width:auto;max-width:260px" aria-label="Lọc theo nhân sự"><option value="">Tất cả nhân sự</option></select>
+                <select id="srTeamFilter" class="pf-select pf-select--team" aria-label="Lọc theo team"><option value="">Tất cả team</option></select>
+                <select id="srUserFilter" class="pf-select" aria-label="Lọc theo nhân sự"><option value="">Tất cả nhân sự</option></select>
                 <select id="srExFilter" class="form-input" style="width:auto" aria-label="Lọc bài tập theo trạng thái chấm">
                   <option value="pending">Chờ chấm</option>
                   <option value="reviewed">Đã chấm</option>
@@ -1251,9 +1254,10 @@
   <script src="assets/js/leaderboard.js?v=20261009a"></script>
   <script src="assets/js/weekly-update.js?v=20261002a"></script>
   <script src="assets/js/us-h1.js?v=20261002a"></script>
-  <script src="assets/js/ai-exercise.js?v=20261016a"></script>
-  <script src="assets/js/learning-plan.js?v=20261009a"></script>
-  <script src="assets/js/self-score.js?v=20261016a"></script>
+  <script src="assets/js/people-filter.js?v=20261016a"></script>
+  <script src="assets/js/ai-exercise.js?v=20261016b"></script>
+  <script src="assets/js/learning-plan.js?v=20261016a"></script>
+  <script src="assets/js/self-score.js?v=20261016b"></script>
   <script src="assets/js/review-queue.js?v=20261002a"></script>
   <script src="assets/js/app.js?v=20261002a"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
