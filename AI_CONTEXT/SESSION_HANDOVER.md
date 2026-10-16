@@ -1,5 +1,13 @@
 # SESSION HANDOVER
 
+## Session: 2026-10-16 #3 — Bộ lọc chuẩn Team + Nhân sự (people-filter.js) + nút sửa mọi bài ở bảng tuần — hub AIUS-001 D83/D84
+- **Task completed:** Lỗi anh báo: bài đã chấm không sửa được (EX-0015) — gốc `learning-plan.js` chỉ render nút khi `!review_status` → `_editBtn` cho mọi bài của mình (Bổ sung · Sửa để chấm lại · Sửa + `uiConfirm` khi Đạt). MỚI `people-filter.js` (`PeopleFilter.bind/label/norm`) + CSS `.pf-select` → áp Thư viện (`ex*`), Theo dõi (`lp*`, thay ô team cũ), Việc lớn (`bt*`), Chấm bài (refactor).
+- **Files changed:** `9ec5963` main (đã push) · `COMPONENT_GUIDELINES.md` § Bộ lọc chuẩn (CHUẨN BẮT BUỘC cho mọi bộ lọc sau này) · test MỚI `21-people-filter.spec.js`.
+- **Decision made:** mọi màn có danh sách nhiều người dùng component chung này, không tự chế ô lọc; tab "của tôi" không lọc. Luật hub `AIOS/02_Rules/ui-filter-standard.md`.
+- **Blocker:** không.
+- **Next step:** không bắt buộc — màn khác có lọc team/người (Hàng đợi Review `rqTeamFilter/rqOwnerFilter`, Leaderboard, KPI từng người) → chuyển sang chuẩn khi chạm tới.
+- **Regression risk:** TB — Playwright 172/172; LIVE 16/10: Thư viện 66 bài/32 người, Theo dõi 35 người, Việc lớn 5/5, Chấm bài 61 chờ chấm; nút sửa + hộp xác nhận đúng (bấm Hủy, không lưu).
+
 ## Session: 2026-10-16 #2 — Chặn nộp/sửa bài tập chưa đủ ≥3/4 tiêu chí chấm (FE + GAS) — hub AIUS-001 D82
 - **Task completed:** Form nộp bài có bộ đếm "Đủ x/4 tiêu chí" (cập nhật khi gõ, nêu ô thiếu); chưa đủ 3/4 → chặn Nộp/Lưu; giờ phải là số ≥ 0. GAS `_exCriteriaCheck_` chặn y hệt ở `createExercise_`/`updateExercise_` (không ghi dòng). 4 tiêu chí khớp gợi ý tick màn Chấm bài: mô tả · đủ giờ trước + sau · kiểm chứng AI · mẫu dùng lại.
 - **Files changed:** `6ff4063` main (đã push): `assets/js/ai-exercise.js` · `index.html` (`#exCriteriaStatus`, `?v=20261016a`) · `assets/gas-backend/ExerciseService.gs` · `tests/14-ai-exercise.spec.js` (+T05) · `tests/20-gas-routes-d70.spec.js` (+ca chặn create/update, dữ liệu test cũ đủ 3/4).
