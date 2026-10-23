@@ -264,7 +264,8 @@ function reviewExercise_(body) {
   ensureSheetColumns_(SHEETS.AI_EXERCISE, AI_EXERCISE_HEADERS);
   updateRowByField_(SHEETS.AI_EXERCISE, 'Exercise_ID', id, {
     Review_Status:   status,
-    Review_Criteria: action === 'reset' ? '' : crit.join(','),
+    // Prefix ' để Sheets giữ dạng chữ — không có thì "2,3,4" bị đổi thành ngày, "2,4" thành số 2.4 (lỗi 2026-10-23)
+    Review_Criteria: action === 'reset' ? '' : "'" + crit.join(','),
     Reviewed_By:     action === 'reset' ? '' : rv.username,
     Reviewed_At:     action === 'reset' ? '' : now,
     Review_Comment:  comment
