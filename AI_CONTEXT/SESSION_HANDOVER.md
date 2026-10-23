@@ -1,5 +1,13 @@
 # SESSION HANDOVER
 
+## Session: 2026-10-23 — Fix Review_Criteria bị Sheets đổi kiểu — hub AIUS-001 (chấm bài team Số 23/10)
+- **Task completed:** chấm bài qua `exercise-review` → cột `Review_Criteria` "2,3,4" thành ngày 02/03/2004, "2,4"/"1,2" thành số 2.4/1.2 (Sheets tự đổi kiểu). Sửa: ghi `"'" + crit.join(',')` để giữ dạng chữ.
+- **Files changed:** `assets/gas-backend/ExerciseService.gs` — `3e528f1` main (đã push) + GAS redeploy (anh, 2026-10-23).
+- **Decision made:** sửa đúng điểm ghi, không đổi `toSheetValue_` chung (tránh đổi kiểu cột ngày ở sheet khác).
+- **Blocker:** không.
+- **Next step:** không bắt buộc. Review_Status (KPI M2 đếm theo cột này) không bị ảnh hưởng.
+- **Regression risk:** thấp — chỉ 1 cột; test LIVE: chấm lại EX-0054/0090/0015 → đọc lại "2,3,4" · "2,4" · "1,2" đúng. Không có Playwright cho đường ghi Sheet.
+
 ## Session: 2026-10-16 #3 — Bộ lọc chuẩn Team + Nhân sự (people-filter.js) + nút sửa mọi bài ở bảng tuần — hub AIUS-001 D83/D84
 - **Task completed:** Lỗi anh báo: bài đã chấm không sửa được (EX-0015) — gốc `learning-plan.js` chỉ render nút khi `!review_status` → `_editBtn` cho mọi bài của mình (Bổ sung · Sửa để chấm lại · Sửa + `uiConfirm` khi Đạt). MỚI `people-filter.js` (`PeopleFilter.bind/label/norm`) + CSS `.pf-select` → áp Thư viện (`ex*`), Theo dõi (`lp*`, thay ô team cũ), Việc lớn (`bt*`), Chấm bài (refactor).
 - **Files changed:** `9ec5963` main (đã push) · `COMPONENT_GUIDELINES.md` § Bộ lọc chuẩn (CHUẨN BẮT BUỘC cho mọi bộ lọc sau này) · test MỚI `21-people-filter.spec.js`.
