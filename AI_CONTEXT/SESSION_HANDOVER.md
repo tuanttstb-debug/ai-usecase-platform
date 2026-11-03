@@ -1,5 +1,13 @@
 # SESSION HANDOVER
 
+## Session: 2026-11-03 — Fix trùng ID lan tỏa (SC-0001) + Display_Name = username — hub AIUS-001 D102
+- **Task completed:** PM ghi 4 claim lan tỏa qua route → cả 4 ra `SC-0001`, duyệt chỉ trúng dòng đầu. Gốc: `_nextScoreId_` chỉ đọc cột `Score_ID`, trong khi SHARING_CLAIM/UC_REUSE/PERSONAL_SELF dùng `Claim_ID`/`Reuse_ID`/`Self_ID`. Sửa: thêm tham số `idField` (mặc định `Score_ID`), 3 chỗ gọi truyền đúng cột. `_memberInfo_` coi displayName = username là thiếu → tra User_Master lấy họ tên.
+- **Files changed:** `assets/gas-backend/ScoringServiceH2.gs` · `assets/gas-backend/SelfScoreService.gs` · test MỚI `tests/22-next-id.spec.js` (8 ca, chạy code GAS trong vm).
+- **Decision made:** giữ 1 hàm chung, thêm tham số (không đổi hành vi PS/CS). Dữ liệu live: SHARING_CLAIM đã sửa tay SC-0002..0004 (hub) · UC_REUSE trống · PERSONAL_SELF 1 dòng → không cần di trú.
+- **Blocker:** chờ [TT] dán 2 file GAS + Deploy New version (giữ URL). FE không đổi.
+- **Next step:** [CC] sau redeploy: khai thử 1 claim trên dòng `[TEST]` → ra SC-0005 + đúng họ tên → xóa dòng.
+- **Regression risk:** thấp — Playwright 180/180; chỉ đổi cách sinh ID ở 3 sheet + họ tên khi gọi không token.
+
 ## Session: 2026-10-23 — Fix Review_Criteria bị Sheets đổi kiểu — hub AIUS-001 (chấm bài team Số 23/10)
 - **Task completed:** chấm bài qua `exercise-review` → cột `Review_Criteria` "2,3,4" thành ngày 02/03/2004, "2,4"/"1,2" thành số 2.4/1.2 (Sheets tự đổi kiểu). Sửa: ghi `"'" + crit.join(',')` để giữ dạng chữ.
 - **Files changed:** `assets/gas-backend/ExerciseService.gs` — `3e528f1` main (đã push) + GAS redeploy (anh, 2026-10-23).

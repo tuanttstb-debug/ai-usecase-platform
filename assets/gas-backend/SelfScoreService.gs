@@ -39,6 +39,8 @@ function _currentMonthLabel_() {
 function _memberInfo_(rv, body) {
   var team = String(body.Team || body.team || rv.team || '').trim();
   var disp = String(body.Display_Name || body.display_name || rv.displayName || '').trim();
+  // Gọi không token: _resolveReviewer_ gán displayName = username → coi như thiếu, tra User_Master lấy họ tên.
+  if (normalizeUser_(disp) === rv.username) disp = '';
   if (!team || !disp) {
     try {
       getAllUsersFromMaster_().forEach(function (u) {
@@ -91,7 +93,7 @@ function submitSelfScore_(body) {
     if (existing && String(existing.Status) === 'Approved') {
       throw new Error('Kỳ ' + month + ' đã được teamlead duyệt (khóa). Cần teamlead mở lại để sửa.');
     }
-    selfId = existing ? String(existing.Self_ID).trim() : _nextScoreId_(all, 'SS');
+    selfId = existing ? String(existing.Self_ID).trim() : _nextScoreId_(all, 'SS', 'Self_ID');
     var row = {
       Self_ID: selfId, Username: me, Display_Name: info.disp, Team: info.team, Month: month,
       Diversity: d, AI_Proficiency: ai, Product_Quality: pq, Quantity_Met: qm,
@@ -256,7 +258,7 @@ function submitSharingClaim_(body) {
   ensureSheetColumns_(SHEETS.SHARING_CLAIM, SHARING_CLAIM_HEADERS);
   var now = new Date().toISOString();
   var all = readSheetAsObjects_(SHEETS.SHARING_CLAIM);
-  var claimId = _nextScoreId_(all, 'SC');
+  var claimId = _nextScoreId_(all, 'SC', 'Claim_ID');
   appendRowFromObject_(SHEETS.SHARING_CLAIM, {
     Claim_ID: claimId, Username: me, Display_Name: info.disp, Team: info.team, Month: month,
     Claim_Type: claimType, Description: desc, Evidence_Link: evidence,

@@ -54,13 +54,14 @@ function setupScoringH2Sheets() {
 }
 
 /**
- * Sinh Score_ID kế tiếp dạng <PREFIX>-NNNN dựa trên ID lớn nhất hiện có.
+ * Sinh ID kế tiếp dạng <PREFIX>-NNNN dựa trên ID lớn nhất hiện có ở cột idField (mặc định Score_ID).
+ * Sheet có cột ID tên khác (Claim_ID, Reuse_ID, Self_ID) PHẢI truyền idField — nếu không luôn ra -0001 (lỗi 03/11).
  */
-function _nextScoreId_(rows, prefix) {
-  var max = 0;
+function _nextScoreId_(rows, prefix, idField) {
+  var max = 0, col = idField || 'Score_ID';
   var re  = new RegExp('^' + prefix + '-(\\d+)$');
   (rows || []).forEach(function (r) {
-    var m = re.exec(String(r.Score_ID || '').trim());
+    var m = re.exec(String(r[col] || '').trim());
     if (m) { var n = parseInt(m[1], 10); if (n > max) max = n; }
   });
   return prefix + '-' + String(max + 1).padStart(4, '0');
@@ -605,7 +606,7 @@ function submitReuseConfirm_(body) {
       }
     }
     var rowObj = {
-      Reuse_ID:       existingId || _nextScoreId_(all, 'RZ'),
+      Reuse_ID:       existingId || _nextScoreId_(all, 'RZ', 'Reuse_ID'),
       Record_ID:      recordId,
       UseCase_ID:     String(uc.UseCase_ID || ''),
       Owner_Username: ownerU,

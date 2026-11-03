@@ -1,5 +1,9 @@
 # PROJECT STATE
 
+**2026-11-03 — Fix `_nextScoreId_` đọc đúng cột ID (Claim_ID · Reuse_ID · Self_ID — trước luôn ra -0001) + `_memberInfo_` lấy họ tên khi gọi route không token. Test 180/180. CHỜ [TT] REDEPLOY 2 file GAS (`ScoringServiceH2.gs`, `SelfScoreService.gs`).**
+
+---
+
 **2026-10-09 — KPI cá nhân + teamlead TỰ TÍNH theo khung D70 (hub AIUS-001: tạm áp dụng bản trình 06/10 — D62/D65/D67/D68/D69). 5 CR gom 1 đợt. CHƯA COMMIT · CHƯA REDEPLOY GAS (chờ [TT]).**
 Engine thuần mới `KpiEngineH2.gs` (1 nguồn, test Node được) · member 40/30/15/15, từng chỉ tiêu + tổng trần 120, đạt ≥70 · **mọi role active** có KPI cá nhân · teamlead **40/30/20/10** (T2 mẫu số = toàn bộ member active của team · T3 OKR việc lớn · T4 R&D từ tab `RD_BAO_CAO`).
 - **CR-A** bài nộp +4 ô (giờ trước/sau · kiểm chứng AI · mẫu dùng lại · gắn hạng mục việc lớn) + **chọn tuần** (nộp bù, chặn tuần tương lai) · route `exercise-review` teamlead chấm Đạt/Chưa đạt từng bài (≥3/4 tiêu chí, không tự chấm) · M2 = số tuần **40–52** có bài Đạt × 10% (anh chốt 09/10). Bài cũ thiếu ô → nút "Bổ sung"; chủ bài sửa bài đã chấm → về Chờ chấm.
