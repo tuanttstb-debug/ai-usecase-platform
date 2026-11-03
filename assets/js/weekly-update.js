@@ -123,7 +123,7 @@ function buildPickerTable() {
   } else {
     _myUseCases.forEach(function(uc) {
       var stage    = uc.stage || uc.current_stage || '';
-      var sl       = STAGE_LABELS[stage] || { short: stage || '—', color: '#6D6D7A', bg: '#F5F5F7' };
+      var sl       = STAGE_LABELS[stage] || { short: stage || '—', color: '#475569', bg: '#F1F5F9' };
       var prog     = parseInt(uc.current_progress, 10) || 0;
       var daysSince = uc.last_weekly_report
         ? Math.floor((Date.now() - new Date(uc.last_weekly_report)) / 86400000)
@@ -391,7 +391,7 @@ function renderStageSection(uc) {
                   : null;
 
   // Current stage badge
-  var sl = STAGE_LABELS[stage] || { short: stage, color: '#6D6D7A', bg: '#F5F5F7' };
+  var sl = STAGE_LABELS[stage] || { short: stage, color: '#475569', bg: '#F1F5F9' };
   document.getElementById('currentStageBadge').innerHTML =
     '<span style="width:8px;height:8px;border-radius:50%;background:' + sl.color + ';display:inline-block"></span> ' + esc(sl.short);
   document.getElementById('currentStageBadge').style.cssText =
@@ -404,7 +404,7 @@ function renderStageSection(uc) {
     'background:' + sl.bg + ';color:' + sl.color;
 
   if (nextStage) {
-    var nsl = STAGE_LABELS[nextStage] || { short: nextStage, color: '#7B2CBF', bg: '#F5F0FF' };
+    var nsl = STAGE_LABELS[nextStage] || { short: nextStage, color: '#6D28D9', bg: '#F5F3FF' };
     document.getElementById('upgradeToggleWrap').style.display = '';
     document.getElementById('stageAtMax').style.display         = 'none';
 
@@ -564,7 +564,7 @@ function submitWeeklyUpdate() {
 
     if (res && res.pending_milestone) {
       // Milestone (chuyển Stage / nâng điểm) — chờ Admin duyệt mới áp & tính KPI
-      successIcon.textContent  = '⏳';
+      successIcon.innerHTML    = '<i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>';
       successTitle.textContent = 'Đã gửi — chờ Admin duyệt';
       var mParts = [];
       if (res.proposed_stage) {
@@ -577,7 +577,7 @@ function submitWeeklyUpdate() {
       mParts.push('Sẽ ghi nhận vào KPI sau khi Admin duyệt.');
       document.getElementById('successDetail').textContent = mParts.join(' · ');
     } else {
-      successIcon.textContent  = '✅';
+      successIcon.innerHTML    = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i>';
       successTitle.textContent = 'Đã cập nhật thành công!';
       var detailParts = [];
       if (res && res.total_score) detailParts.push('Điểm mới: ' + res.total_score + '/100');
@@ -640,9 +640,9 @@ function renderTimeline(logs) {
     // Milestone approval badge (v3.14.0)
     if (log.is_milestone) {
       var ap = String(log.approval_status || 'Pending');
-      var badge = { text: '⏳ Chờ Admin duyệt', bg: '#FFF4D6', fg: '#946200' };
-      if (ap === 'Approved') badge = { text: '✓ Đã duyệt (tính KPI)', bg: '#E6F4EA', fg: '#1E7B34' };
-      else if (ap === 'Rejected') badge = { text: '✕ Bị từ chối', bg: '#FDECEC', fg: '#B3261E' };
+      var badge = { text: '<i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Chờ Admin duyệt', bg: '#FEF3C7', fg: '#92400E' };
+      if (ap === 'Approved') badge = { text: '✓ Đã duyệt (tính KPI)', bg: '#DCFCE7', fg: '#166534' };
+      else if (ap === 'Rejected') badge = { text: '✕ Bị từ chối', bg: '#FEE2E2', fg: '#B91C1C' };
       headerHtml += '<span style="margin-left:6px;font-size:var(--text-xs);font-weight:700;padding:2px 8px;' +
         'border-radius:999px;background:' + badge.bg + ';color:' + badge.fg + '">' + badge.text + '</span>';
     }
@@ -650,12 +650,12 @@ function renderTimeline(logs) {
     // Badge: đã cập nhật Prompt/Luồng AI ở lần này (Mục tiêu 1)
     if (log.prompt_updated) {
       headerHtml += '<span style="margin-left:6px;font-size:var(--text-xs);font-weight:700;padding:2px 8px;' +
-        'border-radius:999px;background:#F5F0FF;color:#7B2CBF">✦ Cập nhật Prompt/Luồng AI</span>';
+        'border-radius:999px;background:#F5F3FF;color:#6D28D9"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Cập nhật Prompt/Luồng AI</span>';
     }
 
     if (isStageChange) {
-      var psl = STAGE_LABELS[log.previous_stage] || { short: log.previous_stage, color: '#6D6D7A' };
-      var nsl = STAGE_LABELS[log.new_stage]      || { short: log.new_stage,      color: '#7B2CBF' };
+      var psl = STAGE_LABELS[log.previous_stage] || { short: log.previous_stage, color: '#475569' };
+      var nsl = STAGE_LABELS[log.new_stage]      || { short: log.new_stage,      color: '#6D28D9' };
       headerHtml += '<span class="timeline-stage-arrow">' +
         '<span style="color:' + psl.color + '">' + esc(psl.short) + '</span>' +
         ' → ' +
@@ -680,7 +680,7 @@ function renderTimeline(logs) {
     var blockerHtml = '';
     if (log.blocker) {
       blockerHtml = '<div style="margin-top:var(--space-2);font-size:var(--text-xs);color:var(--color-error);background:var(--color-error-light);padding:4px 8px;border-radius:var(--radius-sm)">' +
-        '⚠ ' + esc(log.blocker.substring(0, 150)) + (log.blocker.length > 150 ? '…' : '') +
+        '<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ' + esc(log.blocker.substring(0, 150)) + (log.blocker.length > 150 ? '…' : '') +
         '</div>';
     }
 
@@ -733,7 +733,7 @@ function resetAll() {
 
 function showToast(msg, type) {
   var el = document.createElement('div');
-  el.style.cssText = 'background:' + (type === 'error' ? '#F44336' : '#4CAF50') +
+  el.style.cssText = 'background:' + (type === 'error' ? '#B91C1C' : '#15803D') +
     ';color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;margin-top:8px;box-shadow:0 4px 12px rgba(0,0,0,.15)';
   el.textContent = msg;
   document.getElementById('toastArea').appendChild(el);

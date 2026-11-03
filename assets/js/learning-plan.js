@@ -676,7 +676,7 @@
           var r = (k.ratio === null || k.ratio === undefined) ? '<span class="badge badge-muted">Chưa đo</span>' : '<span class="badge ' + (k.ratio >= 70 ? 'badge-success' : 'badge-warning') + '">' + esc(_fmtN(k.ratio)) + '%</span>';
           return '<tr data-kr="' + esc(k.kr_id) + '"><td>' + esc(k.kr_name) + '</td><td>' + esc(k.unit || '') + '</td>' +
             '<td style="text-align:right">' + esc(_fmtN(k.before_value)) + '</td><td style="text-align:right">' + esc(_fmtN(k.target_value)) + '</td>' +
-            '<td style="text-align:right">' + esc(_fmtN(k.actual_value)) + (k.measured_at ? '<div style="font-size:11px;color:var(--color-text-muted)">' + esc(_fmtDate(k.measured_at)) + '</div>' : '') + '</td><td>' + r + '</td>' +
+            '<td style="text-align:right">' + esc(_fmtN(k.actual_value)) + (k.measured_at ? '<div style="font-size:12px;color:var(--color-text-muted)">' + esc(_fmtDate(k.measured_at)) + '</div>' : '') + '</td><td>' + r + '</td>' +
             '<td style="white-space:nowrap">' + (manage
               ? '<button class="btn btn-ghost btn-sm" onclick="LearningPlan.editKr(\'' + esc(k.kr_id) + '\')"><i class="fa-solid fa-pen"></i> Sửa</button>' +
                 '<button class="btn btn-ghost btn-sm" style="color:var(--color-error)" aria-label="Xóa chỉ số" onclick="LearningPlan.delKr(\'' + esc(k.kr_id) + '\')"><i class="fa-solid fa-trash"></i></button>'
@@ -686,7 +686,7 @@
     var as = _data.assigns.filter(function (a) { return a.task_id === t.task_id; });
     var aw = _el('lpBtAssigns');
     var stBadge = function (a) {
-      if (a.status === 'Đạt') return '<span class="badge ' + (a.on_time_pass ? 'badge-success' : 'badge-warning') + '">Đạt' + (a.on_time_pass ? '' : ' (trễ hạn)') + '</span>' + (a.accepted_date ? '<div style="font-size:11px;color:var(--color-text-muted)">' + esc(_fmtDate(a.accepted_date)) + '</div>' : '');
+      if (a.status === 'Đạt') return '<span class="badge ' + (a.on_time_pass ? 'badge-success' : 'badge-warning') + '">Đạt' + (a.on_time_pass ? '' : ' (trễ hạn)') + '</span>' + (a.accepted_date ? '<div style="font-size:12px;color:var(--color-text-muted)">' + esc(_fmtDate(a.accepted_date)) + '</div>' : '');
       if (a.status === 'Chưa đạt') return '<span class="badge badge-error">Chưa đạt</span>';
       return '<span class="badge badge-primary">Đang làm</span>';
     };
@@ -695,7 +695,7 @@
       : '<div class="table-wrap"><table class="data-table" aria-label="Phân công hạng mục"><thead><tr><th>Thành viên</th><th>Vai</th><th>Hạng mục</th><th>Hạn</th><th>Tiêu chí nghiệm thu</th><th>Trạng thái</th><th></th></tr></thead><tbody>' +
         as.map(function (a) {
           var id = esc(a.assign_id);
-          return '<tr data-assign="' + id + '"><td><div style="font-weight:600">' + esc(a.display_name || a.username) + '</div><div style="font-size:11px;color:var(--color-text-muted)">' + esc(a.username) + '</div></td>' +
+          return '<tr data-assign="' + id + '"><td><div style="font-weight:600">' + esc(a.display_name || a.username) + '</div><div style="font-size:12px;color:var(--color-text-muted)">' + esc(a.username) + '</div></td>' +
             '<td>' + esc(a.role || '—') + '</td><td>' + esc(a.item) + '</td><td style="white-space:nowrap">' + _fmtDate(a.due_date) + '</td>' +
             '<td style="font-size:12px">' + esc(a.acceptance_criteria || '—') + '</td><td>' + stBadge(a) + '</td>' +
             '<td style="white-space:nowrap">' + (manage

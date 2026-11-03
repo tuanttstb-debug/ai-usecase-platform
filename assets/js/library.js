@@ -85,7 +85,7 @@
           var rid = _rid(uc);
           var score = (uc.total_score || uc.uc_score || 0);
           var scoreChip = score > 0
-            ? '<span class="score-chip" style="background:rgba(123,44,191,.12);color:var(--color-primary)">' + score + '</span>'
+            ? '<span class="score-chip" style="background:rgba(29,78,216,.12);color:var(--color-primary)">' + score + '</span>'
             : '';
 
           // Tái dùng (T05/M05)
@@ -95,12 +95,12 @@
           var isMine = (uc.owner_email && _norm(uc.owner_email) === me) ||
                        (uc.owner_login && _norm(uc.owner_login) === me);
           var reached = rz.count >= _threshold;
-          var reuseBadge = '<div style="font-size:12px;' + (reached ? 'color:var(--color-success,#2e7d32);font-weight:600' : 'color:var(--color-text-secondary)') + '">' +
-            '♻ ' + rz.count + ' người tái dùng' + (reached ? ' · Lan tỏa đạt ✓' : '') + '</div>';
+          var reuseBadge = '<div style="font-size:12px;' + (reached ? 'color:var(--color-success,#15803D);font-weight:600' : 'color:var(--color-text-secondary)') + '">' +
+            '<i class="fa-solid fa-recycle" aria-hidden="true"></i> ' + rz.count + ' người tái dùng' + (reached ? ' · Lan tỏa đạt ✓' : '') + '</div>';
           var reuseBtn;
           if (isMine) reuseBtn = '';
           else if (iReused) reuseBtn = '<button class="btn btn--ghost btn--sm" disabled style="opacity:.6">✓ Bạn đã tái dùng</button>';
-          else reuseBtn = '<button class="btn btn--ghost btn--sm" onclick="Library.reuse(\'' + esc(rid) + '\')">♻ Tôi đã tái dùng</button>';
+          else reuseBtn = '<button class="btn btn--ghost btn--sm" onclick="Library.reuse(\'' + esc(rid) + '\')"><i class="fa-solid fa-recycle" aria-hidden="true"></i> Tôi đã tái dùng</button>';
 
           return '<div class="dash-card" style="padding:var(--space-4);display:flex;flex-direction:column;gap:6px">' +
             '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +

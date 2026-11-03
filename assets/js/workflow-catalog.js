@@ -66,8 +66,8 @@
       var key = 'w_' + i;
       _cache[key] = r;
       var activeHtml = r.active
-        ? '<span class="status-badge" style="background:rgba(76,175,80,.12);color:#388e3c">Hiện</span>'
-        : '<span class="status-badge" style="background:rgba(244,67,54,.1);color:#c62828">Ẩn</span>';
+        ? '<span class="status-badge" style="background:rgba(76,175,80,.12);color:#15803D">Hiện</span>'
+        : '<span class="status-badge" style="background:rgba(244,67,54,.1);color:#B91C1C">Ẩn</span>';
       return '<tr>' +
         '<td style="color:var(--color-text-secondary);font-size:var(--text-xs);white-space:nowrap">' + esc(r.nhom) + '</td>' +
         '<td>' + esc(r.workflow) + '</td>' +

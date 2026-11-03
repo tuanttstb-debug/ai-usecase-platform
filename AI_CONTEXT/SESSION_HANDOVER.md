@@ -1,5 +1,13 @@
 # SESSION HANDOVER
 
+## Session: 2026-11-03 #3 — UI/UX v2 đợt 2–4: hoàn tất 12 trang (anh: "triển khai toàn bộ các đợt còn lại")
+- **Task completed:** khung trang chuẩn · bảng → thẻ trên điện thoại · thẻ KPI gọn · emoji → FA · màu JS → bảng v4 · Chart.js theo token · `.form-input` có kiểu · sửa nút lồng nút (Cập nhật US) · dọn 83 rule CSS chết · banner v4 ở tài liệu thiết kế cũ.
+- **Files changed:** `assets/css/*` · `assets/js/{shell,dashboard,leaderboard,library,uc-detail-view,weekly-update,toast,duplicate-check,constants,learning-plan,scoring-h2,us-h1,workflow-catalog,workflow-coverage}.js` · `index.html` · `login.html` · `change-password.html` · `DESIGN_SYSTEM.md` `DESIGN_TOKENS.md` `COMPONENT_GUIDELINES.md` `UIUX_SYSTEM.md` `RESPONSIVE_GUIDE.md`.
+- **Decision made:** bảng xếp thẻ tự động theo luật (≥5 cột, không ô nhập) thay vì sửa từng module; màu dữ liệu JS giữ dạng hex (JS ghép alpha `+'20'`) nhưng đổi sang bảng v4.
+- **Blocker:** không — không cần redeploy GAS.
+- **Next step:** [TT] check LIVE (Ctrl+F5) laptop + điện thoại. Nợ nhỏ còn: link chữ trong bảng cao < 32px (chấp nhận, là link trong dòng chữ) · inline style màu ở `dashboard.js` chưa theo dark mode hoàn toàn.
+- **Regression risk:** TB — đổi CSS rộng + MutationObserver mới ở shell; Playwright 176/176; audit 20 màn × 2 khổ sạch; chưa soát LIVE dữ liệu thật từng màn (anh check).
+
 ## Session: 2026-11-03 #2 — UI/UX v2 đợt 1/4: nền + khung (hub: anh giao nâng cấp tổng thể 12 trang)
 - **Task completed:** đo LIVE 13 màn (390px: Dashboard/Bài tập/Leaderboard tràn ngang; 1366px ổn; DM Sans không có tiếng Việt; chữ mờ 2,4:1) → MASTER + phương án B 4 đợt (anh duyệt) → đợt 1: token mới, Fira Sans, sidebar sáng thu gọn, tab/bảng không tràn, vùng bấm ≥40px, login sáng.
 - **Files changed:** `assets/css/{variables,base,layout,components,responsive,login,dashboard,leaderboard,weekly-update,portal}.css` · `assets/js/shell.js` · `index.html` · `login.html` · `change-password.html` · MỚI `design-system/ai-use-case-platform/{MASTER.md,PHUONG_AN_VA_KE_HOACH.md}`.

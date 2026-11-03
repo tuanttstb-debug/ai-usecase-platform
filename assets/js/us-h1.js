@@ -23,7 +23,7 @@
   function _stagePill(stage) {
     var sl = (typeof STAGE_LABELS !== 'undefined' && STAGE_LABELS[stage])
       ? STAGE_LABELS[stage]
-      : { short: stage || '—', color: '#6D6D7A', bg: '#F5F5F7' };
+      : { short: stage || '—', color: '#475569', bg: '#F1F5F9' };
     return '<span class="stage-pill" style="background:' + sl.bg + ';color:' + sl.color +
       ';display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:var(--text-xs);font-weight:600">' +
       '<span style="width:6px;height:6px;border-radius:50%;background:' + sl.color + ';display:inline-block;flex-shrink:0"></span>' +

@@ -97,10 +97,10 @@
   // Rank theo thang 100 (khớp SCORE_THRESHOLDS + màu ScoringEngine cũ).
   function rankInfo(total) {
     var t = safeNum(total);
-    if (t >= 85) return { key: 'TOP_PERFORMER',      label: 'Top Performer', color: '#7B2CBF' };
-    if (t >= 70) return { key: 'STRONG_CONTRIBUTOR', label: 'Strong',        color: '#4CAF50' };
-    if (t >= 50) return { key: 'AVERAGE',            label: 'Average',       color: '#F6B100' };
-    return           { key: 'BOTTOM_PERFORMER',      label: 'Cần cải thiện', color: '#F44336' };
+    if (t >= 85) return { key: 'TOP_PERFORMER',      label: 'Top Performer', color: '#6D28D9' };
+    if (t >= 70) return { key: 'STRONG_CONTRIBUTOR', label: 'Strong',        color: '#15803D' };
+    if (t >= 50) return { key: 'AVERAGE',            label: 'Average',       color: '#B45309' };
+    return           { key: 'BOTTOM_PERFORMER',      label: 'Cần cải thiện', color: '#B91C1C' };
   }
 
   // ── KPI tổng hợp (Đợt 2) ────────────────────────────────────────

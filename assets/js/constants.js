@@ -94,10 +94,10 @@ var FIELDS = {
 var STAGE_ORDER = ['S1 - Idea', 'S2 - Pilot', 'S3 - Standardized', 'S4 - Scale'];
 
 var STAGE_LABELS = {
-  'S1 - Idea':          { short: 'S1 · Ý tưởng',  color: '#6D6D7A', bg: '#F5F5F7' },
-  'S2 - Pilot':         { short: 'S2 · Pilot',     color: '#2196F3', bg: '#E3F2FD' },
-  'S3 - Standardized':  { short: 'S3 · Chuẩn hóa', color: '#4CAF50', bg: '#E8F5E9' },
-  'S4 - Scale':         { short: 'S4 · Scale',     color: '#7B2CBF', bg: '#F5F0FF' }
+  'S1 - Idea':          { short: 'S1 · Ý tưởng',  color: '#475569', bg: '#F1F5F9' },
+  'S2 - Pilot':         { short: 'S2 · Pilot',     color: '#1D4ED8', bg: '#DBEAFE' },
+  'S3 - Standardized':  { short: 'S3 · Chuẩn hóa', color: '#15803D', bg: '#DCFCE7' },
+  'S4 - Scale':         { short: 'S4 · Scale',     color: '#6D28D9', bg: '#F5F3FF' }
 };
 
 // Checklist cứng — tất cả items phải được tick trước khi cho phép nâng stage
@@ -125,10 +125,10 @@ var STAGE_CRITERIA = {
 
 // ── Governance constants (mirrored from GAS Config.gs) ──────────
 var RANK_LABELS = {
-  TOP_PERFORMER:      { label: 'Top Performer',      color: '#4CAF50', bg: '#E8F5E9' },
-  STRONG_CONTRIBUTOR: { label: 'Strong Contributor',  color: '#2196F3', bg: '#E3F2FD' },
-  AVERAGE:            { label: 'Trung bình',          color: '#F6B100', bg: '#FFF8E1' },
-  BOTTOM_PERFORMER:   { label: 'Cần cải thiện',       color: '#F44336', bg: '#FFEBEE' }
+  TOP_PERFORMER:      { label: 'Top Performer',      color: '#15803D', bg: '#DCFCE7' },
+  STRONG_CONTRIBUTOR: { label: 'Strong Contributor',  color: '#1D4ED8', bg: '#DBEAFE' },
+  AVERAGE:            { label: 'Trung bình',          color: '#B45309', bg: '#FEF3C7' },
+  BOTTOM_PERFORMER:   { label: 'Cần cải thiện',       color: '#B91C1C', bg: '#FEE2E2' }
 };
 
 var USECASE_CATEGORIES = [

@@ -5,10 +5,10 @@
    ───────────────────────────────────────── */
 var Toast = {
   _icons: {
-    success: '✓',
-    error:   '✕',
-    warning: '⚠',
-    info:    'ℹ'
+    success: 'circle-check',
+    error:   'circle-xmark',
+    warning: 'triangle-exclamation',
+    info:    'circle-info'
   },
 
   show(message, type = 'info', duration = 4500) {
@@ -22,7 +22,8 @@ var Toast = {
     // Icon
     const icon = document.createElement('span');
     icon.className = 'toast-icon';
-    icon.textContent = this._icons[type] || 'ℹ';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.innerHTML = '<i class="fa-solid fa-' + (this._icons[type] || 'circle-info') + '"></i>';
     icon.setAttribute('aria-hidden', 'true');
 
     // Message (pre-line supports \n separators — FIX BUG-03)

@@ -137,7 +137,7 @@
     } else {
       body = '<span class="demo-link demo-link--nonweb" title="Link nội bộ / ổ chung — bấm Copy rồi mở bằng File Explorer">' + esc(raw) + '</span>';
     }
-    var copyBtn = b64 ? ' <button type="button" class="demo-copy-btn" onclick="UCDetailView._copyB64(\'' + b64 + '\')">📋 Copy</button>' : '';
+    var copyBtn = b64 ? ' <button type="button" class="demo-copy-btn" onclick="UCDetailView._copyB64(\'' + b64 + '\')"><i class="fa-solid fa-copy" aria-hidden="true"></i> Copy</button>' : '';
     return body + copyBtn;
   }
 

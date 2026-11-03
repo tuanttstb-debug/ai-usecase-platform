@@ -113,15 +113,15 @@
         var rows = g.workflows.map(function (w, wi) {
           var has = w.regCount > 0;
           var badge = has
-            ? '<span class="status-badge" style="background:#4CAF5020;color:#2E7D32">✓ Đã có US</span>'
-            : '<span class="status-badge" style="background:#F6B10020;color:#B26A00">○ Chưa có</span>';
+            ? '<span class="status-badge" style="background:#4CAF5020;color:#15803D">✓ Đã có US</span>'
+            : '<span class="status-badge" style="background:#F6B10020;color:#B45309">○ Chưa có</span>';
           var missing = w.catalogCount - w.coveredCatalog;
           return '<tr style="cursor:pointer" onclick="WorkflowCoverage.openWf(' + gi + ',' + wi + ')">' +
             '<td>' + esc(w.name) + '</td>' +
             '<td style="text-align:center">' + badge + '</td>' +
             '<td style="text-align:center">' + w.regCount + '</td>' +
             '<td style="text-align:center">' + w.coveredCatalog + ' / ' + w.catalogCount + '</td>' +
-            '<td style="text-align:center">' + (missing > 0 ? '<strong style="color:#B26A00">' + missing + '</strong>' : '0') + '</td>' +
+            '<td style="text-align:center">' + (missing > 0 ? '<strong style="color:#B45309">' + missing + '</strong>' : '0') + '</td>' +
           '</tr>';
         }).join('');
         return '<div class="dash-card" style="margin-bottom:var(--space-4)">' +
@@ -161,8 +161,8 @@
       ? w.usecases.map(function (n) {
           var ok = covered[norm(n)];
           return '<tr><td>' + esc(n) + '</td><td style="text-align:center">' +
-            (ok ? '<span class="status-badge" style="background:#4CAF5020;color:#2E7D32">✓ Đã đăng ký</span>'
-                : '<span class="status-badge" style="background:#F6B10020;color:#B26A00">Chưa</span>') +
+            (ok ? '<span class="status-badge" style="background:#4CAF5020;color:#15803D">✓ Đã đăng ký</span>'
+                : '<span class="status-badge" style="background:#F6B10020;color:#B45309">Chưa</span>') +
           '</td></tr>';
         }).join('')
       : '<tr><td colspan="2" style="color:var(--color-text-muted)">Workflow này chưa khai US mẫu trong catalog.</td></tr>';

@@ -4,25 +4,9 @@
    ═══════════════════════════════════════════════════ */
 
 /* ── Skeleton Loading ── */
-.skeleton-screen {
-  padding: var(--space-6) var(--space-8);
-}
-.skeleton-block {
-  background: linear-gradient(90deg,
-    var(--color-border) 25%,
-    var(--color-bg-alt) 50%,
-    var(--color-border) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
-  border-radius: var(--radius-sm);
-}
+
 @keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-.skeleton-title  { height: 24px; width: 40%; margin-bottom: var(--space-6); }
-.skeleton-field  { margin-bottom: var(--space-5); }
-.skeleton-label  { height: 14px; width: 28%; margin-bottom: var(--space-2); }
-.skeleton-input  { height: 44px; width: 100%; }
-.skeleton-textarea { height: 88px; width: 100%; }
+

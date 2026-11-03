@@ -52,14 +52,16 @@ label.field-label {
 .form-group input:not([type="checkbox"]):not([type="radio"]),
 .form-group select,
 .form-group textarea,
-.form-control {
+.form-control,
+.form-input:not([type="range"]):not([type="checkbox"]):not([type="radio"]) {
   width: 100%;
-  padding: var(--space-3) var(--space-4);
+  min-height: 38px;
+  padding: var(--space-2) var(--space-3);
   font-family: var(--font-family);
-  font-size: var(--text-md);
+  font-size: var(--text-base);
   color: var(--color-text);
-  background: var(--color-surface);
-  border: 1.5px solid var(--color-border);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   appearance: none;
@@ -71,7 +73,8 @@ label.field-label {
 
 .form-group input:not([type="checkbox"]):not([type="radio"])::placeholder,
 .form-group textarea::placeholder,
-.form-control::placeholder {
+.form-control::placeholder,
+.form-input::placeholder {
   color: var(--color-text-muted);
 }
 
@@ -79,16 +82,17 @@ label.field-label {
 .form-group input:not([type="checkbox"]):not([type="radio"]):hover:not(:disabled),
 .form-group select:hover:not(:disabled),
 .form-group textarea:hover:not(:disabled) {
-  border-color: #C4B8DC;
+  border-color: var(--color-primary-light);
 }
 
-/* Focus — Purple */
+/* Focus */
 .form-group input:not([type="checkbox"]):not([type="radio"]):focus,
 .form-group select:focus,
 .form-group textarea:focus,
-.form-control:focus {
+.form-control:focus,
+.form-input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
+  box-shadow: 0 0 0 3px var(--btn-primary-ring);
   outline: none;
 }
 
@@ -316,3 +320,13 @@ input[type="url"] { font-family: var(--font-family); }
 }
 .edit-mode-banner-icon { font-size: 1rem; }
 .edit-mode-banner-text { font-size: var(--text-sm); }
+
+/* UI v2 (2026-11-03): mũi tên cho mọi select đã tắt appearance (trừ select trong .select-wrapper đã có ::after) */
+.form-group select, select.form-control, select.form-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2364748B'%3E%3Cpath d='M5.3 7.3a1 1 0 0 1 1.4 0L10 10.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 34px !important;
+}
+.form-group .select-wrapper select { background-image: none; }

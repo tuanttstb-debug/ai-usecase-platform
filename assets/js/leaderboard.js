@@ -52,10 +52,10 @@ function loadKpi(team) {
 // P06 Heatmap: lưới team × cá nhân tô màu theo rank KPI (xanh ≥70 · vàng 50–69 · đỏ <50).
 function _heatColor(final) {
   var t = parseFloat(final) || 0;
-  if (t >= 85) return { bg: 'rgba(123,44,191,.14)', bd: '#7B2CBF', tx: '#5b1f95' }; // tím = xuất sắc
-  if (t >= 70) return { bg: 'rgba(76,175,80,.16)',  bd: '#4CAF50', tx: '#2e7d32' }; // xanh = đạt
-  if (t >= 50) return { bg: 'rgba(246,177,0,.18)',  bd: '#F6B100', tx: '#a06f00' }; // vàng
-  return           { bg: 'rgba(244,67,54,.14)',  bd: '#F44336', tx: '#c62828' };     // đỏ
+  if (t >= 85) return { bg: 'rgba(109,40,217,.14)', bd: '#6D28D9', tx: '#5B21B6' }; // tím = xuất sắc
+  if (t >= 70) return { bg: 'rgba(76,175,80,.16)',  bd: '#15803D', tx: '#15803D' }; // xanh = đạt
+  if (t >= 50) return { bg: 'rgba(246,177,0,.18)',  bd: '#B45309', tx: '#92400E' }; // vàng
+  return           { bg: 'rgba(244,67,54,.14)',  bd: '#B91C1C', tx: '#B91C1C' };     // đỏ
 }
 function renderHeatmap(data) {
   var el = document.getElementById('heatmapBody');
@@ -63,8 +63,8 @@ function renderHeatmap(data) {
   var members = (data && data.member_ranking) || [];
   var legend = document.getElementById('heatmapLegend');
   if (legend) legend.innerHTML =
-    '<span style="color:#5b1f95">■ ≥85 xuất sắc</span> · <span style="color:#2e7d32">■ ≥70 đạt</span> · ' +
-    '<span style="color:#a06f00">■ 50–69</span> · <span style="color:#c62828">■ &lt;50</span>';
+    '<span style="color:#5B21B6">■ ≥85 xuất sắc</span> · <span style="color:#15803D">■ ≥70 đạt</span> · ' +
+    '<span style="color:#92400E">■ 50–69</span> · <span style="color:#B91C1C">■ &lt;50</span>';
 
   if (!members.length) {
     el.innerHTML = '<div style="padding:var(--space-8);text-align:center;color:var(--color-text-muted)">Chưa có dữ liệu KPI để dựng heatmap</div>';
@@ -459,7 +459,7 @@ function _lbRenderBody(uc, isFullData) {
 
     var sScore = '';
     if (!hasScore) {
-      sScore = '<div class="not-scored-notice"><span class="not-scored-icon">⏳</span><span>Chưa được hội đồng chấm điểm</span></div>';
+      sScore = '<div class="not-scored-notice"><span class="not-scored-icon"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i></span><span>Chưa được hội đồng chấm điểm</span></div>';
     } else {
       var rankBadge = rkInfo
         ? '<span class="score-rank-badge" style="background:' + rkInfo.color + '20;color:' + rkInfo.color + ';border:1px solid ' + rkInfo.color + '40">' + esc(rkInfo.label) + '</span>'
@@ -541,7 +541,7 @@ function _lbDemoLinkHtml(url) {
   } else {
     body = '<span class="demo-link demo-link--nonweb" title="Link nội bộ / ổ chung — bấm Copy rồi mở bằng File Explorer">' + esc(raw) + '</span>';
   }
-  var copyBtn = b64 ? ' <button type="button" class="demo-copy-btn" onclick="lbCopyB64(\'' + b64 + '\')">📋 Copy</button>' : '';
+  var copyBtn = b64 ? ' <button type="button" class="demo-copy-btn" onclick="lbCopyB64(\'' + b64 + '\')"><i class="fa-solid fa-copy" aria-hidden="true"></i> Copy</button>' : '';
   return body + copyBtn;
 }
 

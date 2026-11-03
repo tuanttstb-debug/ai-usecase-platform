@@ -124,6 +124,32 @@
     if (sidebar) sidebar.addEventListener('click', function (e) { if (isMobile() && e.target.closest('.sidebar-nav-item')) closeSidebar(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSidebar(); });
 
+    // Điện thoại: bảng chỉ-đọc ≥ 5 cột → dạng thẻ (CSS .is-stacked ≤ 640px). Bảng có ô nhập/gộp cột giữ nguyên.
+    function stackTables() {
+      var tables = document.querySelectorAll('.app-content table:not([data-no-stack])');
+      for (var t = 0; t < tables.length; t++) {
+        var tb = tables[t];
+        var ths = tb.querySelectorAll('thead th');
+        if (ths.length < 5 || tb.querySelector('tbody input, tbody select, tbody textarea')) { tb.classList.remove('is-stacked'); continue; }
+        var labels = [];
+        for (var h = 0; h < ths.length; h++) labels.push((ths[h].textContent || '').replace(/\s+/g, ' ').trim());
+        var rows = tb.querySelectorAll('tbody tr');
+        for (var r = 0; r < rows.length; r++) {
+          var cells = rows[r].children;
+          for (var c = 0; c < cells.length; c++) {
+            if (!cells[c].hasAttribute('data-label')) cells[c].setAttribute('data-label', cells[c].colSpan > 1 ? '' : (labels[c] || ''));
+          }
+        }
+        tb.classList.add('is-stacked');
+      }
+    }
+    var stackTimer = null;
+    var content = document.querySelector('.app-content');
+    if (content && window.MutationObserver) {
+      new MutationObserver(function () { clearTimeout(stackTimer); stackTimer = setTimeout(stackTables, 150); })
+        .observe(content, { childList: true, subtree: true });
+    }
+
     window.Router.start();
   });
 })();

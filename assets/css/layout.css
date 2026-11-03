@@ -371,47 +371,6 @@
 }
 
 /* ── Legacy: app-header (standalone, no-sidebar pages) ── */
-.app-header {
-  background: var(--color-primary-darker);
-  color: white;
-  height: var(--header-height);
-  padding: 0 var(--space-8);
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  box-shadow: var(--shadow-md);
-  position: sticky;
-  top: 0;
-  z-index: var(--z-sticky);
-  flex-wrap: wrap;
-}
-.app-header .logo {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-base);
-  font-weight: var(--font-weight-bold);
-  color: white;
-  white-space: nowrap;
-  text-decoration: none;
-}
-.app-header .header-divider {
-  width: 1px;
-  height: 20px;
-  background: rgba(255,255,255,0.25);
-}
-.app-header .header-title {
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-medium);
-  color: rgba(255,255,255,0.78);
-  white-space: nowrap;
-}
-.header-actions {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
 
 /* ── App Container (non-sidebar pages: wizard, portal) ── */
 .app-container {

@@ -89,16 +89,6 @@
 }
 
 /* Ghost on dark (header/sidebar) */
-.btn-ghost-white {
-  background: transparent;
-  border-color: rgba(255,255,255,0.3);
-  color: rgba(255,255,255,0.85);
-}
-.btn-ghost-white:hover {
-  background: rgba(255,255,255,0.12);
-  border-color: rgba(255,255,255,0.55);
-  color: white;
-}
 
 /* Size variants */
 .btn-sm {
@@ -703,3 +693,83 @@
   max-width: 260px;
 }
 .pf-select--team { max-width: 180px; }
+
+/* ══════════════════════════════════════════════════
+   UI/UX v2 đợt 2–4 (2026-11-03) — thành phần dùng chung
+   ══════════════════════════════════════════════════ */
+
+/* Khung trang trong .app-content (thay style inline max-width/padding) */
+.app-container.view-wrap { max-width: 1200px; margin: 0 auto; padding: 0; }
+.app-container.view-wrap--narrow { max-width: 960px; }
+
+/* Biểu tượng trong tiêu đề khối */
+.section-panel-title > .fa-solid,
+.dash-card-header h3 > .fa-solid { color: var(--color-primary); margin-right: 4px; }
+.streak-fire { color: var(--color-accent); }
+
+/* Màn thành công (Cập nhật US) */
+.success-icon { font-size: 44px; line-height: 1; color: var(--color-success); margin-bottom: var(--space-4); }
+
+/* Huy chương top 3 (thay emoji) */
+.rank-medal {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: var(--radius-full);
+  font-size: var(--text-sm); font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+.rank-medal--1 { background: #FEF3C7; color: #92400E; box-shadow: inset 0 0 0 1px #FCD34D; }
+.rank-medal--2 { background: #F1F5F9; color: #334155; box-shadow: inset 0 0 0 1px #CBD5E1; }
+.rank-medal--3 { background: #FFEDD5; color: #9A3412; box-shadow: inset 0 0 0 1px #FDBA74; }
+
+/* Điện thoại ≤ 640px: bảng nhiều cột → dạng thẻ (shell.js gắn .is-stacked + data-label) */
+@media (max-width: 640px) {
+  table.is-stacked { display: block; overflow: visible; border: none; min-width: 0 !important; width: 100%; }
+  table.is-stacked thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  table.is-stacked tbody, table.is-stacked tr { display: block; width: 100%; }
+  table.is-stacked tr {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-3);
+    box-shadow: var(--shadow-xs);
+  }
+  table.is-stacked td {
+    display: block; position: relative; min-height: 28px;
+    width: 100%; padding: 6px 0 6px 44% !important; border: none !important; text-align: right;
+    background: transparent !important; white-space: normal; overflow-wrap: anywhere;
+  }
+  table.is-stacked td[data-label=""] { padding-left: 0 !important; text-align: left; }
+  table.is-stacked td + td { border-top: 1px dashed var(--color-border) !important; }
+  table.is-stacked td[data-label]::before {
+    content: attr(data-label);
+    position: absolute; left: 0; top: 7px; width: 40%; text-align: left;
+    font-size: var(--text-xs); font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  table.is-stacked td[data-label=""]::before { content: none; }
+  table.is-stacked td:first-child { font-weight: var(--font-weight-semibold); }
+}
+
+/* Ô chọn / ô nhập chưa gắn class (vd lọc "Chờ chấm") — kiểu chuẩn, độ ưu tiên thấp (:where) */
+:where(.app-content) :where(select, input[type="text"], input[type="search"], input[type="number"], input[type="date"], input[type="email"], input[type="url"], textarea):not([class]) {
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-base);
+}
+:where(.app-content) :where(select, input, textarea):not([class]):focus {
+  outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--btn-primary-ring);
+}
+small { font-size: max(12px, 0.85em); }
+
+/* Thẻ số liệu gọn hơn trên laptop 14" */
+.stat-card { padding: var(--space-4) var(--space-5); gap: var(--space-2); }
+.stat-card-icon { width: 36px; height: 36px; font-size: 1rem; }
+.stat-card-value { font-size: var(--text-2xl); }
+
+/* Nút lọc dạng viên (Hàng đợi Review) đủ lớn để bấm */
+.rq-pill { min-height: 32px; }

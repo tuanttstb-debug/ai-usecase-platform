@@ -31,18 +31,26 @@
 
   // ── Status config ────────────────────────────────────────────────
   var STATUS_CFG = {
-    'Draft':        { label: 'Nháp',         color: '#A4A4B2' },
-    'Submitted':    { label: 'Đã nộp',       color: '#7B2CBF' },
-    'Under Review': { label: 'Đang review',  color: '#F6B100' },
-    'Approved':     { label: 'Đã duyệt',     color: '#4CAF50' },
-    'Rejected':     { label: 'Từ chối',      color: '#F44336' },
-    'Archived':     { label: 'Lưu trữ',      color: '#A4A4B2' }
+    'Draft':        { label: 'Nháp',         color: '#64748B' },
+    'Submitted':    { label: 'Đã nộp',       color: '#1D4ED8' },
+    'Under Review': { label: 'Đang review',  color: '#B45309' },
+    'Approved':     { label: 'Đã duyệt',     color: '#15803D' },
+    'Rejected':     { label: 'Từ chối',      color: '#B91C1C' },
+    'Archived':     { label: 'Lưu trữ',      color: '#64748B' }
   };
 
   // ── Init (SPA) ───────────────────────────────────────────────────
   var _dashInited = false;
   function _dashInit() {
     if (_dashInited) return;
+    // UI v2: biểu đồ dùng phông + màu chữ/lưới theo token của app
+    if (window.Chart && Chart.defaults) {
+      var cs = getComputedStyle(document.documentElement);
+      Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+      Chart.defaults.font.size = 12;
+      Chart.defaults.color = cs.getPropertyValue('--color-text-secondary').trim() || '#475569';
+      Chart.defaults.borderColor = cs.getPropertyValue('--color-border').trim() || '#E2E8F0';
+    }
     _dashInited = true;
     if (typeof AuthService !== 'undefined') {
       _user    = AuthService.getUser();
@@ -323,7 +331,7 @@
     order.forEach(function (status) {
       var count = breakdown[status] || 0;
       if (!count) return;
-      var cfg = STATUS_CFG[status] || { label: status, color: '#dadce0' };
+      var cfg = STATUS_CFG[status] || { label: status, color: '#E2E8F0' };
       labels.push(cfg.label); data.push(count); colors.push(cfg.color); statusKeys.push(status);
     });
 
@@ -359,7 +367,7 @@
     container.innerHTML = order.map(function (status) {
       var count = breakdown[status] || 0;
       if (!count) return '';
-      var cfg = STATUS_CFG[status] || { label: status, color: '#dadce0' };
+      var cfg = STATUS_CFG[status] || { label: status, color: '#E2E8F0' };
       var pct = ((count / total) * 100).toFixed(1);
       return _chartRow(cfg.label, pct + '%', cfg.color, count + ' (' + pct + '%)', null, false,
         'Dashboard._openListByStatus(\'' + status + '\')');
@@ -396,7 +404,7 @@
 
     _charts[containerId] = new Chart(canvas.getContext('2d'), {
       type: 'bar',
-      data: { labels: labels, datasets: [{ data: data, backgroundColor: 'rgba(123,44,191,0.72)', borderWidth: 0, borderRadius: 4 }] },
+      data: { labels: labels, datasets: [{ data: data, backgroundColor: 'rgba(29,78,216,0.72)', borderWidth: 0, borderRadius: 4 }] },
       options: {
         indexAxis: 'y', responsive: true, maintainAspectRatio: true, aspectRatio: ratio,
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (ctx) { return ' ' + ctx.parsed.x + ' use case'; } } } },
@@ -463,7 +471,7 @@
     statusOrder.forEach(function (status) {
       var hasData = keys.some(function (k) { return (stacked[k][status] || 0) > 0; });
       if (!hasData) return;
-      var cfg = STATUS_CFG[status] || { label: status, color: '#dadce0' };
+      var cfg = STATUS_CFG[status] || { label: status, color: '#E2E8F0' };
       datasets.push({
         label:           cfg.label,
         data:            keys.map(function (k) { return stacked[k][status] || 0; }),
@@ -540,9 +548,9 @@
       var badges = statusOrder.map(function (status) {
         var count = stacked[key][status] || 0;
         if (!count) return '';
-        var cfg = STATUS_CFG[status] || { label: status, color: '#5f6368' };
+        var cfg = STATUS_CFG[status] || { label: status, color: '#475569' };
         return '<span style="background:' + cfg.color + '20;color:' + cfg.color +
-          ';border:1px solid ' + cfg.color + '40;border-radius:4px;padding:1px 5px;font-size:10px;white-space:nowrap">' +
+          ';border:1px solid ' + cfg.color + '40;border-radius:4px;padding:1px 5px;font-size:12px;white-space:nowrap">' +
           esc(cfg.label) + ' ' + count + '</span>';
       }).filter(Boolean).join(' ');
       return '<div class="chart-row" style="cursor:pointer;flex-wrap:wrap;gap:4px" onclick="' + fn + '">' +
@@ -673,7 +681,7 @@
       return '<div class="pending-card">' +
         '<div class="pending-card-header">' +
           '<span class="id-badge">' + esc(m.usecase_id || '--') + '</span>' +
-          '<span class="status-badge" style="background:#7B2CBF20;color:#7B2CBF;border:1px solid #7B2CBF40">Milestone · ' + esc(typeLabel) + '</span>' +
+          '<span class="status-badge" style="background:#7B2CBF20;color:#6D28D9;border:1px solid #7B2CBF40">Milestone · ' + esc(typeLabel) + '</span>' +
         '</div>' +
         '<div class="pending-card-title">' + esc(m.name || 'Không có tên') + '</div>' +
         '<div class="pending-card-meta">' +
@@ -684,7 +692,7 @@
         '<div class="pending-card-meta">' + stageBit + scoreBit + '</div>' +
         excerpt +
         '<div class="pending-card-actions">' +
-          '<button class="btn btn-sm btn-primary" onclick="Dashboard._openMilestoneDetail(\'' + esc(k) + '\')">🔍 Xem chi tiết &amp; Duyệt</button>' +
+          '<button class="btn btn-sm btn-primary" onclick="Dashboard._openMilestoneDetail(\'' + esc(k) + '\')"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Xem chi tiết &amp; Duyệt</button>' +
         '</div>' +
       '</div>';
     }).join('');
@@ -778,7 +786,7 @@
     if (!tbody) return;
     if (!items.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Chưa có use case nào</td></tr>'; return; }
     tbody.innerHTML = items.map(function (uc) {
-      var cfg = STATUS_CFG[uc.status] || { label: uc.status, color: '#5f6368' };
+      var cfg = STATUS_CFG[uc.status] || { label: uc.status, color: '#475569' };
       var k = _cache(uc);
       return '<tr style="cursor:pointer" onclick="Dashboard._byKey(\'' + esc(k) + '\')">' +
         '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
@@ -800,7 +808,7 @@
       return;
     }
     tbody.innerHTML = items.map(function (uc) {
-      var cfg = STATUS_CFG[uc.status] || { label: uc.status, color: '#5f6368' };
+      var cfg = STATUS_CFG[uc.status] || { label: uc.status, color: '#475569' };
       var k = _cache(uc);
       return '<tr style="cursor:pointer" onclick="Dashboard._byKey(\'' + esc(k) + '\')">' +
         '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
@@ -828,17 +836,17 @@
         var rk = _dsRankOf(scoreVal);
         var c = rk[1];
         scoreHtml = '<span class="score-chip" style="background:' + c + '20;color:' + c + ';border:1px solid ' + c + '40;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:600">' + scoreVal + '</span>';
-        rankHtml  = '<span style="font-size:11px;font-weight:600;color:' + c + '">' + esc(rk[0]) + '</span>';
+        rankHtml  = '<span style="font-size:12px;font-weight:600;color:' + c + '">' + esc(rk[0]) + '</span>';
       } else {
         scoreHtml = '<span style="color:var(--color-text-muted);font-size:12px">--</span>';
-        rankHtml  = '<span style="color:var(--color-text-muted);font-size:11px">Chưa chấm</span>';
+        rankHtml  = '<span style="color:var(--color-text-muted);font-size:12px">Chưa chấm</span>';
       }
       var stageBadge = '';
       var stage = uc.current_stage || '';
       if (stage === 'S3 - Standardized') {
-        stageBadge = '<span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;background:#E8F5E9;color:#4CAF50;border:1px solid #A5D6A7;vertical-align:middle">S3</span>';
+        stageBadge = '<span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;font-size:12px;font-weight:700;background:#DCFCE7;color:#15803D;border:1px solid #86EFAC;vertical-align:middle">S3</span>';
       } else if (stage === 'S4 - Scale') {
-        stageBadge = '<span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;background:#F5F0FF;color:#7B2CBF;border:1px solid #CE93D8;vertical-align:middle">S4</span>';
+        stageBadge = '<span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;font-size:12px;font-weight:700;background:#F5F3FF;color:#6D28D9;border:1px solid #C4B5FD;vertical-align:middle">S4</span>';
       }
       return '<tr style="cursor:pointer" onclick="Dashboard._byKey(\'' + esc(k) + '\')">' +
         '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
@@ -867,7 +875,7 @@
       body.innerHTML = '<p style="padding:var(--space-8);text-align:center;color:var(--color-text-muted);font-size:var(--text-sm)">Không có use case nào</p>';
     } else {
       var rows = items.map(function (uc) {
-        var cfg = STATUS_CFG[uc.status] || { label: uc.status || '--', color: '#5f6368' };
+        var cfg = STATUS_CFG[uc.status] || { label: uc.status || '--', color: '#475569' };
         var k   = _cache(uc);
         return '<tr style="cursor:pointer" onclick="Dashboard._byKey(\'' + esc(k) + '\')">' +
           '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
@@ -924,7 +932,7 @@
     var order = ['Draft', 'Submitted', 'Under Review', 'Approved', 'Rejected', 'Archived'];
     var allPillHtml = '<button class="filter-pill is-active" data-status="" style="--pill-color:var(--color-primary)">Tất cả</button>';
     var statusPillsHtml = order.map(function (s) {
-      var cfg = STATUS_CFG[s] || { label: s, color: '#5f6368' };
+      var cfg = STATUS_CFG[s] || { label: s, color: '#475569' };
       return '<button class="filter-pill" data-status="' + s + '" style="--pill-color:' + cfg.color + '">' + esc(cfg.label) + '</button>';
     }).join('');
     pillsContainer.innerHTML = allPillHtml + statusPillsHtml;
@@ -1048,7 +1056,7 @@
     document.getElementById('detailModalTitle').textContent = uc.name || 'Chi tiết Use Case';
     document.getElementById('detailModalId').textContent    = uc.usecase_id || '--';
 
-    var cfg = STATUS_CFG[uc.status] || { label: uc.status || '--', color: '#5f6368' };
+    var cfg = STATUS_CFG[uc.status] || { label: uc.status || '--', color: '#475569' };
     var statusEl = document.getElementById('detailModalStatus');
     statusEl.textContent = cfg.label;
     statusEl.style.cssText = 'background:' + cfg.color + '20;color:' + cfg.color + ';border:1px solid ' + cfg.color + '40;flex-shrink:0';
@@ -1183,14 +1191,14 @@
       var total = uc.total_score || 0;
       var hasScore = total > 0;
       function _rankOf(t) {
-        if (t >= 85) return ['Top Performer', '#7B2CBF'];
-        if (t >= 70) return ['Strong', '#4CAF50'];
-        if (t >= 50) return ['Average', '#F6B100'];
-        return ['Cần cải thiện', '#F44336'];
+        if (t >= 85) return ['Top Performer', '#6D28D9'];
+        if (t >= 70) return ['Strong', '#15803D'];
+        if (t >= 50) return ['Average', '#B45309'];
+        return ['Cần cải thiện', '#B91C1C'];
       }
       var sScore = '';
       if (!hasScore) {
-        sScore = '<div class="not-scored-notice"><span class="not-scored-icon">⏳</span><span>Chưa được hội đồng chấm điểm</span></div>';
+        sScore = '<div class="not-scored-notice"><span class="not-scored-icon"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i></span><span>Chưa được hội đồng chấm điểm</span></div>';
       } else {
         var rk = _rankOf(total);
         var rankBadge = '<span class="score-rank-badge" style="background:' + rk[1] + '20;color:' + rk[1] + ';border:1px solid ' + rk[1] + '40">' + esc(rk[0]) + '</span>';
@@ -1264,7 +1272,7 @@
     } else {
       body = '<span class="demo-link demo-link--nonweb" title="Link nội bộ / ổ chung — bấm Copy rồi mở bằng File Explorer">' + esc(raw) + '</span>';
     }
-    var copyBtn = b64 ? ' <button type="button" class="demo-copy-btn" onclick="Dashboard._copyB64(\'' + b64 + '\')">📋 Copy</button>' : '';
+    var copyBtn = b64 ? ' <button type="button" class="demo-copy-btn" onclick="Dashboard._copyB64(\'' + b64 + '\')"><i class="fa-solid fa-copy" aria-hidden="true"></i> Copy</button>' : '';
     return body + copyBtn;
   }
 
@@ -1469,10 +1477,10 @@
   // H2 Giai đoạn 3: rank theo thang 100 (dashboard không load ScoringEngine) → [label, color].
   function _dsRankOf(t) {
     t = parseFloat(t) || 0;
-    if (t >= 85) return ['Top Performer', '#7B2CBF'];
-    if (t >= 70) return ['Strong', '#4CAF50'];
-    if (t >= 50) return ['Average', '#F6B100'];
-    return ['Cần cải thiện', '#F44336'];
+    if (t >= 85) return ['Top Performer', '#6D28D9'];
+    if (t >= 70) return ['Strong', '#15803D'];
+    if (t >= 50) return ['Average', '#B45309'];
+    return ['Cần cải thiện', '#B91C1C'];
   }
 
   function esc(str) {
@@ -1498,12 +1506,12 @@
   function showToast(message, type) {
     var container = document.getElementById('toastContainer');
     if (!container) return;
-    var icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+    var icons = { success: '<i class="fa-solid fa-circle-check"></i>', error: '<i class="fa-solid fa-circle-xmark"></i>', warning: '<i class="fa-solid fa-triangle-exclamation"></i>', info: '<i class="fa-solid fa-circle-info"></i>' };
     var toast  = document.createElement('div');
     toast.className = 'toast toast-' + (type || 'info');
     toast.setAttribute('role', 'alert');
     toast.innerHTML =
-      '<span class="toast-icon" aria-hidden="true">' + (icons[type] || 'ℹ') + '</span>' +
+      '<span class="toast-icon" aria-hidden="true">' + (icons[type] || icons.info) + '</span>' +
       '<span class="toast-message">' + esc(message) + '</span>' +
       '<button class="toast-close" aria-label="Đóng" onclick="this.parentElement.remove()">×</button>';
     container.appendChild(toast);
@@ -1724,7 +1732,7 @@
       body.innerHTML = '<p style="padding:var(--space-8);text-align:center;color:var(--color-text-muted);font-size:var(--text-sm)">Không có use case nào</p>';
     } else {
       var rows = items.map(function (uc) {
-        var cfg        = STATUS_CFG[uc.status] || { label: uc.status || '--', color: '#5f6368' };
+        var cfg        = STATUS_CFG[uc.status] || { label: uc.status || '--', color: '#475569' };
         // H2 Giai đoạn 3: điểm US = bình quân hội đồng (total_score). Bỏ cột Auto/Champion 70/30.
         var totalScore = uc.total_score  || 0;
         var rk = _dsRankOf(totalScore);
@@ -1734,13 +1742,13 @@
           : '<span style="color:var(--color-text-muted)">—</span>';
 
         var rankHtml = totalScore > 0
-          ? '<span style="font-size:11px;font-weight:600;color:' + rk[1] + '">' + esc(rk[0]) + '</span>'
-          : '<span style="color:var(--color-text-muted);font-size:11px">⏳ Chưa chấm</span>';
+          ? '<span style="font-size:12px;font-weight:600;color:' + rk[1] + '">' + esc(rk[0]) + '</span>'
+          : '<span style="color:var(--color-text-muted);font-size:12px"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Chưa chấm</span>';
 
         var comment = uc.review_comment || '';
         var commentHtml = comment
-          ? '<span style="font-size:11px;color:var(--color-text-secondary);font-style:italic" title="' + esc(comment) + '">' + esc(comment.length > 50 ? comment.substring(0, 50) + '…' : comment) + '</span>'
-          : '<span style="color:var(--color-text-muted);font-size:11px">—</span>';
+          ? '<span style="font-size:12px;color:var(--color-text-secondary);font-style:italic" title="' + esc(comment) + '">' + esc(comment.length > 50 ? comment.substring(0, 50) + '…' : comment) + '</span>'
+          : '<span style="color:var(--color-text-muted);font-size:12px">—</span>';
 
         return '<tr>' +
           '<td><span class="id-badge">' + esc(uc.usecase_id || '--') + '</span></td>' +
@@ -1833,14 +1841,14 @@
 
     var achieved    = enriched.filter(function (u) { return u.thisWeek >= 1; });
     var pctAchieved = userKeys.length ? Math.round((achieved.length / userKeys.length) * 100) : 0;
-    var pctColor    = pctAchieved >= 80 ? '#4CAF50' : pctAchieved >= 50 ? '#F6B100' : '#F44336';
+    var pctColor    = pctAchieved >= 80 ? '#15803D' : pctAchieved >= 50 ? '#B45309' : '#B91C1C';
 
     // Match current user by username (= _user.email in this system) — case-insensitive
     var curUserKey  = (_user ? (_user.email || _user.displayName || '') : '').trim().toLowerCase();
     var weeklyList  = enriched.slice().sort(function (a, b) { return b.thisWeek - a.thisWeek || a.name.localeCompare(b.name); });
     var rankingList = enriched.slice().sort(function (a, b) { return b.total - a.total  || b.streak - a.streak; });
     var topStreakers = enriched.slice().sort(function (a, b) { return b.streak - a.streak; }).slice(0, 3).filter(function (u) { return u.streak > 0; });
-    var medals      = ['🥇', '🥈', '🥉'];
+    var medals      = ['<span class="rank-medal rank-medal--1">1</span>', '<span class="rank-medal rank-medal--2">2</span>', '<span class="rank-medal rank-medal--3">3</span>'];
 
     var html = '';
 
@@ -1883,7 +1891,7 @@
         var isMe   = u.username === curUserKey || u.name.toLowerCase() === curUserKey;
         var rank   = idx < 3 ? medals[idx] : String(idx + 1);
         var streak = u.streak > 0
-          ? '<span class="kpi-streak-badge">' + u.streak + ' 🔥</span>'
+          ? '<span class="kpi-streak-badge">' + u.streak + ' <i class="fa-solid fa-fire streak-fire" aria-hidden="true"></i></span>'
           : '<span style="color:var(--color-text-muted)">—</span>';
         return '<tr' + (isMe ? ' class="kpi-row--me"' : '') + '>' +
           '<td>' + rank + '</td>' +
@@ -1909,13 +1917,13 @@
             '<span class="kpi-streak-name">' + esc(u.name) + (isMe ? ' <span class="kpi-me-tag">bạn</span>' : '') + '</span>' +
             '<span class="kpi-streak-team">' + esc(u.team) + '</span>' +
           '</div>' +
-          '<div class="kpi-streak-count">' + u.streak + ' 🔥 <span class="kpi-streak-unit">tuần</span></div>' +
+          '<div class="kpi-streak-count">' + u.streak + ' <i class="fa-solid fa-fire streak-fire" aria-hidden="true"></i> <span class="kpi-streak-unit">tuần</span></div>' +
           '<button class="btn btn--ghost btn--sm" onclick="event.stopPropagation();Dashboard._openKPIUserList(\'' + esc(u.username) + '\',\'' + esc(u.name) + '\')">Xem US</button>' +
         '</div>';
       });
     }
     var _streakHtml = '<div class="dash-card">' +
-      '<div class="dash-card-header"><h3>🔥 Chuỗi tuần liên tiếp</h3></div>' +
+      '<div class="dash-card-header"><h3><i class="fa-solid fa-fire streak-fire" aria-hidden="true"></i> Chuỗi tuần liên tiếp</h3></div>' +
       '<div class="kpi-streak-list">' + _streakInner + '</div>' +
     '</div>';
 
@@ -1945,7 +1953,7 @@
             var isMe  = u.username === curUserKey || u.name.toLowerCase() === curUserKey;
             var badge = u.thisWeek >= 1
               ? '<span class="kpi-badge kpi-badge--ok">✓ Đạt</span>'
-              : '<span class="kpi-badge kpi-badge--no">⏳ Chưa</span>';
+              : '<span class="kpi-badge kpi-badge--no"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Chưa</span>';
             return '<tr' + (isMe ? ' class="kpi-row--me"' : '') + '>' +
               '<td>' + esc(u.name) + (isMe ? ' <span class="kpi-me-tag">bạn</span>' : '') + '</td>' +
               '<td>' + esc(u.team) + '</td>' +
@@ -1997,7 +2005,7 @@
         datasets: [{
           label: 'Số UC nộp',
           data: monthData.counts,
-          backgroundColor: 'rgba(123,44,191,0.72)',
+          backgroundColor: 'rgba(29,78,216,0.72)',
           borderWidth: 0,
           borderRadius: 6
         }]
