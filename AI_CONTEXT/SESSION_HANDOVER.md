@@ -1,5 +1,13 @@
 # SESSION HANDOVER
 
+## Session: 2026-11-03 #2 — UI/UX v2 đợt 1/4: nền + khung (hub: anh giao nâng cấp tổng thể 12 trang)
+- **Task completed:** đo LIVE 13 màn (390px: Dashboard/Bài tập/Leaderboard tràn ngang; 1366px ổn; DM Sans không có tiếng Việt; chữ mờ 2,4:1) → MASTER + phương án B 4 đợt (anh duyệt) → đợt 1: token mới, Fira Sans, sidebar sáng thu gọn, tab/bảng không tràn, vùng bấm ≥40px, login sáng.
+- **Files changed:** `assets/css/{variables,base,layout,components,responsive,login,dashboard,leaderboard,weekly-update,portal}.css` · `assets/js/shell.js` · `index.html` · `login.html` · `change-password.html` · MỚI `design-system/ai-use-case-platform/{MASTER.md,PHUONG_AN_VA_KE_HOACH.md}`.
+- **Decision made:** giữ class + tên biến cũ (bí danh) → đổi gu toàn app không đụng logic render; nút chính xanh, hổ phách chỉ nhấn; màu dữ liệu trong JS (Top Performer, S4 Scale tím) để đợt 4.
+- **Blocker:** không — không cần redeploy GAS.
+- **Next step:** [TT] check LIVE (laptop + điện thoại) → OK → [CC] đợt 2.
+- **Regression risk:** TB — đổi màu/phông/cỡ chữ toàn app; Playwright 176/176; ảnh mock 6 màn × 2 khổ 0 tràn ngang. Chưa soát dữ liệu thật LIVE từng màn (anh check).
+
 ## Session: 2026-11-03 — Fix trùng ID lan tỏa (SC-0001) + Display_Name = username — hub AIUS-001 D102
 - **Task completed:** PM ghi 4 claim lan tỏa qua route → cả 4 ra `SC-0001`, duyệt chỉ trúng dòng đầu. Gốc: `_nextScoreId_` chỉ đọc cột `Score_ID`, trong khi SHARING_CLAIM/UC_REUSE/PERSONAL_SELF dùng `Claim_ID`/`Reuse_ID`/`Self_ID`. Sửa: thêm tham số `idField` (mặc định `Score_ID`), 3 chỗ gọi truyền đúng cột. `_memberInfo_` coi displayName = username là thiếu → tra User_Master lấy họ tên.
 - **Files changed:** `assets/gas-backend/ScoringServiceH2.gs` · `assets/gas-backend/SelfScoreService.gs` · test MỚI `tests/22-next-id.spec.js` (8 ca, chạy code GAS trong vm).

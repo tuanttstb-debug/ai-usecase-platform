@@ -13,7 +13,8 @@
 /* ── App Sidebar ── */
 .app-sidebar {
   width: var(--sidebar-width);
-  background: var(--sidebar-gradient);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
   position: fixed;
   top: 0;
   left: 0;
@@ -31,17 +32,17 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-5) var(--space-6);
+  padding: var(--space-3) var(--space-5);
   border-bottom: 1px solid var(--sidebar-border);
   flex-shrink: 0;
   min-height: var(--topbar-height);
   text-decoration: none;
 }
 .sidebar-brand-logo {
-  width: 36px;
-  height: 36px;
-  background: rgba(255,255,255,0.18);
-  border: 1px solid rgba(255,255,255,0.25);
+  width: 32px;
+  height: 32px;
+  background: var(--color-primary);
+  color: #FFFFFF;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -58,14 +59,14 @@
 .sidebar-brand-name {
   font-size: var(--text-sm);
   font-weight: var(--font-weight-bold);
-  color: var(--sidebar-text-active);
+  color: var(--sidebar-text-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   letter-spacing: -0.01em;
 }
 .sidebar-brand-sub {
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--sidebar-text-muted);
   white-space: nowrap;
   font-weight: var(--font-weight-medium);
@@ -78,9 +79,9 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--space-4) 0;
+  padding: var(--space-3) var(--space-3);
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.2) transparent;
+  scrollbar-color: var(--color-border-strong) transparent;
 }
 .sidebar-nav::-webkit-scrollbar {
   width: 4px;
@@ -89,45 +90,48 @@
   background: transparent;
 }
 .sidebar-nav::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.2);
+  background: var(--color-border-strong);
   border-radius: 4px;
 }
 .sidebar-nav::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.45);
+  background: var(--sidebar-text-muted);
 }
 
 .sidebar-section-label {
-  font-size: 10px;
-  font-weight: var(--font-weight-bold);
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
   color: var(--sidebar-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: var(--space-3) var(--space-6) var(--space-1);
-  margin-top: var(--space-2);
+  letter-spacing: 0.06em;
+  padding: var(--space-3) var(--space-3) var(--space-1);
+  margin-top: var(--space-1);
+  white-space: nowrap;
 }
 
 .sidebar-nav-item {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-6);
+  padding: var(--space-2) var(--space-3);
   color: var(--sidebar-text);
   text-decoration: none;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: var(--font-weight-medium);
   border: none;
   background: transparent;
   width: 100%;
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
-  border-radius: 0;
-  min-height: 44px;
+  border-radius: var(--radius-md);
+  min-height: 38px;
+  margin-bottom: 2px;
   position: relative;
   white-space: nowrap;
 }
 .sidebar-nav-item:hover {
   background: var(--sidebar-item-hover);
-  color: var(--sidebar-text-active);
+  color: var(--sidebar-text-strong);
 }
 .sidebar-nav-item.is-active {
   background: var(--sidebar-item-active);
@@ -137,12 +141,12 @@
 .sidebar-nav-item.is-active::before {
   content: '';
   position: absolute;
-  left: 0;
+  left: calc(-1 * var(--space-3));
   top: 50%;
   transform: translateY(-50%);
   width: 3px;
-  height: 24px;
-  background: var(--color-accent);
+  height: 20px;
+  background: var(--color-primary);
   border-radius: 0 3px 3px 0;
 }
 
@@ -165,7 +169,7 @@
 .sidebar-nav-label { flex: 1; }
 
 .sidebar-nav-badge {
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: var(--font-weight-bold);
   background: var(--color-error);
   color: white;
@@ -183,12 +187,12 @@
 .sidebar-divider {
   height: 1px;
   background: var(--sidebar-border);
-  margin: var(--space-2) var(--space-6);
+  margin: var(--space-2) var(--space-3);
 }
 
 /* ── Sidebar Footer ── */
 .sidebar-footer {
-  padding: var(--space-4) var(--space-6);
+  padding: var(--space-3) var(--space-5);
   border-top: 1px solid var(--sidebar-border);
   flex-shrink: 0;
 }
@@ -200,28 +204,28 @@
 .sidebar-user-avatar {
   width: 32px;
   height: 32px;
-  background: rgba(255,255,255,0.18);
+  background: var(--color-primary-surface);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--text-sm);
   font-weight: var(--font-weight-bold);
-  color: white;
+  color: var(--color-primary);
   flex-shrink: 0;
 }
 .sidebar-user-info { flex: 1; min-width: 0; }
 .sidebar-user-name {
-  font-size: var(--text-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--sidebar-text-active);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--sidebar-text-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   display: block;
 }
 .sidebar-user-role {
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--sidebar-text-muted);
   display: block;
 }
@@ -252,6 +256,21 @@
   flex-direction: column;
   min-height: 100vh;
   min-width: 0;
+  transition: margin-left var(--transition-normal);
+}
+
+/* ── Sidebar thu gọn (desktop > 1024px; nút ☰ ở topbar, nhớ theo máy — shell.js) ── */
+@media (min-width: 1025px) {
+  .app-layout.is-collapsed .app-sidebar { width: var(--sidebar-collapsed); }
+  .app-layout.is-collapsed .app-main { margin-left: var(--sidebar-collapsed); }
+  .app-layout.is-collapsed .sidebar-brand { padding: var(--space-3) 0; justify-content: center; }
+  .app-layout.is-collapsed .sidebar-brand-text,
+  .app-layout.is-collapsed .sidebar-nav-label,
+  .app-layout.is-collapsed .sidebar-section-label,
+  .app-layout.is-collapsed .sidebar-user-info { display: none; }
+  .app-layout.is-collapsed .sidebar-nav-item { justify-content: center; padding: var(--space-2) 0; }
+  .app-layout.is-collapsed .sidebar-nav-badge { position: absolute; top: 2px; right: 6px; }
+  .app-layout.is-collapsed .sidebar-footer { padding: var(--space-3) 0; display: flex; justify-content: center; }
 }
 
 /* ── TopBar ── */
@@ -261,19 +280,22 @@
   border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
-  padding: 0 var(--space-8);
-  gap: var(--space-4);
+  padding: 0 var(--space-6);
+  gap: var(--space-3);
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
-  box-shadow: var(--shadow-sm);
 }
 .topbar-title {
-  font-size: var(--text-xl);
-  font-weight: var(--font-weight-bold);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   flex: 1;
-  letter-spacing: -0.015em;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
 }
 .topbar-actions {
   display: flex;
@@ -282,8 +304,8 @@
   flex-shrink: 0;
 }
 .topbar-icon-btn {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: transparent;
@@ -342,20 +364,22 @@
 /* ── Content Area ── */
 .app-content {
   flex: 1;
-  padding: var(--space-8);
+  width: 100%;
+  padding: var(--space-6);
   max-width: var(--content-max-width);
+  min-width: 0;
 }
 
 /* ── Legacy: app-header (standalone, no-sidebar pages) ── */
 .app-header {
-  background: var(--sidebar-gradient);
+  background: var(--color-primary-darker);
   color: white;
   height: var(--header-height);
   padding: 0 var(--space-8);
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  box-shadow: 0 2px 8px rgba(107, 34, 180, 0.3);
+  box-shadow: var(--shadow-md);
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
@@ -470,9 +494,9 @@
 
 /* ── Mobile sidebar toggle btn (topbar) ── */
 .topbar-sidebar-toggle {
-  display: none;
-  width: 38px;
-  height: 38px;
+  display: flex;
+  width: 36px;
+  height: 36px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: transparent;

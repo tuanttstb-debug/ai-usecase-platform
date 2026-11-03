@@ -1,5 +1,11 @@
 # PROJECT STATE
 
+**2026-11-03 — UI/UX v2 ĐỢT 1/4 (nền + khung) — chuẩn AIOS design-system v2, profile P1. Chỉ giao diện, không đổi GAS.**
+Gu mới (`design-system/ai-use-case-platform/MASTER.md` + `PHUONG_AN_VA_KE_HOACH.md`): xanh dương `#1D4ED8` + slate, hổ phách chỉ để nhấn, phông **Fira Sans/Fira Code** (có tiếng Việt — DM Sans cũ không có), chữ thân 14px, sidebar SÁNG thu gọn được (desktop, nhớ theo máy `aius_sidebar_collapsed`) / trượt ngang ≤1024px. `variables.css` viết lại, GIỮ tên biến cũ (phương án B — không đổi class). Nút chính = xanh (bỏ cam). Tab cuộn trong khung riêng · bảng cuộn trong chính bảng ≤768px · nút/ô nhập ≥40px trên điện thoại · chữ <12px → 12px · mã tím viết cứng trong CSS → token · login/đổi mật khẩu nền sáng, emoji → SVG · cache `?v=20261103a`. Playwright 176/176 (trừ zz-capture). Ảnh mock 1366 + 390: 0 tràn ngang.
+**Còn:** đợt 2 (Trang chủ · Bài tập & Học tập · KPI của tôi · Chấm bài · KPI từng người) → đợt 3 (use case) → đợt 4 (báo cáo + màu dữ liệu JS còn tím + dọn CSS) — mỗi đợt chờ anh check LIVE.
+
+---
+
 **2026-11-03 — Fix `_nextScoreId_` đọc đúng cột ID (Claim_ID · Reuse_ID · Self_ID — trước luôn ra -0001) + `_memberInfo_` lấy họ tên khi gọi route không token. Test 180/180. LIVE: GAS đã redeploy, test claim ra SC-0005 + đúng họ tên (đã dọn).**
 
 ---

@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════
-   login.css — TPBank BIZ Login Page
-   Full-page centered card with purple header
+   login.css — Trang đăng nhập / đổi mật khẩu (v4 UI/UX v2, 2026-11-03)
+   Nền sáng, thẻ giữa trang; màu qua token variables.css
    ═══════════════════════════════════════════════════ */
 
 /* ── Page layout ── */
@@ -13,26 +13,36 @@
 
 /* ── Header ── */
 .login-header {
-  background: var(--sidebar-gradient);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   height: var(--portal-header-height);
   display: flex;
   align-items: center;
-  padding: 0 var(--space-8);
-  box-shadow: 0 2px 12px rgba(107, 34, 180, 0.25);
+  padding: 0 var(--space-6);
   flex-shrink: 0;
 }
 .login-brand {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  color: white;
+  color: var(--color-text);
   text-decoration: none;
 }
-.login-brand-icon { font-size: 1.4rem; line-height: 1; }
+.login-brand-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
 .login-brand-name {
   font-size: var(--text-base);
   font-weight: var(--font-weight-bold);
-  color: white;
+  color: var(--color-text);
   letter-spacing: -0.01em;
 }
 
@@ -46,53 +56,51 @@
 }
 .login-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 400px;
   background: var(--color-surface);
   border-radius: var(--radius-xl);
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
 }
 
-/* ── Card top — purple gradient ── */
+/* ── Card top ── */
 .login-card-top {
-  background: var(--sidebar-gradient);
-  padding: var(--space-8) var(--space-8) var(--space-7);
+  padding: var(--space-8) var(--space-8) var(--space-2);
   text-align: center;
 }
 .login-card-icon {
-  width: 64px;
-  height: 64px;
-  background: rgba(255,255,255,0.15);
-  border: 1.5px solid rgba(255,255,255,0.25);
-  border-radius: var(--radius-xl);
+  width: 48px;
+  height: 48px;
+  background: var(--color-primary-surface);
+  color: var(--color-primary);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
   margin: 0 auto var(--space-4);
 }
 .login-card-title {
-  font-size: var(--text-3xl);
+  font-size: var(--text-2xl);
   font-weight: var(--font-weight-bold);
-  color: white;
+  color: var(--color-text);
   margin: 0 0 var(--space-2);
   letter-spacing: -0.02em;
 }
 .login-card-subtitle {
   font-size: var(--text-sm);
-  color: rgba(255,255,255,0.72);
+  color: var(--color-text-secondary);
   margin: 0;
   line-height: var(--leading-relaxed);
 }
 
 /* ── Card body ── */
 .login-card-body {
-  padding: var(--space-7) var(--space-8) var(--space-8);
+  padding: var(--space-5) var(--space-8) var(--space-8);
 }
 
 /* ── Form fields ── */
-.login-field { margin-bottom: var(--space-5); }
+.login-field { margin-bottom: var(--space-4); }
 .login-label {
   display: block;
   font-size: var(--text-sm);
@@ -102,8 +110,9 @@
 }
 .login-input {
   width: 100%;
-  padding: var(--space-3) var(--space-4);
-  border: 1.5px solid var(--color-border);
+  min-height: 42px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   font-size: var(--text-md);
   font-family: var(--font-family);
@@ -115,7 +124,7 @@
 }
 .login-input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
+  box-shadow: 0 0 0 3px var(--btn-primary-ring);
 }
 .login-input::placeholder { color: var(--color-text-muted); }
 .login-input.has-error {
@@ -137,11 +146,11 @@
 .login-btn {
   width: 100%;
   padding: var(--space-3) var(--space-5);
-  background: var(--color-primary);
-  color: white;
+  background: var(--btn-primary-bg);
+  color: #FFFFFF;
   border: none;
   border-radius: var(--radius-md);
-  font-size: var(--text-base);
+  font-size: var(--text-md);
   font-weight: var(--font-weight-semibold);
   font-family: var(--font-family);
   cursor: pointer;
@@ -150,20 +159,18 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  min-height: 48px;
+  min-height: 44px;
   margin-top: var(--space-2);
 }
-.login-btn:hover:not(:disabled) {
-  background: var(--color-primary-dark);
-  box-shadow: 0 4px 16px rgba(123, 44, 191, 0.32);
-}
+.login-btn:hover:not(:disabled) { background: var(--btn-primary-bg-hover); }
+.login-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--btn-primary-ring); }
 .login-btn:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
 
 .login-btn-spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: white;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #FFFFFF;
   border-radius: 50%;
   animation: spin 0.65s linear infinite;
   display: none;
@@ -177,19 +184,14 @@
   text-align: center;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
-  margin-top: var(--space-6);
+  margin-top: var(--space-5);
   line-height: var(--leading-relaxed);
 }
 
 /* ── Responsive ── */
 @media (max-width: 480px) {
-  .login-main { padding: var(--space-4) 0; align-items: flex-start; }
-  .login-card {
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-    box-shadow: none;
-  }
-  .login-card-body { padding: var(--space-6); }
+  .login-main { padding: var(--space-6) var(--space-4); align-items: flex-start; }
+  .login-card-top  { padding: var(--space-6) var(--space-5) var(--space-2); }
+  .login-card-body { padding: var(--space-4) var(--space-5) var(--space-6); }
   .login-header    { padding: 0 var(--space-4); }
 }

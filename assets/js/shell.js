@@ -95,14 +95,33 @@
     var lo = document.getElementById('topbarLogoutBtn');
     if (lo) lo.addEventListener('click', function () { AuthService.logout(); window.location.replace('login.html'); });
 
-    // Sidebar toggle (mobile)
+    // Sidebar toggle: ≤1024px trượt ngang (off-canvas) · >1024px thu gọn còn biểu tượng (nhớ theo máy)
+    var layout  = document.querySelector('.app-layout');
     var sidebar = document.getElementById('appSidebar');
     var overlay = document.getElementById('sidebarOverlay');
     var toggle  = document.getElementById('sidebarToggle');
+    var COLLAPSE_KEY = 'aius_sidebar_collapsed';
+    var isMobile = function () { return window.matchMedia('(max-width: 1024px)').matches; };
     function closeSidebar() { if (sidebar) sidebar.classList.remove('is-open'); if (overlay) overlay.classList.remove('is-visible'); if (toggle) toggle.setAttribute('aria-expanded', 'false'); }
     function openSidebar()  { if (sidebar) sidebar.classList.add('is-open'); if (overlay) overlay.classList.add('is-visible'); if (toggle) toggle.setAttribute('aria-expanded', 'true'); }
-    if (toggle)  toggle.addEventListener('click', function () { sidebar.classList.contains('is-open') ? closeSidebar() : openSidebar(); });
+    function setCollapsed(on) {
+      if (!layout) return;
+      layout.classList.toggle('is-collapsed', on);
+      try { localStorage.setItem(COLLAPSE_KEY, on ? '1' : '0'); } catch (e) { /* bỏ qua */ }
+    }
+    try { if (localStorage.getItem(COLLAPSE_KEY) === '1' && layout) layout.classList.add('is-collapsed'); } catch (e) { /* bỏ qua */ }
+    // Thu gọn: hiện tên mục khi rê chuột vào biểu tượng
+    var navItems = document.querySelectorAll('.sidebar-nav-item');
+    for (var n = 0; n < navItems.length; n++) {
+      var lb = navItems[n].querySelector('.sidebar-nav-label');
+      if (lb && !navItems[n].getAttribute('title')) navItems[n].setAttribute('title', lb.textContent.trim());
+    }
+    if (toggle)  toggle.addEventListener('click', function () {
+      if (isMobile()) { sidebar.classList.contains('is-open') ? closeSidebar() : openSidebar(); }
+      else setCollapsed(!layout.classList.contains('is-collapsed'));
+    });
     if (overlay) overlay.addEventListener('click', closeSidebar);
+    if (sidebar) sidebar.addEventListener('click', function (e) { if (isMobile() && e.target.closest('.sidebar-nav-item')) closeSidebar(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSidebar(); });
 
     window.Router.start();

@@ -1,74 +1,84 @@
 :root {
   color-scheme: light;
   /* ══════════════════════════════════════════
-     TPBank BIZ Design System — v3.1
-     Chuẩn hóa theo hệ thiết kế SHTD (REF-UIUX-DESIGN-SYSTEM)
-     Lớp BRAND (đổi được): primary tím + accent cam — cùng "gu" SHTD
+     AIUS Design Tokens — v4 (UI/UX v2, 2026-11-03)
+     Chuẩn AIOS design-system v2 · profile P1 App tác nghiệp
+     Gu: design-system/ai-use-case-platform/MASTER.md (xanh dương + slate, Fira Sans)
+     Tên biến cũ GIỮ NGUYÊN (component đang dùng) — chỉ đổi giá trị.
      ══════════════════════════════════════════ */
 
-  /* ── Brand Purple (chuẩn SHTD #4B1FAF) ── */
-  --color-primary:         #4B1FAF;
-  --color-primary-dark:    #3A178E;
-  --color-primary-darker:  #2E1270;
-  --color-primary-mid:     #7E57C2;
-  --color-primary-light:   #ECE7FA;
-  --color-primary-surface: #F4F1FC;
+  /* ── Primary — xanh dương (link, nút chính, mục đang chọn) ── */
+  --color-primary:         #1D4ED8;
+  --color-primary-dark:    #1E40AF;
+  --color-primary-darker:  #1E3A8A;
+  --color-primary-mid:     #3B82F6;
+  --color-primary-light:   #DBEAFE;
+  --color-primary-surface: #EFF6FF;
 
-  /* ── Sidebar Gradient (chuẩn SHTD) ── */
-  --sidebar-gradient: linear-gradient(175deg, #3B0D9B 0%, #220A6B 100%);
+  /* ── Sidebar — nền sáng (không còn gradient tím) ── */
+  --sidebar-gradient: var(--color-surface);
+  --sidebar-bg:       var(--color-surface);
 
-  /* ── Semantic Colors ── */
-  --color-success:       #4CAF50;
-  --color-success-light: #E8F5E9;
-  --color-warning:       #F6B100;
-  --color-warning-light: #FFF8E1;
-  --color-error:         #F44336;
-  --color-error-light:   #FFEBEE;
-  --color-info:          #2196F3;
-  --color-info-light:    #E3F2FD;
+  /* ── Semantic — đều ≥ 4,5:1 trên nền trắng ── */
+  --color-success:       #15803D;
+  --color-success-light: #DCFCE7;
+  --color-warning:       #B45309;
+  --color-warning-light: #FEF3C7;
+  --color-error:         #B91C1C;
+  --color-error-light:   #FEE2E2;
+  --color-info:          #1D4ED8;
+  --color-info-light:    #DBEAFE;
 
-  /* ── Neutral / Surface ── */
-  --color-bg:             #F5F5F7;
-  --color-bg-alt:         #FAFAFC;
+  /* ── Neutral / Surface (slate) ── */
+  --color-bg:             #F8FAFC;
+  --color-bg-alt:         #F1F5F9;
   --color-surface:        #FFFFFF;
-  --color-border:         #E9E9EF;
+  --color-border:         #E2E8F0;
+  --color-border-strong:  #CBD5E1;
   --color-border-focus:   var(--color-primary);
-  --color-border-error:   #F44336;
-  --color-overlay:        rgba(31, 31, 44, 0.04);
+  --color-border-error:   #DC2626;
+  --color-overlay:        rgba(15, 23, 42, 0.04);
   --overlay-loading:      rgba(255, 255, 255, 0.88); /* nền lớp loading (đảo ở dark) */
 
   /* ── Text ── */
-  --color-text:           #1F1F2C;
-  --color-text-secondary: #6D6D7A;
-  --color-text-muted:     #A4A4B2;
+  --color-text:           #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted:     #64748B;   /* 4,8:1 — trước #A4A4B2 chỉ 2,4:1 */
   --color-text-inverse:   #FFFFFF;
 
-  /* ── Sidebar specific ── */
-  --sidebar-text:         rgba(255, 255, 255, 0.85);
-  --sidebar-text-active:  #FFFFFF;
-  --sidebar-text-muted:   rgba(255, 255, 255, 0.5);
-  --sidebar-item-hover:   rgba(255, 255, 255, 0.10);
-  --sidebar-item-active:  rgba(255, 255, 255, 0.18);
-  --sidebar-border:       rgba(255, 255, 255, 0.12);
+  /* ── Sidebar specific (nền sáng) ── */
+  --sidebar-text:         #334155;
+  --sidebar-text-active:  var(--color-primary);
+  --sidebar-text-strong:  #0F172A;
+  --sidebar-text-muted:   #64748B;
+  --sidebar-item-hover:   #F1F5F9;
+  --sidebar-item-active:  var(--color-primary-surface);
+  --sidebar-border:       var(--color-border);
 
-  /* ── Accent (Cam — hành động chính / CTA highlight, chuẩn SHTD) ── */
-  --color-accent:         #FF7A00;
-  --color-accent-dark:    #E06A00;
-  --color-accent-light:   #FFF1E0;
+  /* ── Accent — hổ phách, CHỈ để nhấn "cần chú ý" (không làm nút chính) ── */
+  --color-accent:         #D97706;
+  --color-accent-dark:    #B45309;
+  --color-accent-light:   #FEF3C7;
+  --color-on-accent:      #0F172A;
 
-  /* ── Typography (chuẩn SHTD: DM Sans + DM Mono) ── */
-  --font-family:           'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-mono:             'DM Mono', ui-monospace, 'SFMono-Regular', monospace;
+  /* ── Nút hành động chính (= primary) ── */
+  --btn-primary-bg:       var(--color-primary);
+  --btn-primary-bg-hover: var(--color-primary-dark);
+  --btn-primary-ring:     rgba(29, 78, 216, 0.28);
 
-  --text-xs:   0.6875rem;   /* 11px */
-  --text-sm:   0.8125rem;   /* 13px */
-  --text-base: 0.9375rem;   /* 15px */
-  --text-md:   1rem;        /* 16px */
-  --text-lg:   1.125rem;    /* 18px */
-  --text-xl:   1.25rem;     /* 20px */
+  /* ── Typography — Fira Sans có bộ chữ tiếng Việt (DM Sans không có) ── */
+  --font-family:           'Fira Sans', 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --font-mono:             'Fira Code', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  --text-xs:   0.75rem;     /* 12px — nhỏ nhất cho chữ đọc được */
+  --text-sm:   0.8125rem;   /* 13px — bảng, nhãn */
+  --text-base: 0.875rem;    /* 14px — chữ thân (dày cho laptop 14") */
+  --text-md:   0.9375rem;   /* 15px */
+  --text-lg:   1.0625rem;   /* 17px */
+  --text-xl:   1.1875rem;   /* 19px */
   --text-2xl:  1.375rem;    /* 22px */
-  --text-3xl:  1.75rem;     /* 28px */
-  --text-4xl:  2rem;        /* 32px */
+  --text-3xl:  1.625rem;    /* 26px */
+  --text-4xl:  1.875rem;    /* 30px */
 
   --font-weight-regular:  400;
   --font-weight-medium:   500;
@@ -77,7 +87,7 @@
 
   --leading-tight:   1.3;
   --leading-normal:  1.5;
-  --leading-relaxed: 1.7;
+  --leading-relaxed: 1.65;
 
   /* ── Spacing (4px base) ── */
   --space-1:  4px;
@@ -93,21 +103,21 @@
   --space-16: 64px;
   --space-20: 80px;
 
-  /* ── Border Radius ── */
+  /* ── Border Radius — gọn hơn, hợp app dày dữ liệu ── */
   --radius-sm:     6px;
-  --radius-md:     12px;   /* inputs, buttons */
-  --radius-lg:     16px;
-  --radius-xl:     18px;   /* cards (khớp SHTD radius-lg) */
-  --radius-2xl:    24px;
+  --radius-md:     8px;    /* inputs, buttons */
+  --radius-lg:     10px;
+  --radius-xl:     12px;   /* cards */
+  --radius-2xl:    16px;
   --radius-full:   9999px;
   --border-radius: var(--radius-md); /* legacy compat */
 
-  /* ── Shadows — bóng mềm chuẩn SHTD ── */
-  --shadow-xs:  0 1px 4px rgba(0, 0, 0, 0.04);
-  --shadow-sm:  0 1px 4px rgba(0, 0, 0, 0.06);
-  --shadow-md:  0 4px 16px rgba(0, 0, 0, 0.08);
-  --shadow-lg:  0 16px 40px rgba(0, 0, 0, 0.14);
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.05);
+  /* ── Shadows — sắc, nhẹ ── */
+  --shadow-xs:  0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm:  0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md:  0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-lg:  0 12px 32px rgba(15, 23, 42, 0.14);
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow:     var(--shadow-sm); /* legacy compat */
 
   /* ── Z-index ── */
@@ -119,25 +129,26 @@
   --z-modal:    200;
   --z-toast:    300;
 
-  /* ── Transitions ── */
+  /* ── Transitions (≤ 200ms, chỉ hover/state) ── */
   --transition-fast:   0.12s ease;
-  --transition-normal: 0.2s ease;
-  --transition-slow:   0.35s ease;
+  --transition-normal: 0.18s ease;
+  --transition-slow:   0.2s ease;
 
-  /* ── Layout ── */
-  --sidebar-width:        252px;
+  /* ── Layout — tối ưu laptop 14" (1366–1536px) ── */
+  --sidebar-width:        232px;
   --sidebar-collapsed:    72px;
-  --topbar-height:        64px;
-  --header-height:        64px;
+  --topbar-height:        56px;
+  --header-height:        56px;
   --max-width:            760px;
-  --content-max-width:    1280px;
+  --content-max-width:    1440px;
   --wizard-nav-height:    72px;
+  --tap-min:              40px;    /* chiều cao tối thiểu nút/ô nhập trên điện thoại */
 
   /* ── Portal ── */
-  --portal-header-height: 64px;
+  --portal-header-height: 56px;
   --portal-max-width:     800px;
 
-  /* ── Legacy purple aliases (compat) ── */
+  /* ── Legacy purple aliases (compat — nay trỏ về primary xanh) ── */
   --color-purple:         var(--color-primary);
   --color-purple-dark:    var(--color-primary-dark);
   --color-purple-darker:  var(--color-primary-darker);
@@ -147,33 +158,46 @@
 }
 
 /* ══════════════════════════════════════════
-   DARK MODE — token nền sẵn sàng (chuẩn SHTD)
-   Kích hoạt: đặt <html data-theme="dark"> + nút toggle (pha sau).
-   Chỉ có hiệu lực khi data-theme="dark" — không ảnh hưởng light hiện tại.
+   DARK MODE — bật bằng nút ở topbar (theme.js), nhớ theo máy
    ══════════════════════════════════════════ */
 [data-theme="dark"] {
   color-scheme: dark;
-  --color-bg:             #0D1117;
-  --color-bg-alt:         #12161F;
-  --color-surface:        #161B22;
-  --color-border:         #2D3748;
+  --color-primary:         #60A5FA;
+  --color-primary-dark:    #93C5FD;
+  --color-primary-darker:  #BFDBFE;
+  --color-primary-mid:     #3B82F6;
+  --color-primary-light:   rgba(96, 165, 250, 0.24);
+  --color-primary-surface: rgba(96, 165, 250, 0.14);
+  --btn-primary-bg:        #2563EB;
+  --btn-primary-bg-hover:  #1D4ED8;
+  --btn-primary-ring:      rgba(96, 165, 250, 0.35);
+  --color-bg:             #0B1120;
+  --color-bg-alt:         #111827;
+  --color-surface:        #0F172A;
+  --color-border:         #1E293B;
+  --color-border-strong:  #334155;
   --color-overlay:        rgba(255,255,255,0.04);
   --overlay-loading:      rgba(9, 12, 18, 0.86);
   --color-text:           #E2E8F0;
   --color-text-secondary: #94A3B8;
-  --color-text-muted:     #64748B;
-  --color-primary-surface: rgba(75,31,175,0.16);
-  --color-primary-light:   rgba(75,31,175,0.24);
-  /* Semantic *-light dùng làm NỀN tint (KPI card, badge, callout, input lỗi)
-     → chuyển sang tint trong suốt để hợp nền tối, không lóa */
-  --color-success-light:  rgba(76,175,80,0.16);
-  --color-warning-light:  rgba(246,177,0,0.16);
-  --color-error-light:    rgba(244,67,54,0.16);
-  --color-info-light:     rgba(33,150,243,0.16);
-  --color-accent-light:   rgba(255,122,0,0.16);
-  --sidebar-gradient:     linear-gradient(175deg, #1E0D5C 0%, #0D0729 100%);
-  --shadow-sm:  0 1px 4px rgba(0,0,0,0.30);
-  --shadow-md:  0 4px 16px rgba(0,0,0,0.40);
-  --shadow-lg:  0 16px 40px rgba(0,0,0,0.50);
-  --shadow-card: 0 2px 12px rgba(0,0,0,0.35);
+  --color-text-muted:     #94A3B8;
+  --color-success:        #4ADE80;
+  --color-warning:        #FBBF24;
+  --color-error:          #F87171;
+  --color-info:           #60A5FA;
+  /* Semantic *-light dùng làm NỀN tint → trong suốt để hợp nền tối */
+  --color-success-light:  rgba(74, 222, 128, 0.14);
+  --color-warning-light:  rgba(251, 191, 36, 0.14);
+  --color-error-light:    rgba(248, 113, 113, 0.14);
+  --color-info-light:     rgba(96, 165, 250, 0.14);
+  --color-accent:         #FBBF24;
+  --color-accent-light:   rgba(251, 191, 36, 0.14);
+  --sidebar-text:         #CBD5E1;
+  --sidebar-text-strong:  #F1F5F9;
+  --sidebar-text-muted:   #94A3B8;
+  --sidebar-item-hover:   rgba(255,255,255,0.06);
+  --shadow-sm:  0 1px 2px rgba(0,0,0,0.40);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.45);
+  --shadow-lg:  0 12px 32px rgba(0,0,0,0.55);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.40);
 }

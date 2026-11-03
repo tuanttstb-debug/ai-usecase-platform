@@ -31,7 +31,7 @@
     .score-badge.bottom { background: #FFEBEE; color: #C62828; }
 
     /* Rank category pill */
-    .rank-pill { display: inline-block; padding: 2px 8px; border-radius: var(--radius-full); font-size: 11px; font-weight: var(--font-weight-semibold); }
+    .rank-pill { display: inline-block; padding: 2px 8px; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); }
 
     /* Score bar mini */
     .score-bar-wrap { display: flex; align-items: center; gap: var(--space-3); }
@@ -68,7 +68,7 @@
     .lb-score-head { text-align: right; white-space: nowrap; min-width: 60px; }
     .lb-score-num  { text-align: right; font-weight: var(--font-weight-semibold); font-size: var(--text-sm); white-space: nowrap; }
     .lb-score-auto     { color: #1565C0; }
-    .lb-score-champion { color: #7B2CBF; }
+    .lb-score-champion { color: var(--color-primary); }
     .lb-score-total    { color: var(--color-text); }
 
     /* ── Comment column ── */
@@ -76,4 +76,4 @@
 
     /* ── Clickable rows ── */
     .lb-row-clickable { cursor: pointer; }
-    .lb-row-clickable:hover td { background: rgba(123,44,191,0.04) !important; }
+    .lb-row-clickable:hover td { background: var(--color-primary-surface) !important; }

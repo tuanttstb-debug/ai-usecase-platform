@@ -3,12 +3,20 @@
    Desktop-first: 1440 → 1280 → 1024 → 768 → 480
    ═══════════════════════════════════════════════════ */
 
-/* ── 1280px ── */
-@media (max-width: 1280px) {
-  :root {
-    --sidebar-width: 240px;
-  }
-  .app-content { padding: var(--space-6); }
+/* ── Hàng tab: luôn cuộn ngang trong khung riêng (không đẩy tràn trang) ── */
+.dash-tabs,
+.lb-tabs {
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.dash-tab, .lb-tab { flex-shrink: 0; }
+
+/* ── Laptop 14" (1025–1536px): gọn lề ── */
+@media (max-width: 1536px) {
+  .app-content { padding: var(--space-5) var(--space-6); }
 }
 
 /* ── 1024px — Sidebar collapse threshold ── */
@@ -48,13 +56,29 @@
   .wizard-nav-wrapper  { padding: var(--space-4) var(--space-5); }
   .step-indicators     { padding: var(--space-5) var(--space-5); }
 
-  .step-dot-label { font-size: 10px; max-width: 66px; }
+  .step-dot-label { font-size: var(--text-xs); max-width: 66px; }
 
   .chart-row   { grid-template-columns: 90px 1fr 45px; }
   .dash-tab    { padding: var(--space-3) var(--space-4); font-size: var(--text-sm); }
 
   .topbar-user-name  { display: none; }
   .topbar-user-chip  { padding: var(--space-1); border-radius: 50%; }
+
+  /* Bảng: cuộn ngang trong chính bảng, trang không tràn */
+  .dash-table, .rank-table, .data-table, .rq-table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Vùng bấm đủ lớn cho ngón tay */
+  .btn, .dash-tab, .lb-tab,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select, .pf-select {
+    min-height: var(--tap-min);
+  }
+  .app-content { padding: var(--space-4); }
 
   .pending-card-actions { flex-wrap: wrap; }
   .admin-gate-card { padding: var(--space-8) var(--space-6); }
@@ -95,7 +119,9 @@
   }
   .draft-banner-actions { width: 100%; justify-content: flex-end; }
 
-  .kpi-row      { grid-template-columns: 1fr; }
+  .kpi-row      { grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+  .card, .stat-card { padding: var(--space-4); }
+  .stat-card-value  { font-size: var(--text-2xl); }
   .search-input { width: 100%; }
   .modal-card   { margin: var(--space-4); }
 

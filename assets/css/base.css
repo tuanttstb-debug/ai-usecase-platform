@@ -1,5 +1,5 @@
-/* Google Fonts — DM Sans + DM Mono (chuẩn SHTD) */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+/* Google Fonts — Fira Sans + Fira Code (có bộ chữ tiếng Việt). Bị chặn → Segoe UI (--font-family) */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@400;500;600;700&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -25,8 +25,16 @@ body {
 
 input, select, textarea, button {
   font-family: inherit;
-  font-size: var(--text-md);
+  font-size: var(--text-base);
   line-height: inherit;
+}
+
+/* Số + mã (EX-/KR-/PC-, điểm) thẳng cột */
+table, .num, .tabular { font-variant-numeric: tabular-nums; }
+code, kbd, .mono { font-family: var(--font-mono); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 
 button {
