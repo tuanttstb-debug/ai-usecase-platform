@@ -1,6 +1,6 @@
 # PROJECT STATE
 
-**2026-11-03 — Fix `_nextScoreId_` đọc đúng cột ID (Claim_ID · Reuse_ID · Self_ID — trước luôn ra -0001) + `_memberInfo_` lấy họ tên khi gọi route không token. Test 180/180. CHỜ [TT] REDEPLOY 2 file GAS (`ScoringServiceH2.gs`, `SelfScoreService.gs`).**
+**2026-11-03 — Fix `_nextScoreId_` đọc đúng cột ID (Claim_ID · Reuse_ID · Self_ID — trước luôn ra -0001) + `_memberInfo_` lấy họ tên khi gọi route không token. Test 180/180. LIVE: GAS đã redeploy, test claim ra SC-0005 + đúng họ tên (đã dọn).**
 
 ---
 
